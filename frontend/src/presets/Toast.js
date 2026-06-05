@@ -1,0 +1,31 @@
+/**
+ * PrimeVue PassThrough preset — Toast (ADR-047 B6)
+ */
+export default {
+  root: {
+    class: 'fixed top-4 right-4 z-60 flex flex-col gap-2',
+  },
+  message: ({ props }) => ({
+    class: [
+      'flex items-start gap-3 p-4 rounded-[var(--cd-border-radius)]',
+      'shadow-[var(--cd-shadow-md)] min-w-[20rem] max-w-[25rem]',
+      'font-[var(--cd-font-family)]',
+      props.message?.severity === 'success' && 'bg-[var(--cd-color-success)] text-white',
+      props.message?.severity === 'error' && 'bg-[var(--cd-color-danger)] text-white',
+      props.message?.severity === 'warn' && 'bg-[var(--cd-color-warning)] text-white',
+      (!props.message?.severity || props.message?.severity === 'info') && 'bg-[var(--cd-color-primary)] text-white',
+    ],
+  }),
+  messageText: {
+    class: 'flex flex-col gap-1',
+  },
+  summary: {
+    class: 'font-semibold text-[length:var(--cd-text-sm)]',
+  },
+  detail: {
+    class: 'text-[length:var(--cd-text-xs)] opacity-90',
+  },
+  closeButton: {
+    class: 'ml-auto text-white/80 hover:text-white cursor-pointer',
+  },
+}

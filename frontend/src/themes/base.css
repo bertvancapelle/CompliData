@@ -1,0 +1,67 @@
+/*
+ * CompliData — Base design tokens
+ * Gemeenschappelijke tokens die voor alle tenants gelden.
+ * Tenant-specifieke kleuren en branding worden per tenant overschreven.
+ */
+
+:root {
+  /* Spacing scale */
+  --cd-space-xs: 4px;
+  --cd-space-sm: 8px;
+  --cd-space-md: 16px;
+  --cd-space-lg: 24px;
+  --cd-space-xl: 32px;
+  --cd-space-2xl: 48px;
+
+  /* Shadows */
+  --cd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --cd-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --cd-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+
+  /* Z-index scale */
+  --cd-z-dropdown: 100;
+  --cd-z-sticky: 200;
+  --cd-z-overlay: 300;
+  --cd-z-modal: 400;
+  --cd-z-toast: 500;
+
+  /* Transitions */
+  --cd-transition-fast: 150ms ease;
+  --cd-transition-normal: 250ms ease;
+
+  /* Color fallbacks — overschreven door tenant-thema via useTheme */
+  --cd-color-primary: #1B4B82;
+  --cd-color-success: #1D9E75;
+  --cd-color-danger: #E24B4A;
+  --cd-color-warning: #ba7517;
+  --cd-color-text: #1A1A2E;
+  --cd-color-text-muted: rgba(45, 55, 72, 0.7);
+  --cd-color-surface: #ffffff;
+  --cd-color-bg: #f7fafc;
+  --cd-color-border: #e2e8f0;
+  --cd-color-accent: #E8F0FB;
+  /* Aliassen voor achterwaartse compatibiliteit */
+  --cd-text-primary: var(--cd-color-text);
+  --cd-text-secondary: var(--cd-color-text-muted);
+  --cd-border: var(--cd-color-border);
+  --cd-surface-alt: var(--cd-color-accent);
+  --cd-font-family: 'Calibri', sans-serif;
+  --cd-border-radius: 6px;
+
+  /* Asymmetrisch hoek-patroon — ADR-047 v0.2 (ACT-282) */
+  --cd-radius-card:     16px 0 16px 0;
+  --cd-radius-btn:       8px 0  8px 0;
+  --cd-radius-nav:       8px 0  8px 0;
+  --cd-radius-input:     6px 0  6px 0;
+  --cd-radius-badge:     6px 0  6px 0;
+  --cd-radius-dialog:   16px 0 16px 0;
+  --cd-radius-dropdown:   0 0   8px 8px;
+
+  /* Typography scale */
+  --cd-text-xs: 0.75rem;
+  --cd-text-sm: 0.875rem;
+  --cd-text-base: 1rem;
+  --cd-text-lg: 1.125rem;
+  --cd-text-xl: 1.25rem;
+  --cd-text-2xl: 1.5rem;
+}

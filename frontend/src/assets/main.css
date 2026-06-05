@@ -1,0 +1,34 @@
+@import "tailwindcss";
+@import "../themes/base.css";
+
+/* Globale resets + element-defaults — gemigreerd uit App.vue <style> (ADR-047) */
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--cd-font-family);
+    background: var(--cd-color-bg);
+    color: var(--cd-color-text);
+  }
+  h1 { margin-bottom: 1rem; color: var(--cd-color-primary); }
+  h2 { margin-bottom: 0.75rem; font-size: var(--cd-text-lg); }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 0.75rem 1rem; border-bottom: 1px solid var(--cd-color-border, #e5e7eb); }
+  thead { background: var(--cd-color-primary); }
+  thead th { color: white; font-weight: 600; }
+  tbody tr:nth-child(even) { background: var(--cd-color-surface, #f9fafb); }
+  tbody tr:nth-child(odd) { background: white; }
+  tbody tr:hover { background: var(--cd-color-bg-hover, #f3f4f6); }
+}
+
+/* Utility klassen — gemigreerd uit App.vue */
+@layer components {
+  .card {
+    background: var(--cd-color-surface);
+    border-radius: var(--cd-border-radius);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: var(--cd-shadow-sm);
+  }
+  .ok { color: var(--cd-color-success); font-weight: 600; }
+  .error { color: var(--cd-color-danger); font-weight: 600; }
+}
