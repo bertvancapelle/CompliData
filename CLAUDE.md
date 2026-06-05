@@ -385,10 +385,10 @@ Pas dan: klaar.
 | Veld | Waarde |
 |------|--------|
 | Build | V001 |
-| Datum | Juni 2026 |
-| Commit | — |
-| Tests | 0 passed (nieuw platform) |
-| TST-rapport | — |
+| Datum | June 2026 |
+| Commit | 3bf70b5 |
+| Tests | 5 passed · 4 TST-assen groen |
+| TST-rapport | TST-V001-Validatierapport.md |
 | Kritieke bevindingen | 0 |
 
 <!-- BOUWSTATUS_END -->
