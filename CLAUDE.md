@@ -351,20 +351,19 @@ Een uitbreiding is pas klaar als ALLE stappen zijn afgevinkt:
 Pas dan: klaar.
 
 ### Sessie-afsluitingspatroon (VERPLICHT, altijd in deze volgorde)
-1. TST — volledige repo-validatie via CC
-2. Beoordeling — kritieken aanwezig?
-   → Ja: eerst fixen + opnieuw TST
-   → Bewuste acceptatie: geaccepteerde_kritieken documenteren
-2a. **Skill-review** — als sessie nieuwe patronen of ADR-beslissingen heeft
-    geïntroduceerd: update de relevante CompliData-skill(s) in
-    `.claude/skills/complidata/`
-3. NEXT_SESSION.md genereren met top-5 prioriteiten
-4. `git commit + git push`
-5. PostgreSQL backup:
-   ```bash
-   docker exec cd-postgres pg_dump -U cd_admin complidata > ~/complidata/backups/complidata_$(date +%Y%m%d_%H%M).sql
-   ```
-6. claude.ai memory bijwerken — bouwnummer, teststatus, top-5 prioriteiten
+1. sluit_acties.py — voer uit: python3 docs/_generators/sluit_acties.py
+   → lost alle ❌ op voordat je verder gaat
+2. TST — volledige validatiecyclus conform CONTRIBUTING.md sectie 6
+   → rapport opslaan als docs/TST-{build_label}-Validatierapport.md
+3. Skill-review — relevante complidata-skills bijwerken
+4. NEXT_SESSION.md invullen — top-5 prioriteiten + openstaande punten
+5. gen_build.py — python3 docs/_generators/gen_build.py "{test_status}" "{kritieken}"
+   → verhoogt bouwnummer, genereert alle MD-bestanden, maakt ZIP
+6. git commit + git push
+7. PostgreSQL backup:
+   docker exec cd-postgres pg_dump -U cd_admin complidata \
+     > ~/complidata/backups/complidata_$(date +%Y%m%d_%H%M).sql
+8. claude.ai memory bijwerken — bouwnummer, teststatus, top-5 prioriteiten
 
 ### Sessie starten
 1. Bert uploadt sessie-ZIP in claude.ai
