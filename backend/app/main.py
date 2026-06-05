@@ -12,6 +12,7 @@ from slowapi.errors import RateLimitExceeded
 
 from app.api.v1 import auth, health
 from app.core.config import validate_startup_config
+from app.middleware.authz import OnvoldoendeRechten, onvoldoende_rechten_handler
 from app.middleware.origin_check import OriginCheckMiddleware
 from app.middleware.rate_limit import limiter, rate_limit_exceeded_handler
 from app.middleware.security_headers import SecurityHeadersMiddleware
@@ -41,6 +42,9 @@ app.add_middleware(OriginCheckMiddleware)
 # Rate limiting
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+
+# Autorisatie (RBAC, ADR-010) — 403 bij onvoldoende rechten
+app.add_exception_handler(OnvoldoendeRechten, onvoldoende_rechten_handler)
 
 # Routers
 app.include_router(health.router, prefix="/api/v1")

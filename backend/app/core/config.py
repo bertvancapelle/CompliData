@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     keycloak_admin_user: str = Field("admin", description="Keycloak admin gebruiker")
     keycloak_admin_password: str = Field("changeme_dev", description="Keycloak admin wachtwoord")
 
+    # RBAC (ADR-010) — optioneel voorvoegsel op Keycloak-rolnamen.
+    # Leeg = canonieke namen (viewer/medewerker/beheerder/auditor) 1-op-1.
+    keycloak_role_prefix: str = ""
+
     # RabbitMQ — verplicht, geen default
     rabbitmq_url: str = Field(..., description="RabbitMQ AMQP URL")
 

@@ -1,0 +1,139 @@
+"""RBAC — rollen, rechtenmatrix en permissiecheck (ADR-010).
+
+Eén bron van waarheid voor de door Bert vastgestelde rechtenmatrix. Endpoints
+checken via `heeft_permissie(...)` tegen `PERMISSIES`; rollen worden ad hoc
+nooit vergeleken. Fail-secure: onbekende rol/entiteit/actie ⇒ geen recht.
+
+Rollen zijn LOS en EXPLICIET — er is GEEN overerving tussen rollen.
+"""
+from collections.abc import Iterable
+from enum import Enum
+
+from app.core.config import settings
+
+
+class Rol(str, Enum):
+    VIEWER = "viewer"
+    MEDEWERKER = "medewerker"
+    BEHEERDER = "beheerder"
+    AUDITOR = "auditor"
+
+
+class Entiteit(str, Enum):
+    APPLICATIE = "applicatie"
+    DATATYPE = "datatype"
+    GEBRUIKERSGROEP = "gebruikersgroep"
+    KOPPELING = "koppeling"
+    CHECKLISTSCORE = "checklistscore"
+    BLOKKADE = "blokkade"
+    CHECKLISTVRAAG = "checklistvraag"
+    AUDITLOG = "auditlog"
+    GEBRUIKERSBEHEER = "gebruikersbeheer"
+    TENANT_INSTELLINGEN = "tenant_instellingen"
+
+
+class Actie(str, Enum):
+    LEZEN = "L"
+    AANMAKEN = "A"
+    WIJZIGEN = "W"
+    VERWIJDEREN = "V"
+
+
+KNOWN_ROLES: frozenset[str] = frozenset(r.value for r in Rol)
+
+# ── Rechtenmatrix (LEIDEND — weerspiegelt exact de vastgestelde tabel) ─────────
+
+_L = frozenset({Actie.LEZEN})
+_LAW = frozenset({Actie.LEZEN, Actie.AANMAKEN, Actie.WIJZIGEN})
+_LAWV = frozenset({Actie.LEZEN, Actie.AANMAKEN, Actie.WIJZIGEN, Actie.VERWIJDEREN})
+_GEEN: frozenset[Actie] = frozenset()
+
+# Inhoud-entiteiten delen hetzelfde patroon: Viewer L · Medewerker LAW ·
+# Beheerder LAWV · Auditor L.
+_INHOUD = {
+    Rol.VIEWER: _L,
+    Rol.MEDEWERKER: _LAW,
+    Rol.BEHEERDER: _LAWV,
+    Rol.AUDITOR: _L,
+}
+
+PERMISSIES: dict[Entiteit, dict[Rol, frozenset[Actie]]] = {
+    Entiteit.APPLICATIE: dict(_INHOUD),
+    Entiteit.DATATYPE: dict(_INHOUD),
+    Entiteit.GEBRUIKERSGROEP: dict(_INHOUD),
+    Entiteit.KOPPELING: dict(_INHOUD),
+    Entiteit.CHECKLISTSCORE: dict(_INHOUD),
+    Entiteit.BLOKKADE: dict(_INHOUD),
+    # Referentietabel — voor iedereen alleen-lezen.
+    Entiteit.CHECKLISTVRAAG: {
+        Rol.VIEWER: _L,
+        Rol.MEDEWERKER: _L,
+        Rol.BEHEERDER: _L,
+        Rol.AUDITOR: _L,
+    },
+    # Auditlog — alleen Beheerder en Auditor mogen lezen; niemand muteert hier.
+    Entiteit.AUDITLOG: {
+        Rol.VIEWER: _GEEN,
+        Rol.MEDEWERKER: _GEEN,
+        Rol.BEHEERDER: _L,
+        Rol.AUDITOR: _L,
+    },
+    # Beheer — uitsluitend Beheerder, volledig CRUD.
+    Entiteit.GEBRUIKERSBEHEER: {
+        Rol.VIEWER: _GEEN,
+        Rol.MEDEWERKER: _GEEN,
+        Rol.BEHEERDER: _LAWV,
+        Rol.AUDITOR: _GEEN,
+    },
+    Entiteit.TENANT_INSTELLINGEN: {
+        Rol.VIEWER: _GEEN,
+        Rol.MEDEWERKER: _GEEN,
+        Rol.BEHEERDER: _LAWV,
+        Rol.AUDITOR: _GEEN,
+    },
+}
+
+
+# ── Keycloak-rolmapping ────────────────────────────────────────────────────────
+
+def _platform_rol(keycloak_rol: str) -> str | None:
+    """Map één Keycloak-rolnaam op een platform-rol, of None (fail-secure).
+
+    Standaard 1-op-1 met de canonieke namen (viewer/medewerker/beheerder/
+    auditor). Met `keycloak_role_prefix` gezet worden uitsluitend rollen mét
+    dat voorvoegsel geaccepteerd (bv. `cd-beheerder`).
+    """
+    prefix = settings.keycloak_role_prefix
+    if prefix:
+        if not keycloak_rol.startswith(prefix):
+            return None
+        keycloak_rol = keycloak_rol[len(prefix):]
+    keycloak_rol = keycloak_rol.lower()
+    return keycloak_rol if keycloak_rol in KNOWN_ROLES else None
+
+
+def extract_rollen(payload: dict) -> list[str]:
+    """Lees platform-rollen uit de Keycloak-JWT (realm- én client-rollen).
+
+    Onbekende/ontbrekende rollen worden genegeerd ⇒ lege lijst = geen rechten.
+    """
+    ruw: list[str] = []
+    realm_access = payload.get("realm_access") or {}
+    ruw += realm_access.get("roles") or []
+    resource_access = payload.get("resource_access") or {}
+    client = resource_access.get(settings.keycloak_client_id) or {}
+    ruw += client.get("roles") or []
+
+    platform = {p for r in ruw if (p := _platform_rol(r))}
+    return sorted(platform)
+
+
+def heeft_permissie(rollen: Iterable[str], entiteit: Entiteit, actie: Actie) -> bool:
+    """True alleen als minstens één rol de actie op de entiteit mag (fail-secure)."""
+    matrix = PERMISSIES.get(entiteit)
+    if not matrix:
+        return False
+    for rol in rollen:
+        if rol in KNOWN_ROLES and actie in matrix.get(Rol(rol), _GEEN):
+            return True
+    return False

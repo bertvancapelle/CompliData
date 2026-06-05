@@ -6,9 +6,10 @@ Faalgedrag:
 - 401: token ontbreekt of ongeldig
 - 403: tenant ontbreekt in token
 
-RBAC (rollen) is NOG NIET geïmplementeerd in V001 — zie ADR-010
-(RBAC en rollenstructuur Keycloak). `_load_roles` is een bewuste stub
-die een lege lijst teruggeeft tot ADR-010 de definitieve rolbron vaststelt.
+RBAC (ADR-010): `_load_roles` mapt de Keycloak-rolclaims (realm- en
+client-rollen) op de platform-rollen Viewer/Medewerker/Beheerder/Auditor via
+`app.core.rbac`. Onbekende/ontbrekende rollen ⇒ lege lijst (fail-secure).
+Autorisatie wordt afgedwongen met `vereist_permissie(...)` (middleware/authz).
 """
 import asyncio
 import logging
@@ -45,13 +46,15 @@ class AuthenticatedUser:
     email: str | None = None
 
 
-async def _load_roles(keycloak_sub: str, tenant_id: str) -> list[str]:
-    """STUB — RBAC nog niet ontworpen (ADR-010).
+async def _load_roles(payload: dict) -> list[str]:
+    """Laad de platform-rollen uit de Keycloak-JWT-claims (ADR-010).
 
-    In V001 worden geen rollen geladen. Vul deze functie wanneer ADR-010
-    de rolbron vaststelt (DB-tabel of Keycloak-claim).
+    Mapt realm- én client-rollen op Viewer/Medewerker/Beheerder/Auditor;
+    onbekende rollen worden genegeerd (fail-secure → geen rechten).
     """
-    return []
+    from app.core.rbac import extract_rollen
+
+    return extract_rollen(payload)
 
 
 async def get_current_user(request: Request) -> AuthenticatedUser:
@@ -88,7 +91,7 @@ async def get_current_user(request: Request) -> AuthenticatedUser:
             },
         )
 
-    roles = await _load_roles(payload["sub"], tenant_id)
+    roles = await _load_roles(payload)
 
     return AuthenticatedUser(
         sub=payload["sub"],
