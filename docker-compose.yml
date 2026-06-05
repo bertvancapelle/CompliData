@@ -1,0 +1,150 @@
+version: "3.9"
+
+services:
+  # --- PostgreSQL 16 ---
+  postgres:
+    image: postgres:16-alpine
+    container_name: cd-postgres
+    environment:
+      POSTGRES_DB: complidata
+      POSTGRES_USER: cd_admin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - ~/complidata/data/postgres:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cd_admin -d complidata"]
+      interval: 5s
+      retries: 5
+
+  # --- Keycloak 24.x ---
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: cd-keycloak
+    command: start-dev --health-enabled=true
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/complidata
+      KC_DB_USERNAME: cd_admin
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+    ports:
+      - "8080:8080"
+    volumes:
+      - ~/complidata/data/keycloak:/opt/keycloak/data
+      - ./keycloak/realms:/opt/keycloak/data/import
+      - ./keycloak/themes:/opt/keycloak/themes
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/8080 && printf \"GET /health/live HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n\" >&3 && cat <&3 | grep -q \"UP\"'"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # --- RabbitMQ 3.13 ---
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: cd-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: cd_rabbit
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    volumes:
+      - ~/complidata/data/rabbitmq:/var/lib/rabbitmq
+      - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+
+  # --- Redis 7 (rate limiting + auth-fail counters) ---
+  redis:
+    image: redis:7-alpine
+    container_name: cd-redis
+    command: redis-server --save ""
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 3
+
+  # --- MinIO S3-compatible blob store (bucket-per-tenant) ---
+  minio:
+    image: minio/minio:latest
+    container_name: cd-minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-complidata_admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-changeme_dev_only}
+    volumes:
+      - ~/complidata/data/minio:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # --- CompliData API ---
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cd-api
+    environment:
+      DATABASE_URL: postgresql+asyncpg://cd_app:${POSTGRES_PASSWORD}@postgres:5432/complidata
+      DATABASE_URL_SYNC: postgresql://cd_app:${POSTGRES_PASSWORD}@postgres:5432/complidata
+      ADMIN_DATABASE_URL: postgresql+asyncpg://cd_admin:${POSTGRES_PASSWORD}@postgres:5432/complidata
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_EXTERNAL_URL: http://localhost:8080
+      KEYCLOAK_REALM: complidata
+      KEYCLOAK_CLIENT_ID: complidata-api
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-changeme_dev}
+      RABBITMQ_URL: amqp://cd_rabbit:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+      REDIS_URL: redis://redis:6379/0
+      MINIO_ENDPOINT_URL: http://minio:9000
+      MINIO_EXTERNAL_URL: http://localhost:9000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  # --- CompliData UI ---
+  # Profile production: alleen starten met --profile production.
+  # Lokale ontwikkeling: gebruik `npm run dev` in frontend/.
+  ui:
+    profiles:
+      - production
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: cd-ui
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api

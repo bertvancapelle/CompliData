@@ -1,0 +1,108 @@
+{
+  "realm": "complidata",
+  "enabled": true,
+  "displayName": "CompliMan",
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "bruteForceProtected": true,
+  "maxFailureWaitSeconds": 900,
+  "failureFactor": 5,
+  "accessTokenLifespan": 900,
+  "ssoSessionIdleTimeout": 28800,
+  "ssoSessionMaxLifespan": 28800,
+  "offlineSessionIdleTimeout": 2592000,
+  "roles": {
+    "realm": [
+      { "name": "R-DIR", "description": "Directie" },
+      { "name": "R-COM", "description": "Compliance Manager" },
+      { "name": "R-WGB", "description": "Werkgroepbeheerder" },
+      { "name": "R-CIS", "description": "CISO" },
+      { "name": "R-DPO", "description": "Data Protection Officer" },
+      { "name": "R-AUD", "description": "Auditor" },
+      { "name": "R-ADM", "description": "Administrator" },
+      { "name": "R-EAR", "description": "Enterprise Architect" },
+      { "name": "R-PLT", "description": "Platform Beheerder" },
+      { "name": "R-POM", "description": "Platform Operations Manager" },
+      { "name": "R-AIG", "description": "AI Governance Lead" },
+      { "name": "R-AIO", "description": "AI Operations" },
+      { "name": "R-AIC", "description": "AI Compliance" },
+      { "name": "R-AIV", "description": "AI Validator" },
+      { "name": "R-AIA", "description": "AI Auditor" },
+      { "name": "R-CSM", "description": "Customer Success Manager" },
+      { "name": "R-SDM", "description": "Service Delivery Manager" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "complidata-api",
+      "name": "CompliMan Backend API",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "changeme_dev",
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "redirectUris": ["http://localhost:3000/auth/callback"],
+      "webOrigins": ["http://localhost:3000"],
+      "attributes": {
+        "access.token.lifespan": "900",
+        "client.session.idle.timeout": "28800",
+        "post.logout.redirect.uris": "http://localhost:3000/login"
+      },
+      "protocolMappers": [
+        {
+          "name": "tenant_id",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "tenant_id",
+            "claim.name": "tenant_id",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "realm-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "claim.name": "roles",
+            "multivalued": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "complidata-ui",
+      "name": "CompliMan Frontend",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": false,
+      "protocol": "openid-connect",
+      "redirectUris": ["http://localhost:3000/auth/callback"],
+      "webOrigins": ["http://localhost:3000"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:3000/login"
+      }
+    }
+  ],
+  "browserFlow": "browser",
+  "requiredActions": [
+    {
+      "alias": "CONFIGURE_TOTP",
+      "name": "Configure OTP",
+      "providerId": "CONFIGURE_TOTP",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 10
+    }
+  ]
+}
