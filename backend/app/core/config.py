@@ -37,6 +37,11 @@ class Settings(BaseSettings):
     platform_origin: str = "http://localhost:3000"
     allowed_redirect_uris: list[str] = ["http://localhost:3000/auth/callback"]
 
+    # OAuth2/OIDC — Authorization Code + PKCE (ADR-002)
+    # Leeg = afgeleid van platform_origin (+ /api/v1/auth/callback); configureerbaar via env.
+    oidc_redirect_uri: str = ""
+    auth_state_ttl: int = 600  # login-state (verifier/nonce/next) in Redis — 10 min
+
     # Rate limiting
     rate_limit_auth: int = 10
     rate_limit_write: int = 100
