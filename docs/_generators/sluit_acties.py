@@ -46,10 +46,19 @@ def check_next_session():
         print("⚠️  NEXT_SESSION.md ontbreekt")
         return False
     tekst = ns.read_text()
-    if "_[Vul in tijdens sessie-afsluiting]_" in tekst:
-        print("⚠️  NEXT_SESSION.md bevat nog niet-ingevulde placeholders")
-        print("   Vul de top-5 prioriteiten en openstaande punten in")
-        return False
+
+    # Detecteer zowel gen_next_session.py placeholder als handmatige placeholder
+    PLACEHOLDERS = [
+        "_[Vul in tijdens sessie-afsluiting]_",
+        "_Dit bestand wordt gegenereerd door gen_build.py._",
+    ]
+    for placeholder in PLACEHOLDERS:
+        if placeholder in tekst:
+            print("⚠️  NEXT_SESSION.md bevat nog niet-ingevulde placeholders")
+            print("   Vul de top-5 prioriteiten en openstaande punten in")
+            print("   (of draai gen_build.py om een nieuw template te genereren)")
+            return False
+
     print("✅ NEXT_SESSION.md ingevuld")
     return True
 

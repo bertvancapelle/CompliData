@@ -53,10 +53,14 @@ cd backend && python3 -m alembic upgrade head --sql | grep -c "ENABLE ROW LEVEL 
 - CLAUDE.md bouwstatus actueel
 
 ```bash
-grep -r "Eraneos\|compliman\|cm_" . \
+grep -r "Eraneos\|compliman\|cm_" \
+  backend/ frontend/src/ modules/ docs/adr/ \
   --include="*.py" --include="*.md" --include="*.js" --include="*.json" \
-  --exclude-dir=node_modules --exclude-dir=.git | wc -l
+  2>/dev/null | wc -l
 # Verwacht: 0
+# Bewust uitgesloten: .claude/ (overgenomen framework-skills),
+# docs/_generators/ (bevat de patronen zelf),
+# docs/_skills/ (overgenomen skill-documentatie)
 ```
 
 ### TST-rapport format
