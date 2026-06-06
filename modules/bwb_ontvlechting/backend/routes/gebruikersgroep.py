@@ -1,0 +1,90 @@
+"""HTTP-routes voor de entiteit Gebruikersgroep (P5-vervolg, ADR-009/010).
+
+Dunne handlers; identiek patroon aan `routes/datatype.py`. Optionele
+tenant-scoped lijst-filter `?applicatie_id=`.
+"""
+import uuid
+
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.responses import JSONResponse, Response
+
+from app.core.rbac import Actie, Entiteit
+from app.middleware.auth import AuthenticatedUser
+from app.middleware.authz import vereist_permissie
+from app.middleware.tenant import get_tenant_session
+from schemas.gebruikersgroep import (
+    GebruikersgroepCreate,
+    GebruikersgroepPagina,
+    GebruikersgroepRead,
+    GebruikersgroepUpdate,
+)
+from services import gebruikersgroep_service as svc
+
+router = APIRouter(prefix="/gebruikersgroepen", tags=["bwb:gebruikersgroep"])
+
+
+def _fout(http_status: int, code: str, bericht: str) -> JSONResponse:
+    """Canoniek foutformaat — geen stacktraces of architectuurdetails."""
+    return JSONResponse(
+        status_code=http_status,
+        content={"fout": {"code": code, "http_status": http_status, "bericht": bericht}},
+    )
+
+
+@router.get("", response_model=GebruikersgroepPagina)
+async def lijst_gebruikersgroepen(
+    limit: int = Query(25, ge=1, le=100),
+    after: str | None = Query(None),
+    applicatie_id: uuid.UUID | None = Query(None),
+    user: AuthenticatedUser = Depends(vereist_permissie(Entiteit.GEBRUIKERSGROEP, Actie.LEZEN)),
+    session: AsyncSession = Depends(get_tenant_session),
+):
+    try:
+        items, volgende = await svc.lijst(
+            session, user.tenant_id, limit=limit, after=after, applicatie_id=applicatie_id
+        )
+    except ValueError:
+        return _fout(400, "ONGELDIGE_CURSOR", "De opgegeven paginacursor is ongeldig.")
+    return {"items": items, "volgende_cursor": volgende}
+
+
+@router.get("/{gebruikersgroep_id}", response_model=GebruikersgroepRead)
+async def haal_gebruikersgroep(
+    gebruikersgroep_id: uuid.UUID,
+    user: AuthenticatedUser = Depends(vereist_permissie(Entiteit.GEBRUIKERSGROEP, Actie.LEZEN)),
+    session: AsyncSession = Depends(get_tenant_session),
+):
+    return await svc.haal_op(session, user.tenant_id, gebruikersgroep_id)
+
+
+@router.post("", response_model=GebruikersgroepRead, status_code=201)
+async def maak_gebruikersgroep(
+    body: GebruikersgroepCreate,
+    user: AuthenticatedUser = Depends(vereist_permissie(Entiteit.GEBRUIKERSGROEP, Actie.AANMAKEN)),
+    session: AsyncSession = Depends(get_tenant_session),
+):
+    """Maak een gebruikersgroep; de ouder-applicatie moet binnen de tenant bestaan."""
+    return await svc.maak_aan(session, user.tenant_id, body)
+
+
+@router.patch("/{gebruikersgroep_id}", response_model=GebruikersgroepRead)
+async def werk_gebruikersgroep_bij(
+    gebruikersgroep_id: uuid.UUID,
+    body: GebruikersgroepUpdate,
+    user: AuthenticatedUser = Depends(vereist_permissie(Entiteit.GEBRUIKERSGROEP, Actie.WIJZIGEN)),
+    session: AsyncSession = Depends(get_tenant_session),
+):
+    return await svc.werk_bij(session, user.tenant_id, gebruikersgroep_id, body)
+
+
+@router.delete("/{gebruikersgroep_id}", status_code=204)
+async def verwijder_gebruikersgroep(
+    gebruikersgroep_id: uuid.UUID,
+    user: AuthenticatedUser = Depends(
+        vereist_permissie(Entiteit.GEBRUIKERSGROEP, Actie.VERWIJDEREN)
+    ),
+    session: AsyncSession = Depends(get_tenant_session),
+):
+    await svc.verwijder(session, user.tenant_id, gebruikersgroep_id)
+    return Response(status_code=204)

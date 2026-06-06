@@ -1,0 +1,64 @@
+"""Unit-tests — Datatype service-laag (P5-vervolg).
+
+Focus: ouder-validatie tenant-scoped (ouder ontbreekt → NietGevonden),
+happy-path aanmaken, en tenant-scoped niet-gevonden. DB gemockt.
+"""
+import asyncio
+import uuid
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+
+
+def _create_data(applicatie_id):
+    from schemas.datatype import DatatypeCreate
+
+    return DatatypeCreate(applicatie_id=applicatie_id, categorie="documenten", omschrijving="x")
+
+
+def test_maak_aan_ouder_ontbreekt_geeft_nietgevonden(monkeypatch):
+    from services import applicatie_service, datatype_service as svc
+    from services.errors import NietGevonden
+
+    async def _raise(*a, **k):
+        raise NietGevonden("applicatie", "x")
+
+    monkeypatch.setattr(applicatie_service, "haal_op", _raise)
+    session = AsyncMock()
+
+    with pytest.raises(NietGevonden):
+        asyncio.run(svc.maak_aan(session, uuid.uuid4(), _create_data(uuid.uuid4())))
+    session.commit.assert_not_awaited()
+
+
+def test_maak_aan_ouder_bestaat(monkeypatch):
+    from services import applicatie_service, datatype_service as svc
+
+    async def _ok(*a, **k):
+        return object()
+
+    monkeypatch.setattr(applicatie_service, "haal_op", _ok)
+    session = AsyncMock()
+    vastgelegd = {}
+    session.add = lambda obj: vastgelegd.setdefault("obj", obj)
+
+    app_id = uuid.uuid4()
+    tid = "11111111-1111-1111-1111-111111111111"
+    obj = asyncio.run(svc.maak_aan(session, tid, _create_data(app_id)))
+
+    assert str(obj.applicatie_id) == str(app_id)
+    assert str(obj.tenant_id) == tid
+    session.commit.assert_awaited_once()
+
+
+def test_haal_op_niet_gevonden(monkeypatch):
+    from services import datatype_service as svc
+    from services.errors import NietGevonden
+
+    session = AsyncMock()
+    resultaat = MagicMock()
+    resultaat.scalar_one_or_none.return_value = None
+    session.execute.return_value = resultaat
+
+    with pytest.raises(NietGevonden):
+        asyncio.run(svc.haal_op(session, uuid.uuid4(), uuid.uuid4()))
