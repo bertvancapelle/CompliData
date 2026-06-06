@@ -40,16 +40,20 @@ zij definieert haar niet.
 
 ## Architectuurcorrectie V001 — ChecklistVraag als platform-initialisatie
 
-**Bevinding**: `seed_checklist_vragen()` wordt momenteel
-aangeroepen als tenant-seeddata. De 89 vragen zijn echter
-platform-breed en horen bij de initiële platform-setup.
+**Bevinding** (gecorrigeerd): `seed_checklist_vragen()` werd in feite
+**nergens** aangeroepen — niet als tenant-seeddata en niet elders; de functie
+was nooit bedraad. De 89 vragen zijn platform-brede referentiedata en horen
+bij de initiële platform-setup.
 
-**Correctie** (te implementeren in V002):
-- `seed_checklist_vragen()` verplaatsen naar platform-initialisatie
-- Aanroepen bij `alembic upgrade head` voor het gehele platform
-- Niet aanroepen bij tenant-onboarding
-- `ChecklistVraag` tabel bevat altijd dezelfde 89 vragen voor
-  alle tenants
+**Correctie (GEÏMPLEMENTEERD)**:
+- `platform_init` zaait de 89 vragen platform-breed via
+  `get_platform_db_session()` (idempotent, `ON CONFLICT DO NOTHING`); de
+  functie retourneert `len(CHECKLIST_VRAGEN)` (= 89).
+- Uitgevoerd door de **init-container** ná `alembic upgrade head`, vóór de
+  app-start (ADR-011) — niet bij tenant-onboarding, niet in de app-entrypoint.
+- `ChecklistVraag` is een referentietabel (geen RLS, geen `tenant_id`) en bevat
+  voor alle tenants dezelfde 89 vragen.
+- Live geverifieerd (P4): `SELECT count(*) FROM checklistvraag` = 89.
 
 ---
 

@@ -1,76 +1,70 @@
 # CompliData — Opvolgpunten (backlog)
 
 Bijgehouden met de hand. Niet door `gen_build.py` gegenereerd.
-Bron: sessie 2 (P1–P3). Status per punt: **OPEN** tenzij anders vermeld.
+Bron: sessie 2–3 (P1–P5, OP-9 t/m OP-12). Status per punt expliciet vermeld.
 
 ---
 
-## Hoog
+## OPEN
 
-### OP-1 — platform_init seed als expliciete deploystap (uit P1)
-
-`seed_checklist_vragen()` draait nu via `python3 -m app.platform_init`, NA
-`alembic upgrade head` (Optie B). Dit is een aparte stap; zonder die stap is
-een live DB leeg (geen 89 checklistvragen).
-
-Borgacties:
-- Opnemen in de Commands-sectie van CLAUDE.md.
-- Toevoegen aan de docker-entrypoint zodat het automatisch draait na de
-  migratie.
-- Onderdeel maken van de P4 live-verificatie ("seed: 89 vragen aanwezig"
-  vereist dat `platform_init` is gedraaid).
-
-### OP-3 — Refresh-token-subsysteem (uit P2)
+### OP-3 — Refresh-token-subsysteem (uit P2) — OPEN
 
 P2 zet bewust geen refresh-token; sessie verloopt na 15 min en vereist
 opnieuw inloggen. Bouwen: `/auth/refresh`, veilige server-side opslag van de
 refresh-token gekoppeld aan een sessie-id, rotatie/intrekking, koppeling aan
 de 8-uurs refresh-grens (CLAUDE.md). Geen token client-leesbaar.
 
----
-
-## Midden
-
-### OP-4 — RP-initiated logout via Keycloak (uit P2)
+### OP-4 — RP-initiated logout via Keycloak (uit P2) — OPEN
 
 `auth/logout` wist nu alleen de lokale `cd_session`-cookie; de Keycloak-SSO-
 sessie blijft staan, waardoor een volgende `/login` stil kan herinloggen.
 Aanvulling: Keycloak end-session-endpoint aanroepen bij logout.
 
-### OP-5 — Cookie-attributen uit settings bij login/callback (uit P2, P4)
-
-Verifieer bij P4 dat de `cd_session`-cookie zijn attributen uit settings haalt
-(`cookie_secure` / `cookie_samesite` / `cookie_domain`, net als logout), zodat
-lokaal/test over http daadwerkelijk inlogbaar is; hardcoded `Secure` zou dat
-lokaal breken.
-
-### OP-6 — Resource-ownership binnen tenant (uit P3, koppelen aan P5/ADR-010)
+### OP-6 — Resource-ownership binnen tenant (P5/ADR-010) — OPEN
 
 De RBAC-guard checkt entiteit × actie; fijnmazig eigenaarschap (mag deze
 gebruiker DIT specifieke record) zit er nog niet in. Tenant-isolatie is al via
 RLS afgedekt; voeg record-niveau-ownership toe zodra dat nodig is bij de
-module-CRUD (P5).
+module-CRUD.
 
-### OP-7 — 401 en 403 in hetzelfde foutformaat (uit P3)
+### OP-7 — 401 en 403 in hetzelfde foutformaat (uit P3) — OPEN
 
 403 gebruikt het canonieke `{"fout":{...}}`-formaat; 401 volgt nog het
 bestaande `{"detail":{"code":...}}`-patroon van de auth-laag. Op termijn beide
 gelijktrekken naar `{"fout":{...}}`.
 
+### OP-13 — Platform-tabel-grants Platforminstellingen/Platformmetadata — OPEN
+
+Het platform-permissiedomein (ADR-012) kent `Platforminstellingen` en
+`Platformmetadata`, maar alleen de `tenant`-tabel bestaat. Bij het bouwen van
+die endpoints: tabellen + migratie + `GRANT … TO cd_platform` /
+`REVOKE … FROM cd_app` (zelfde patroon als `tenant`).
+
+### OP-14 — Dev-credentials vervangen vóór productie — OPEN
+
+`changeme_dev` staat als dev-default in realm (client-secret + testgebruikers)
+en DB-rollen (cd_app/cd_platform/cd_admin via `POSTGRES_PASSWORD`). Vóór
+productie vervangen door secrets; testgebruikers verwijderen of scheiden van
+productie-realm.
+
 ---
 
-## Laag / documentatie
+## AFGEROND (sessie 2–3)
 
-### OP-2 — Plantekst + skills bijwerken (uit P1, bij sessie-einde)
-
-- `docs/IMPLEMENTATIEPLAN.md` §Architectuurcorrectie zegt dat de seed
-  "momenteel als tenant-seeddata wordt aangeroepen"; dat klopt niet meer (de
-  seed was nergens bedraad). Tekst corrigeren.
-- `platform_init`-seedpatroon vastleggen in de complidata-backend/-db skill
-  (skill-review, stap 3 van het afsluitpatroon).
-
-### OP-8 — CONTRIBUTING.md §6 doc-drift
-
-§6 schrijft `cd backend && pytest modules/` voor, maar `modules/` staat in de
-repo-root, waardoor dat commando faalt. Corrigeren naar het werkende commando
-(pytest vanaf repo-root, bv. `python3 -m pytest backend/tests/ modules/`).
+- **OP-1** — platform_init-seed als deploystap → vervangen door de
+  init-container (ADR-011): `cd-migrate` migreert (cd_admin) → `platform_init`
+  → sluit af, met gating vóór de app. CLAUDE.md Commands bijgewerkt.
+- **OP-2** — plantekst + skills bijgewerkt → §Architectuurcorrectie in
+  `IMPLEMENTATIEPLAN.md` gecorrigeerd; `platform_init`/deploypatroon in
+  complidata-db/-security/-tests vastgelegd.
+- **OP-5** — cookie-attributen settings-driven (`cookie_secure`/`samesite`/
+  `domain`) bevestigd; `COOKIE_SECURE=false` voor lokaal http (P4).
+- **OP-8** — CONTRIBUTING §6 As 2 gecorrigeerd naar
+  `python3 -m pytest backend/tests/ modules/` (groen geverifieerd).
+- **OP-9** — deploy-/migratiestrategie vastgelegd in **ADR-011** (init-container).
+- **OP-10** — OIDC `redirect_uri` gelijkgetrokken (realm ↔ backend) +
+  realm-import (`--import-realm`); login-round-trip werkt.
+- **OP-11** — `cd_admin` volledig uit de app-laag; `cd_platform` (non-superuser)
+  voor platform-endpoints (ADR-012).
+- **OP-12** — rol-mapping/tweelaags rollenmodel → opgegaan in **ADR-012**
+  (realm-rollen → `realm_access.roles`, platform- + tenant-domein).

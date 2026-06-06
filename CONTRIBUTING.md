@@ -24,12 +24,16 @@ find . -name "*.py" \
 
 ### As 2 — Tests
 
-- Alle unit-tests slagen: `pytest modules/ -v`
+- Alle unit-tests slagen
 - Testdekking op nieuwe code aanwezig
 - Geen gebroken imports in testbestanden
 
+Draai vanaf de **repo-root** (tests staan in `backend/tests/` én
+`modules/.../tests/`; `cd backend && pytest modules/` faalt omdat `modules/`
+in de repo-root staat):
+
 ```bash
-cd backend && python3 -m pytest modules/ -v --tb=short
+python3 -m pytest backend/tests/ modules/ -v --tb=short
 ```
 
 ### As 3 — Database-integriteit

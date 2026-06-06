@@ -86,10 +86,49 @@ Module-migratie: `down_revision = None` (root, want de platform-versions
 zijn leeg in V001). Verificatie offline: `alembic heads`, `alembic history`,
 `alembic upgrade head --sql`.
 
+## DB-rollen — driedeling (ADR-011/012, least privilege)
+
+| Rol | Type | Waar | Gebruik |
+|---|---|---|---|
+| `cd_admin` | superuser | **uitsluitend** de init-container | migratie (`alembic upgrade head`) + `platform_init`. NOOIT in de app-runtime. |
+| `cd_platform` | non-superuser | app-laag | platform-endpoints (tenant-provisioning, platforminstellingen). Grants **per platform-tabel** (least privilege), GEEN `CREATE`/DDL, GEEN toegang tot tenant-tabellen. |
+| `cd_app` | non-superuser | app-laag | tenant-werk onder RLS. |
+
+- Migreren als `cd_app` **kan niet en mag niet**: `cd_app` heeft geen `CREATE`
+  op schema `public` (`has_schema_privilege('cd_app','public','CREATE')=false`),
+  dus DDL faalt; bovendien hoort migratie als `cd_admin` (superuser/owner).
+- `cd_platform` (init-db): `CREATE ROLE cd_platform LOGIN` + `GRANT USAGE ON
+  SCHEMA public` — bewust **geen** `ALTER DEFAULT PRIVILEGES`. Per platform-tabel
+  in de migratie: `GRANT SELECT,INSERT,UPDATE,DELETE ON {tabel} TO cd_platform`
+  én `REVOKE ALL ON {tabel} FROM cd_app` (platform-register valt buiten het
+  tenant-domein). Verificatie: cd_platform op een tenant-/referentietabel →
+  `permission denied`.
+
+## Migratie + platform-seed (init-container, ADR-011)
+
+```yaml
+# docker-compose.yml — cd-migrate draait als cd_admin, run-to-completion
+migrate:
+  image: complidata-api:local
+  command: ["sh","-c","python3 -m alembic upgrade head && python3 -m app.platform_init"]
+  # DATABASE_URL(_SYNC) = cd_admin; ook ./modules gemount (seed-bron)
+api:
+  depends_on:
+    migrate: { condition: service_completed_successfully }   # gating vóór app-start
+```
+
+- App-entrypoint blijft **alleen** `uvicorn` (geen migratie/seed in de app).
+- `platform_init` zaait de 89 platform-brede checklistvragen (referentiedata,
+  idempotent `ON CONFLICT DO NOTHING`); zie complidata-backend seed-patroon.
+- Alembic multi-head vermijden: platform-migraties in
+  `backend/alembic/versions/` ketenen aan de module-head (`down_revision`),
+  zodat `alembic heads` = 1 blijft.
+
 ## Naamgeving
 
 - Platform-prefix: `cd_` (database `complidata`, rollen, containers `cd-*`).
 - App-gebruiker: `cd_app` (non-superuser — omzeilt RLS NIET).
-- Admin-gebruiker: `cd_admin` — NOOIT in applicatie-schrijfpaden.
+- Platform-gebruiker: `cd_platform` (non-superuser — platform-endpoints, ADR-012).
+- Admin-gebruiker: `cd_admin` — superuser, UITSLUITEND in de init-container.
 - Enum-typenamen: lowercase snake_case eindigend op `_enum`
   (`hostingmodel_enum`, `lifecycle_status_enum`, `niveau_enum`).

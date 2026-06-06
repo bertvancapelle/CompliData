@@ -327,8 +327,10 @@ DATABASE_URL = "postgresql://cd_app:..."
 | ADR-008 | MinIO blob-opslag (bucket-per-tenant) |
 | ADR-009 | BWB-ontvlechtingsmodule scope en datamodel |
 | ADR-010 | RBAC en rollenstructuur Keycloak |
+| ADR-011 | Deploy-/migratiestrategie: aparte init-container (cd_admin) |
+| ADR-012 | Tweelaags rollenmodel: platform- + tenant-rollen, strikte scheiding |
 
-Alle ADRs staan in: `docs/adr/`
+Alle ADRs staan in: `docs/adr/` (geschreven: ADR-001, 009, 011, 012)
 
 ---
 
@@ -373,6 +375,23 @@ Bert expliciet anders aangeeft.
 - CC voert uit in de repo (code, tests, commits, push)
 - Bert plakt het CC-resultaat terug in claude.ai ter beoordeling
 - Nooit ZIPs van applicatiecode vragen — altijd CC voor repo-werk
+- Opdrachten komen ALTIJD als `.md` en starten met een `START:`-trigger; vragen
+  en adviezen één voor één (zie de Interactieregel + Opdrachtformaat bovenaan).
+
+### Gate-werkwijze (twee fasen + checkpoints)
+- **Twee fasen**: CC voert Fase A uit (analyse/implementatie/tests/TST),
+  STOPT, en levert een **terugkoppelrapport**. Fase B (commit + push) UITSLUITEND
+  ná een expliciet "AKKOORD: commit" van Bert. Groene tests ≠ toestemming.
+- **Meerblok-opdrachten**: na elk blok STOP + checkpoint-rapport; pas verder na
+  "AKKOORD: blok X".
+- **Fix-bevoegdheid**: CC mag triviale infra/config zelf verhelpen (env/.env
+  dev-defaults, docker healthcheck/depends_on/poort/volume, ontbrekende
+  driver/realm-import, entrypoint-bedrading). CC MOET **stoppen-en-rapporteren**
+  bij alles wat architectuur/datamodel raakt (modellen, migraties, enums,
+  RLS-policies, `set_config`/tenant-isolatie, auth/RBAC, schema- of
+  seed-INHOUD, DB-rolmodel, ADR-waardige keuzes). **Bij twijfel: stoppen.**
+- **Verificatie tegen de code, niet tegen geheugen**: bij discrepantie
+  skill↔code → melden, niet de aanname opschrijven.
 
 ### Definition of Done (elke uitbreiding)
 Een uitbreiding is pas klaar als ALLE stappen zijn afgevinkt:

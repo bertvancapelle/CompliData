@@ -77,6 +77,33 @@ def test_seed_idempotent():
 De seed retourneert `len(CHECKLIST_VRAGEN)` (vast 89), niet `rowcount` —
 daarom blijft de assertie ook bij de tweede (idempotente) run kloppen.
 
+## Backend-tests (app-laag) — env vóór import
+
+`app.core.config` instantieert `Settings()` bij import en faalt zonder de
+verplichte env-vars. `backend/tests/conftest.py` zet die daarom met
+`os.environ.setdefault(...)` (dummy-waarden: `DATABASE_URL`,
+`DATABASE_URL_SYNC`, `PLATFORM_DATABASE_URL`, `KEYCLOAK_*`, `RABBITMQ_URL`,
+`COMPLIDATA_TEST_MODE=true`) en voegt `backend/` aan `sys.path` toe — vóór enig
+`app.*`-import. Keycloak/Redis/DB worden gemockt; geen echte verbinding.
+
+## RBAC-matrixtests (her-codeer de matrix onafhankelijk)
+
+Test de permissietabel door de matrix in de test **onafhankelijk** te
+her-coderen en ALLE combinaties te vergelijken — inclusief negatieven:
+
+- Tenant: 10 entiteiten × 4 rollen × 4 acties = **160** combinaties
+  (`heeft_permissie`).
+- Platform: 3 entiteiten × 2 rollen × 4 acties = **24** combinaties
+  (`heeft_platform_permissie`).
+- Plus fail-secure (lege/onbekende/verkeerd-gecapitaliseerde rol → False) en de
+  **kruis-scheiding** via test-endpoints: tenant-rol op platform-endpoint ⇒ 403,
+  platform-rol op tenant-endpoint ⇒ 403, geen sessie ⇒ 401.
+
+Guard-integratie offline: bouw een kleine `FastAPI()`-test-app met de guard als
+`Depends`, registreer `OnvoldoendeRechten`-handler, en monkeypatch
+`app.middleware.auth.decode_token` om een payload (met/zonder `tenant_id`,
+`realm_access.roles`) te injecteren.
+
 ## TST-validatiecyclus (4 assen)
 
 Bij elke sessie-afsluiting conform CONTRIBUTING.md sectie 6:
