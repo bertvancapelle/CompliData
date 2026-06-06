@@ -166,7 +166,10 @@ docs/
 ## Commands
 
 ```bash
-# Docker stack
+# Docker stack — de init-container (cd-migrate) migreert als cd_admin en seedt,
+# en moet succesvol afronden vóór cd-api (cd_app) start (ADR-011, gating via
+# service_completed_successfully). Migratie + platform-seed zijn dus deel van
+# de stack-start; geen losse handmatige stappen nodig.
 docker compose -f docker-compose.yml up -d
 
 # Backend (development)
@@ -178,8 +181,16 @@ cd backend && COMPLIDATA_TEST_MODE=true python3 -m uvicorn app.main:app --port 8
 # Frontend
 cd frontend && npm run dev     # port 3000, proxy to :8000
 
-# Database migrations
-cd backend && python3 -m alembic upgrade head
+# Migratie + platform-seed: lopen via de init-container cd-migrate (ADR-011),
+# als cd_admin. De app (cd-api) draait als cd_app en bevat NOOIT cd_admin.
+# Logs van de init-stap:
+docker compose -f docker-compose.yml logs cd-migrate
+
+# Alternatief (lokaal/CI, zonder stack) — migreer als cd_admin, daarna seed.
+# Migratie MOET als cd_admin draaien (cd_app heeft geen CREATE op schema public);
+# zet hiervoor DATABASE_URL_SYNC op de cd_admin-URL:
+cd backend && DATABASE_URL_SYNC=postgresql://cd_admin:changeme_dev@localhost:5432/complidata python3 -m alembic upgrade head
+cd backend && python3 -m app.platform_init   # referentiedata: 89 checklistvragen (idempotent)
 
 # Smoke test
 bash smoke_test.sh

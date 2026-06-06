@@ -23,7 +23,7 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:24.0
     container_name: cd-keycloak
-    command: start-dev --health-enabled=true
+    command: start-dev --health-enabled=true --import-realm
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/complidata
@@ -99,11 +99,40 @@ services:
       timeout: 10s
       retries: 3
 
+  # --- Init/migrate-container (ADR-011) — migreert als cd_admin, seedt, sluit af ---
+  # Verbindt UITSLUITEND hier als cd_admin (superuser/owner). De app-container
+  # (cd-api) houdt enkel cd_app. Run-to-completion vóór de app start.
+  migrate:
+    image: complidata-api:local
+    container_name: cd-migrate
+    command: ["sh", "-c", "python3 -m alembic upgrade head && python3 -m app.platform_init"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://cd_admin:${POSTGRES_PASSWORD}@postgres:5432/complidata
+      DATABASE_URL_SYNC: postgresql://cd_admin:${POSTGRES_PASSWORD}@postgres:5432/complidata
+      ADMIN_DATABASE_URL: postgresql+asyncpg://cd_admin:${POSTGRES_PASSWORD}@postgres:5432/complidata
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: complidata
+      KEYCLOAK_CLIENT_ID: complidata-api
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-changeme_dev}
+      RABBITMQ_URL: amqp://cd_rabbit:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+      REDIS_URL: redis://redis:6379/0
+    restart: "no"
+    volumes:
+      - ./backend:/app
+      # platform_init seedt referentiedata uit de bwb_ontvlechting-module;
+      # die code valt buiten de api-build-context (./backend) en wordt hier
+      # bijgemount op het pad dat platform_init verwacht (/modules/...).
+      - ./modules:/modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   # --- CompliData API ---
   api:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    image: complidata-api:local
     container_name: cd-api
     environment:
       DATABASE_URL: postgresql+asyncpg://cd_app:${POSTGRES_PASSWORD}@postgres:5432/complidata
@@ -125,6 +154,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
       keycloak:
         condition: service_healthy
       rabbitmq:

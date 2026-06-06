@@ -2,6 +2,7 @@ fastapi>=0.111,<1
 uvicorn[standard]>=0.29,<1
 sqlalchemy[asyncio]>=2.0,<3
 asyncpg>=0.29,<1
+psycopg2-binary>=2.9,<3   # sync-driver voor Alembic (postgresql:// in de init-container)
 alembic>=1.13,<2
 pydantic>=2.7,<3
 pydantic-settings>=2.2,<3

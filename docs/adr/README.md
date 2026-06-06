@@ -19,6 +19,7 @@ beslissingen krijgen status `Vervallen` met verwijzing naar de opvolger).
 |---|---|---|
 | ADR-001 | Platform-architectuur en module-structuur | Aanvaard |
 | ADR-009 | BWB-ontvlechtingsmodule — scope en datamodel | Aanvaard |
+| ADR-011 | Deploy- en migratiestrategie: aparte init-container | Aanvaard |
 
 ADR-002 t/m ADR-008 en ADR-010 zijn gereserveerd (zie `CLAUDE.md` →
 ADR-referentie) en worden geschreven wanneer de betreffende beslissing speelt.
