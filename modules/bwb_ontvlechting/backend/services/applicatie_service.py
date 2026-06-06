@@ -130,9 +130,18 @@ async def start_inventarisatie(session: AsyncSession, tenant_id, applicatie_id) 
     """Lifecycle-overgang `concept → in_inventarisatie` (handmatige start).
 
     Ongeldige uitgangsstatus ⇒ `OngeldigeStatusovergang` (HTTP 409).
+
+    Ná de transitie volgt een herberekening (ADR-013), zodat een applicatie die
+    vóór de start al volledig gescoord is direct op de juiste afgeleide status
+    (`geblokkeerd`/`migratieklaar`) landt i.p.v. pas bij de eerstvolgende mutatie.
+    De herberekening zet de status nooit terug naar `concept`.
     """
+    from services import lifecycle_service
+
     obj = await haal_op(session, tenant_id, applicatie_id)
     obj.lifecycle_status = volgende_status_na_start(obj.lifecycle_status)
+    # Additief: herleid de canonieke status uit de feiten (transitie zelf blijft).
+    await lifecycle_service.herbereken_lifecycle(session, tenant_id, applicatie_id)
     await session.commit()
     await session.refresh(obj)
     return obj

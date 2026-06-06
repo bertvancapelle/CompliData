@@ -34,13 +34,17 @@ if str(_MOD_BACKEND) not in sys.path:
     sys.path.insert(0, str(_MOD_BACKEND))
 
 from routes.applicatie import router as applicatie_router  # noqa: E402
+from routes.blokkade import router as blokkade_router  # noqa: E402
+from routes.checklistscore import router as checklistscore_router  # noqa: E402
 from routes.datatype import router as datatype_router  # noqa: E402
 from routes.gebruikersgroep import router as gebruikersgroep_router  # noqa: E402
 from routes.koppeling import router as koppeling_router  # noqa: E402
 from services.errors import (  # noqa: E402
+    ChecklistscoreConflict,
     KoppelingConflict,
     NietGevonden,
     OngeldigeStatusovergang,
+    checklistscore_conflict_handler,
     koppeling_conflict_handler,
     niet_gevonden_handler,
     ongeldige_statusovergang_handler,
@@ -77,6 +81,7 @@ app.add_exception_handler(OnvoldoendeRechten, onvoldoende_rechten_handler)
 app.add_exception_handler(NietGevonden, niet_gevonden_handler)
 app.add_exception_handler(OngeldigeStatusovergang, ongeldige_statusovergang_handler)
 app.add_exception_handler(KoppelingConflict, koppeling_conflict_handler)
+app.add_exception_handler(ChecklistscoreConflict, checklistscore_conflict_handler)
 
 # Routers
 app.include_router(health.router, prefix="/api/v1")
@@ -86,3 +91,5 @@ app.include_router(applicatie_router, prefix="/api/v1")
 app.include_router(datatype_router, prefix="/api/v1")
 app.include_router(gebruikersgroep_router, prefix="/api/v1")
 app.include_router(koppeling_router, prefix="/api/v1")
+app.include_router(checklistscore_router, prefix="/api/v1")
+app.include_router(blokkade_router, prefix="/api/v1")

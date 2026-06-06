@@ -5,10 +5,11 @@ gemapt naar het canonieke foutformaat `{"fout":{"code","http_status","bericht"}}
 — exact analoog aan `OnvoldoendeRechten` (middleware/authz): exceptie én handler
 in één bestand, registratie in `main.py`.
 
-Pinning (besluit Bert, Blok 0):
+Pinning (besluit Bert):
 - `NietGevonden`            → HTTP 404, code `NIET_GEVONDEN`
 - `OngeldigeStatusovergang` → HTTP 409, code `ONGELDIGE_STATUSOVERGANG`
 - `KoppelingConflict`       → HTTP 409, code `KOPPELING_CONFLICT`
+- `ChecklistscoreConflict`  → HTTP 409, code `CHECKLISTSCORE_BESTAAT_AL`
 """
 from starlette.requests import Request
 from starlette.responses import JSONResponse
@@ -42,6 +43,14 @@ class KoppelingConflict(Exception):
     De primaire `bron == doel`-validatie zit op schema-niveau (FastAPI-422);
     deze exceptie vangt het onwaarschijnlijke geval dat een integriteitsregel
     pas in de DB afketst, zodat er nooit een rauwe DB-melding lekt.
+    """
+
+
+class ChecklistscoreConflict(Exception):
+    """Dubbele Checklistscore voor (tenant, applicatie, vraag_code).
+
+    Up-front gedetecteerd; de unieke index `uq_checklistscore_app_vraag` is de
+    backstop (`IntegrityError` → rollback → deze exceptie).
     """
 
 
@@ -85,6 +94,21 @@ async def koppeling_conflict_handler(
                 "code": "KOPPELING_CONFLICT",
                 "http_status": 409,
                 "bericht": "De koppeling kon niet worden opgeslagen wegens een conflict.",
+            }
+        },
+    )
+
+
+async def checklistscore_conflict_handler(
+    request: Request, exc: ChecklistscoreConflict
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=409,
+        content={
+            "fout": {
+                "code": "CHECKLISTSCORE_BESTAAT_AL",
+                "http_status": 409,
+                "bericht": "Voor deze vraag bestaat al een score voor deze applicatie.",
             }
         },
     )
