@@ -112,10 +112,11 @@ def _platform_rol(keycloak_rol: str) -> str | None:
     return keycloak_rol if keycloak_rol in KNOWN_ROLES else None
 
 
-def extract_rollen(payload: dict) -> list[str]:
-    """Lees platform-rollen uit de Keycloak-JWT (realm- én client-rollen).
+def lees_keycloak_rollen(payload: dict) -> list[str]:
+    """Ruwe rolnamen uit de Keycloak-JWT (realm- én client-rollen), ongefilterd.
 
-    Onbekende/ontbrekende rollen worden genegeerd ⇒ lege lijst = geen rechten.
+    Gedeelde claim-bron voor zowel het tenant- (deze module) als het
+    platform-domein (`platform_rbac`). Bevat geen domein-logica.
     """
     ruw: list[str] = []
     realm_access = payload.get("realm_access") or {}
@@ -123,8 +124,16 @@ def extract_rollen(payload: dict) -> list[str]:
     resource_access = payload.get("resource_access") or {}
     client = resource_access.get(settings.keycloak_client_id) or {}
     ruw += client.get("roles") or []
+    return ruw
 
-    platform = {p for r in ruw if (p := _platform_rol(r))}
+
+def extract_rollen(payload: dict) -> list[str]:
+    """Lees de TENANT-rollen uit de Keycloak-JWT (ADR-010/012).
+
+    Onbekende/ontbrekende rollen worden genegeerd ⇒ lege lijst = geen rechten.
+    Platform-rollen vallen buiten dit domein en worden hier niet teruggegeven.
+    """
+    platform = {p for r in lees_keycloak_rollen(payload) if (p := _platform_rol(r))}
     return sorted(platform)
 
 

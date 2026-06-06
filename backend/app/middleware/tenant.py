@@ -7,7 +7,7 @@ from fastapi import Depends
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import async_session_factory
+from app.core.database import async_session_factory, platform_session_factory
 from app.middleware.auth import AuthenticatedUser, get_current_user
 
 
@@ -26,23 +26,12 @@ async def get_tenant_session(
 
 
 async def get_platform_session():
-    """Read-only sessie zonder RLS-context — alleen voor platform-brede reads.
+    """Platform-sessie op cd_platform (ADR-012) — voor platform-endpoints
+    (tenant-provisioning, platforminstellingen).
 
-    Gebruikt de cd_app verbinding (geen admin nodig voor reads).
+    cd_platform is non-superuser, heeft GEEN RLS-/tenant-context en GEEN toegang
+    tot tenant-tabellen; cd_admin komt hier NIET aan te pas (OP-11). Geen
+    tenant-scoped werk — dat loopt via `get_tenant_session` onder RLS.
     """
-    async with async_session_factory() as session:
+    async with platform_session_factory() as session:
         yield session
-
-
-async def get_admin_session():
-    """Admin database sessie zonder RLS-filter — gebruikt cd_admin verbinding die RLS bypasses.
-
-    Uitsluitend voor platform-beheer; nooit voor tenant-scoped writes.
-    """
-    from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-    from app.core.config import settings
-    engine = create_async_engine(settings.admin_database_url, echo=False)
-    factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-    async with factory() as session:
-        yield session
-    await engine.dispose()

@@ -99,3 +99,50 @@ async def get_current_user(request: Request) -> AuthenticatedUser:
         roles=roles,
         email=payload.get("email"),
     )
+
+
+@dataclass(frozen=True)
+class PlatformUser:
+    """Platform-account (ADR-012) — bóven tenants, GEEN tenant_id."""
+
+    sub: str
+    roles: list[str] = field(default_factory=list)
+    email: str | None = None
+
+
+async def get_current_platform_user(request: Request) -> "PlatformUser":
+    """Dependency voor PLATFORM-endpoints: valideer sessie, lees platform-rollen.
+
+    Vereist BEWUST geen `tenant_id` (platform-accounts hebben er geen). Levert
+    uitsluitend platform-rollen; tenant-rollen blijven buiten dit domein. Een
+    tenant-account krijgt hier een lege rollenlijst ⇒ de platform-guard weigert.
+    """
+    token = request.cookies.get(settings.cookie_name)
+    if not token:
+        raise HTTPException(
+            status_code=401,
+            detail={"code": "TOKEN_ONGELDIG", "bericht": "Geen sessie gevonden."},
+        )
+
+    try:
+        payload = decode_token(token)
+    except Exception:
+        ip_h = hash_waarde(request.client.host if request.client else None)
+        try:
+            asyncio.get_running_loop().create_task(
+                _increment_fail_counter(ip_h or "unknown")
+            )
+        except RuntimeError:
+            _auth_log.warning("AUTH_FAIL: token validatie mislukt (platform)")
+        raise HTTPException(
+            status_code=401,
+            detail={"code": "TOKEN_ONGELDIG", "bericht": "Sessie ongeldig."},
+        )
+
+    from app.core.platform_rbac import extract_platform_rollen
+
+    return PlatformUser(
+        sub=payload["sub"],
+        roles=extract_platform_rollen(payload),
+        email=payload.get("email"),
+    )

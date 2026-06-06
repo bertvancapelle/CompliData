@@ -107,9 +107,12 @@ services:
     container_name: cd-migrate
     command: ["sh", "-c", "python3 -m alembic upgrade head && python3 -m app.platform_init"]
     environment:
+      # Init-container: cd_admin voor migratie+seed (ADR-011). PLATFORM_DATABASE_URL
+      # is alleen aanwezig zodat Settings() instantieert; de init gebruikt het niet.
       DATABASE_URL: postgresql+asyncpg://cd_admin:${POSTGRES_PASSWORD}@postgres:5432/complidata
       DATABASE_URL_SYNC: postgresql://cd_admin:${POSTGRES_PASSWORD}@postgres:5432/complidata
       ADMIN_DATABASE_URL: postgresql+asyncpg://cd_admin:${POSTGRES_PASSWORD}@postgres:5432/complidata
+      PLATFORM_DATABASE_URL: postgresql+asyncpg://cd_platform:${POSTGRES_PASSWORD}@postgres:5432/complidata
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: complidata
       KEYCLOAK_CLIENT_ID: complidata-api
@@ -135,9 +138,11 @@ services:
     image: complidata-api:local
     container_name: cd-api
     environment:
+      # App-laag: UITSLUITEND cd_app (RLS) + cd_platform (platform-endpoints).
+      # GEEN cd_admin in de app-container (OP-11 / ADR-012).
       DATABASE_URL: postgresql+asyncpg://cd_app:${POSTGRES_PASSWORD}@postgres:5432/complidata
       DATABASE_URL_SYNC: postgresql://cd_app:${POSTGRES_PASSWORD}@postgres:5432/complidata
-      ADMIN_DATABASE_URL: postgresql+asyncpg://cd_admin:${POSTGRES_PASSWORD}@postgres:5432/complidata
+      PLATFORM_DATABASE_URL: postgresql+asyncpg://cd_platform:${POSTGRES_PASSWORD}@postgres:5432/complidata
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_EXTERNAL_URL: http://localhost:8080
       KEYCLOAK_REALM: complidata

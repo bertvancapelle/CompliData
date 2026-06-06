@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     # Database — verplicht, geen default
     database_url: str = Field(..., description="PostgreSQL async URL (cd_app)")
     database_url_sync: str = Field(..., description="PostgreSQL sync URL (cd_app)")
-    admin_database_url: str = Field(..., description="PostgreSQL async URL (cd_admin)")
+    platform_database_url: str = Field(..., description="PostgreSQL async URL (cd_platform) — platform-endpoints, ADR-012")
 
     # Keycloak — verplicht, geen default
     keycloak_url: str = Field(..., description="Keycloak base URL")
@@ -81,7 +81,7 @@ def validate_startup_config() -> None:
     required = {
         "DATABASE_URL": settings.database_url,
         "DATABASE_URL_SYNC": settings.database_url_sync,
-        "ADMIN_DATABASE_URL": settings.admin_database_url,
+        "PLATFORM_DATABASE_URL": settings.platform_database_url,
         "KEYCLOAK_URL": settings.keycloak_url,
         "KEYCLOAK_REALM": settings.keycloak_realm,
         "KEYCLOAK_CLIENT_ID": settings.keycloak_client_id,

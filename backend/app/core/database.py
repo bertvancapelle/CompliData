@@ -9,6 +9,14 @@ from app.core.config import settings
 engine = create_async_engine(settings.database_url, echo=False)
 async_session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
+# Platform-engine op cd_platform (ADR-012) — voor platform-endpoints. Non-superuser,
+# géén RLS-/tenant-context, géén toegang tot tenant-tabellen. cd_admin komt NIET
+# meer in de app-laag voor (OP-11).
+platform_engine = create_async_engine(settings.platform_database_url, echo=False)
+platform_session_factory = async_sessionmaker(
+    platform_engine, class_=AsyncSession, expire_on_commit=False
+)
+
 
 async def get_session(tenant_id: str):
     """Yield a database session with RLS tenant context set."""

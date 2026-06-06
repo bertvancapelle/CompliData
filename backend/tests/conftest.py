@@ -12,7 +12,7 @@ import sys
 _DEFAULTS = {
     "DATABASE_URL": "postgresql+asyncpg://cd_app:x@localhost/complidata",
     "DATABASE_URL_SYNC": "postgresql://cd_app:x@localhost/complidata",
-    "ADMIN_DATABASE_URL": "postgresql+asyncpg://cd_admin:x@localhost/complidata",
+    "PLATFORM_DATABASE_URL": "postgresql+asyncpg://cd_platform:x@localhost/complidata",
     "KEYCLOAK_URL": "http://localhost:8080",
     "KEYCLOAK_REALM": "complidata",
     "KEYCLOAK_CLIENT_ID": "complidata-app",

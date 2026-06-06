@@ -10,7 +10,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from slowapi.errors import RateLimitExceeded
 
-from app.api.v1 import auth, health
+from app.api.v1 import auth, health, platform
 from app.core.config import validate_startup_config
 from app.middleware.authz import OnvoldoendeRechten, onvoldoende_rechten_handler
 from app.middleware.origin_check import OriginCheckMiddleware
@@ -49,3 +49,4 @@ app.add_exception_handler(OnvoldoendeRechten, onvoldoende_rechten_handler)
 # Routers
 app.include_router(health.router, prefix="/api/v1")
 app.include_router(auth.router, prefix="/api/v1")
+app.include_router(platform.router, prefix="/api/v1")
