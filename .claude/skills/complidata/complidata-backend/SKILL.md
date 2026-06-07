@@ -2,7 +2,7 @@
 name: complidata-backend
 description: Backend-patronen voor CompliData (FastAPI + SQLAlchemy + Alembic). Beschrijft de werkelijke V001-staat.
 stack: Python 3.12, FastAPI, Pydantic v2, SQLAlchemy asyncio, Alembic, PostgreSQL 16
-bijgewerkt: V001
+bijgewerkt: V003
 ---
 
 # CompliData Backend Skill
@@ -134,3 +134,61 @@ Gebruik `len(...)` als returnwaarde — `result.rowcount` zou bij een tweede
 | `AuthenticatedUser.roles` | Altijd leeg tot ADR-010 |
 | Rate-limit-decorators op endpoints | Nog niet toegepast (limiter wel geregistreerd) |
 | Audit/hash-chaining | Niet geïmplementeerd — ADR-006 open |
+
+## Module-entiteit-CRUD — referentie (V003, bewezen over 6 entiteiten)
+
+Applicatie, Datatype, Gebruikersgroep, Koppeling, Checklistscore, Blokkade volgen
+één patroon (`modules/bwb_ontvlechting/backend/{schemas,services,routes}/`):
+
+- **Schemas** `Create`/`Update`/`Read`/`Pagina` met `model_config={"extra":"forbid"}`
+  op invoer + field validators op elk veld. Server-velden (`id`, `tenant_id`,
+  timestamps, `lifecycle_status`) nooit in Create/Update. `Update` = partieel
+  (alles optioneel); een `model_validator` verbiedt expliciet `null` op verplichte
+  velden. Validatie-helpers hergebruiken uit `schemas/applicatie.py`
+  (`_verplichte_tekst`/`_optionele_tekst`).
+- **Service** `lijst` (keyset-cursor + optionele filters), `haal_op` (tenant-scoped
+  → `NietGevonden`), `maak_aan`, `werk_bij` (`model_dump(exclude_unset=True)`),
+  `verwijder` (DB-cascade). Dubbele tenant-bescherming: RLS + expliciete
+  `tenant_id`-filter. Pure beslisregels apart houden (DB-vrij testbaar), bv.
+  `volgende_status_na_start`, `bepaal_lifecycle`.
+- **Routes** dun, onder `vereist_permissie(Entiteit.X, Actie.<L/A/W/V>)`;
+  `get_tenant_session`; `{id}` als `uuid.UUID` (ongeldig → 422). Router + handlers
+  registreren in `backend/app/main.py` (module-backend op `sys.path`, `parents[2]`;
+  in de container `./modules` op `/modules` gemount).
+
+### Ouder-validatie kind-entiteiten (OP-6-uitbreiding)
+Bij `maak_aan` van een kind: `await applicatie_service.haal_op(session, tenant_id,
+parent_id)` → ouder buiten de tenant ⇒ **404 `NIET_GEVONDEN`** (geen lek, geen 403).
+Ouder-FK's zijn immutabel (niet in Update).
+
+### Domeinexceptie + handler-patroon
+`modules/.../services/errors.py` definieert exceptie **én** handler (analoog aan
+`OnvoldoendeRechten`); registreren in `main.py`. Canoniek
+`{"fout":{"code","http_status","bericht"}}`:
+
+| Exceptie | HTTP | Code |
+|---|---|---|
+| `NietGevonden` | 404 | `NIET_GEVONDEN` |
+| `OngeldigeStatusovergang` | 409 | `ONGELDIGE_STATUSOVERGANG` |
+| `KoppelingConflict` | 409 | `KOPPELING_CONFLICT` (DB-CHECK-backstop) |
+| `ChecklistscoreConflict` | 409 | `CHECKLISTSCORE_BESTAAT_AL` (unieke-index-backstop) |
+
+### Foutformaat-conventie
+404/403/409 canoniek; **422 = standaard FastAPI** (`{"detail":[…]}`) — géén
+canonieke wrapper (gelijktrekken = OP-7). 401 volgt nog `{"detail":{...}}` (OP-7).
+DB-`IntegrityError` in `maak_aan` afvangen → rollback → canonieke domeinfout (nooit
+rauwe DB-melding lekken).
+
+### Route-volgorde
+Statische subpaden vóór de dynamische `/{id}` (bv. `GET /applicaties/opties`,
+`/applicaties/nieuw`) — anders parseert FastAPI "opties" als UUID → 422.
+
+### Opties-endpoint (read-only enum-metadata)
+`GET /applicaties/opties`, `vereist_permissie(APPLICATIE, LEZEN)`, pure DB-vrije
+helper `enum_opties()` die de waarden uit de single-source-enums teruggeeft
+(NL-labels zijn frontend). Vóór `/{id}` declareren.
+
+### Afwijkende CRUD (systeem-afgeleide entiteit)
+Blokkade is systeem-afgeleid: **alleen** `GET` (lijst + id) en `PATCH` — geen
+`POST`/`DELETE` voor gebruikers (auto-creatie via Checklistscore + DB-cascade);
+ongedefinieerde methodes → 405.

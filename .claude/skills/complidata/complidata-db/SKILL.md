@@ -2,7 +2,7 @@
 name: complidata-db
 description: Database-patronen voor CompliData (PostgreSQL 16, RLS, Alembic). Beschrijft de werkelijke V001-staat.
 stack: PostgreSQL 16, SQLAlchemy asyncio, Alembic
-bijgewerkt: V001
+bijgewerkt: V003
 ---
 
 # CompliData Database Skill
@@ -132,3 +132,35 @@ api:
 - Admin-gebruiker: `cd_admin` — superuser, UITSLUITEND in de init-container.
 - Enum-typenamen: lowercase snake_case eindigend op `_enum`
   (`hostingmodel_enum`, `lifecycle_status_enum`, `niveau_enum`).
+
+## Enum = single source in `models.py` (V003)
+
+De Python-enums in `modules/bwb_ontvlechting/backend/models/models.py` zijn de
+bron; de migratie spiegelt exact dezelfde waarden. ADR-009-voetnoten ("voorgesteld")
+zijn niet leidend — **de code is leidend**: `hostingmodel` = **7** waarden,
+`migratiepad` = **6** (incl. `tijdelijk_gedeeld`), `protocol` = enum (`Koppelprotocol`).
+`checklist_score`-kolom is nullable in de DB; het Create-schema dwingt non-null af
+(ADR-013). ADR-009-tekst ↔ code synchroniseren staat open.
+
+## Lifecycle-herberekening (ADR-013, Model A)
+
+- Eén deterministische afleiding: pure `bepaal_lifecycle(huidige, aantal_gescoord,
+  aantal_vragen, aantal_open_blokkades)` (DB-vrij testbaar) + tenant-scoped
+  `herbereken_lifecycle(session, tenant_id, applicatie_id)` (telt vragen/scores/open
+  blokkades, zet de status op het in-sessie object; caller commit). Draait na elke
+  Checklistscore-/Blokkade-mutatie én na `start-inventarisatie`.
+- Regel: `concept`→`concept` (enige niet-afgeleide vloer; nooit terug naar concept);
+  niet-alles-gescoord → `in_inventarisatie`; alles gescoord + ≥1 open blokkade
+  (`open`/`in_behandeling`) → `geblokkeerd`; anders → `migratieklaar`. Reverse mag.
+- **Transitie-gebaseerde** auto-blokkade-invariant: alleen handelen als de score de
+  blokkerende grens kruist (`ja/nvt ↔ nee/deels`); een ongewijzigde of
+  binnen-blokkerende score laat een (handmatig) opgeloste blokkade met rust →
+  "nee + opgelost" is een stabiele eindtoestand. `checklist_compleet` is **transient**
+  (enum blijft, status wordt nooit gezet).
+
+## Keyset-cursor-paginering
+
+Opaque base64-cursor van `created_at|id`; ORDER BY `(created_at, id)`,
+`WHERE (created_at, id) > (cursor)` via `sqlalchemy.tuple_`, `limit+1`-detectie.
+Misvormde cursor → `ValueError` → route geeft **400 `ONGELDIGE_CURSOR`**.
+Helper: `modules/bwb_ontvlechting/backend/services/pagination.py`.

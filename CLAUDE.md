@@ -436,11 +436,11 @@ Pas dan: klaar.
 
 | Veld | Waarde |
 |------|--------|
-| Build | V002 |
+| Build | V003 |
 | Datum | June 2026 |
-| Commit | f6b2fc5 |
-| Tests | 45 passed · 4 TST-assen groen |
-| TST-rapport | TST-V002-Validatierapport.md |
+| Commit | 956eb3e |
+| Tests | 323 backend + 38 frontend groen · 4 assen + 2 poorten |
+| TST-rapport | TST-V003-Validatierapport.md |
 | Kritieke bevindingen | 0 |
 
 <!-- BOUWSTATUS_END -->

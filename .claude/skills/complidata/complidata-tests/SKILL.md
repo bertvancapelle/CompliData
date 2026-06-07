@@ -1,8 +1,8 @@
 ---
 name: complidata-tests
 description: Test-patronen voor CompliData (pytest unit-tests + TST-validatiecyclus). Beschrijft de werkelijke V001-staat.
-stack: pytest, asyncio, unittest.mock, SQLAlchemy models
-bijgewerkt: V001
+stack: pytest, asyncio, unittest.mock, SQLAlchemy models, vitest, @vue/test-utils
+bijgewerkt: V003
 ---
 
 # CompliData Tests Skill
@@ -118,3 +118,25 @@ Bij elke sessie-afsluiting conform CONTRIBUTING.md sectie 6:
 Rapport opslaan als `docs/TST-{build_label}-Validatierapport.md`.
 Eerst `python3 docs/_generators/sluit_acties.py` draaien (TST-rapport,
 skills gevuld, NEXT_SESSION ingevuld, git clean).
+
+## Frontend-poorten (V003)
+
+Naast de 4 backend-assen: **`vite build`** (0 fouten; >500 kB-waarschuwing is geen
+fout) en **`vitest run`** (alles groen). Geen eslint/type-check aanwezig.
+
+### Frontend-testpatroon (vitest + @vue/test-utils, happy-dom)
+- Module-view-tests staan onder **`frontend/tests/`** (binnen de vitest-root; vitest
+  scant niet buiten `frontend/`) en importeren de view via de `@modules`-alias.
+- Mock `@/api` met `vi.mock`; mount met `[pinia, [PrimeVue,{unstyled:true}],
+  ToastService, router]`. Zet de auth-store-`user` (rollen) voor rol-gating-tests.
+- PrimeVue `Dialog` teleporteert naar body → `global.stubs: { teleport: true }`.
+- `window.location` via `vi.stubGlobal('location', { assign: vi.fn() })`.
+- Cursor-/paginering-assertions via gemockte `lijst`-resoluties (`volgende_cursor`).
+
+## Offline-grens (bewust)
+
+De testsuite draait zonder echte Postgres. Daardoor wordt **DB-afhankelijk gedrag
+structureel** geassert i.p.v. live: de `ON DELETE CASCADE` op kind-FK's (assert op
+`fk.ondelete=='CASCADE'`) en de lifecycle-keten (pure `bepaal_lifecycle` +
+spy op `herbereken_lifecycle`-aanroep). De live keten is in V003 wél éénmalig
+empirisch geverifieerd tegen de draaiende stack (zie `docs/LOKAAL-TESTEN.md`).

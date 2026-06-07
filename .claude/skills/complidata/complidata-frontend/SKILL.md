@@ -1,8 +1,8 @@
 ---
 name: complidata-frontend
-description: Frontend-patronen voor CompliData (Vue 3, PrimeVue Unstyled, Tailwind v4). Beschrijft de werkelijke V001-staat.
-stack: Vue 3, Vite, PrimeVue Unstyled, Tailwind CSS v4, Pinia, vue-router
-bijgewerkt: V001
+description: Frontend-patronen voor CompliData (Vue 3, PrimeVue Unstyled, Tailwind v4). Beschrijft de werkelijke V003-staat (login + app-shell + module-views).
+stack: Vue 3, Vite, PrimeVue Unstyled, Tailwind CSS v4, Pinia, vue-router, vitest
+bijgewerkt: V003
 ---
 
 # CompliData Frontend Skill
@@ -11,92 +11,143 @@ bijgewerkt: V001
 
 ```javascript
 // src/main.js
-import PrimeVue from 'primevue/config'
-import ToastService from 'primevue/toastservice'
-import presets from './presets'
-
 app.use(createPinia())
 app.use(router)
-app.use(PrimeVue, { unstyled: true, pt: presets })
+app.use(PrimeVue, { unstyled: true, pt: presets })   // pt = src/presets/index.js
 app.use(ToastService)
 ```
 
-10 presets in `src/presets/`: Button, DataTable, Dialog, Drawer, InputText,
-Popover, Tag, Textarea, Toast + `index.js`. Elke gebruikte PrimeVue-component
-vereist een preset (anders rendert hij leeg in unstyled-mode).
+Elke gebruikte PrimeVue-component vereist een preset in `src/presets/` (anders
+rendert hij leeg in unstyled-mode). Aanwezig: Button, DataTable, Dialog, Drawer,
+InputText, Popover, Tag, Textarea, Toast (+ `index.js`). Column heeft géén eigen
+preset nodig (de DataTable-preset stuurt header/body/empty).
 
-## Design token-prefix: --cd-
+## Design-tokens + styling
 
-```css
-/* src/themes/base.css — 45 tokens */
-:root {
-  --cd-color-primary: #1B4B82;
-  --cd-color-text: #1A1A2E;
-  --cd-space-md: 16px;
-}
-```
+- Altijd de **`--cd-`-prefix** (uit `src/themes/base.css`). Geen `<style>`-blokken;
+  uitsluitend Tailwind-utilities + `--cd-`-tokens. `assets/main.css` importeert
+  Tailwind v4 + `base.css` + globale resets/utilities (o.a. `.card`).
+- Tailwind arbitrary aria-variant voor de actieve nav-link:
+  `aria-[current=page]:bg-[var(--cd-color-accent)]`.
 
-Gebruik ALTIJD de `--cd-`-prefix.
+## Frontend-module-loading (Optie A — V003)
 
-## Styling-regel
-
-Geen `<style>`-blokken in views/componenten. Uitsluitend Tailwind
-utility-klassen + `--cd-`-tokens. `assets/main.css` importeert Tailwind v4
-(`@import "tailwindcss";`) + `themes/base.css` + base resets.
-
-## useTheme.js
+Module-frontendcode staat **buiten** de vite-root in
+`modules/<module>/frontend/` (views/, labels.js). Geregeld via vite-config:
 
 ```javascript
-// src/composables/useTheme.js
-// Laadt /themes/{tenantSlug}.css dynamisch per tenant.
-// V001: nog geen tenant-thema's aanwezig — base.css levert de defaults.
-import { useTheme } from '../composables/useTheme'
+// frontend/vite.config.js
+resolve: { alias: {
+  '@':        fileURLToPath(new URL('./src', import.meta.url)),
+  '@modules': fileURLToPath(new URL('../modules', import.meta.url)),  // generiek
+}},
+server: { fs: { allow: [frontendDir, modulesDir] } },   // strak gescoopt, niet kale ..
 ```
+
+- De centrale router importeert een module-view via `@modules/...` en registreert
+  hem als **child onder `AppLayout`** (erft `requiresAuth` via de meta-merge → guard
+  ongewijzigd). Statische subpaden (`/nieuw`) vóór `/:id`; `props: true` voor
+  id-routes.
+
+### Cross-root-barrels (VERPLICHT patroon voor module-views)
+
+`node_modules` woont in `frontend/`; module-views buiten de root kunnen bare deps
+(`primevue/*`, `vue-router`) niet resolven. Importeer gedeelde deps daarom via
+platform-barrels:
+
+```javascript
+import { DataTable, Column, Tag, Button, Dialog, InputText, Textarea, useToast } from '@/primevue'
+import { useRouter, useRoute } from '@/composables/router'
+import { api } from '@/api'
+```
+
+Breid `src/primevue.js` / `src/composables/router.js` uit zodra een view een extra
+component/composable nodig heeft. (`vue` zelf resolvet wél cross-root — vite dedupet
+het.) Route-params bij voorkeur via `props: true`, niet `useRoute`.
+
+## App-shell (AppLayout) + router-nesting
+
+```
+src/layouts/AppLayout.vue   — topbar (app-naam, gebruiker-e-mail, uitlog-knop) +
+                              inklapbare sidebar (nav) + hoofd-<router-view> + <Toast/>
+```
+
+- Sidebar-toggle: `aria-expanded`/`aria-controls`; voorkeur optioneel in
+  `localStorage` (`cd-sidebar-ingeklapt`, niet-gevoelig, try/catch).
+- Router: geauthenticeerde routes als children onder `AppLayout`;
+  `login`/`auth-callback`/`verboden` standalone (`meta.public`). De guard
+  (`store/auth.js` + `router/index.js`) blijft ongewijzigd.
+- Uitloggen: `auth.logout()` (wist `cd_session`, redirect `/login`). **OP-4**:
+  geen Keycloak-SSO-logout (buiten scope; in code gedocumenteerd).
 
 ## api.js fetch-wrapper
 
 ```javascript
-// src/api.js — BASE = '/api/v1', credentials: 'include' (httpOnly cookie)
-// Foutformaat: { fout: { code, http_status, bericht } }; 401 -> 'NIET_GEAUTHENTICEERD'
-import { api } from './api'
-const gebruiker = await api.me()      // GET /api/v1/auth/me
-await api.logout()                    // POST /api/v1/auth/logout
+// src/api.js — BASE='/api/v1', credentials:'include' (httpOnly cookie)
+// 401 -> throw 'NIET_GEAUTHENTICEERD'; 204 -> null (DELETE);
+// fout verrijkt met { status, code, detail } voor 403/404/409/422-mapping.
+api.applicaties.{lijst({limit,after}), haal(id), maak(data), werkBij(id,data),
+                 startInventarisatie(id), verwijder(id), opties()}
 ```
 
-Voeg nieuwe endpoints toe als platte methodes op het `api`-object via de
-interne `request()`-helper. Geen generieke `api.get/post`.
+Voeg per entiteit platte methodes toe via de interne `request()`-helper (geen
+generieke get/post).
 
-## Auth store (Pinia)
+## Data-view-patroon (lijst)
+
+- PrimeVue `DataTable` + `Column`; **keyset-cursor-paginering** met "Meer laden"
+  (`volgende_cursor`; `null` = einde). Lifecycle/status als `Tag` (severity-map in
+  `labels.js`). Lege-/laad-/foutstatus; fout in `role="alert"`. Detail-navigatie
+  via een toetsenbord-toegankelijke `<router-link>` op de naam.
+
+## Formulier-patroon
+
+- Dropdowns uit het backend **opties-endpoint** (`applicaties.opties()`) +
+  per-module `labels.js` (NL-labels met **humanize-fallback** — een nieuwe
+  backend-waarde verschijnt direct, hooguit generiek gelabeld). Native `<select>`
+  (geen Select-preset).
+- Clientvalidatie **spiegelt de backend-schemas** (naam verplicht, vrije-tekst-/
+  lengtegrenzen, enums verplicht). **422-veldfouten** van de backend
+  (`{detail:[{loc:[...,veld],msg}]}`) op het juiste veld zetten.
+- Succes/fout via `Toast`; fout-mapping 403→geen rechten, 404→niet gevonden,
+  409→conflict, 422→veldfouten, 401→bestaande sessie-flow.
+- Toegankelijk: `label/for`, `aria-invalid`, `aria-describedby`, focusbeheer.
+
+## Rol-gating = affordance (backend handhaaft)
 
 ```javascript
-// src/store/auth.js — httpOnly cookie-sessie, NOOIT localStorage
+// src/store/auth.js — hasRole IS functioneel post-ADR-010 (rollen uit /auth/me)
 const auth = useAuthStore()
-await auth.fetchSession()     // fetch /api/v1/auth/me
-auth.isAuthenticated         // getter
-auth.hasRole('...')          // V001: altijd false tot ADR-010
+auth.hasRole('medewerker', 'beheerder')   // toont/verbergt knoppen
 ```
 
-## Router-guard
+De UI verbergt alleen knoppen; de **backend** handhaaft via `vereist_permissie`.
+Vang een toch-403 netjes af (Toast). Nooit tokens in `localStorage` (httpOnly).
 
-```javascript
-router.beforeEach(async (to) => {
-  if (to.meta.public) return true
-  const auth = useAuthStore()
-  await auth.fetchSession()
-  if (!auth.isAuthenticated) return { name: 'login', query: { sessie_verlopen: '1' } }
-  if (to.meta.roles?.length && !auth.hasRole(...to.meta.roles)) return { name: 'verboden' }
-  return true
-})
-```
+## Login-patroon (LoginView)
 
-De router gebruikt nu placeholder-componenten; module-views worden onder
-`modules/<module>/frontend` toegevoegd en hier geregistreerd.
+- Launch-page met één knop → **volledige** browser-redirect:
+  `window.location.assign('/api/v1/auth/login')` (geen `fetch`, geen in-app
+  wachtwoordveld). `next` alleen meesturen bij een same-origin relatief pad
+  (backend hervalideert). `?sessie_verlopen=1` → inline `role="alert"`.
+- Na login zet de backend `cd_session` en redirect naar `next` (default `/`); de
+  router-guard zet de gebruiker door.
 
-## Openstaande punten V001
+## Testopzet (vitest)
+
+- Poorten: `vite build` + `vitest` (geen eslint/type-check).
+- Module-view-tests staan onder **`frontend/tests/`** (binnen de vitest-root;
+  vitest scant niet buiten `frontend/`) en importeren de view via `@modules`.
+- Mock `@/api` met `vi.mock`; mount met `[pinia, [PrimeVue,{unstyled:true}],
+  ToastService, router]`. PrimeVue `Dialog` teleporteert naar body → gebruik
+  `global.stubs: { teleport: true }` zodat `find()` de inhoud ziet. `window.location`
+  via `vi.stubGlobal('location', { assign: vi.fn() })`.
+
+## Openstaande punten (V003)
 
 | Onderdeel | Status |
 |---|---|
-| Module-views | Nog niet aangemaakt (placeholders in router) |
-| Branding-tokens | Placeholder-palet — aanpassen bij definitieve huisstijl |
-| `hasRole()` | Altijd false — volgt uit ADR-010 |
-| Login/callback PKCE | Nog niet geïmplementeerd — ADR-002 |
+| `tenantSlug`-getter | Leest `user.tenant_slug`, maar `/auth/me` geeft `tenant_id` → altijd null. Fix bij theming. |
+| Bundle >500 kB | DataTable; route-level lazy-loading als optimalisatie. |
+| Per-tenant thema's | `useTheme` aanwezig; nog geen tenant-thema's. |
+| Login/SSO-logout | OP-3 (refresh) / OP-4 (RP-logout) open. |

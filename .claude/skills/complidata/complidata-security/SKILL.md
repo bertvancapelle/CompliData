@@ -2,7 +2,7 @@
 name: complidata-security
 description: Security-patronen voor CompliData (Zero Trust, httpOnly cookies, NCSC, RLS). Beschrijft de werkelijke V001-staat.
 stack: Keycloak 24.x, FastAPI middleware, Redis, PostgreSQL RLS
-bijgewerkt: V001
+bijgewerkt: V003
 ---
 
 # CompliData Security Skill
@@ -162,3 +162,32 @@ Auth-fail-counters in Redis gebruiken een SHA-256 hash van het IP-adres
 | Audit trail / hash-chaining | Niet geïmplementeerd — ADR-006 open |
 | MFA-config Keycloak | Realm aanwezig; MFA-policy nog in te stellen |
 | Refresh-token / RP-initiated logout | Open — zie `docs/OPVOLGPUNTEN.md` (OP-3, OP-4) |
+
+## OP-6 — record-resolutie binnen tenant (AFGEDEKT, fase 1)
+
+Tenant-scoped record-resolutie volstaat (geen per-gebruiker-eigenaarschap in fase 1,
+collaboratief register, ADR-009): RLS + expliciete `tenant_id`-filter; een id buiten
+de tenant is **niet vindbaar** ⇒ **404 `NIET_GEVONDEN`** — nooit 403, nooit het
+bestaan van een ander-tenant-record lekken. Kind-entiteiten valideren de ouder via
+`parent_service.haal_op(...)` (zelfde 404-no-leak).
+
+## Rol-gating: affordance vs. handhaving
+
+De frontend toont/verbergt knoppen met `hasRole(...)` (affordance); de **backend is
+de enige handhaver** via `vereist_permissie` (fail-secure). Een frontend-gating-bug
+mag nooit tot een autorisatie-omzeiling leiden. `hasRole` is post-ADR-010
+functioneel (rollen uit `/auth/me`). Een toch-403 in de UI netjes afvangen (Toast).
+
+## Cookie — dev vs. productie
+
+`cd_session` is `HttpOnly`/`SameSite=Strict`; `cookie_secure` is **settings-driven**.
+Lokaal-dev (http://localhost) zet `COOKIE_SECURE=false` (in `docker-compose.yml` op
+de api-service, dev-only; `.env.example`), anders dropt o.a. Safari de Secure-cookie
+over HTTP. **Productie houdt `secure=True`** — de dev-waarde nooit meenemen.
+
+## Test-mode is GEEN auth-stub
+
+`COMPLIDATA_TEST_MODE` versoepelt **alleen** de Origin-check (`origin_check.py`) en de
+rate-limit-sleutel (`rate_limit.py`). Het stubt **geen** auth en seedt niets. Inloggen
+vereist altijd Keycloak (volledige stack). (De CLAUDE.md-comment "auth stub/auto-seed"
+is onjuist — openstaand vervolgpunt.)

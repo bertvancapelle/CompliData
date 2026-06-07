@@ -55,6 +55,35 @@ en DB-rollen (cd_app/cd_platform/cd_admin via `POSTGRES_PASSWORD`). Vóór
 productie vervangen door secrets; testgebruikers verwijderen of scheiden van
 productie-realm.
 
+### OP-15 — CLAUDE.md "test-mode auth stub/auto-seed" is onjuist — OPEN
+
+De CLAUDE.md-comment "Backend (test mode — auth stub, auto-seed)" klopt niet:
+`COMPLIDATA_TEST_MODE` versoepelt alleen de Origin-check + rate-limit-sleutel; er is
+géén auth-stub en géén auto-seed. Inloggen vereist altijd Keycloak. CLAUDE.md
+rechtzetten (V003-bevinding, `docs/LOKAAL-TESTEN.md`).
+
+### OP-16 — `tenantSlug`-getter leest verkeerd veld — OPEN
+
+`frontend/src/store/auth.js` `tenantSlug` leest `user.tenant_slug`, maar `/auth/me`
+geeft `tenant_id` → altijd `null`. Raakt `useTheme`/per-tenant-thema's zodra die
+gebouwd worden.
+
+### OP-17 — ADR-009 enum-voetnoten ↔ code synchroniseren — OPEN
+
+ADR-009 markeert enums als "voorgesteld"; de code (single source `models.py`) wijkt
+af en is leidend: `hostingmodel` = 7, `migratiepad` = 6, `protocol` = enum,
+`checklist_compleet` transient (ADR-013). ADR-009-tekst bijwerken.
+
+### OP-18 — Stale V001-docs (IMPLEMENTATIEPLAN / SESSIE_BRIEFING) — OPEN
+
+`IMPLEMENTATIEPLAN.md` en `SESSIE_BRIEFING.md` bevatten V001-snapshots die niet meer
+de werkelijke bouwstatus weerspiegelen. Actualiseren of als historisch markeren.
+
+### OP-19 — Frontend bundle >500 kB — OPEN
+
+De productie-bundle overschrijdt 500 kB (PrimeVue DataTable). Route-level
+lazy-loading / code-splitting als optimalisatie.
+
 ---
 
 ## AFGEROND (sessie 2–3)
