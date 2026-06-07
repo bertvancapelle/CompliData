@@ -17,7 +17,7 @@ from app.middleware.auth import AuthenticatedUser
 from app.middleware.authz import vereist_permissie
 from app.middleware.tenant import get_tenant_session
 from models.models import BlokkadeStatus
-from schemas.blokkade import BlokkadePagina, BlokkadeRead, BlokkadeUpdate
+from schemas.blokkade import BlokkadeOpties, BlokkadePagina, BlokkadeRead, BlokkadeUpdate
 from services import blokkade_service as svc
 
 router = APIRouter(prefix="/blokkades", tags=["bwb:blokkade"])
@@ -52,6 +52,14 @@ async def lijst_blokkades(
     except ValueError:
         return _fout(400, "ONGELDIGE_CURSOR", "De opgegeven paginacursor is ongeldig.")
     return {"items": items, "volgende_cursor": volgende}
+
+
+@router.get("/opties", response_model=BlokkadeOpties)
+async def blokkade_opties(
+    _user: AuthenticatedUser = Depends(vereist_permissie(Entiteit.BLOKKADE, Actie.LEZEN)),
+):
+    """Read-only keuzewaarden (status). Vóór `/{id}` (geen UUID-parse op 'opties')."""
+    return svc.enum_opties()
 
 
 @router.get("/{blokkade_id}", response_model=BlokkadeRead)

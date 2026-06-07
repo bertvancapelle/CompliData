@@ -60,3 +60,9 @@ class BlokkadeRead(BaseModel):
 class BlokkadePagina(BaseModel):
     items: list[BlokkadeRead]
     volgende_cursor: str | None = None
+
+
+class BlokkadeOpties(BaseModel):
+    """Read-only keuzewaarden per enumveld (voor de frontend-dropdowns)."""
+
+    status: list[str]

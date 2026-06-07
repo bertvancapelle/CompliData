@@ -98,3 +98,9 @@ class ChecklistscoreRead(BaseModel):
 class ChecklistscorePagina(BaseModel):
     items: list[ChecklistscoreRead]
     volgende_cursor: str | None = None
+
+
+class ChecklistscoreOpties(BaseModel):
+    """Read-only keuzewaarden per enumveld (voor de frontend-dropdowns)."""
+
+    score: list[str]

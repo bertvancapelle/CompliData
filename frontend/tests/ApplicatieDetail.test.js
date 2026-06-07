@@ -20,6 +20,9 @@ vi.mock('@/api', () => {
       datatypes: { lijst: vi.fn(leeg) },
       gebruikersgroepen: { lijst: vi.fn(leeg) },
       koppelingen: { lijst: vi.fn(leeg) },
+      checklistscores: { lijst: vi.fn(leeg), opties: vi.fn(() => Promise.resolve({ score: [] })) },
+      blokkades: { lijst: vi.fn(leeg) },
+      checklistvragen: { lijst: vi.fn(() => Promise.resolve([])) },
     },
   }
 })
@@ -27,6 +30,8 @@ vi.mock('@/api', () => {
 import { api } from '@/api'
 import { useAuthStore } from '@/store/auth'
 import ApplicatieDetail from '@modules/bwb_ontvlechting/frontend/views/ApplicatieDetail.vue'
+import ChecklistscoreSectie from '@modules/bwb_ontvlechting/frontend/views/ChecklistscoreSectie.vue'
+import { LIFECYCLE_SEVERITY } from '@modules/bwb_ontvlechting/frontend/labels'
 
 const _ID = 'app-1'
 
@@ -148,5 +153,34 @@ describe('ApplicatieDetail', () => {
 
     expect(api.applicaties.verwijder).toHaveBeenCalled()
     expect(pushSpy).not.toHaveBeenCalledWith({ name: 'applicatie-lijst' })
+  })
+
+  // ── Lifecycle-indicator ─────────────────────────────────────────────────
+  it('toont de backend-lifecycle als Tag; checklist_compleet is geen ruststatus', async () => {
+    api.applicaties.haal.mockResolvedValueOnce(_app({ lifecycle_status: 'migratieklaar' }))
+    const { wrapper } = await mountDetail()
+    expect(wrapper.find('[data-testid="detail-status"]').text()).toContain('Migratieklaar')
+    // checklist_compleet kent géén rust-severity (transient, ADR-013 B4)
+    expect('checklist_compleet' in LIFECYCLE_SEVERITY).toBe(false)
+  })
+
+  it('checklist_compleet valt terug op humanize (geen crash/rustlabel)', async () => {
+    api.applicaties.haal.mockResolvedValueOnce(_app({ lifecycle_status: 'checklist_compleet' }))
+    const { wrapper } = await mountDetail()
+    expect(wrapper.find('[data-testid="detail-status"]').text()).toContain('Checklist compleet')
+  })
+
+  // ── Coördinatie: na een score herladen lifecycle + blokkades ────────────
+  it('herlaadt lifecycle (applicaties.haal) én blokkades na een score-mutatie', async () => {
+    api.applicaties.haal.mockResolvedValue(_app())
+    const { wrapper } = await mountDetail()
+    const haalVoor = api.applicaties.haal.mock.calls.length
+    const blokVoor = api.blokkades.lijst.mock.calls.length
+
+    wrapper.findComponent(ChecklistscoreSectie).vm.$emit('gewijzigd')
+    await flushPromises()
+
+    expect(api.applicaties.haal.mock.calls.length).toBeGreaterThan(haalVoor)
+    expect(api.blokkades.lijst.mock.calls.length).toBeGreaterThan(blokVoor)
   })
 })

@@ -95,4 +95,29 @@ export const api = {
     verwijder: (id) => request(`/koppelingen/${id}`, { method: 'DELETE' }),
     opties: () => request('/koppelingen/opties'),
   },
+
+  checklistscores: {
+    lijst: ({ applicatieId, limit, after } = {}) =>
+      request(`/checklistscores${_query({ applicatie_id: applicatieId, limit, after })}`),
+    maak: (data) => request('/checklistscores', { method: 'POST', body: JSON.stringify(data) }),
+    werkBij: (id, data) =>
+      request(`/checklistscores/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    verwijder: (id) => request(`/checklistscores/${id}`, { method: 'DELETE' }),
+    opties: () => request('/checklistscores/opties'),
+  },
+
+  // Blokkade is systeem-afgeleid: geen maak/verwijder (backend kent ze niet).
+  blokkades: {
+    lijst: ({ applicatieId, status, limit, after } = {}) =>
+      request(`/blokkades${_query({ applicatie_id: applicatieId, status, limit, after })}`),
+    haal: (id) => request(`/blokkades/${id}`),
+    werkBij: (id, data) =>
+      request(`/blokkades/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    opties: () => request('/blokkades/opties'),
+  },
+
+  // Read-only referentiedata (89 vragen), één respons (geen cursor).
+  checklistvragen: {
+    lijst: () => request('/checklistvragen'),
+  },
 }

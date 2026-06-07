@@ -19,6 +19,7 @@ from app.middleware.authz import vereist_permissie
 from app.middleware.tenant import get_tenant_session
 from schemas.checklistscore import (
     ChecklistscoreCreate,
+    ChecklistscoreOpties,
     ChecklistscorePagina,
     ChecklistscoreRead,
     ChecklistscoreUpdate,
@@ -51,6 +52,14 @@ async def lijst_checklistscores(
     except ValueError:
         return _fout(400, "ONGELDIGE_CURSOR", "De opgegeven paginacursor is ongeldig.")
     return {"items": items, "volgende_cursor": volgende}
+
+
+@router.get("/opties", response_model=ChecklistscoreOpties)
+async def checklistscore_opties(
+    _user: AuthenticatedUser = Depends(vereist_permissie(Entiteit.CHECKLISTSCORE, Actie.LEZEN)),
+):
+    """Read-only keuzewaarden (score). Vóór `/{id}` (geen UUID-parse op 'opties')."""
+    return svc.enum_opties()
 
 
 @router.get("/{checklistscore_id}", response_model=ChecklistscoreRead)

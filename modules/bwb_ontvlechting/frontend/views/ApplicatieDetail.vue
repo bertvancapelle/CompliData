@@ -24,6 +24,8 @@ import {
 import DatatypeSectie from './DatatypeSectie.vue'
 import GebruikersgroepSectie from './GebruikersgroepSectie.vue'
 import KoppelingSectie from './KoppelingSectie.vue'
+import ChecklistscoreSectie from './ChecklistscoreSectie.vue'
+import BlokkadeSectie from './BlokkadeSectie.vue'
 
 const props = defineProps({ id: { type: String, required: true } })
 const router = useRouter()
@@ -100,6 +102,29 @@ function naarBewerken() {
   router.push({ name: 'applicatie-bewerken', params: { id: props.id } })
 }
 
+// Lifecycle-coördinatie (ADR-013): de frontend berekent niets zelf — na een
+// score/blokkade-mutatie wordt de status opnieuw bij de backend opgehaald.
+const scoreSectie = ref(null)
+const blokkadeSectie = ref(null)
+
+async function herlaadApplicatie() {
+  try {
+    applicatie.value = await api.applicaties.haal(props.id)
+  } catch (e) {
+    /* status-refresh faalt stil; de fout van de mutatie zelf is al getoond */
+  }
+}
+
+async function onScoreGewijzigd() {
+  // Een score kan een blokkade laten ontstaan/oplossen → blokkadelijst + status.
+  await herlaadApplicatie()
+  blokkadeSectie.value?.herlaad()
+}
+
+async function onBlokkadeGewijzigd() {
+  await herlaadApplicatie()
+}
+
 onMounted(laad)
 </script>
 
@@ -123,6 +148,11 @@ onMounted(laad)
           :severity="LIFECYCLE_SEVERITY[applicatie.lifecycle_status] || 'info'"
         />
       </div>
+
+      <p data-testid="detail-voortgang" class="mb-[var(--cd-space-md)] text-[var(--cd-color-text-muted)]">
+        {{ scoreSectie?.aantalGescoord ?? 0 }}/{{ scoreSectie?.aantalVragen ?? 0 }} vragen gescoord ·
+        {{ blokkadeSectie?.aantalOpen ?? 0 }} open blokkade(s)
+      </p>
 
       <dl class="card grid grid-cols-[max-content_1fr] gap-x-[var(--cd-space-lg)] gap-y-[var(--cd-space-sm)]">
         <dt class="font-semibold">Eigenaar-organisatie</dt>
@@ -168,6 +198,8 @@ onMounted(laad)
       </div>
 
       <div class="mt-[var(--cd-space-xl)] flex flex-col gap-[var(--cd-space-lg)]">
+        <ChecklistscoreSectie ref="scoreSectie" :applicatie-id="props.id" @gewijzigd="onScoreGewijzigd" />
+        <BlokkadeSectie ref="blokkadeSectie" :applicatie-id="props.id" @gewijzigd="onBlokkadeGewijzigd" />
         <DatatypeSectie :applicatie-id="props.id" />
         <GebruikersgroepSectie :applicatie-id="props.id" />
         <KoppelingSectie :applicatie-id="props.id" />

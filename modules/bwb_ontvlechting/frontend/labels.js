@@ -13,10 +13,11 @@ export function label(map, code) {
   return map[code] ?? humaniseer(code)
 }
 
+// `checklist_compleet` is transient (ADR-013 B4) en wordt nooit als ruststatus
+// getoond; valt via de humanize-fallback op een generiek label terug.
 export const LIFECYCLE = {
   concept: 'Concept',
   in_inventarisatie: 'In inventarisatie',
-  checklist_compleet: 'Checklist compleet',
   geblokkeerd: 'Geblokkeerd',
   migratieklaar: 'Migratieklaar',
 }
@@ -50,7 +51,6 @@ export const NIVEAU = {
 export const LIFECYCLE_SEVERITY = {
   concept: 'info',
   in_inventarisatie: 'warn',
-  checklist_compleet: 'info',
   geblokkeerd: 'danger',
   migratieklaar: 'success',
 }
@@ -91,4 +91,32 @@ export const IMPACT_SEVERITY = {
   midden: 'warn',
   hoog: 'warn',
   kritiek: 'danger',
+}
+
+// ── Lifecycle (Checklistscore/Blokkade) ──────────────────────────────────────
+
+export const SCORE = {
+  ja: 'Ja',
+  deels: 'Deels',
+  nee: 'Nee',
+  nvt: 'N.v.t.',
+}
+
+export const SCORE_SEVERITY = {
+  ja: 'success',
+  deels: 'warn',
+  nee: 'danger',
+  nvt: 'info',
+}
+
+export const BLOKKADE_STATUS = {
+  open: 'Open',
+  in_behandeling: 'In behandeling',
+  opgelost: 'Opgelost',
+}
+
+export const BLOKKADE_STATUS_SEVERITY = {
+  open: 'danger',
+  in_behandeling: 'warn',
+  opgelost: 'success',
 }

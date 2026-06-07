@@ -28,6 +28,11 @@ def _tenant_uuid(tenant_id) -> uuid.UUID:
     return tenant_id if isinstance(tenant_id, uuid.UUID) else uuid.UUID(str(tenant_id))
 
 
+def enum_opties() -> dict[str, list[str]]:
+    """Read-only keuzewaarden voor de blokkade-status (single source, DB-vrij)."""
+    return {"status": [e.value for e in BlokkadeStatus]}
+
+
 async def lijst(
     session: AsyncSession,
     tenant_id,

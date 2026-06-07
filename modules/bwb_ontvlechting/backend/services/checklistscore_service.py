@@ -42,6 +42,11 @@ def _tenant_uuid(tenant_id) -> uuid.UUID:
     return tenant_id if isinstance(tenant_id, uuid.UUID) else uuid.UUID(str(tenant_id))
 
 
+def enum_opties() -> dict[str, list[str]]:
+    """Read-only keuzewaarden voor de score (single source, DB-vrij)."""
+    return {"score": [e.value for e in ChecklistScore]}
+
+
 async def _valideer_vraag_code(session: AsyncSession, vraag_code: str) -> None:
     """Onbekende `vraag_code` (globale vragenset) ⇒ NietGevonden (404)."""
     bestaat = (
