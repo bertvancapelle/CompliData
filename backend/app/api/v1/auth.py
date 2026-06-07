@@ -21,6 +21,7 @@ from app.core.keycloak import (
     AUTHORIZATION_URL,
     decode_id_token,
     exchange_code_for_tokens,
+    refresh_access_token,
 )
 from app.core.pkce import (
     code_challenge_s256,
@@ -31,6 +32,7 @@ from app.core.pkce import (
 from app.core.redis import get_redis
 from app.middleware.auth import (
     AuthenticatedUser,
+    NietGeauthenticeerd,
     _increment_fail_counter,
     get_current_user,
 )
@@ -42,6 +44,35 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 _log = logging.getLogger("cd.auth")
 
 _STATE_PREFIX = "auth_login:"
+_REFRESH_PREFIX = "auth_refresh:"
+
+
+def _zet_session_cookie(response: Response | RedirectResponse, access_token: str) -> None:
+    """Zet de httpOnly `cd_session`-cookie (access-token, 15 min)."""
+    response.set_cookie(
+        key=settings.cookie_name,
+        value=access_token,
+        max_age=settings.access_token_max_age,
+        httponly=True,
+        secure=settings.cookie_secure,
+        samesite=settings.cookie_samesite,
+        domain=settings.cookie_domain,
+        path="/",
+    )
+
+
+def _zet_refresh_cookie(response: Response | RedirectResponse, sessie_id: str) -> None:
+    """Zet de httpOnly `cd_refresh`-cookie (opake sessie-id; nooit client-leesbaar)."""
+    response.set_cookie(
+        key=settings.refresh_cookie_name,
+        value=sessie_id,
+        max_age=settings.refresh_token_max_age,
+        httponly=True,
+        secure=settings.cookie_secure,
+        samesite=settings.cookie_samesite,
+        domain=settings.cookie_domain,
+        path="/",
+    )
 
 
 def _effective_redirect_uri() -> str:
@@ -153,16 +184,57 @@ async def callback(request: Request):
 
     bestemming = _valideer_next(opslag.get("next"))
     response = RedirectResponse(url=bestemming, status_code=303)
-    response.set_cookie(
-        key=settings.cookie_name,
-        value=access_token,
-        max_age=settings.access_token_max_age,
-        httponly=True,
-        secure=settings.cookie_secure,
-        samesite=settings.cookie_samesite,
-        domain=settings.cookie_domain,
-        path="/",
-    )
+    _zet_session_cookie(response, access_token)
+
+    # Refresh-token server-side bewaren (ADR-015 B2): in Redis onder een opake
+    # sessie-identifier; de identifier in een httpOnly cookie, nooit client-leesbaar.
+    refresh_token = tokens.get("refresh_token")
+    if refresh_token:
+        sessie_id = generate_state()
+        await r.set(
+            f"{_REFRESH_PREFIX}{sessie_id}", refresh_token, ex=settings.refresh_token_max_age
+        )
+        _zet_refresh_cookie(response, sessie_id)
+    return response
+
+
+@router.post("/refresh")
+async def refresh(request: Request):
+    """Verleng de sessie stil via Keycloak (ADR-015 B5).
+
+    Leest de opake sessie-identifier (cookie) → haalt het refresh_token uit Redis
+    → wisselt bij Keycloak (`grant_type=refresh_token`, server-side) → zet een
+    nieuw `cd_session` en bewaart het GEROTEERDE refresh_token (B3). Falen
+    (afwezig/verlopen/door-Keycloak-geweigerd) ⇒ 401 canoniek (ADR-014).
+    """
+    sessie_id = request.cookies.get(settings.refresh_cookie_name)
+    if not sessie_id:
+        raise NietGeauthenticeerd("Geen sessie om te verversen.")
+
+    r = await get_redis()
+    sleutel = f"{_REFRESH_PREFIX}{sessie_id}"
+    refresh_token = await r.get(sleutel)
+    if not refresh_token:
+        raise NietGeauthenticeerd("Sessie verlopen.")
+
+    try:
+        tokens = await refresh_access_token(refresh_token)
+    except Exception:
+        await r.delete(sleutel)  # onbruikbaar geworden handle opruimen (B5)
+        raise NietGeauthenticeerd("Sessie verlopen.")
+
+    access_token = tokens.get("access_token")
+    if not access_token:
+        await r.delete(sleutel)
+        raise NietGeauthenticeerd("Sessie verlopen.")
+
+    # Rotatie (B3): bewaar het nieuwste refresh_token; overschrijf het oude.
+    nieuw_refresh = tokens.get("refresh_token")
+    if nieuw_refresh:
+        await r.set(sleutel, nieuw_refresh, ex=settings.refresh_token_max_age)
+
+    response = Response(status_code=204)
+    _zet_session_cookie(response, access_token)
     return response
 
 

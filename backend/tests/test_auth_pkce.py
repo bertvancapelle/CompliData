@@ -34,6 +34,9 @@ class FakeRedis:
     async def getdel(self, k):
         return self.store.pop(k, None)
 
+    async def delete(self, k):
+        return 1 if self.store.pop(k, None) is not None else 0
+
     async def incr(self, k):
         self.store[k] = int(self.store.get(k, 0)) + 1
         return self.store[k]
@@ -311,3 +314,74 @@ def test_callback_weigert_onbekende_queryparam(client, fake_redis):
     )
     assert resp.status_code == 400
     assert resp.json()["fout"]["code"] == "CALLBACK_PARAMS_ONGELDIG"
+
+
+# ── /auth/refresh (OP-3 / ADR-015) ───────────────────────────────────────────
+
+
+def test_callback_bewaart_refresh_token_in_redis(client, fake_redis, monkeypatch):
+    """Regressie + opvang: callback gooit het refresh_token niet meer weg."""
+    state, _ = _doe_login(client)
+
+    async def fake_exchange(code, redirect_uri, code_verifier=None):
+        return {"access_token": "acc", "id_token": "id", "refresh_token": "rt-1"}
+
+    monkeypatch.setattr("app.api.v1.auth.exchange_code_for_tokens", fake_exchange)
+    monkeypatch.setattr(
+        "app.api.v1.auth.decode_id_token", lambda t, expected_nonce=None: {"sub": "u"}
+    )
+
+    resp = client.get(f"/api/v1/auth/callback?code=c&state={state}", follow_redirects=False)
+    assert resp.status_code == 303
+    setcookie = resp.headers["set-cookie"].lower()
+    assert settings.refresh_cookie_name.lower() in setcookie  # cd_refresh-cookie gezet
+    handles = {k: v for k, v in fake_redis.store.items() if k.startswith("auth_refresh:")}
+    assert list(handles.values()) == ["rt-1"]  # refresh_token server-side bewaard
+
+
+def test_refresh_geldig_handle_rouleert_en_zet_nieuwe_sessie(client, fake_redis, monkeypatch):
+    fake_redis.store["auth_refresh:sid-1"] = "rt-old"
+    client.cookies.set(settings.refresh_cookie_name, "sid-1")
+
+    async def fake_refresh(refresh_token):
+        assert refresh_token == "rt-old"
+        return {"access_token": "acc-new", "refresh_token": "rt-new"}
+
+    monkeypatch.setattr("app.api.v1.auth.refresh_access_token", fake_refresh)
+
+    resp = client.post("/api/v1/auth/refresh")
+    assert resp.status_code == 204
+    setcookie = resp.headers["set-cookie"].lower()
+    assert f"{settings.cookie_name}=acc-new".lower() in setcookie  # nieuw cd_session
+    assert "httponly" in setcookie
+    assert fake_redis.store["auth_refresh:sid-1"] == "rt-new"  # rotatie: nieuwste bewaard
+
+
+def test_refresh_zonder_cookie_401_canoniek(client, fake_redis):
+    resp = client.post("/api/v1/auth/refresh")
+    assert resp.status_code == 401
+    body = resp.json()
+    assert body["fout"]["code"] == "NIET_GEAUTHENTICEERD"
+    assert "detail" not in body
+
+
+def test_refresh_onbekend_handle_401(client, fake_redis):
+    client.cookies.set(settings.refresh_cookie_name, "sid-x")
+    resp = client.post("/api/v1/auth/refresh")
+    assert resp.status_code == 401
+    assert resp.json()["fout"]["code"] == "NIET_GEAUTHENTICEERD"
+
+
+def test_refresh_keycloak_weigert_ruimt_handle_op(client, fake_redis, monkeypatch):
+    fake_redis.store["auth_refresh:sid-2"] = "rt-bad"
+    client.cookies.set(settings.refresh_cookie_name, "sid-2")
+
+    async def fake_refresh_fail(refresh_token):
+        raise RuntimeError("token revoked")
+
+    monkeypatch.setattr("app.api.v1.auth.refresh_access_token", fake_refresh_fail)
+
+    resp = client.post("/api/v1/auth/refresh")
+    assert resp.status_code == 401
+    assert resp.json()["fout"]["code"] == "NIET_GEAUTHENTICEERD"
+    assert "auth_refresh:sid-2" not in fake_redis.store  # onbruikbaar handle opgeruimd (B5)

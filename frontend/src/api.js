@@ -1,17 +1,37 @@
 // API-client — fetch met httpOnly cookie (credentials: include).
 // Foutformaat conform CLAUDE.md: { fout: { code, http_status, bericht } };
-// 422 = FastAPI { detail: [...] }. 401 → bestaande NIET_GEAUTHENTICEERD-flow.
+// 422 = FastAPI { detail: [...] }. 401 → single-flight refresh-on-401 (ADR-015 B6).
 const BASE = '/api/v1'
 
-async function request(path, options = {}) {
+// Single-flight refresh: gelijktijdige 401's delen één lopende /auth/refresh-poging
+// (geen stampede). Resolved op de HTTP-status van /auth/refresh (geen body/code).
+let _refreshPromise = null
+function _refreshSessie() {
+  if (!_refreshPromise) {
+    _refreshPromise = fetch(`${BASE}/auth/refresh`, { method: 'POST', credentials: 'include' })
+      .then((r) => r.ok)
+      .catch(() => false)
+      .finally(() => {
+        _refreshPromise = null
+      })
+  }
+  return _refreshPromise
+}
+
+async function request(path, options = {}, _isRetry = false) {
   const res = await fetch(`${BASE}${path}`, {
     credentials: 'include',
     headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
     ...options,
   })
+  if (res.status === 401 && !_isRetry) {
+    // Eén refresh-poging (gedeeld); bij succes de oorspronkelijke request éénmalig
+    // herproberen. Keyt op HTTP-status (ADR-014/CD005), niet op body/code.
+    const vernieuwd = await _refreshSessie()
+    if (vernieuwd) return request(path, options, true)
+  }
   if (res.status === 401) {
-    // Sessie verlopen — keyt op de HTTP-STATUS, niet op de body/foutcode
-    // (ADR-014: 401 kan NIET_GEAUTHENTICEERD óf ID_TOKEN_ONGELDIG zijn → identiek).
+    // Refresh mislukt of al een retry → sessie-verloop (caller/guard → login).
     const body = await res.json().catch(() => ({}))
     const err = new Error('NIET_GEAUTHENTICEERD')
     err.status = 401

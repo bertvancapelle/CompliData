@@ -78,3 +78,65 @@ describe('store.fetchSession — sessie-verloop op status', () => {
     expect(auth.isAuthenticated).toBe(true)
   })
 })
+
+describe('api.request — single-flight refresh-on-401 (ADR-015 B6)', () => {
+  it('vernieuwt bij 401 en herprobeert de originele request', async () => {
+    let dataCalls = 0
+    let refreshCalls = 0
+    vi.stubGlobal('fetch', vi.fn((url) => {
+      if (url.endsWith('/auth/refresh')) {
+        refreshCalls++
+        return Promise.resolve(_resp({ status: 204, body: null }))
+      }
+      dataCalls++
+      return Promise.resolve(
+        dataCalls === 1
+          ? _resp({ status: 401, body: { fout: { code: 'NIET_GEAUTHENTICEERD' } } })
+          : _resp({ status: 200, body: { items: [], volgende_cursor: null } }),
+      )
+    }))
+    const res = await api.applicaties.lijst()
+    expect(refreshCalls).toBe(1)
+    expect(res).toEqual({ items: [], volgende_cursor: null })
+  })
+
+  it('valt terug op sessie-verloop als refresh faalt (geen lus)', async () => {
+    let dataCalls = 0
+    let refreshCalls = 0
+    vi.stubGlobal('fetch', vi.fn((url) => {
+      if (url.endsWith('/auth/refresh')) {
+        refreshCalls++
+        return Promise.resolve(_resp({ status: 401, body: { fout: { code: 'NIET_GEAUTHENTICEERD' } } }))
+      }
+      dataCalls++
+      return Promise.resolve(_resp({ status: 401, body: { fout: { code: 'NIET_GEAUTHENTICEERD' } } }))
+    }))
+    await expect(api.applicaties.lijst()).rejects.toMatchObject({
+      status: 401,
+      code: 'NIET_GEAUTHENTICEERD',
+    })
+    expect(refreshCalls).toBe(1) // precies één poging
+    expect(dataCalls).toBe(1) // geen retry want refresh faalde → geen lus
+  })
+
+  it('deelt één refresh-poging bij gelijktijdige 401\'s (single-flight)', async () => {
+    let refreshCalls = 0
+    const perUrl = {}
+    vi.stubGlobal('fetch', vi.fn((url) => {
+      if (url.endsWith('/auth/refresh')) {
+        refreshCalls++
+        return Promise.resolve(_resp({ status: 204, body: null }))
+      }
+      perUrl[url] = (perUrl[url] || 0) + 1
+      return Promise.resolve(
+        perUrl[url] === 1
+          ? _resp({ status: 401, body: { fout: { code: 'NIET_GEAUTHENTICEERD' } } })
+          : _resp({ status: 200, body: { ok: true } }),
+      )
+    }))
+    const [a, b] = await Promise.all([api.applicaties.haal('1'), api.applicaties.haal('2')])
+    expect(refreshCalls).toBe(1) // één refresh voor beide gelijktijdige 401's
+    expect(a).toEqual({ ok: true })
+    expect(b).toEqual({ ok: true })
+  })
+})
