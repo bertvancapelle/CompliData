@@ -1,11 +1,17 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../store/auth'
+// Eager: het login-scherm en de app-shell horen bij de eerste paint.
 import LoginView from '../views/LoginView.vue'
 import AppLayout from '../layouts/AppLayout.vue'
-import DashboardView from '../views/DashboardView.vue'
-import ApplicatieLijst from '@modules/bwb_ontvlechting/frontend/views/ApplicatieLijst.vue'
-import ApplicatieDetail from '@modules/bwb_ontvlechting/frontend/views/ApplicatieDetail.vue'
-import ApplicatieFormulier from '@modules/bwb_ontvlechting/frontend/views/ApplicatieFormulier.vue'
+// Lazy (OP-19): zware routes als dynamische imports → eigen chunks, kleinere
+// initiële bundle. ApplicatieDetail trekt DataTable + de module-secties mee in
+// zijn eigen async chunk. Module-loading (Optie A / @modules + cross-root-barrels)
+// en de guard blijven ongewijzigd; alleen het laadmoment verschuift.
+const DashboardView = () => import('../views/DashboardView.vue')
+const ApplicatieLijst = () => import('@modules/bwb_ontvlechting/frontend/views/ApplicatieLijst.vue')
+const ApplicatieDetail = () => import('@modules/bwb_ontvlechting/frontend/views/ApplicatieDetail.vue')
+const ApplicatieFormulier = () =>
+  import('@modules/bwb_ontvlechting/frontend/views/ApplicatieFormulier.vue')
 
 // Publieke routes staan standalone (geen app-shell). Geauthenticeerde routes
 // hangen als children onder AppLayout: door de meta-merge erven zij
