@@ -52,3 +52,21 @@ def test_401_zonder_handler_blijft_401():
     # HTTPException-subclass → 401-fallback ook zonder geregistreerde handler.
     r = TestClient(_app(met_handler=False)).get("/beveiligd")
     assert r.status_code == 401
+
+
+def test_429_handler_canoniek_envelope():
+    import asyncio
+    import json
+    from types import SimpleNamespace
+
+    from app.middleware.rate_limit import rate_limit_exceeded_handler
+
+    req = SimpleNamespace(
+        client=SimpleNamespace(host="1.2.3.4"), method="GET", url=SimpleNamespace(path="/x")
+    )
+    resp = asyncio.run(rate_limit_exceeded_handler(req, None))
+    assert resp.status_code == 429
+    body = json.loads(resp.body)
+    assert body["fout"]["code"] == "RATE_LIMIT_OVERSCHREDEN"
+    assert body["fout"]["http_status"] == 429
+    assert "fout" in body and "detail" not in body

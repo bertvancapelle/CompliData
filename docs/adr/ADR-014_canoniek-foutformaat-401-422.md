@@ -84,9 +84,24 @@ worden nooit ongefilterd gelekt (rollback → canonieke domeinfout).
 ## Niet in scope
 
 - 422 wrappen in het `fout`-envelope (afgewezen — B2).
-- Wijzigingen aan 403/404/409 (al canoniek). *(Implementatienoot CD005: het 403
+- Wijzigingen aan 403/404/409 (al canoniek). *(~~Implementatienoot CD005: het 403
   `TENANT_MISMATCH`-pad in `get_current_user` gebruikt nog de oude `detail`-vorm —
-  apart opvolgpunt, buiten OP-7/CD005.)*
+  apart opvolgpunt, buiten OP-7/CD005.~~ → **opgelost in CD009**, zie Opvolging.)*
 - Nieuwe foutcodes, RLS- of rolwijzigingen (ADR-003/010 blijven leidend).
-- **429 / `RateLimitExceeded`**: valt buiten OP-7. Wijkt de vorm daarvan af, dan
-  is dat een **apart opvolgpunt**, niet hier.
+- ~~**429 / `RateLimitExceeded`**: valt buiten OP-7…~~ → **afgehecht in CD009** (was
+  al canoniek), zie Opvolging.
+
+## Opvolging (V009 — CD009)
+
+Het foutcontract is afgehecht: de twee resterende uitzonderingen zijn nu canoniek.
+- **403 `TENANT_MISMATCH`** (`get_current_user`, auth-grens — token zonder
+  geldige tenant-context; géén record-level cross-tenant, dat blijft 404 per
+  ADR-003) → canoniek `{"fout":{"code":"TENANT_MISMATCH","http_status":403,…}}`
+  via `TenantMismatch` + handler (zelfde stijl als `NietGeauthenticeerd`).
+- **429** was **al canoniek** (`rate_limit_exceeded_handler`,
+  `{"fout":{"code":"RATE_LIMIT_OVERSCHREDEN","http_status":429,…}}`); bevestigd,
+  ongewijzigd. Geen `Retry-After`-header aanwezig (niet toegevoegd — rate-limit-
+  config valt buiten scope).
+
+**Eindstaat foutcontract**: **401/403/404/409/429** canoniek `{"fout":{…}}`;
+**422** bewust native FastAPI `{"detail":[…]}` (B2/B3).

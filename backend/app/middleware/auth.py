@@ -54,6 +54,30 @@ async def niet_geauthenticeerd_handler(request: Request, exc: NietGeauthenticeer
     )
 
 
+class TenantMismatch(HTTPException):
+    """403 — geldige sessie, maar het token bevat geen geldige tenant-context
+    (auth-grens; ADR-014 / CD009). Géén record-level cross-tenant-zaak (die is 404
+    per ADR-003). Subclass van HTTPException → echte 403 ook zonder handler."""
+
+    def __init__(self, bericht: str = "Tenant niet gevonden in token."):
+        self.bericht = bericht
+        super().__init__(status_code=403, detail=bericht)
+
+
+async def tenant_mismatch_handler(request: Request, exc: TenantMismatch) -> JSONResponse:
+    """HTTP 403 — canoniek foutformaat (ADR-014). Code: TENANT_MISMATCH."""
+    return JSONResponse(
+        status_code=403,
+        content={
+            "fout": {
+                "code": "TENANT_MISMATCH",
+                "http_status": 403,
+                "bericht": getattr(exc, "bericht", "Tenant niet gevonden in token."),
+            }
+        },
+    )
+
+
 async def _increment_fail_counter(ip_hash: str) -> None:
     """Verhoog auth-fail counter in Redis. Fire-and-forget."""
     try:
@@ -106,13 +130,7 @@ async def get_current_user(request: Request) -> AuthenticatedUser:
 
     tenant_id = payload.get("tenant_id")
     if not tenant_id:
-        raise HTTPException(
-            status_code=403,
-            detail={
-                "code": "TENANT_MISMATCH",
-                "bericht": "Tenant niet gevonden in token.",
-            },
-        )
+        raise TenantMismatch("Tenant niet gevonden in token.")
 
     roles = await _load_roles(payload)
 

@@ -428,3 +428,18 @@ def test_logout_redirect_uri_is_serverconfig_geen_userinput(client, fake_redis):
     assert "kwaad.example" not in url
     q = parse_qs(urlparse(url).query)
     assert q["post_logout_redirect_uri"][0] == f"{settings.platform_origin}/login"
+
+
+# ── 403 TENANT_MISMATCH — canoniek (CD009 / ADR-014) ─────────────────────────
+
+
+def test_me_token_zonder_tenant_403_canoniek(client, monkeypatch):
+    # Geldig token maar zonder tenant_id-claim → auth-grens 403, canoniek envelope.
+    monkeypatch.setattr("app.middleware.auth.decode_token", lambda t: {"sub": "u"})
+    client.cookies.set(settings.cookie_name, "acc-token")
+    me = client.get("/api/v1/auth/me")
+    assert me.status_code == 403
+    body = me.json()
+    assert body["fout"]["code"] == "TENANT_MISMATCH"
+    assert body["fout"]["http_status"] == 403
+    assert "detail" not in body  # geen oude detail-vorm meer
