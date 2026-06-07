@@ -16,6 +16,7 @@ import logging
 from dataclasses import dataclass, field
 
 from fastapi import Request, HTTPException
+from starlette.responses import JSONResponse
 
 from app.core.config import settings
 from app.core.keycloak import decode_token
@@ -23,6 +24,34 @@ from app.utils.crypto import hash_waarde
 
 _auth_log = logging.getLogger("cd.auth")
 AUTH_FAIL_TTL = 900  # 15 min
+
+
+class NietGeauthenticeerd(HTTPException):
+    """401 — geen geldige sessie (ADR-014 / OP-7).
+
+    De echte app levert het canonieke `{"fout":{...}}`-envelope via de
+    geregistreerde `niet_geauthenticeerd_handler` (main.py). Subclass van
+    HTTPException, zodat een app zónder die handler (bv. een minimale test-app)
+    nog steeds gewoon HTTP 401 teruggeeft i.p.v. 500.
+    """
+
+    def __init__(self, bericht: str = "Niet geauthenticeerd."):
+        self.bericht = bericht
+        super().__init__(status_code=401, detail=bericht)
+
+
+async def niet_geauthenticeerd_handler(request: Request, exc: NietGeauthenticeerd) -> JSONResponse:
+    """HTTP 401 — canoniek foutformaat (ADR-014 B1). Code: NIET_GEAUTHENTICEERD."""
+    return JSONResponse(
+        status_code=401,
+        content={
+            "fout": {
+                "code": "NIET_GEAUTHENTICEERD",
+                "http_status": 401,
+                "bericht": getattr(exc, "bericht", "Niet geauthenticeerd."),
+            }
+        },
+    )
 
 
 async def _increment_fail_counter(ip_hash: str) -> None:
@@ -61,10 +90,7 @@ async def get_current_user(request: Request) -> AuthenticatedUser:
     """Dependency: extract and verify user from httpOnly session cookie."""
     token = request.cookies.get(settings.cookie_name)
     if not token:
-        raise HTTPException(
-            status_code=401,
-            detail={"code": "TOKEN_ONGELDIG", "bericht": "Geen sessie gevonden."},
-        )
+        raise NietGeauthenticeerd("Geen sessie gevonden.")
 
     try:
         payload = decode_token(token)
@@ -76,10 +102,7 @@ async def get_current_user(request: Request) -> AuthenticatedUser:
             )
         except RuntimeError:
             _auth_log.warning("AUTH_FAIL: token validatie mislukt")
-        raise HTTPException(
-            status_code=401,
-            detail={"code": "TOKEN_ONGELDIG", "bericht": "Sessie ongeldig."},
-        )
+        raise NietGeauthenticeerd("Sessie ongeldig.")
 
     tenant_id = payload.get("tenant_id")
     if not tenant_id:
@@ -119,10 +142,7 @@ async def get_current_platform_user(request: Request) -> "PlatformUser":
     """
     token = request.cookies.get(settings.cookie_name)
     if not token:
-        raise HTTPException(
-            status_code=401,
-            detail={"code": "TOKEN_ONGELDIG", "bericht": "Geen sessie gevonden."},
-        )
+        raise NietGeauthenticeerd("Geen sessie gevonden.")
 
     try:
         payload = decode_token(token)
@@ -134,10 +154,7 @@ async def get_current_platform_user(request: Request) -> "PlatformUser":
             )
         except RuntimeError:
             _auth_log.warning("AUTH_FAIL: token validatie mislukt (platform)")
-        raise HTTPException(
-            status_code=401,
-            detail={"code": "TOKEN_ONGELDIG", "bericht": "Sessie ongeldig."},
-        )
+        raise NietGeauthenticeerd("Sessie ongeldig.")
 
     from app.core.platform_rbac import extract_platform_rollen
 

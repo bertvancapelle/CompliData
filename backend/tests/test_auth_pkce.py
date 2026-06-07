@@ -211,7 +211,12 @@ def test_callback_succes_dan_me_geeft_gebruiker(client, fake_redis, monkeypatch)
 def test_me_zonder_cookie_401(client):
     me = client.get("/api/v1/auth/me")
     assert me.status_code == 401
-    assert me.json()["detail"]["code"] == "TOKEN_ONGELDIG"
+    # ADR-014 B1: 401 in het canonieke fout-envelope (geen detail meer).
+    body = me.json()
+    assert body["fout"]["code"] == "NIET_GEAUTHENTICEERD"
+    assert body["fout"]["http_status"] == 401
+    assert body["fout"]["bericht"]
+    assert "detail" not in body
 
 
 # ── /callback — foutpaden ────────────────────────────────────────────────────

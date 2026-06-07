@@ -12,7 +12,12 @@ from app.core.rbac import (
     extract_rollen,
     heeft_permissie,
 )
-from app.middleware.auth import AuthenticatedUser, _load_roles
+from app.middleware.auth import (
+    AuthenticatedUser,
+    NietGeauthenticeerd,
+    _load_roles,
+    niet_geauthenticeerd_handler,
+)
 from app.middleware.authz import (
     OnvoldoendeRechten,
     onvoldoende_rechten_handler,
@@ -122,6 +127,7 @@ def test_load_roles_async_mapt_claims():
 def _maak_test_app():
     app = FastAPI()
     app.add_exception_handler(OnvoldoendeRechten, onvoldoende_rechten_handler)
+    app.add_exception_handler(NietGeauthenticeerd, niet_geauthenticeerd_handler)
 
     @app.get("/verwijder-applicatie")
     async def _verwijder(
@@ -142,7 +148,10 @@ def test_guard_401_zonder_sessie():
     c = TestClient(_maak_test_app())
     r = c.get("/verwijder-applicatie")
     assert r.status_code == 401
-    assert r.json()["detail"]["code"] == "TOKEN_ONGELDIG"
+    # Canoniek fout-envelope (ADR-014 B1): geen detail meer.
+    assert r.json()["fout"]["code"] == "NIET_GEAUTHENTICEERD"
+    assert r.json()["fout"]["http_status"] == 401
+    assert "detail" not in r.json()
 
 
 def test_guard_403_onvoldoende_rechten(monkeypatch):

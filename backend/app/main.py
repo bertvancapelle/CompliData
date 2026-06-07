@@ -14,6 +14,7 @@ from slowapi.errors import RateLimitExceeded
 
 from app.api.v1 import auth, health, platform
 from app.core.config import validate_startup_config
+from app.middleware.auth import NietGeauthenticeerd, niet_geauthenticeerd_handler
 from app.middleware.authz import OnvoldoendeRechten, onvoldoende_rechten_handler
 from app.middleware.origin_check import OriginCheckMiddleware
 from app.middleware.rate_limit import limiter, rate_limit_exceeded_handler
@@ -74,6 +75,9 @@ app.add_middleware(OriginCheckMiddleware)
 # Rate limiting
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+
+# Authenticatie — 401 in canoniek foutformaat (ADR-014 / OP-7)
+app.add_exception_handler(NietGeauthenticeerd, niet_geauthenticeerd_handler)
 
 # Autorisatie (RBAC, ADR-010) — 403 bij onvoldoende rechten
 app.add_exception_handler(OnvoldoendeRechten, onvoldoende_rechten_handler)

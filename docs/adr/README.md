@@ -21,6 +21,8 @@ beslissingen krijgen status `Vervallen` met verwijzing naar de opvolger).
 | ADR-009 | BWB-ontvlechtingsmodule — scope en datamodel | Aanvaard |
 | ADR-011 | Deploy- en migratiestrategie: aparte init-container | Aanvaard |
 | ADR-012 | Tweelaags rollenmodel: platform- en tenant-rollen met strikte scheiding | Aanvaard |
+| ADR-013 | Lifecycle-herberekening (Model A): afgeleide blokkades + deterministische status | Aanvaard |
+| ADR-014 | Canoniek foutformaat: 401 gelijktrekken, 422 bewust native | Aanvaard |
 
 ADR-002 t/m ADR-008 en ADR-010 zijn gereserveerd (zie `CLAUDE.md` →
 ADR-referentie) en worden geschreven wanneer de betreffende beslissing speelt.

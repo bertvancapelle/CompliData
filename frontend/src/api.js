@@ -10,8 +10,13 @@ async function request(path, options = {}) {
     ...options,
   })
   if (res.status === 401) {
-    // sessie verlopen — laat de caller dit afhandelen
-    throw new Error('NIET_GEAUTHENTICEERD')
+    // Sessie verlopen — keyt op de HTTP-STATUS, niet op de body/foutcode
+    // (ADR-014: 401 kan NIET_GEAUTHENTICEERD óf ID_TOKEN_ONGELDIG zijn → identiek).
+    const body = await res.json().catch(() => ({}))
+    const err = new Error('NIET_GEAUTHENTICEERD')
+    err.status = 401
+    err.code = body?.fout?.code || 'NIET_GEAUTHENTICEERD'
+    throw err
   }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
