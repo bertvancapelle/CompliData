@@ -12,7 +12,7 @@ import shutil
 import subprocess
 import sys
 import zipfile
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -25,6 +25,23 @@ SESSIESTART_MD = REPO_ROOT / "SESSIESTART.md"
 CHANGELOG_DIR = REPO_ROOT / "docs" / "changelog"
 STAGE_DIR = REPO_ROOT / "stage"
 OUTPUT_DIR = REPO_ROOT / "docs" / "_output"
+
+# ── Backup (lokale dump + iCloud-kopie) ──────────────────────────────────────
+# De DB-backup loopt structureel mee als laatste afsluitstap, zodat de
+# iCloud-kopie nooit een vergeetbare handmatige stap is (CD013-A).
+PG_CONTAINER = "cd-postgres"
+BACKUPS_DIR = Path.home() / "complidata" / "backups"
+# Configureerbaar pad; default = lokaal gemounte iCloud-Drive-map.
+# (~/Library/Mobile Documents/com~apple~CloudDocs/CompliData-backups/)
+ICLOUD_BACKUP_DIR = Path(
+    os.environ.get(
+        "ICLOUD_BACKUP_DIR",
+        str(
+            Path.home()
+            / "Library" / "Mobile Documents" / "com~apple~CloudDocs" / "CompliData-backups"
+        ),
+    )
+)
 
 # ── Verplichte integriteitscheck ─────────────────────────────────────────────
 REQUIRED_DIRS = [
@@ -181,6 +198,66 @@ def roep_generator_aan(script_naam, extra_args=None):
         sys.exit(result.returncode)
     print(f"✅ {script_naam} succesvol")
 
+# ── Backup-stap ────────────────────────────────────────────────────────────────
+
+def maak_db_dump():
+    """Lokale PostgreSQL-dump via de cd-postgres container. Faalt ZACHT (warn).
+
+    Retourneert het pad naar de `.sql` of None als de dump niet gemaakt kon worden
+    (docker/container afwezig) — de build breekt hier nooit op.
+    """
+    BACKUPS_DIR.mkdir(parents=True, exist_ok=True)
+    doel = BACKUPS_DIR / f"complidata_{datetime.now().strftime('%Y%m%d_%H%M')}.sql"
+    try:
+        with open(doel, "wb") as fh:
+            r = subprocess.run(
+                ["docker", "exec", PG_CONTAINER, "pg_dump", "-U", "cd_admin", "complidata"],
+                stdout=fh, stderr=subprocess.PIPE,
+            )
+        if r.returncode != 0:
+            doel.unlink(missing_ok=True)
+            print(f"⚠️  DB-dump overgeslagen (pg_dump exit {r.returncode}).")
+            return None
+        print(f"✅ Lokale DB-dump: {doel}")
+        return doel
+    except FileNotFoundError:
+        doel.unlink(missing_ok=True)
+        print("⚠️  DB-dump overgeslagen (docker niet beschikbaar).")
+        return None
+
+
+def kopieer_naar_icloud(dump_path, icloud_dir=ICLOUD_BACKUP_DIR):
+    """Kopieer UITSLUITEND de `.sql`-dump naar de iCloud-map.
+
+    Secrets (`~/complidata/secrets/`, `.env`) worden NOOIT meegenomen — er wordt
+    één specifiek `.sql`-bestand gekopieerd, geen wildcard/map. Faalt ZACHT: een
+    ontbrekende/niet-gemounte iCloud-map waarschuwt en breekt de build niet (de
+    lokale dump is dan al veilig). Er wordt geen niet-bestaand iCloud-pad geforceerd.
+    """
+    if dump_path is None:
+        print("⚠️  iCloud-kopie overgeslagen (geen lokale dump).")
+        return False
+    dump_path = Path(dump_path)
+    if not dump_path.is_file() or dump_path.suffix != ".sql":
+        print("⚠️  iCloud-kopie overgeslagen (geen geldige .sql-dump).")
+        return False
+    icloud_dir = Path(icloud_dir)
+    if not icloud_dir.parent.exists():
+        print(f"⚠️  iCloud-map niet gemount ({icloud_dir.parent}); lokale dump is veilig, build gaat door.")
+        return False
+    icloud_dir.mkdir(parents=True, exist_ok=True)
+    doel = icloud_dir / dump_path.name
+    shutil.copy2(dump_path, doel)  # alleen dit ene .sql-bestand — nooit secrets
+    print(f"✅ iCloud-kopie: {doel}")
+    return True
+
+
+def backup_stap():
+    """Laatste afsluitstap: lokale DB-dump, dáárna de iCloud-kopie."""
+    dump = maak_db_dump()
+    kopieer_naar_icloud(dump)
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
@@ -214,6 +291,9 @@ def main():
 
     # 8. Sessie-start ZIP assembleren
     roep_generator_aan("gen_sessiestart.py", [build_label])
+
+    # 9. Backup: lokale DB-dump + iCloud-kopie (structureel, secrets uitgesloten)
+    backup_stap()
 
     print(f"\n✅ Build {build_label} voltooid.\n")
 

@@ -175,7 +175,9 @@ docker compose -f docker-compose.yml up -d
 # Backend (development)
 cd backend && python3 -m uvicorn app.main:app --port 8000 --reload
 
-# Backend (test mode — auth stub, auto-seed)
+# Backend (test mode) — COMPLIDATA_TEST_MODE versoepelt ALLEEN de origin-check
+# (POST zonder Origin toegestaan) en de rate-limit. Het is GEEN auth-stub en seedt
+# NIETS — inloggen vereist de volledige stack (Keycloak). [gecorrigeerd V004]
 cd backend && COMPLIDATA_TEST_MODE=true python3 -m uvicorn app.main:app --port 8000
 
 # Frontend
@@ -410,11 +412,17 @@ Pas dan: klaar.
 3. Skill-review — relevante complidata-skills bijwerken
 4. NEXT_SESSION.md invullen — top-5 prioriteiten + openstaande punten
 5. gen_build.py — python3 docs/_generators/gen_build.py "{test_status}" "{kritieken}"
-   → verhoogt bouwnummer, genereert alle MD-bestanden, maakt ZIP
+   → verhoogt bouwnummer, genereert alle MD-bestanden, maakt ZIP, en draait als
+     LAATSTE stap automatisch de backup: lokale PostgreSQL-dump
+     (~/complidata/backups/complidata_*.sql) + iCloud-kopie van UITSLUITEND die
+     .sql naar ICLOUD_BACKUP_DIR (default: ~/Library/Mobile Documents/
+     com~apple~CloudDocs/CompliData-backups/). Secrets worden NOOIT gekopieerd;
+     ontbrekende/niet-gemounte iCloud-map → waarschuwing, build gaat door. [CD013-A]
 6. git commit + git push
-7. PostgreSQL backup:
+7. (Backup loopt nu automatisch in stap 5 — geen losse handmatige pg_dump/iCloud-
+   stap meer. Handmatig draaien kan nog via:
    docker exec cd-postgres pg_dump -U cd_admin complidata \
-     > ~/complidata/backups/complidata_$(date +%Y%m%d_%H%M).sql
+     > ~/complidata/backups/complidata_$(date +%Y%m%d_%H%M).sql )
 8. claude.ai memory bijwerken — bouwnummer, teststatus, top-5 prioriteiten
 
 ### Sessie starten
@@ -436,11 +444,11 @@ Pas dan: klaar.
 
 | Veld | Waarde |
 |------|--------|
-| Build | V003 |
+| Build | V004 |
 | Datum | June 2026 |
-| Commit | 956eb3e |
-| Tests | 323 backend + 38 frontend groen · 4 assen + 2 poorten |
-| TST-rapport | TST-V003-Validatierapport.md |
+| Commit | 237b036 |
+| Tests | 362 backend + 83 frontend groen · 4 assen + 2 poorten |
+| TST-rapport | TST-V004-Validatierapport.md |
 | Kritieke bevindingen | 0 |
 
 <!-- BOUWSTATUS_END -->

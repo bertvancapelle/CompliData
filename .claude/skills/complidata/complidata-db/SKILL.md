@@ -2,7 +2,7 @@
 name: complidata-db
 description: Database-patronen voor CompliData (PostgreSQL 16, RLS, Alembic). Beschrijft de werkelijke V001-staat.
 stack: PostgreSQL 16, SQLAlchemy asyncio, Alembic
-bijgewerkt: V003
+bijgewerkt: V004
 ---
 
 # CompliData Database Skill
@@ -164,3 +164,16 @@ Opaque base64-cursor van `created_at|id`; ORDER BY `(created_at, id)`,
 `WHERE (created_at, id) > (cursor)` via `sqlalchemy.tuple_`, `limit+1`-detectie.
 Misvormde cursor → `ValueError` → route geeft **400 `ONGELDIGE_CURSOR`**.
 Helper: `modules/bwb_ontvlechting/backend/services/pagination.py`.
+
+## V004-patronen (CD003–CD012, geverifieerd)
+
+- **Lifecycle-reconciliatie (ADR-016)**: blokkade-`opgelost` volledig afgeleid;
+  invariant B2 klopt nu **per constructie** op beide schrijfpaden (handmatig begrensd
+  tot `open ↔ in_behandeling`, `opgelost` enkel auto). `checklist_compleet` blijft
+  transient (ADR-013 B4). Geen migratie/enumwijziging. [CD011]
+- **ChecklistVraag = platform-referentiedata** (89 vragen, géén `tenant_id`, géén RLS;
+  seed via platform-init). Koppeling vanuit Checklistscore op `vraag_code` (string),
+  niet op id. [CD004]
+- **Data-pass-discipline**: een ADR-die-bestaande-data-raakt (ADR-016) eerst tegen de
+  DB tellen (read-only, als cd_admin); bij gevulde DB een herbereken-pass voorstellen,
+  niet zelf draaien vóór akkoord. [CD011]

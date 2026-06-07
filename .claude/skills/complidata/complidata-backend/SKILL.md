@@ -2,7 +2,7 @@
 name: complidata-backend
 description: Backend-patronen voor CompliData (FastAPI + SQLAlchemy + Alembic). Beschrijft de werkelijke V001-staat.
 stack: Python 3.12, FastAPI, Pydantic v2, SQLAlchemy asyncio, Alembic, PostgreSQL 16
-bijgewerkt: V003
+bijgewerkt: V004
 ---
 
 # CompliData Backend Skill
@@ -192,3 +192,24 @@ helper `enum_opties()` die de waarden uit de single-source-enums teruggeeft
 Blokkade is systeem-afgeleid: **alleen** `GET` (lijst + id) en `PATCH` — geen
 `POST`/`DELETE` voor gebruikers (auto-creatie via Checklistscore + DB-cascade);
 ongedefinieerde methodes → 405.
+
+## V004-patronen (CD003–CD012, geverifieerd)
+
+- **Per-entiteit opties-endpoints** generaliseren: DB-vrije `enum_opties()`, `/opties`
+  **vóór** `/{id}`, alleen voor entiteiten **met** enum-velden (Gebruikersgroep =
+  vrije tekst → géén opties). [CD003/CD004]
+- **Platform-breed read-only referentie-endpoint zonder tenant-RLS**
+  (`GET /checklistvragen`): expliciete code-comment waaróm geen scoping +
+  **cross-tenant-test** die de identieke set bevestigt; **één respons** voor vaste
+  kleine seeds (geen keyset). [CD004]
+- **Canoniek foutcontract (eindstaat, ADR-014)**: 401/403/404/409/429 → `{"fout":{…}}`;
+  422 **bewust native** FastAPI `{"detail":[…]}`. Nieuwe domein-/auth-fouten via het
+  envelope; nieuwe validatie blijft 422. Auth-excepties (`NietGeauthenticeerd`,
+  `TenantMismatch`) als **`HTTPException`-subclass** → offline test-apps zonder handler
+  geven 401/403 i.p.v. 500; de echte app levert het envelope via de geregistreerde
+  handler. 403 `TENANT_MISMATCH` = auth-grens (token zonder tenant-claim), géén
+  ADR-003-404. [CD005/CD009]
+- **Systeem-afgeleide status volledig afgeleid (ADR-016)**: de auto-resolutie
+  (`checklistscore_service._synchroniseer_blokkade`) buiten de handmatige PATCH-route
+  houden; guard op het **handmatige** pad (`blokkade_service.werk_bij`: handmatig
+  `opgelost` → 409) zonder het auto-pad te raken. [CD011]

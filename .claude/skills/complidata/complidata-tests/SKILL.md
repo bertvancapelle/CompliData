@@ -2,7 +2,7 @@
 name: complidata-tests
 description: Test-patronen voor CompliData (pytest unit-tests + TST-validatiecyclus). Beschrijft de werkelijke V001-staat.
 stack: pytest, asyncio, unittest.mock, SQLAlchemy models, vitest, @vue/test-utils
-bijgewerkt: V003
+bijgewerkt: V004
 ---
 
 # CompliData Tests Skill
@@ -140,3 +140,16 @@ structureel** geassert i.p.v. live: de `ON DELETE CASCADE` op kind-FK's (assert 
 `fk.ondelete=='CASCADE'`) en de lifecycle-keten (pure `bepaal_lifecycle` +
 spy op `herbereken_lifecycle`-aanroep). De live keten is in V003 wél éénmalig
 empirisch geverifieerd tegen de draaiende stack (zie `docs/LOKAAL-TESTEN.md`).
+
+## V004-patronen (CD003–CD012, geverifieerd)
+
+- **Empirische verificatie tegen de draaiende stack** voor risicovolle aannames die de
+  offline-grens niet dekt: `refresh_token` aanwezig? (handmatige PKCE-flow), logout-
+  confirm-scherm vs. 302 mét `id_token_hint`, end-session-config. Aanvullend op de
+  offline-tests, niet vervangend. [CD007/CD008/CD010]
+- **Regressie-borging als vast onderdeel**: 422-native bij foutformaat-werk; auto-pad
+  ongemoeid bij guard-werk; cross-tenant-identiek voor platform-data; bestaande
+  auth-tests groen na auth-wijzigingen. [CD009/CD011/CD004]
+- **Frontend single-flight/async-tests**: `vi.stubGlobal('fetch', …)` met per-URL-state
+  (401-dan-200) om refresh-on-401 + retry te bewijzen; `attachTo: document.body` +
+  macrotask-defer voor focus-asserts; `:closable="false"` Dialog focust het eerste veld. [CD007/CD003]

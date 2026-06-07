@@ -2,7 +2,7 @@
 name: complidata-security
 description: Security-patronen voor CompliData (Zero Trust, httpOnly cookies, NCSC, RLS). Beschrijft de werkelijke V001-staat.
 stack: Keycloak 24.x, FastAPI middleware, Redis, PostgreSQL RLS
-bijgewerkt: V003
+bijgewerkt: V004
 ---
 
 # CompliData Security Skill
@@ -38,21 +38,19 @@ Permissions-Policy: geolocation=(), microphone=(), camera=()
 ## Auth endpoint-patroon
 
 ```python
-# /api/v1/auth/me — 401 TOKEN_ONGELDIG zonder geldige sessie
+# /api/v1/auth/me — 401 NIET_GEAUTHENTICEERD (canoniek envelope) zonder sessie (CD005)
 @router.get("/auth/me")
 async def me(request: Request, user: AuthenticatedUser = Depends(get_current_user)):
     return asdict(user)
 
-# /api/v1/auth/logout — wist de cookie
-@router.post("/auth/logout")
-async def logout(response: Response):
-    response.delete_cookie(settings.cookie_name, domain=settings.cookie_domain,
-        samesite=settings.cookie_samesite, secure=settings.cookie_secure, httponly=True)
-    return {"status": "uitgelogd"}
+# /api/v1/auth/logout — RP-initiated (CD008/CD010): lokaal intrekken (cd_session +
+# cd_refresh + Redis-refresh-handle) + Keycloak end-session-URL teruggeven met
+# id_token_hint (naadloze redirect). Zie de V004-sectie hieronder.
 ```
 
-`get_current_user` zonder cookie → 401; bij decode-fout → 401 + Redis
-auth-fail-counter (IP gepseudonimiseerd).
+`get_current_user` zonder cookie → 401 `NIET_GEAUTHENTICEERD`; bij decode-fout → 401
++ Redis auth-fail-counter (IP gepseudonimiseerd). Token zonder `tenant_id` → 403
+`TENANT_MISMATCH` (auth-grens). Alle drie canoniek `{"fout":{…}}` (ADR-014).
 
 ## DB-rollen — driedeling (ADR-011/012)
 
@@ -122,7 +120,7 @@ Authorization Code + PKCE, **volledig server-side** (`api/v1/auth.py`):
 - **VALKUIL — audience-mapper verplicht.** Zonder `oidc-audience-mapper` zet
   Keycloak `aud: null` in het access-token (alleen `azp`), waardoor
   `decode_token` (`audience=keycloak_client_id`) faalt met
-  `InvalidAudienceError` → `/auth/me` geeft 401 `TOKEN_ONGELDIG`. De realm MOET
+  `InvalidAudienceError` → `/auth/me` geeft 401 `NIET_GEAUTHENTICEERD`. De realm MOET
   een audience-mapper hebben die `complidata-api` aan het access-token toevoegt.
 
 ## RBAC-handhaving (fail-secure)
@@ -132,10 +130,10 @@ Authorization Code + PKCE, **volledig server-side** (`api/v1/auth.py`):
   `heeft_platform_permissie`, nooit ad-hoc rolvergelijking.
 - **Fail-secure**: lege, onbekende of verkeerd-gecapitaliseerde rol ⇒ geen
   rechten. Onbekende entiteit ⇒ False.
-- **401 vs 403**: geen/ongeldige sessie ⇒ 401 (`get_current_user(_platform)`,
-  `{"detail":{"code":"TOKEN_ONGELDIG"}}`); geldige sessie, onvoldoende rechten
-  ⇒ 403 `ONVOLDOENDE_RECHTEN` in canoniek `{"fout":{...}}` (`OnvoldoendeRechten`
-  + handler).
+- **401 vs 403**: geen/ongeldige sessie ⇒ 401 `NIET_GEAUTHENTICEERD` in canoniek
+  `{"fout":{...}}` (`NietGeauthenticeerd` + handler, CD005); geldige sessie,
+  onvoldoende rechten ⇒ 403 `ONVOLDOENDE_RECHTEN`; token zonder tenant ⇒ 403
+  `TENANT_MISMATCH` (CD009). Alle canoniek (ADR-014).
 
 ## Dubbele tenant-bescherming
 
@@ -161,7 +159,7 @@ Auth-fail-counters in Redis gebruiken een SHA-256 hash van het IP-adres
 | Login/callback PKCE-flow | Geïmplementeerd — server-side PKCE + `cd_session` (ADR-002) |
 | Audit trail / hash-chaining | Niet geïmplementeerd — ADR-006 open |
 | MFA-config Keycloak | Realm aanwezig; MFA-policy nog in te stellen |
-| Refresh-token / RP-initiated logout | Open — zie `docs/OPVOLGPUNTEN.md` (OP-3, OP-4) |
+| Refresh-token / RP-initiated logout | Geïmplementeerd — ADR-015 (refresh + Redis) + RP-logout met `id_token_hint` (CD007/CD008/CD010). Voorwaarde: `revoke-refresh-token` aan (OP-14) |
 
 ## OP-6 — record-resolutie binnen tenant (AFGEDEKT, fase 1)
 
@@ -191,3 +189,23 @@ over HTTP. **Productie houdt `secure=True`** — de dev-waarde nooit meenemen.
 rate-limit-sleutel (`rate_limit.py`). Het stubt **geen** auth en seedt niets. Inloggen
 vereist altijd Keycloak (volledige stack). (De CLAUDE.md-comment "auth stub/auto-seed"
 is onjuist — openstaand vervolgpunt.)
+
+## V004-patronen (CD003–CD012, geverifieerd)
+
+- **Keycloak-gedelegeerde refresh + Redis (ADR-015)**: het `refresh_token` (+ `id_token`)
+  als JSON in Redis `auth_refresh:{sessie_id}`, gekoppeld via een opake httpOnly
+  `cd_refresh`-cookie (nooit client-leesbaar). `POST /auth/refresh`:
+  `grant_type=refresh_token` server-side (`client_secret` nooit naar client) → nieuw
+  `cd_session` + **geroteerd** token; faal → 401 canoniek + handle opruimen. Bij
+  refresh het `id_token` **meeverversen** (anders verouderde logout-hint). [CD007/CD010]
+- **RP-initiated logout (OP-4)**: lokaal intrekken (`cd_session` + `cd_refresh` +
+  Redis-handle, idempotent) **én** Keycloak end-session; `id_token_hint` (uit het
+  handle) → naadloze redirect naar `post_logout_redirect_uri` (server-config, geen
+  open redirect). Zonder hint toont Keycloak een bevestigingsscherm (empirisch
+  bevestigd). [CD008/CD010]
+- **401 canoniek** (`NIET_GEAUTHENTICEERD`) + **403 `TENANT_MISMATCH`** (auth-grens,
+  geen ADR-003-404) via `HTTPException`-subclass-excepties + handlers. 429 al canoniek
+  (`RATE_LIMIT_OVERSCHREDEN`). 422 bewust native (ADR-014). [CD005/CD009]
+- **VOORWAARDE-noot**: `revoke-refresh-token` moet **aan** in de realm, anders is de
+  reuse-detectie uit ADR-015 B3 niet actief (oude refresh-tokens blijven geldig tot
+  SSO-einde). Opvolgpunt OP-3-realm-hardening / OP-14. [CD007]

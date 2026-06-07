@@ -1,4 +1,4 @@
-# SESSIE_BRIEFING.md — CompliData V003
+# SESSIE_BRIEFING.md — CompliData V004
 
 **Gegenereerd**: 2026-06-07
 
@@ -10,11 +10,11 @@
 
 | Veld | Waarde |
 |------|--------|
-| Build | V002 |
+| Build | V003 |
 | Datum | June 2026 |
-| Commit | f6b2fc5 |
-| Tests | 45 passed · 4 TST-assen groen |
-| TST-rapport | TST-V002-Validatierapport.md |
+| Commit | 956eb3e |
+| Tests | 323 backend + 38 frontend groen · 4 assen + 2 poorten |
+| TST-rapport | TST-V003-Validatierapport.md |
 | Kritieke bevindingen | 0 |
 
 ---
@@ -22,103 +22,101 @@
 ## Recente commits
 
 ```
-956eb3e chore(dev): lokale-test-stack — COOKIE_SECURE dev-only + LOKAAL-TESTEN.md
-b9bd71e feat(bwb): Applicatie-module-view + opties-endpoint (lijst/detail/formulier/acties)
-61482fc feat(frontend): authenticated app-shell (topbar + sidebar) + dashboard-landing
-4230c4c feat(frontend): login-view (launch-pagina + Keycloak-redirect)
-5afdd01 feat(bwb): Checklistscore + Blokkade (Model A) + ADR-013 lifecycle-herberekening
+237b036 perf(frontend): route-level lazy-loading; bundle <500 kB (OP-19)
+635fa42 feat(bwb): blokkade-opgelost volledig afgeleid (ADR-016, reconciliatie ADR-013 B1)
+8b258ba feat(auth): id_token_hint voor naadloze logout (afronding OP-4)
+267dac5 fix(auth): 403 TENANT_MISMATCH canoniek; foutcontract afgehecht (CD009 / ADR-014)
+6f25b5f feat(auth): RP-initiated logout via Keycloak end-session (OP-4)
 ```
 
 ---
 
 ## Prioriteiten volgende sessie
 
-# NEXT_SESSION.md — CompliData V003
+# NEXT_SESSION.md — CompliData V004
 
 **Gegenereerd**: 2026-06-07
-**Vorige build**: V003
-**Laatste commit (vóór afsluiting)**: 956eb3e
+**Vorige build**: V004
+**Laatste commit (vóór afsluiting)**: 237b036 (gen_build bumpt hierna)
 
 ---
 
-## Stand van zaken (V003)
+## Stand van zaken (V004)
 
-Volledige verticale slice werkt end-to-end (empirisch geverifieerd op de draaiende
-stack):
+Sessie CD003–CD012 bovenop de V003-slice:
 
-- **Backend module-CRUD** voor alle 6 BWB-entiteiten (Applicatie, Datatype,
-  Gebruikersgroep, Koppeling, Checklistscore, Blokkade) onder `vereist_permissie`,
-  tenant-scoped (RLS + expliciete filter), cursor-paginering, domeinexceptie+handler.
-- **ADR-013 lifecycle** (Model A): deterministische `herbereken_lifecycle` +
-  transitie-gebaseerde auto-blokkade-invariant; `checklist_compleet` transient.
-- **Opties-endpoint** (read-only enum-metadata).
-- **Frontend**: LoginView (Keycloak-redirect), AppLayout (topbar/sidebar/Toast),
-  Applicatie lijst/detail/aanmaken/bewerken/start-inventarisatie/verwijderen met
-  rol-gating + 422/403/404/409-afhandeling. Module-loading via Optie A
-  (`@modules`/`@`-aliassen + cross-root-barrels).
-- 323 backend-tests + 38 frontend-tests groen; `docs/LOKAAL-TESTEN.md` beschrijft de
-  geverifieerde lokale doorklik-route.
-
----
-
-## Top-5 prioriteiten volgende sessie
-
-1. **Child-entiteit-views** binnen Applicatie-detail: Datatype, Gebruikersgroep,
-   Koppeling (lijst + aanmaken/bewerken/verwijderen, ouder = de applicatie). Volg
-   het Applicatie-module-view-patroon (DataTable, opties, `labels.js`, rol-gating).
-2. **Checklistscore- + Blokkade-views** (lifecycle zichtbaar maken): scoren per
-   vraag, blokkade-opvolging, lifecycle-Tag die meeschakelt (geblokkeerd/migratieklaar).
-3. **OP-7 — canoniek 401/403/422 gelijktrekken** (nu: 404/403/409 canoniek; 401 en
-   422 nog FastAPI-default). Eén `RequestValidationError`/auth-handler → `{fout:{…}}`.
-4. **OP-3 — refresh-token-subsysteem** (`/auth/refresh`, server-side opslag, rotatie;
-   sessie verloopt nu na 15 min).
-5. **OP-4 — RP-initiated logout** via Keycloak end-session.
+- **Child-entiteit-views** (Datatype/Gebruikersgroep/Koppeling) als secties in
+  `ApplicatieDetail` (Dialog-CRUD, geen child-routes). [CD003]
+- **Checklist-scoringslijst** (inline, join op `vraag_code`) + **Blokkade-sectie**
+  (read + PATCH) + **lifecycle-indicator** (backend-afgeleid). [CD004]
+- **Canoniek foutcontract afgehecht** (ADR-014): 401/403/404/409/429 → `{"fout":{…}}`,
+  422 bewust native. [CD005/CD009]
+- **`tenantId`-fix** (OP-16). [CD006]
+- **Refresh-token-subsysteem** (ADR-015, Redis + rotatie) + **single-flight
+  refresh-on-401**. [CD007]
+- **RP-initiated logout** + **`id_token_hint`** voor naadloze redirect (OP-4). [CD008/CD010]
+- **Blokkade-`opgelost` volledig afgeleid** (ADR-016, reconciliatie ADR-013 B1). [CD011]
+- **Route-level lazy-loading** — bundle 751 → 212 kB entry, >500 kB-waarschuwing weg. [CD012]
+- **357 backend-tests + 83 frontend-tests groen**; geen migraties deze sessie.
 
 ---
 
-## Openstaande beslissingen
+## Top-5 prioriteiten volgende sessie (Bert prioriteert)
 
-- Per-entiteit opties-endpoints vs. één gecombineerd metadata-endpoint voor de
-  child-entiteiten.
-- 422-canonisatie (OP-7) raakt álle endpoints → expliciet ADR-besluit vóór uitvoering.
-
----
-
-## Bekende risico's en aandachtspunten (vervolgpunten)
-
-- **CLAUDE.md onjuist**: "test mode — auth stub, auto-seed" klopt niet —
-  `COMPLIDATA_TEST_MODE` is géén auth-stub en seedt niets (alleen origin/rate-limit).
-  Rechtzetten in CLAUDE.md.
-- **`tenantSlug`-bug** (`store/auth.js`): getter leest `user.tenant_slug`, maar
-  `/auth/me` geeft `tenant_id` → altijd null. Raakt `useTheme`/per-tenant-thema's.
-- **ADR-009 enum-voetnoten ↔ code** synchroniseren (`hostingmodel` 7, `migratiepad` 6,
-  `protocol` = enum). Code is leidend.
-- **IMPLEMENTATIEPLAN.md / SESSIE_BRIEFING.md** bevatten stale V001-snapshots.
-- **Frontend bundle >500 kB** (DataTable) → route-level lazy-loading.
-- **OP-13** platform-tabel-grants / **OP-14** dev-credentials (changeme_dev) vóór productie.
+1. **Dashboard-inhoud** — voortgang/statistieken/open blokkades, tenant-breed.
+2. **Blokkadesoverzicht tenant-breed** (los van één applicatie).
+3. **Applicatieregister** filter/sortering.
+4. **Docs-schuld wegwerken** — ADR-009-enums ↔ code synchroniseren; stale
+   IMPLEMENTATIEPLAN.md / SESSIE_BRIEFING.md actualiseren. (CLAUDE.md test-mode al
+   gecorrigeerd in V004.)
+5. **Audit-trail (ADR-006)** — unblock voor de auditlog-view.
 
 ---
 
-## Technische schuld
+## Openstaande opvolgpunten (volledige onderbouwing: `CompliData_openstaande-vervolgstappen.md`)
 
-- 401 + 422 nog niet in canoniek `{fout:{…}}` (OP-7).
-- Live DB-cascade + lifecycle-keten alleen structureel getest (offline-grens);
-  eenmalig empirisch bevestigd in V003.
-- SyntaxWarning in overgenomen framework-skill (ms365-tenant-manager) — geaccepteerd,
-  buiten CompliData-scope.
+**Productie/ops (vóór productie):**
+- **OP-3-realm-hardening** — `revoke-refresh-token` aan in de realm; anders is de
+  reuse-detectie (ADR-015 B3) niet actief. Koppelen aan **OP-14** (dev-credentials).
+- **OP-13** platform-tabel-grants.
+- **ADR-016-data-pass** — bij gevulde DB controleren + evt. herbereken-pass (Laag 5).
+
+**Functioneel/architectuur:**
+- **Koppeling OR-filter** — `?applicatie_id=` (bron OF doel) + index, indien volumes
+  groeien (mogelijk mini-ADR).
+- **Laag 4-schermen** — Dashboard, register-filter, 12-categorie-tabs,
+  blokkadesoverzicht, koppelingenkaart, auditlog (geblokkeerd op audit-trail),
+  gebruikersbeheer.
+- **Laag 2/3** — tenant-onboarding, audit-trail (ADR-006), export Excel/CSV + PDF,
+  MinIO (ADR-008).
+- **Laag 5** — live DB-/RLS-test, smoke-test uitbreiden, branding-tokens,
+  `useTheme`-activatie (getter `tenantId` staat klaar).
+
+**Docs-schuld:**
+- ADR-009 enum-voetnoten ↔ code (incl. DatatypeCategorie 6 vs 5); stale
+  IMPLEMENTATIEPLAN/SESSIE_BRIEFING.
 
 ---
 
-## Geleerde patronen deze sessie (verwerkt in complidata-skills)
+## Afgehecht deze sessie (uit de open lijst)
 
-- Frontend-module-loading Optie A + cross-root-barrels (`@/primevue`,
-  `@/composables/router`) — `complidata-frontend`.
-- Domeinexceptie+handler-patroon, foutformaat-conventie, route-volgorde,
-  opties-/afwijkende-CRUD — `complidata-backend`.
-- ADR-013 lifecycle + keyset-cursor + enum-single-source — `complidata-db`.
-- OP-6 afgedekt, rol-gating-affordance, COOKIE_SECURE dev-vs-prod, test-mode≠auth-stub
-  — `complidata-security`.
-- Frontend-testopzet + offline-grens — `complidata-tests`.
+OP-7 (foutcontract: 401/403/429 canoniek, 422 bewust native), OP-16 (tenantSlug→tenantId),
+OP-3 (refresh — mits realm-hardening apart), OP-4 (logout + id_token_hint),
+ADR-013-reconciliatie (ADR-016), OP-19 (bundle), 403 `TENANT_MISMATCH`, 429-envelope.
+
+---
+
+## Geleerde patronen deze sessie (verwerkt in complidata-skills, V004-secties)
+
+- `complidata-frontend` — secties-in-detail, inline scoringslijst (`vraag_code`),
+  systeem-afgeleide view (read-only badge), gecoördineerde refetch, single-flight
+  refresh-on-401, route-lazy-loading.
+- `complidata-backend` — opties-endpoints, platform-breed referentie-endpoint,
+  canoniek foutcontract (`HTTPException`-subclass), ADR-016-guard.
+- `complidata-security` — Keycloak-refresh+Redis, RP-logout+`id_token_hint`, 401/403
+  canoniek, `revoke-refresh-token`-voorwaarde.
+- `complidata-db` — ADR-016-reconciliatie, ChecklistVraag-referentiedata, data-pass-discipline.
+- `complidata-tests` — empirische stack-verificatie, regressie-borging, single-flight-testopzet.
 
 
 ---
@@ -127,5 +125,5 @@ stack):
 
 1. Lees deze briefing volledig
 2. Lees CLAUDE.md (sessiestart-protocol)
-3. Bevestig: "Sessie-briefing geladen — CompliData V003"
+3. Bevestig: "Sessie-briefing geladen — CompliData V004"
 4. Wacht op START: [naam] van Bert

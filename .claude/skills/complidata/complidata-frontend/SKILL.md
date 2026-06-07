@@ -2,7 +2,7 @@
 name: complidata-frontend
 description: Frontend-patronen voor CompliData (Vue 3, PrimeVue Unstyled, Tailwind v4). Beschrijft de werkelijke V003-staat (login + app-shell + module-views).
 stack: Vue 3, Vite, PrimeVue Unstyled, Tailwind CSS v4, Pinia, vue-router, vitest
-bijgewerkt: V003
+bijgewerkt: V004
 ---
 
 # CompliData Frontend Skill
@@ -151,3 +151,31 @@ Vang een toch-403 netjes af (Toast). Nooit tokens in `localStorage` (httpOnly).
 | Bundle >500 kB | DataTable; route-level lazy-loading als optimalisatie. |
 | Per-tenant thema's | `useTheme` aanwezig; nog geen tenant-thema's. |
 | Login/SSO-logout | OP-3 (refresh) / OP-4 (RP-logout) open. |
+
+## V004-patronen (CD003–CD012, geverifieerd)
+
+- **Secties-in-detail i.p.v. child-routes**: child-entiteiten als sectie-componenten
+  in `ApplicatieDetail` (prop `applicatieId`), `Dialog`-formulieren, géén aparte
+  routes (subordinate aan de ouder). Code-comment waaróm dit afwijkt van Applicatie's
+  volledige-route-CRUD. [CD003/CD004]
+- **Inline scoringslijst** over een vaste referentieset: native `<table>` + `<select>`,
+  per-rij opslaan (maak/werkBij), per-rij inline feedback i.p.v. toast-per-actie,
+  client-side join op de **sleutel** — let op `vraag_code`, **niet** `vraag_id`. [CD004]
+- **Systeem-afgeleide entiteit-view**: géén Toevoegen/Verwijderen-affordance; beperkte
+  status-dropdown; auto-afgeleide status (`opgelost`) als **read-only badge** (zichtbaar,
+  niet kiesbaar); bij opslaan de read-only status NIET meesturen. [CD004/CD011]
+- **Mutatie met neveneffecten → gecoördineerde refetch**: na een score de
+  lifecycle-indicator **en** de blokkadelijst herladen; ouder coördineert via
+  `defineExpose` (tellers) + `emits('gewijzigd')`. De frontend **toont** backend-
+  afgeleide status, berekent die **nooit** zelf (ADR-013). [CD004]
+- **Bron-OF-doel-lijst via twee disjuncte calls**: concat zonder dedup (DB-CHECK
+  `bron≠doel` ⇒ disjunct), per-richting "Meer laden". [CD003]
+- **A11y in Dialog-formulieren**: `:closable="false"` → focustrap focust het eerste
+  veld; focus terug naar trigger op sluiten; `aria-labelledby`/`aria-invalid`/
+  `aria-describedby`; 422-veldfouten **in-form** op het veld, overige codes als Toast. [CD003/CD004]
+- **401 status-gebaseerd + single-flight refresh-on-401** (`api.js`): keyt op HTTP-status
+  (niet body/code); één gedeelde refresh-promise bij gelijktijdige 401's; retry-guard
+  (`_isRetry`); `/auth/refresh` via raw fetch → triggert geen eigen refresh (geen lus). [CD005/CD007]
+- **Route-level lazy-loading** (OP-19): zware route-componenten als `() => import(...)`;
+  LoginView + AppLayout eager (first paint). Houdt Optie-A/`@modules`/cross-root-barrels
+  + guard intact; alleen het laadmoment verschuift. [CD012]
