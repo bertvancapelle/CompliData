@@ -6,6 +6,16 @@
 
 ---
 
+> ⚠️ **HISTORISCH — V001-snapshot.** Dit document beschrijft de uitgangssituatie
+> bij V001 en wordt niet meegegroeid met latere builds. Het weerspiegelt **niet**
+> de actuele bouwstatus. Raadpleeg voor de live stand:
+> - **Bouwstatus**: het `BOUWSTATUS`-blok in `CLAUDE.md`
+> - **Stand & prioriteiten**: `NEXT_SESSION.md`
+> - **Backlog/opvolgpunten**: `docs/OPVOLGPUNTEN.md`
+> - **Actuele patronen**: de `complidata-*`-skills onder `.claude/skills/`
+
+---
+
 ## Platformvisie
 
 CompliData is een generiek platform voor data-inventarisatie

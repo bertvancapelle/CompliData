@@ -89,11 +89,11 @@ erDiagram
 | tenant_id | uuid | RLS-anker |
 | naam | tekst | verplicht |
 | beschrijving | tekst | optioneel |
-| hostingmodel | enum | `on_premise` / `private_cloud` / `saas` / `hybride` / `onbekend` ¹ |
-| eigenaar_organisatie | enum/tekst | `tiel` / `culemborg` / `west_betuwe` / `bwb` / `extern` ¹ |
+| hostingmodel | enum | `on_premise` / `private_cloud` / `saas` / `iaas` / `paas` / `hybride` / `onbekend` ¹ |
+| eigenaar_organisatie | tekst | vrije tekst (`String`), configureerbaar per tenant — bewust géén hardcoded enum ¹ |
 | eigenaar_naam | tekst | functioneel/technisch eigenaar (persoon) |
 | leverancier | tekst | optioneel |
-| migratiepad | enum | `lift_and_shift` / `herbouw` / `vervangen` / `uitfaseren` / `onbekend` ¹ |
+| migratiepad | enum | `lift_and_shift` / `herbouw` / `vervangen` / `uitfaseren` / `tijdelijk_gedeeld` / `onbekend` ¹ |
 | complexiteit | enum | `laag` / `midden` / `hoog` |
 | prioriteit | enum | `laag` / `midden` / `hoog` |
 | lifecycle_status | enum | zie §Lifecycle |
@@ -104,7 +104,7 @@ erDiagram
 |---|---|---|
 | id, tenant_id | uuid | |
 | applicatie_id | uuid (FK → Applicatie) | ON DELETE CASCADE binnen tenant-scope |
-| categorie | enum | `gestructureerd_db` / `documenten` / `email` / `spatial` / `binair` |
+| categorie | enum | `gestructureerd_db` / `documenten` / `email` / `spatial` / `binair` / `combinatie` ¹ |
 | omschrijving | tekst | optioneel |
 | omvang_indicatie | tekst | optioneel (bijv. "≈ 2 TB", "150k records") |
 
@@ -113,7 +113,7 @@ erDiagram
 |---|---|---|
 | id, tenant_id | uuid | |
 | applicatie_id | uuid (FK → Applicatie) | |
-| organisatie | enum/tekst | gebruikende organisatie/afdeling (`tiel` / `culemborg` / `west_betuwe` / `bwb` / …) |
+| organisatie | tekst | vrije tekst (`String`), gebruikende organisatie/afdeling — bewust géén hardcoded enum ¹ |
 | afdeling | tekst | optioneel |
 | aantal_gebruikers | int | optioneel |
 
@@ -124,7 +124,7 @@ erDiagram
 | bron_applicatie_id | uuid (FK → Applicatie) | |
 | doel_applicatie_id | uuid (FK → Applicatie) | CHECK `bron ≠ doel` |
 | richting | enum | `eenrichting` / `tweerichting` |
-| protocol | tekst/enum | bijv. API / bestandsuitwisseling / database-link ¹ |
+| protocol | enum | `api` / `bestandsuitwisseling` / `database_link` / `middleware` / `overig` ¹ |
 | impact_bij_verbreking | enum | `laag` / `midden` / `hoog` / `kritiek` |
 | omschrijving | tekst | optioneel |
 
@@ -154,8 +154,17 @@ opvolgingsstatus, los van de score zelf.
 | opgelost_op | timestamptz | nullable |
 
 **Voetnoten**
-- ¹ Voorgestelde enum-waarden — definitief vast te stellen bij de eerste
-  migratie (DB CHECK + Pydantic `Literal` + UI-dropdown synchroon houden).
+- ¹ **Vastgesteld in code — `modules/bwb_ontvlechting/backend/models/models.py` is de
+  single source** (de Alembic-migratie `0001_bwb_initial.py` is daarmee in
+  overeenstemming). De hier getoonde waardesets zijn bijgewerkt naar de werkelijke
+  code (CD013 / OP-17). DB enum-DDL, Pydantic en UI-dropdown worden synchroon
+  gehouden met `models.py`. Bewuste keuzes t.o.v. de oorspronkelijke voorstellen:
+  `hostingmodel` telt 7 waarden (`iaas`/`paas` toegevoegd); `migratiepad` 6
+  (`tijdelijk_gedeeld` toegevoegd); `datatype.categorie` 6 (`combinatie` toegevoegd,
+  CD003); `koppeling.protocol` is een **vaste enum** (geen vrije tekst);
+  `eigenaar_organisatie` en `gebruikersgroep.organisatie` zijn **vrije tekst**
+  (configureerbaar per tenant, géén hardcoded organisatie-enum — zie verboden
+  patronen in CLAUDE.md).
 - ² De **checklist-vragenlijst** (de vaste set vragen) wordt als
   referentie-/seeddata gemodelleerd; exacte vragen worden bij implementatie
   aangeleverd. Eén `Checklistscore`-rij per (applicatie × vraag).
@@ -176,6 +185,12 @@ geblokkeerd        → migratieklaar         alle blokkades status 'opgelost'
 `geblokkeerd` en `migratieklaar` zijn afgeleid van de blokkade-status; de
 service-laag herberekent de applicatie-status bij elke wijziging van een
 Checklistscore of Blokkade.
+
+> **Geamendeerd door [ADR-013](ADR-013_lifecycle-herberekening.md) (B4):**
+> `checklist_compleet` is **transient**. De enum-waarde blijft in het datamodel
+> bestaan (geen migratie/datamodelwijziging), maar de deterministische
+> herberekening kent hem **nooit als ruststatus toe** — "alle vragen gescoord" is
+> een doorgangsmoment dat onmiddellijk naar `geblokkeerd` of `migratieklaar` leidt.
 
 ## Rollen (→ ADR-010)
 

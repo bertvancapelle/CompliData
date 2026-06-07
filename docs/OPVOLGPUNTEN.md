@@ -55,29 +55,20 @@ en DB-rollen (cd_app/cd_platform/cd_admin via `POSTGRES_PASSWORD`). Vóór
 productie vervangen door secrets; testgebruikers verwijderen of scheiden van
 productie-realm.
 
-### OP-15 — CLAUDE.md "test-mode auth stub/auto-seed" is onjuist — OPEN
-
-De CLAUDE.md-comment "Backend (test mode — auth stub, auto-seed)" klopt niet:
-`COMPLIDATA_TEST_MODE` versoepelt alleen de Origin-check + rate-limit-sleutel; er is
-géén auth-stub en géén auto-seed. Inloggen vereist altijd Keycloak. CLAUDE.md
-rechtzetten (V003-bevinding, `docs/LOKAAL-TESTEN.md`).
-
 ### OP-16 — `tenantSlug`-getter leest verkeerd veld — OPEN
 
 `frontend/src/store/auth.js` `tenantSlug` leest `user.tenant_slug`, maar `/auth/me`
 geeft `tenant_id` → altijd `null`. Raakt `useTheme`/per-tenant-thema's zodra die
 gebouwd worden.
 
-### OP-17 — ADR-009 enum-voetnoten ↔ code synchroniseren — OPEN
+### OP-18 — Stale V001-docs (IMPLEMENTATIEPLAN / SESSIE_BRIEFING) — DEELS AFGEROND
 
-ADR-009 markeert enums als "voorgesteld"; de code (single source `models.py`) wijkt
-af en is leidend: `hostingmodel` = 7, `migratiepad` = 6, `protocol` = enum,
-`checklist_compleet` transient (ADR-013). ADR-009-tekst bijwerken.
-
-### OP-18 — Stale V001-docs (IMPLEMENTATIEPLAN / SESSIE_BRIEFING) — OPEN
-
-`IMPLEMENTATIEPLAN.md` en `SESSIE_BRIEFING.md` bevatten V001-snapshots die niet meer
-de werkelijke bouwstatus weerspiegelen. Actualiseren of als historisch markeren.
+`IMPLEMENTATIEPLAN.md` is voorzien van een *HISTORISCH — V001-snapshot*-banner die naar
+de live bronnen verwijst (CD013). **Resteert:** `SESSIE_BRIEFING.md` toont een stale
+bouwstatus (titel = nieuwe build, body = vorige build). Oorzaak is een volgorde-bug in
+`gen_build.py`: `gen_sessie_briefing.py` (stap 4) leest het `BOUWSTATUS`-blok uit
+CLAUDE.md vóór `update_claude_bouwstatus` (stap 7) het bijwerkt. Het bestand is
+gegenereerd — niet met de hand bewerken; de generator-fix is een aparte beslissing.
 
 ### OP-19 — Frontend bundle >500 kB — OPEN
 
@@ -88,6 +79,14 @@ lazy-loading / code-splitting als optimalisatie.
 
 ## AFGEROND (sessie 2–3)
 
+- **OP-15** — CLAUDE.md test-mode-comment (CD013): de comment was al rechtgezet in
+  V004 — `COMPLIDATA_TEST_MODE` versoepelt alleen de Origin-check + rate-limit, geen
+  auth-stub, seedt niets, inloggen vereist Keycloak. Punt afgesloten.
+- **OP-17** — ADR-009 enum-voetnoten ↔ code (CD013): ADR-009 bijgewerkt naar de
+  werkelijke code-waarden (`models.py` als single source, == migratie): hostingmodel 7,
+  migratiepad 6 (incl. `tijdelijk_gedeeld`), datatype 6 (incl. `combinatie`),
+  protocol = vaste enum, `eigenaar_organisatie`/`organisatie` = vrije tekst,
+  `checklist_compleet` transient (ADR-013 B4).
 - **OP-1** — platform_init-seed als deploystap → vervangen door de
   init-container (ADR-011): `cd-migrate` migreert (cd_admin) → `platform_init`
   → sluit af, met gating vóór de app. CLAUDE.md Commands bijgewerkt.
