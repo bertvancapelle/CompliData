@@ -52,4 +52,47 @@ export const api = {
     verwijder: (id) => request(`/applicaties/${id}`, { method: 'DELETE' }),
     opties: () => request('/applicaties/opties'),
   },
+
+  datatypes: {
+    lijst: ({ applicatieId, limit, after } = {}) =>
+      request(`/datatypes${_query({ applicatie_id: applicatieId, limit, after })}`),
+    haal: (id) => request(`/datatypes/${id}`),
+    maak: (data) => request('/datatypes', { method: 'POST', body: JSON.stringify(data) }),
+    werkBij: (id, data) =>
+      request(`/datatypes/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    verwijder: (id) => request(`/datatypes/${id}`, { method: 'DELETE' }),
+    opties: () => request('/datatypes/opties'),
+  },
+
+  gebruikersgroepen: {
+    lijst: ({ applicatieId, limit, after } = {}) =>
+      request(`/gebruikersgroepen${_query({ applicatie_id: applicatieId, limit, after })}`),
+    haal: (id) => request(`/gebruikersgroepen/${id}`),
+    maak: (data) =>
+      request('/gebruikersgroepen', { method: 'POST', body: JSON.stringify(data) }),
+    werkBij: (id, data) =>
+      request(`/gebruikersgroepen/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    verwijder: (id) => request(`/gebruikersgroepen/${id}`, { method: 'DELETE' }),
+    // Gebruikersgroep heeft geen enum-velden → geen opties-endpoint.
+  },
+
+  koppelingen: {
+    // Eén ouder-filter per call (bron OF doel); de detail-view doet twee calls
+    // en concateneert de disjuncte sets (DB-CHECK bron != doel → geen overlap).
+    lijst: ({ bronApplicatieId, doelApplicatieId, limit, after } = {}) =>
+      request(
+        `/koppelingen${_query({
+          bron_applicatie_id: bronApplicatieId,
+          doel_applicatie_id: doelApplicatieId,
+          limit,
+          after,
+        })}`,
+      ),
+    haal: (id) => request(`/koppelingen/${id}`),
+    maak: (data) => request('/koppelingen', { method: 'POST', body: JSON.stringify(data) }),
+    werkBij: (id, data) =>
+      request(`/koppelingen/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    verwijder: (id) => request(`/koppelingen/${id}`, { method: 'DELETE' }),
+    opties: () => request('/koppelingen/opties'),
+  },
 }

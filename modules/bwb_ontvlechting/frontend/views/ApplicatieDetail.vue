@@ -20,6 +20,10 @@ import {
   NIVEAU,
   label,
 } from '../labels'
+// Child-secties (subordinate aan de ouder, blijven in de detail-context).
+import DatatypeSectie from './DatatypeSectie.vue'
+import GebruikersgroepSectie from './GebruikersgroepSectie.vue'
+import KoppelingSectie from './KoppelingSectie.vue'
 
 const props = defineProps({ id: { type: String, required: true } })
 const router = useRouter()
@@ -161,6 +165,12 @@ onMounted(laad)
           data-testid="verwijder-knop"
           @click="verwijderDialog = true"
         />
+      </div>
+
+      <div class="mt-[var(--cd-space-xl)] flex flex-col gap-[var(--cd-space-lg)]">
+        <DatatypeSectie :applicatie-id="props.id" />
+        <GebruikersgroepSectie :applicatie-id="props.id" />
+        <KoppelingSectie :applicatie-id="props.id" />
       </div>
     </template>
 

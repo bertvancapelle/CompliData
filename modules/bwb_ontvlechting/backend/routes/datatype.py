@@ -18,6 +18,7 @@ from app.middleware.authz import vereist_permissie
 from app.middleware.tenant import get_tenant_session
 from schemas.datatype import (
     DatatypeCreate,
+    DatatypeOpties,
     DatatypePagina,
     DatatypeRead,
     DatatypeUpdate,
@@ -50,6 +51,14 @@ async def lijst_datatypes(
     except ValueError:
         return _fout(400, "ONGELDIGE_CURSOR", "De opgegeven paginacursor is ongeldig.")
     return {"items": items, "volgende_cursor": volgende}
+
+
+@router.get("/opties", response_model=DatatypeOpties)
+async def datatype_opties(
+    _user: AuthenticatedUser = Depends(vereist_permissie(Entiteit.DATATYPE, Actie.LEZEN)),
+):
+    """Read-only keuzewaarden per enumveld. Vóór `/{id}` (geen UUID-parse op 'opties')."""
+    return svc.enum_opties()
 
 
 @router.get("/{datatype_id}", response_model=DatatypeRead)

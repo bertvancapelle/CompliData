@@ -1,0 +1,141 @@
+/** Tests — KoppelingSectie (child-sectie via @modules; twee richtingen). */
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { flushPromises, mount } from '@vue/test-utils'
+import { createPinia } from 'pinia'
+import PrimeVue from 'primevue/config'
+import ToastService from 'primevue/toastservice'
+
+vi.mock('@/api', () => ({
+  api: {
+    koppelingen: { lijst: vi.fn(), maak: vi.fn(), werkBij: vi.fn(), verwijder: vi.fn(), opties: vi.fn() },
+    applicaties: { lijst: vi.fn() },
+  },
+}))
+
+import { api } from '@/api'
+import { useAuthStore } from '@/store/auth'
+import KoppelingSectie from '@modules/bwb_ontvlechting/frontend/views/KoppelingSectie.vue'
+
+const APP = 'app-1'
+const ANDER = 'app-2'
+
+function _kp(id, bron, doel) {
+  return {
+    id,
+    bron_applicatie_id: bron,
+    doel_applicatie_id: doel,
+    richting: 'eenrichting',
+    protocol: 'api',
+    impact_bij_verbreking: 'hoog',
+    omschrijving: null,
+  }
+}
+
+async function mountSectie({ rollen = ['beheerder'] } = {}) {
+  const pinia = createPinia()
+  const auth = useAuthStore(pinia)
+  auth.user = { sub: 's', tenant_id: 't', email: 'a@b.nl', roles: rollen }
+  const wrapper = mount(KoppelingSectie, {
+    props: { applicatieId: APP },
+    attachTo: document.body,
+    global: { plugins: [pinia, [PrimeVue, { unstyled: true }], ToastService], stubs: { teleport: true } },
+  })
+  await flushPromises()
+  return wrapper
+}
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  api.koppelingen.lijst.mockResolvedValue({ items: [], volgende_cursor: null })
+  api.koppelingen.opties.mockResolvedValue({
+    richting: ['eenrichting', 'tweerichting'],
+    protocol: ['api', 'overig'],
+    impact_bij_verbreking: ['laag', 'midden', 'hoog', 'kritiek'],
+  })
+  api.applicaties.lijst.mockResolvedValue({
+    items: [
+      { id: APP, naam: 'Deze App' },
+      { id: ANDER, naam: 'Andere App' },
+    ],
+    volgende_cursor: null,
+  })
+})
+afterEach(() => vi.restoreAllMocks())
+
+describe('KoppelingSectie', () => {
+  it('doet twee calls (uitgaand bron + inkomend doel) en toont beide sets', async () => {
+    api.koppelingen.lijst.mockImplementation(({ bronApplicatieId }) =>
+      Promise.resolve(
+        bronApplicatieId === APP
+          ? { items: [_kp('k1', APP, ANDER)], volgende_cursor: null } // uitgaand
+          : { items: [_kp('k2', ANDER, APP)], volgende_cursor: null }, // inkomend
+      ),
+    )
+    const w = await mountSectie()
+    // twee calls: één met bron, één met doel
+    const calls = api.koppelingen.lijst.mock.calls.map((c) => c[0])
+    expect(calls.some((a) => a.bronApplicatieId === APP)).toBe(true)
+    expect(calls.some((a) => a.doelApplicatieId === APP)).toBe(true)
+    expect(w.find('[data-testid="kp-tabel-uitgaand"]').exists()).toBe(true)
+    expect(w.find('[data-testid="kp-tabel-inkomend"]').exists()).toBe(true)
+  })
+
+  it('rol-gating: viewer geen Toevoegen, beheerder wel', async () => {
+    expect((await mountSectie({ rollen: ['viewer'] })).find('[data-testid="kp-toevoegen"]').exists()).toBe(false)
+    expect((await mountSectie({ rollen: ['beheerder'] })).find('[data-testid="kp-toevoegen"]').exists()).toBe(true)
+  })
+
+  it('vult bron/doel-pickers uit applicaties.lijst en weigert bron == doel', async () => {
+    const w = await mountSectie()
+    await w.find('[data-testid="kp-toevoegen"]').trigger('click')
+    await flushPromises()
+    // pickers gevuld
+    expect(w.find('[data-testid="kp-veld-bron"]').findAll('option').length).toBeGreaterThan(1)
+    // zet doel == bron (bron is default APP)
+    await w.find('[data-testid="kp-veld-doel"]').setValue(APP)
+    await w.find('[data-testid="kp-veld-richting"]').setValue('eenrichting')
+    await w.find('[data-testid="kp-veld-protocol"]').setValue('api')
+    await w.find('[data-testid="kp-veld-impact_bij_verbreking"]').setValue('hoog')
+    await w.find('[data-testid="kp-form"]').trigger('submit')
+    await flushPromises()
+    expect(w.find('[data-testid="kp-fout-doel"]').exists()).toBe(true)
+    expect(api.koppelingen.maak).not.toHaveBeenCalled()
+  })
+
+  it('maakt aan met geldige bron≠doel en ververst beide richtingen', async () => {
+    api.koppelingen.maak.mockResolvedValueOnce({ id: 'new' })
+    const w = await mountSectie()
+    const voor = api.koppelingen.lijst.mock.calls.length
+    await w.find('[data-testid="kp-toevoegen"]').trigger('click')
+    await flushPromises()
+    await w.find('[data-testid="kp-veld-doel"]').setValue(ANDER)
+    await w.find('[data-testid="kp-veld-richting"]').setValue('eenrichting')
+    await w.find('[data-testid="kp-veld-protocol"]').setValue('api')
+    await w.find('[data-testid="kp-veld-impact_bij_verbreking"]').setValue('hoog')
+    await w.find('[data-testid="kp-form"]').trigger('submit')
+    await flushPromises()
+    expect(api.koppelingen.maak).toHaveBeenCalledTimes(1)
+    expect(api.koppelingen.maak.mock.calls[0][0]).toMatchObject({
+      bron_applicatie_id: APP,
+      doel_applicatie_id: ANDER,
+    })
+    // beide richtingen herladen (2 extra calls)
+    expect(api.koppelingen.lijst.mock.calls.length).toBe(voor + 2)
+  })
+
+  it('per-richting "Meer laden" gebruikt de cursor van de juiste richting', async () => {
+    api.koppelingen.lijst.mockImplementation(({ bronApplicatieId }) =>
+      Promise.resolve(
+        bronApplicatieId === APP
+          ? { items: [_kp('k1', APP, ANDER)], volgende_cursor: 'cur-uit' }
+          : { items: [_kp('k2', ANDER, APP)], volgende_cursor: null },
+      ),
+    )
+    const w = await mountSectie()
+    expect(w.find('[data-testid="kp-meer-uitgaand"]').exists()).toBe(true)
+    expect(w.find('[data-testid="kp-meer-inkomend"]').exists()).toBe(false)
+    await w.find('[data-testid="kp-meer-uitgaand"]').trigger('click')
+    await flushPromises()
+    expect(api.koppelingen.lijst).toHaveBeenLastCalledWith({ bronApplicatieId: APP, limit: 25, after: 'cur-uit' })
+  })
+})

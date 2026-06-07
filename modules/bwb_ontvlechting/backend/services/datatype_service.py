@@ -12,7 +12,7 @@ import uuid
 from sqlalchemy import select, tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models.models import Datatype
+from models.models import Datatype, DatatypeCategorie
 from schemas.datatype import DatatypeCreate, DatatypeUpdate
 from services import applicatie_service
 from services.errors import NietGevonden
@@ -25,6 +25,11 @@ _MAX_LIMIT = 100
 
 def _tenant_uuid(tenant_id) -> uuid.UUID:
     return tenant_id if isinstance(tenant_id, uuid.UUID) else uuid.UUID(str(tenant_id))
+
+
+def enum_opties() -> dict[str, list[str]]:
+    """Read-only keuzewaarden per Datatype-enumveld (single source, DB-vrij)."""
+    return {"categorie": [e.value for e in DatatypeCategorie]}
 
 
 async def lijst(

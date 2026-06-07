@@ -6,15 +6,23 @@ import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import ToastService from 'primevue/toastservice'
 
-vi.mock('@/api', () => ({
-  api: {
-    applicaties: {
-      haal: vi.fn(),
-      startInventarisatie: vi.fn(),
-      verwijder: vi.fn(),
+vi.mock('@/api', () => {
+  const leeg = () => Promise.resolve({ items: [], volgende_cursor: null })
+  return {
+    api: {
+      applicaties: {
+        haal: vi.fn(),
+        startInventarisatie: vi.fn(),
+        verwijder: vi.fn(),
+        lijst: vi.fn(leeg), // KoppelingSectie-pickers (bij dialog-open)
+      },
+      // Embedded child-secties laden bij mount hun lijst (default: leeg).
+      datatypes: { lijst: vi.fn(leeg) },
+      gebruikersgroepen: { lijst: vi.fn(leeg) },
+      koppelingen: { lijst: vi.fn(leeg) },
     },
-  },
-}))
+  }
+})
 
 import { api } from '@/api'
 import { useAuthStore } from '@/store/auth'

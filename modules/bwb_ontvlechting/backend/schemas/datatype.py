@@ -76,3 +76,9 @@ class DatatypeRead(BaseModel):
 class DatatypePagina(BaseModel):
     items: list[DatatypeRead]
     volgende_cursor: str | None = None
+
+
+class DatatypeOpties(BaseModel):
+    """Read-only keuzewaarden per enumveld (voor de frontend-dropdowns)."""
+
+    categorie: list[str]

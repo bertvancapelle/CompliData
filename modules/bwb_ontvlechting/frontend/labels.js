@@ -54,3 +54,41 @@ export const LIFECYCLE_SEVERITY = {
   geblokkeerd: 'danger',
   migratieklaar: 'success',
 }
+
+// ── Child-entiteiten ─────────────────────────────────────────────────────────
+
+export const DATATYPE_CATEGORIE = {
+  gestructureerd_db: 'Gestructureerde database',
+  documenten: 'Documenten',
+  email: 'E-mail',
+  spatial: 'Spatial / geo',
+  binair: 'Binair',
+  combinatie: 'Combinatie',
+}
+
+export const KOPPELRICHTING = {
+  eenrichting: 'Eenrichting',
+  tweerichting: 'Tweerichting',
+}
+
+export const KOPPELPROTOCOL = {
+  api: 'API',
+  bestandsuitwisseling: 'Bestandsuitwisseling',
+  database_link: 'Database-link',
+  middleware: 'Middleware',
+  overig: 'Overig',
+}
+
+export const IMPACT_VERBREKING = {
+  laag: 'Laag',
+  midden: 'Midden',
+  hoog: 'Hoog',
+  kritiek: 'Kritiek',
+}
+
+export const IMPACT_SEVERITY = {
+  laag: 'info',
+  midden: 'warn',
+  hoog: 'warn',
+  kritiek: 'danger',
+}

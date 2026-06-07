@@ -14,7 +14,7 @@ from sqlalchemy import select, tuple_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models.models import Koppeling
+from models.models import ImpactVerbreking, Koppeling, Koppelprotocol, Koppelrichting
 from schemas.koppeling import KoppelingCreate, KoppelingUpdate
 from services import applicatie_service
 from services.errors import KoppelingConflict, NietGevonden
@@ -27,6 +27,18 @@ _MAX_LIMIT = 100
 
 def _tenant_uuid(tenant_id) -> uuid.UUID:
     return tenant_id if isinstance(tenant_id, uuid.UUID) else uuid.UUID(str(tenant_id))
+
+
+def enum_opties() -> dict[str, list[str]]:
+    """Read-only keuzewaarden per Koppeling-enumveld (single source, DB-vrij).
+
+    Bron/doel zijn applicatie-pickers (geen enum) en horen hier niet.
+    """
+    return {
+        "richting": [e.value for e in Koppelrichting],
+        "protocol": [e.value for e in Koppelprotocol],
+        "impact_bij_verbreking": [e.value for e in ImpactVerbreking],
+    }
 
 
 async def lijst(

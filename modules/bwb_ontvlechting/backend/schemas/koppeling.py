@@ -79,3 +79,11 @@ class KoppelingRead(BaseModel):
 class KoppelingPagina(BaseModel):
     items: list[KoppelingRead]
     volgende_cursor: str | None = None
+
+
+class KoppelingOpties(BaseModel):
+    """Read-only keuzewaarden per enumveld (voor de frontend-dropdowns)."""
+
+    richting: list[str]
+    protocol: list[str]
+    impact_bij_verbreking: list[str]
