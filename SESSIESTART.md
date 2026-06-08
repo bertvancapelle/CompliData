@@ -1,6 +1,6 @@
-# SESSIESTART — CompliData V004
+# SESSIESTART — CompliData V005
 
-**Datum**: 2026-06-07
+**Datum**: 2026-06-08
 **Platform**: CompliData — een product van G. van Capelle Beheer B.V.
 
 ---
@@ -13,7 +13,7 @@
    - Zo ja: normale modus — lees alle complidata-skills + engineering/security
    - Zo nee: bootstrap-modus — lees alleen engineering/security
 3. Lees SESSIE_BRIEFING.md voor de actuele projectstatus
-4. Bevestig: "Sessiestart compleet — CompliData V004 — [N] skills geladen"
+4. Bevestig: "Sessiestart compleet — CompliData V005 — [N] skills geladen"
 5. Wacht op START: [naam] van Bert
 
 ---
@@ -40,9 +40,9 @@ claude.ai levert elke CC-opdracht ALTIJD aan als een .md-bestand
 
 ---
 
-# SESSIE_BRIEFING.md — CompliData V004
+# SESSIE_BRIEFING.md — CompliData V005
 
-**Gegenereerd**: 2026-06-07
+**Gegenereerd**: 2026-06-08
 
 ---
 
@@ -52,11 +52,11 @@ claude.ai levert elke CC-opdracht ALTIJD aan als een .md-bestand
 
 | Veld | Waarde |
 |------|--------|
-| Build | V003 |
+| Build | V005 |
 | Datum | June 2026 |
-| Commit | 956eb3e |
-| Tests | 323 backend + 38 frontend groen · 4 assen + 2 poorten |
-| TST-rapport | TST-V003-Validatierapport.md |
+| Commit | 23a3db8 |
+| Tests | 461 backend + 123 frontend groen · 4 assen + 2 poorten |
+| TST-rapport | TST-V005-Validatierapport.md |
 | Kritieke bevindingen | 0 |
 
 ---
@@ -64,101 +64,62 @@ claude.ai levert elke CC-opdracht ALTIJD aan als een .md-bestand
 ## Recente commits
 
 ```
-237b036 perf(frontend): route-level lazy-loading; bundle <500 kB (OP-19)
-635fa42 feat(bwb): blokkade-opgelost volledig afgeleid (ADR-016, reconciliatie ADR-013 B1)
-8b258ba feat(auth): id_token_hint voor naadloze logout (afronding OP-4)
-267dac5 fix(auth): 403 TENANT_MISMATCH canoniek; foutcontract afgehecht (CD009 / ADR-014)
-6f25b5f feat(auth): RP-initiated logout via Keycloak end-session (OP-4)
+23a3db8 docs(skills): ADR-017/018-patronen + filter/LIKE-escaping + AppTabs + commit-discipline vastgelegd (CD024)
+21ace2c feat(koppelingenkaart): visuele weergave van applicatie-relaties (CD023, #13)
+2a20d82 feat(applicatie-detail): herstructurering naar categorie-tabs (CD022, #11)
+e883814 refactor(paginering): verweesde legacy encode/decode_cursor verwijderd na ADR-017-retrofit (CD021)
+7b250fe feat(lijsten): sorteer-retrofit datatype/gebruikersgroep/koppeling/checklistscore/blokkade-sectie naar ADR-017 (CD020)
 ```
 
 ---
 
 ## Prioriteiten volgende sessie
 
-# NEXT_SESSION.md — CompliData V004
+# NEXT_SESSION.md — CompliData V005
 
-**Gegenereerd**: 2026-06-07
-**Vorige build**: V004
-**Laatste commit (vóór afsluiting)**: 237b036 (gen_build bumpt hierna)
+**Gegenereerd**: 2026-06-08
+**Vorige build (deze afsluiting)**: V004 → **V005** (gen_build bumpt de teller in fase 3)
+**Laatste commit vóór de bump**: 23a3db8
 
 ---
 
-## Stand van zaken (V004)
+## Stand van zaken (V005)
 
-Sessie CD003–CD012 bovenop de V003-slice:
+Sessie CD013–CD024 bovenop V004:
 
-- **Child-entiteit-views** (Datatype/Gebruikersgroep/Koppeling) als secties in
-  `ApplicatieDetail` (Dialog-CRUD, geen child-routes). [CD003]
-- **Checklist-scoringslijst** (inline, join op `vraag_code`) + **Blokkade-sectie**
-  (read + PATCH) + **lifecycle-indicator** (backend-afgeleid). [CD004]
-- **Canoniek foutcontract afgehecht** (ADR-014): 401/403/404/409/429 → `{"fout":{…}}`,
-  422 bewust native. [CD005/CD009]
-- **`tenantId`-fix** (OP-16). [CD006]
-- **Refresh-token-subsysteem** (ADR-015, Redis + rotatie) + **single-flight
-  refresh-on-401**. [CD007]
-- **RP-initiated logout** + **`id_token_hint`** voor naadloze redirect (OP-4). [CD008/CD010]
-- **Blokkade-`opgelost` volledig afgeleid** (ADR-016, reconciliatie ADR-013 B1). [CD011]
-- **Route-level lazy-loading** — bundle 751 → 212 kB entry, >500 kB-waarschuwing weg. [CD012]
-- **357 backend-tests + 83 frontend-tests groen**; geen migraties deze sessie.
+- **Dashboard tenant-breed** (lifecycle-telling, open blokkades, recent gewijzigd). [CD014, #9]
+- **Server-side sorteerbare keyset-lijsten** (ADR-017, v2/v2n) + **applicatieregister-filter**
+  (status/hostingmodel/eigenaar/zoek, LIKE-escaping). [CD015/CD017, #10]
+- **Tenant-breed blokkadesoverzicht** (NULLS-LAST-keyset). [CD016, #12]
+- **Sorteer-retrofit** van de 5 legacy-lijsten (datatype/gebruikersgroep/koppeling/
+  checklistscore/blokkade-sectie) + **legacy-cursor opgeruimd**. [CD020/CD021]
+- **Applicatie-detail → categorie-tabs** (2-laags, `AppTabs`, deep-link). [CD022, #11]
+- **Koppelingenkaart** (gefocuste ego-graaf + toegankelijke relatietabel, ADR-018). [CD023, #13]
+- **gen_build volgordefix** (bouwstatus vóór briefing-generatie). [CD018]
+- **Patronen + commit-discipline vastgelegd** in de complidata-skills + CLAUDE.md/CONTRIBUTING §7. [CD024]
+- **461 backend + 123 frontend-tests groen**; geen migraties deze sessie.
+
+Backlog #1–#13 afgerond, **op #14 en #15 na** (geblokkeerd): #14 wacht op #17, #15 wacht op #16.
 
 ---
 
 ## Top-5 prioriteiten volgende sessie (Bert prioriteert)
 
-1. **Dashboard-inhoud** — voortgang/statistieken/open blokkades, tenant-breed.
-2. **Blokkadesoverzicht tenant-breed** (los van één applicatie).
-3. **Applicatieregister** filter/sortering.
-4. **Docs-schuld wegwerken** — ADR-009-enums ↔ code synchroniseren; stale
-   IMPLEMENTATIEPLAN.md / SESSIE_BRIEFING.md actualiseren. (CLAUDE.md test-mode al
-   gecorrigeerd in V004.)
-5. **Audit-trail (ADR-006)** — unblock voor de auditlog-view.
+1. **#16 — Tenant-onboarding / user-management-backend** (deblokkeert #15; platform-domein
+   ADR-012/`cd_platform`, raakt OP-13 platform-tabel-grants).
+2. **#17 — Audit-trail (ADR-006)** — hash-chained, append-only auditlog (deblokkeert #14).
+3. **#15 (na #16)** en **#14 (na #17)** — de geblokkeerde backlog-items oppakken zodra hun
+   afhankelijkheid staat.
+4. **Productie-hardening**: OP-14 (dev-credentials vervangen), OP-7 (401/403 in hetzelfde foutformaat).
+5. **Live-DB-verificatie (#23 / OP-20)**: NULLS-LAST-paginering empirisch tegen Postgres
+   bevestigen (asc/desc over de NULL-grens).
 
 ---
 
-## Openstaande opvolgpunten (volledige onderbouwing: `CompliData_openstaande-vervolgstappen.md`)
+## Uitgestelde punten
 
-**Productie/ops (vóór productie):**
-- **OP-3-realm-hardening** — `revoke-refresh-token` aan in de realm; anders is de
-  reuse-detectie (ADR-015 B3) niet actief. Koppelen aan **OP-14** (dev-credentials).
-- **OP-13** platform-tabel-grants.
-- **ADR-016-data-pass** — bij gevulde DB controleren + evt. herbereken-pass (Laag 5).
-
-**Functioneel/architectuur:**
-- **Koppeling OR-filter** — `?applicatie_id=` (bron OF doel) + index, indien volumes
-  groeien (mogelijk mini-ADR).
-- **Laag 4-schermen** — Dashboard, register-filter, 12-categorie-tabs,
-  blokkadesoverzicht, koppelingenkaart, auditlog (geblokkeerd op audit-trail),
-  gebruikersbeheer.
-- **Laag 2/3** — tenant-onboarding, audit-trail (ADR-006), export Excel/CSV + PDF,
-  MinIO (ADR-008).
-- **Laag 5** — live DB-/RLS-test, smoke-test uitbreiden, branding-tokens,
-  `useTheme`-activatie (getter `tenantId` staat klaar).
-
-**Docs-schuld:**
-- ADR-009 enum-voetnoten ↔ code (incl. DatatypeCategorie 6 vs 5); stale
-  IMPLEMENTATIEPLAN/SESSIE_BRIEFING.
-
----
-
-## Afgehecht deze sessie (uit de open lijst)
-
-OP-7 (foutcontract: 401/403/429 canoniek, 422 bewust native), OP-16 (tenantSlug→tenantId),
-OP-3 (refresh — mits realm-hardening apart), OP-4 (logout + id_token_hint),
-ADR-013-reconciliatie (ADR-016), OP-19 (bundle), 403 `TENANT_MISMATCH`, 429-envelope.
-
----
-
-## Geleerde patronen deze sessie (verwerkt in complidata-skills, V004-secties)
-
-- `complidata-frontend` — secties-in-detail, inline scoringslijst (`vraag_code`),
-  systeem-afgeleide view (read-only badge), gecoördineerde refetch, single-flight
-  refresh-on-401, route-lazy-loading.
-- `complidata-backend` — opties-endpoints, platform-breed referentie-endpoint,
-  canoniek foutcontract (`HTTPException`-subclass), ADR-016-guard.
-- `complidata-security` — Keycloak-refresh+Redis, RP-logout+`id_token_hint`, 401/403
-  canoniek, `revoke-refresh-token`-voorwaarde.
-- `complidata-db` — ADR-016-reconciliatie, ChecklistVraag-referentiedata, data-pass-discipline.
-- `complidata-tests` — empirische stack-verificatie, regressie-borging, single-flight-testopzet.
+Zie `docs/OPVOLGPUNTEN.md`: OP-20 (NULL live-verificatie), OP-16-testrand (happy-dom
+teardown-residu), OP-21 (eigenaar distinct-dropdown, optioneel). Productie-hardening: OP-7, OP-13, OP-14.
 
 
 ---
@@ -167,6 +128,6 @@ ADR-013-reconciliatie (ADR-016), OP-19 (bundle), 403 `TENANT_MISMATCH`, 429-enve
 
 1. Lees deze briefing volledig
 2. Lees CLAUDE.md (sessiestart-protocol)
-3. Bevestig: "Sessie-briefing geladen — CompliData V004"
+3. Bevestig: "Sessie-briefing geladen — CompliData V005"
 4. Wacht op START: [naam] van Bert
 

@@ -100,6 +100,18 @@ Bevestig tijdens de **live-DB-run (#23 / Laag 5)** dat het over de NULL-grens
 correct pagineert op de nullable kolommen (`toelichting`, `eigenaar`, `opgelost_op`),
 in zowel `asc` als `desc`, zonder duplicaten of overgeslagen rijen.
 
+### OP-22 — Backup-scope / secops: Keycloak-secrets in de DB-dump — OPEN (dev-risico geaccepteerd)
+
+De iCloud-DB-backup (`gen_build.py` → `pg_dump complidata`) bevat momenteel **óók** het
+Keycloak-auth-schema (`credential`, `client`, …) — wachtwoord-hashes + het `complidata-api`
+client-secret — omdat **Keycloak de `complidata`-database deelt**. De CD024-inhoudscheck heeft dit
+correct gevonden. In **dev** is dit een **bewust geaccepteerd risico** (continuïteitsbackup,
+dev-placeholders zoals `changeme_dev`, niet blootgesteld aan buiten). De file-niveau
+secret-uitsluiting (alleen de `.sql` kopiëren) is dus **onvoldoende**: de `.sql` zelf bevat de
+secrets. **Vóór productie oplossen**: óf de backup scopen tot uitsluitend de CompliData-tabellen
+(schema-afgeleid, niet hand-gelijst), óf Keycloak in een eigen database/schema scheiden.
+Mogelijk ADR-waardig.
+
 ---
 
 ## AFGEROND (sessie 2–3)
