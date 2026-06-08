@@ -61,6 +61,13 @@ productie-realm.
 geeft `tenant_id` → altijd `null`. Raakt `useTheme`/per-tenant-thema's zodra die
 gebouwd worden.
 
+**Testrand (CD019)**: na het afhandelen van de `useTheme`-promise (`.catch` in
+`tenantId.test.js`) resteert nog één pre-existing happy-dom `DOMException` (interne
+resource-`fetch` van de thema-stylesheet, afgebroken bij window-teardown) op stderr —
+telt niet als test-fout. Op te ruimen zodra `useTheme` echte call-sites + een
+default-thema-fallback krijgt en de test wordt herontworpen met een expliciete
+`onerror`-trigger i.p.v. happy-dom's toevallige `fetch`.
+
 ### OP-18 — Stale V001-docs (IMPLEMENTATIEPLAN / SESSIE_BRIEFING) — AFGEROND (CD018)
 
 `IMPLEMENTATIEPLAN.md` is voorzien van een *HISTORISCH — V001-snapshot*-banner die naar

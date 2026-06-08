@@ -32,7 +32,10 @@ describe('useTheme — thema-doorwerking op tenantId', () => {
   it('bouwt de thema-href uit de (niet-null) tenant-identifier', () => {
     const auth = useAuthStore()
     auth.user = { sub: 's', tenant_id: 'tenant-x', email: 'a@b.nl', roles: [] }
-    useTheme(auth.tenantId) // promise resolvet pas bij load; we checken het <link>
+    // happy-dom laadt geen echte CSS → de load-promise wordt afgewezen (useTheme.js
+    // onerror → reject). Die uitkomst is niet relevant voor deze synchrone <link>-
+    // assertie; .catch voorkomt een unhandled rejection zonder de test te verzwakken.
+    useTheme(auth.tenantId).catch(() => {})
     const link = document.head.querySelector('link[rel="stylesheet"]')
     expect(link).not.toBeNull()
     expect(link.getAttribute('href')).toBe('/themes/tenant-x.css')
