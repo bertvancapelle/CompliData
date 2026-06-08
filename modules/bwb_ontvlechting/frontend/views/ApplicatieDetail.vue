@@ -7,9 +7,9 @@
  * `lifecycle_status` is read-only (Tag); "Start inventarisatie" alleen bij
  * status `concept`. Verwijderen waarschuwt voor de cascade.
  */
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { Button, Dialog, Tag, useToast } from '@/primevue'
-import { useRouter } from '@/composables/router'
+import { useRoute, useRouter } from '@/composables/router'
 import { useAuthStore } from '@/store/auth'
 import { api } from '@/api'
 import {
@@ -20,6 +20,8 @@ import {
   NIVEAU,
   label,
 } from '../labels'
+// Herbruikbare toegankelijke tablist (CD022, #11 — 2-laags IA).
+import AppTabs from './AppTabs.vue'
 // Child-secties (subordinate aan de ouder, blijven in de detail-context).
 import DatatypeSectie from './DatatypeSectie.vue'
 import GebruikersgroepSectie from './GebruikersgroepSectie.vue'
@@ -28,6 +30,7 @@ import ChecklistscoreSectie from './ChecklistscoreSectie.vue'
 import BlokkadeSectie from './BlokkadeSectie.vue'
 
 const props = defineProps({ id: { type: String, required: true } })
+const route = useRoute()
 const router = useRouter()
 const toast = useToast()
 const auth = useAuthStore()
@@ -107,6 +110,54 @@ function naarBewerken() {
 const scoreSectie = ref(null)
 const blokkadeSectie = ref(null)
 
+// ── 2-laags tabnavigatie (CD022, #11) ───────────────────────────────────────
+// Top-niveau = applicatie-aspecten; "Checklist" bevat de 12 categorieën als
+// sub-navigatie. Alle panelen blijven gemount (`v-show`) → geen state-verlies bij
+// wisselen en de refs (`scoreSectie`/`blokkadeSectie`) blijven geldig voor de
+// globale voortgangsregel. Geen mini-ADR: dit is frontend-IA, geen datamodel.
+const TOP_TABS = [
+  { key: 'overzicht', label: 'Overzicht' },
+  { key: 'checklist', label: 'Checklist' },
+  { key: 'datatypes', label: 'Datatypes' },
+  { key: 'gebruikersgroepen', label: 'Gebruikersgroepen' },
+  { key: 'koppelingen', label: 'Koppelingen' },
+  { key: 'blokkades', label: 'Blokkades' },
+]
+const TOP_KEYS = TOP_TABS.map((t) => t.key)
+
+const activeTop = ref('overzicht')
+const activeCat = ref(null) // categorie_nr als string-key
+
+// Categorie-sub-tabs: labels afgeleid uit de geladen vragen (geen seed-duplicatie).
+const categorieTabs = computed(() =>
+  (scoreSectie.value?.categorieen ?? []).map((c) => ({ key: String(c.nr), label: c.naam })),
+)
+const actieveCategorieNr = computed(() => (activeCat.value != null ? Number(activeCat.value) : null))
+
+// Deep-link initialiseren uit de URL (na mount; de scoreSectie laadt async).
+function _initVanafQuery() {
+  const t = String(route.query.tab ?? '')
+  if (TOP_KEYS.includes(t)) activeTop.value = t
+  if (route.query.cat != null) activeCat.value = String(route.query.cat)
+}
+
+// Zodra de categorieën geladen zijn: zorg dat activeCat geldig is (default = eerste).
+watch(categorieTabs, (tabs) => {
+  if (tabs.length && !tabs.some((t) => t.key === activeCat.value)) activeCat.value = tabs[0].key
+})
+
+// Actieve tab(s) terugschrijven naar de URL. Overzicht = schone URL (geen query);
+// `router.replace` (geen history-spam). Browser-back werkt via de query-historie.
+watch([activeTop, activeCat], () => {
+  const query = {}
+  if (activeTop.value !== 'overzicht') query.tab = activeTop.value
+  if (activeTop.value === 'checklist' && activeCat.value != null) query.cat = activeCat.value
+  const huidigTab = route.query.tab ?? undefined
+  const huidigCat = route.query.cat != null ? String(route.query.cat) : undefined
+  if (huidigTab === (query.tab ?? undefined) && huidigCat === (query.cat ?? undefined)) return
+  router.replace({ query })
+})
+
 async function herlaadApplicatie() {
   try {
     applicatie.value = await api.applicaties.haal(props.id)
@@ -125,7 +176,10 @@ async function onBlokkadeGewijzigd() {
   await herlaadApplicatie()
 }
 
-onMounted(laad)
+onMounted(async () => {
+  await laad()
+  _initVanafQuery()
+})
 </script>
 
 <template>
@@ -154,55 +208,125 @@ onMounted(laad)
         {{ blokkadeSectie?.aantalOpen ?? 0 }} open blokkade(s)
       </p>
 
-      <dl class="card grid grid-cols-[max-content_1fr] gap-x-[var(--cd-space-lg)] gap-y-[var(--cd-space-sm)]">
-        <dt class="font-semibold">Eigenaar-organisatie</dt>
-        <dd>{{ applicatie.eigenaar_organisatie }}</dd>
-        <dt class="font-semibold">Eigenaar (naam)</dt>
-        <dd>{{ applicatie.eigenaar_naam || '—' }}</dd>
-        <dt class="font-semibold">Leverancier</dt>
-        <dd>{{ applicatie.leverancier || '—' }}</dd>
-        <dt class="font-semibold">Hostingmodel</dt>
-        <dd>{{ label(HOSTINGMODEL, applicatie.hostingmodel) }}</dd>
-        <dt class="font-semibold">Migratiepad</dt>
-        <dd>{{ label(MIGRATIEPAD, applicatie.migratiepad) }}</dd>
-        <dt class="font-semibold">Complexiteit</dt>
-        <dd>{{ label(NIVEAU, applicatie.complexiteit) }}</dd>
-        <dt class="font-semibold">Prioriteit</dt>
-        <dd>{{ label(NIVEAU, applicatie.prioriteit) }}</dd>
-        <dt class="font-semibold">Beschrijving</dt>
-        <dd class="whitespace-pre-wrap">{{ applicatie.beschrijving || '—' }}</dd>
-      </dl>
+      <AppTabs
+        v-model="activeTop"
+        :tabs="TOP_TABS"
+        aria-label="Applicatie-detail onderdelen"
+        id-prefix="detailtabs"
+        class="mt-[var(--cd-space-lg)] mb-[var(--cd-space-md)]"
+      />
 
-      <div class="mt-[var(--cd-space-lg)] flex flex-wrap gap-[var(--cd-space-md)]">
-        <Button
-          v-if="magBewerken"
-          label="Bewerken"
-          data-testid="bewerken-knop"
-          @click="naarBewerken"
-        />
-        <Button
-          v-if="magStarten"
-          label="Start inventarisatie"
-          severity="secondary"
-          data-testid="start-knop"
-          :disabled="bezig"
-          @click="startInventarisatie"
-        />
-        <Button
-          v-if="magVerwijderen"
-          label="Verwijderen"
-          severity="danger"
-          data-testid="verwijder-knop"
-          @click="verwijderDialog = true"
-        />
+      <!-- Overzicht: metadata + acties -->
+      <div
+        v-show="activeTop === 'overzicht'"
+        id="detailtabs-panel-overzicht"
+        role="tabpanel"
+        aria-labelledby="detailtabs-tab-overzicht"
+        data-testid="panel-overzicht"
+      >
+        <dl class="card grid grid-cols-[max-content_1fr] gap-x-[var(--cd-space-lg)] gap-y-[var(--cd-space-sm)]">
+          <dt class="font-semibold">Eigenaar-organisatie</dt>
+          <dd>{{ applicatie.eigenaar_organisatie }}</dd>
+          <dt class="font-semibold">Eigenaar (naam)</dt>
+          <dd>{{ applicatie.eigenaar_naam || '—' }}</dd>
+          <dt class="font-semibold">Leverancier</dt>
+          <dd>{{ applicatie.leverancier || '—' }}</dd>
+          <dt class="font-semibold">Hostingmodel</dt>
+          <dd>{{ label(HOSTINGMODEL, applicatie.hostingmodel) }}</dd>
+          <dt class="font-semibold">Migratiepad</dt>
+          <dd>{{ label(MIGRATIEPAD, applicatie.migratiepad) }}</dd>
+          <dt class="font-semibold">Complexiteit</dt>
+          <dd>{{ label(NIVEAU, applicatie.complexiteit) }}</dd>
+          <dt class="font-semibold">Prioriteit</dt>
+          <dd>{{ label(NIVEAU, applicatie.prioriteit) }}</dd>
+          <dt class="font-semibold">Beschrijving</dt>
+          <dd class="whitespace-pre-wrap">{{ applicatie.beschrijving || '—' }}</dd>
+        </dl>
+
+        <div class="mt-[var(--cd-space-lg)] flex flex-wrap gap-[var(--cd-space-md)]">
+          <Button v-if="magBewerken" label="Bewerken" data-testid="bewerken-knop" @click="naarBewerken" />
+          <Button
+            v-if="magStarten"
+            label="Start inventarisatie"
+            severity="secondary"
+            data-testid="start-knop"
+            :disabled="bezig"
+            @click="startInventarisatie"
+          />
+          <Button
+            v-if="magVerwijderen"
+            label="Verwijderen"
+            severity="danger"
+            data-testid="verwijder-knop"
+            @click="verwijderDialog = true"
+          />
+        </div>
       </div>
 
-      <div class="mt-[var(--cd-space-xl)] flex flex-col gap-[var(--cd-space-lg)]">
-        <ChecklistscoreSectie ref="scoreSectie" :applicatie-id="props.id" @gewijzigd="onScoreGewijzigd" />
-        <BlokkadeSectie ref="blokkadeSectie" :applicatie-id="props.id" @gewijzigd="onBlokkadeGewijzigd" />
+      <!-- Checklist: 12 categorieën als sub-navigatie (één gedeelde score-instantie) -->
+      <div
+        v-show="activeTop === 'checklist'"
+        id="detailtabs-panel-checklist"
+        role="tabpanel"
+        aria-labelledby="detailtabs-tab-checklist"
+        data-testid="panel-checklist"
+        class="flex flex-col gap-[var(--cd-space-md)] md:flex-row md:gap-[var(--cd-space-lg)]"
+      >
+        <AppTabs
+          v-model="activeCat"
+          :tabs="categorieTabs"
+          aria-label="Checklist-categorieën"
+          orientation="vertical"
+          id-prefix="checklisttabs"
+          class="md:w-[16rem] md:shrink-0"
+        />
+        <div
+          :id="`checklisttabs-panel-${activeCat}`"
+          role="tabpanel"
+          :aria-labelledby="`checklisttabs-tab-${activeCat}`"
+          class="grow"
+        >
+          <ChecklistscoreSectie
+            ref="scoreSectie"
+            :applicatie-id="props.id"
+            :categorie-nr="actieveCategorieNr"
+            @gewijzigd="onScoreGewijzigd"
+          />
+        </div>
+      </div>
+
+      <!-- Child-entiteiten als eigen top-level tabs -->
+      <div
+        v-show="activeTop === 'datatypes'"
+        id="detailtabs-panel-datatypes"
+        role="tabpanel"
+        aria-labelledby="detailtabs-tab-datatypes"
+      >
         <DatatypeSectie :applicatie-id="props.id" />
+      </div>
+      <div
+        v-show="activeTop === 'gebruikersgroepen'"
+        id="detailtabs-panel-gebruikersgroepen"
+        role="tabpanel"
+        aria-labelledby="detailtabs-tab-gebruikersgroepen"
+      >
         <GebruikersgroepSectie :applicatie-id="props.id" />
+      </div>
+      <div
+        v-show="activeTop === 'koppelingen'"
+        id="detailtabs-panel-koppelingen"
+        role="tabpanel"
+        aria-labelledby="detailtabs-tab-koppelingen"
+      >
         <KoppelingSectie :applicatie-id="props.id" />
+      </div>
+      <div
+        v-show="activeTop === 'blokkades'"
+        id="detailtabs-panel-blokkades"
+        role="tabpanel"
+        aria-labelledby="detailtabs-tab-blokkades"
+      >
+        <BlokkadeSectie ref="blokkadeSectie" :applicatie-id="props.id" @gewijzigd="onBlokkadeGewijzigd" />
       </div>
     </template>
 

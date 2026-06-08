@@ -16,7 +16,12 @@ import { useAuthStore } from '@/store/auth'
 import { api } from '@/api'
 import { SCORE, label } from '../labels'
 
-const props = defineProps({ applicatieId: { type: String, required: true } })
+const props = defineProps({
+  applicatieId: { type: String, required: true },
+  // CD022: filtert de getoonde vragen op één checklist-categorie (categorie_nr).
+  // null = alle vragen (zelfstandig gebruik / volledige lijst).
+  categorieNr: { type: Number, default: null },
+})
 const emit = defineEmits(['gewijzigd'])
 const auth = useAuthStore()
 const toast = useToast()
@@ -33,6 +38,24 @@ const rijFout = reactive({}) // vraag_code -> melding
 
 const aantalVragen = computed(() => vragen.value.length)
 const aantalGescoord = computed(() => Object.keys(scoreMap).length)
+
+// CD022: alleen de vragen van de actieve categorie tonen (null = alle), oplopend
+// op code. De voortgang-tellers blijven bewust GLOBAAL (alle 89 vragen).
+const zichtbareVragen = computed(() => {
+  const lijst =
+    props.categorieNr == null
+      ? vragen.value
+      : vragen.value.filter((v) => v.categorie_nr === props.categorieNr)
+  return [...lijst].sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }))
+})
+
+// Afgeleide categorie-lijst (nr + naam, oplopend) voor de tab-labels in de ouder —
+// single source uit de geladen vragen, geen seed-namen in de frontend dupliceren.
+const categorieen = computed(() => {
+  const perNr = new Map()
+  for (const v of vragen.value) if (!perNr.has(v.categorie_nr)) perNr.set(v.categorie_nr, v.categorie_naam)
+  return [...perNr.entries()].sort((a, b) => a[0] - b[0]).map(([nr, naam]) => ({ nr, naam }))
+})
 
 function _toastFout(e) {
   const per = { 403: 'Geen rechten voor deze actie.', 404: 'Niet gevonden.', 409: 'Conflict.' }
@@ -113,7 +136,7 @@ async function onScoreChange(code, nieuweScore) {
   }
 }
 
-defineExpose({ aantalVragen, aantalGescoord, herlaad: () => laad() })
+defineExpose({ aantalVragen, aantalGescoord, categorieen, herlaad: () => laad() })
 
 laad()
 </script>
@@ -134,7 +157,7 @@ laad()
         <tr><th>Code</th><th>Vraag</th><th>Score</th><th></th></tr>
       </thead>
       <tbody>
-        <tr v-for="v in vragen" :key="v.code" :data-testid="`cs-rij-${v.code}`">
+        <tr v-for="v in zichtbareVragen" :key="v.code" :data-testid="`cs-rij-${v.code}`">
           <td>{{ v.code }}</td>
           <td>{{ v.vraag }}</td>
           <td>

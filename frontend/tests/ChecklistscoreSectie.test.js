@@ -22,12 +22,12 @@ const VRAGEN = [
   { id: 2, code: '1.2', categorie_nr: 1, categorie_naam: 'C', vraag: 'Vraag twee', prioriteit: 'hoog' },
 ]
 
-async function mountSectie({ rollen = ['medewerker'] } = {}) {
+async function mountSectie({ rollen = ['medewerker'], categorieNr = null } = {}) {
   const pinia = createPinia()
   const auth = useAuthStore(pinia)
   auth.user = { sub: 's', tenant_id: 't', email: 'a@b.nl', roles: rollen }
   const wrapper = mount(ChecklistscoreSectie, {
-    props: { applicatieId: APP },
+    props: { applicatieId: APP, categorieNr },
     global: { plugins: [pinia, [PrimeVue, { unstyled: true }], ToastService] },
   })
   await flushPromises()
@@ -97,5 +97,19 @@ describe('ChecklistscoreSectie', () => {
   it('rol-gating: viewer kan niet scoren (controls disabled)', async () => {
     const w = await mountSectie({ rollen: ['viewer'] })
     expect(w.find('[data-testid="cs-score-1.1"]').attributes('disabled')).toBeDefined()
+  })
+
+  // ── CD022: filtering op categorie + globale voortgang ──────────────────────
+  it('toont met categorieNr alleen de vragen van die categorie (voortgang blijft globaal)', async () => {
+    api.checklistvragen.lijst.mockResolvedValue([
+      { id: 1, code: '1.1', categorie_nr: 1, categorie_naam: 'Een', vraag: 'V een', prioriteit: 'hoog' },
+      { id: 2, code: '2.1', categorie_nr: 2, categorie_naam: 'Twee', vraag: 'V twee', prioriteit: 'hoog' },
+    ])
+    api.checklistscores.lijst.mockResolvedValue({ items: [], volgende_cursor: null })
+    const w = await mountSectie({ categorieNr: 1 })
+    expect(w.find('[data-testid="cs-rij-1.1"]').exists()).toBe(true)
+    expect(w.find('[data-testid="cs-rij-2.1"]').exists()).toBe(false) // andere categorie verborgen
+    // voortgang telt ALLE vragen (globaal), niet alleen de getoonde categorie
+    expect(w.find('[data-testid="cs-voortgang"]').text()).toContain('0/2')
   })
 })

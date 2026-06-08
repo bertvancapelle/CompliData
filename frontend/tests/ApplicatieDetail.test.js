@@ -52,7 +52,7 @@ function _app(extra = {}) {
   }
 }
 
-async function mountDetail({ rollen = ['beheerder'] } = {}) {
+async function mountDetail({ rollen = ['beheerder'], query = '' } = {}) {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -61,7 +61,7 @@ async function mountDetail({ rollen = ['beheerder'] } = {}) {
       { path: '/applicaties/:id/bewerken', name: 'applicatie-bewerken', component: { template: '<div/>' } },
     ],
   })
-  await router.push(`/applicaties/${_ID}`)
+  await router.push(`/applicaties/${_ID}${query}`)
   await router.isReady()
   const pushSpy = vi.spyOn(router, 'push')
 
@@ -182,5 +182,67 @@ describe('ApplicatieDetail', () => {
 
     expect(api.applicaties.haal.mock.calls.length).toBeGreaterThan(haalVoor)
     expect(api.blokkades.lijst.mock.calls.length).toBeGreaterThan(blokVoor)
+  })
+})
+
+describe('ApplicatieDetail — categorie-tabs (CD022, #11)', () => {
+  it('rendert de top-tablist met de 6 onderdelen en Overzicht als default', async () => {
+    api.applicaties.haal.mockResolvedValue(_app())
+    const { wrapper } = await mountDetail()
+    expect(wrapper.find('[role="tablist"]').exists()).toBe(true)
+    for (const k of ['overzicht', 'checklist', 'datatypes', 'gebruikersgroepen', 'koppelingen', 'blokkades']) {
+      expect(wrapper.find(`[data-testid="detailtabs-tab-${k}"]`).exists()).toBe(true)
+    }
+    expect(wrapper.find('[data-testid="detailtabs-tab-overzicht"]').attributes('aria-selected')).toBe('true')
+    // metadata staat in het Overzicht-panel
+    expect(wrapper.find('[data-testid="panel-overzicht"]').text()).toContain('Gemeente Veldendam')
+  })
+
+  it('tab-klik wisselt de actieve tab (aria-selected verspringt)', async () => {
+    api.applicaties.haal.mockResolvedValue(_app())
+    const { wrapper } = await mountDetail()
+    await wrapper.find('[data-testid="detailtabs-tab-datatypes"]').trigger('click')
+    expect(wrapper.find('[data-testid="detailtabs-tab-datatypes"]').attributes('aria-selected')).toBe('true')
+    expect(wrapper.find('[data-testid="detailtabs-tab-overzicht"]').attributes('aria-selected')).toBe('false')
+  })
+
+  it('toetsenbord: ArrowRight selecteert de volgende tab', async () => {
+    api.applicaties.haal.mockResolvedValue(_app())
+    const { wrapper } = await mountDetail()
+    await wrapper.find('[data-testid="detailtabs-tab-overzicht"]').trigger('keydown', { key: 'ArrowRight' })
+    expect(wrapper.find('[data-testid="detailtabs-tab-checklist"]').attributes('aria-selected')).toBe('true')
+  })
+
+  it('deep-link: ?tab=blokkades opent de Blokkades-tab', async () => {
+    api.applicaties.haal.mockResolvedValue(_app())
+    const { wrapper } = await mountDetail({ query: '?tab=blokkades' })
+    expect(wrapper.find('[data-testid="detailtabs-tab-blokkades"]').attributes('aria-selected')).toBe('true')
+  })
+
+  it('checklist: categorie-sub-tabs uit de geladen vragen, eerste categorie default', async () => {
+    api.applicaties.haal.mockResolvedValue(_app())
+    api.checklistvragen.lijst.mockResolvedValue([
+      { id: 1, code: '1.1', categorie_nr: 1, categorie_naam: 'Identiteit', vraag: 'a', prioriteit: 'hoog' },
+      { id: 2, code: '2.1', categorie_nr: 2, categorie_naam: 'Data', vraag: 'b', prioriteit: 'hoog' },
+    ])
+    const { wrapper } = await mountDetail({ query: '?tab=checklist' })
+    expect(wrapper.find('[data-testid="checklisttabs-tab-1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="checklisttabs-tab-2"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="checklisttabs-tab-1"]').attributes('aria-selected')).toBe('true')
+    // alleen categorie-1-vraag zichtbaar in het gedeelde score-panel
+    expect(wrapper.find('[data-testid="cs-rij-1.1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="cs-rij-2.1"]').exists()).toBe(false)
+  })
+
+  it('deep-link: ?tab=checklist&cat=2 opent de tweede categorie', async () => {
+    api.applicaties.haal.mockResolvedValue(_app())
+    api.checklistvragen.lijst.mockResolvedValue([
+      { id: 1, code: '1.1', categorie_nr: 1, categorie_naam: 'Identiteit', vraag: 'a', prioriteit: 'hoog' },
+      { id: 2, code: '2.1', categorie_nr: 2, categorie_naam: 'Data', vraag: 'b', prioriteit: 'hoog' },
+    ])
+    const { wrapper } = await mountDetail({ query: '?tab=checklist&cat=2' })
+    expect(wrapper.find('[data-testid="checklisttabs-tab-2"]').attributes('aria-selected')).toBe('true')
+    expect(wrapper.find('[data-testid="cs-rij-2.1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="cs-rij-1.1"]').exists()).toBe(false)
   })
 })
