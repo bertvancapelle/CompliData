@@ -12,6 +12,7 @@ vi.mock('@/api', () => ({
   },
 }))
 
+import DataTable from 'primevue/datatable'
 import { api } from '@/api'
 import { useAuthStore } from '@/store/auth'
 import KoppelingSectie from '@modules/bwb_ontvlechting/frontend/views/KoppelingSectie.vue'
@@ -137,5 +138,20 @@ describe('KoppelingSectie', () => {
     await w.find('[data-testid="kp-meer-uitgaand"]').trigger('click')
     await flushPromises()
     expect(api.koppelingen.lijst).toHaveBeenLastCalledWith({ bronApplicatieId: APP, limit: 25, after: 'cur-uit' })
+  })
+
+  it('sorteerklik op de uitgaande tabel → refetch met sort/order + cursor-reset (CD020)', async () => {
+    api.koppelingen.lijst.mockResolvedValue({ items: [_kp('k1', APP, ANDER)], volgende_cursor: 'cur-uit' })
+    const w = await mountSectie()
+    // eerste DataTable = uitgaand; sorteer op de tegenpartij-naam (join-kolom)
+    w.findAllComponents(DataTable)[0].vm.$emit('sort', { sortField: 'tegenpartij_naam', sortOrder: 1 })
+    await flushPromises()
+    expect(api.koppelingen.lijst).toHaveBeenCalledWith({
+      bronApplicatieId: APP,
+      limit: 25,
+      after: undefined, // eigen cursor-reset van de uitgaande richting
+      sort: 'tegenpartij_naam',
+      order: 'asc',
+    })
   })
 })

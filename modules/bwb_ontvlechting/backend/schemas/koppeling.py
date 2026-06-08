@@ -8,6 +8,7 @@ DB-`CHECK` is backstop (zie service).
 """
 import uuid
 from datetime import datetime
+from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
@@ -15,6 +16,23 @@ from models.models import ImpactVerbreking, Koppelprotocol, Koppelrichting
 from schemas.applicatie import _optionele_tekst
 
 _VERPLICHTE_VELDEN = frozenset({"richting", "protocol", "impact_bij_verbreking"})
+
+
+class KoppelingSorteerveld(str, Enum):
+    """Allowlist van sorteerbare lijst-velden (ADR-017 B2, retrofit CD020).
+
+    Dekt de getoonde kolommen. `tegenpartij_naam` is een gejoinde kolom
+    (`Applicatie.naam` aan de ándere kant dan het filter: uitgaand→doel,
+    inkomend→bron). Alle allowlist-kolommen zijn NOT NULL; het uniforme
+    NULLS-LAST-pad (CD016) werkt hierop als no-op. De service mapt deze namen
+    1-op-1 op een kolom; een test borgt de synchroniteit.
+    """
+
+    created_at = "created_at"
+    tegenpartij_naam = "tegenpartij_naam"
+    richting = "richting"
+    protocol = "protocol"
+    impact_bij_verbreking = "impact_bij_verbreking"
 
 
 class KoppelingCreate(BaseModel):
@@ -78,6 +96,30 @@ class KoppelingRead(BaseModel):
 
 class KoppelingPagina(BaseModel):
     items: list[KoppelingRead]
+    volgende_cursor: str | None = None
+
+
+class KoppelingLijstItem(BaseModel):
+    """Eén koppeling in de lijst — verrijkt met de tegenpartij-applicatienaam (join,
+    CD020), zodat server-side sorteren op naam overeenstemt met wat getoond wordt.
+    De single-item GET/POST/PATCH blijven `KoppelingRead` (geen join)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    bron_applicatie_id: uuid.UUID
+    doel_applicatie_id: uuid.UUID
+    tegenpartij_naam: str
+    richting: Koppelrichting
+    protocol: Koppelprotocol
+    impact_bij_verbreking: ImpactVerbreking
+    omschrijving: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class KoppelingLijstPagina(BaseModel):
+    items: list[KoppelingLijstItem]
     volgende_cursor: str | None = None
 
 

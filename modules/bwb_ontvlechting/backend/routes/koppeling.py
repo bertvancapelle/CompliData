@@ -19,12 +19,14 @@ from app.middleware.authz import vereist_permissie
 from app.middleware.tenant import get_tenant_session
 from schemas.koppeling import (
     KoppelingCreate,
+    KoppelingLijstPagina,
     KoppelingOpties,
-    KoppelingPagina,
     KoppelingRead,
+    KoppelingSorteerveld,
     KoppelingUpdate,
 )
 from services import koppeling_service as svc
+from services.pagination import Sorteerrichting
 
 router = APIRouter(prefix="/koppelingen", tags=["bwb:koppeling"])
 
@@ -37,15 +39,21 @@ def _fout(http_status: int, code: str, bericht: str) -> JSONResponse:
     )
 
 
-@router.get("", response_model=KoppelingPagina)
+@router.get("", response_model=KoppelingLijstPagina)
 async def lijst_koppelingen(
     limit: int = Query(25, ge=1, le=100),
     after: str | None = Query(None),
     bron_applicatie_id: uuid.UUID | None = Query(None),
     doel_applicatie_id: uuid.UUID | None = Query(None),
+    sort: KoppelingSorteerveld = Query(KoppelingSorteerveld.created_at),
+    order: Sorteerrichting = Query(Sorteerrichting.asc),
     user: AuthenticatedUser = Depends(vereist_permissie(Entiteit.KOPPELING, Actie.LEZEN)),
     session: AsyncSession = Depends(get_tenant_session),
 ):
+    """Server-side sorteerbare keyset-lijst (ADR-017 + CD020), verrijkt met de
+    tegenpartij-applicatienaam (join). `sort`/`order` optioneel; weglaten =
+    `created_at` oplopend (pre-CD020-gedrag). Onbekend sorteerveld/ongeldige
+    richting ⇒ 422; cursor-mismatch ⇒ 400 `ONGELDIGE_CURSOR`."""
     try:
         items, volgende = await svc.lijst(
             session,
@@ -54,6 +62,8 @@ async def lijst_koppelingen(
             after=after,
             bron_applicatie_id=bron_applicatie_id,
             doel_applicatie_id=doel_applicatie_id,
+            sort=sort.value,
+            order=order.value,
         )
     except ValueError:
         return _fout(400, "ONGELDIGE_CURSOR", "De opgegeven paginacursor is ongeldig.")

@@ -17,9 +17,11 @@ from schemas.gebruikersgroep import (
     GebruikersgroepCreate,
     GebruikersgroepPagina,
     GebruikersgroepRead,
+    GebruikersgroepSorteerveld,
     GebruikersgroepUpdate,
 )
 from services import gebruikersgroep_service as svc
+from services.pagination import Sorteerrichting
 
 router = APIRouter(prefix="/gebruikersgroepen", tags=["bwb:gebruikersgroep"])
 
@@ -37,12 +39,23 @@ async def lijst_gebruikersgroepen(
     limit: int = Query(25, ge=1, le=100),
     after: str | None = Query(None),
     applicatie_id: uuid.UUID | None = Query(None),
+    sort: GebruikersgroepSorteerveld = Query(GebruikersgroepSorteerveld.created_at),
+    order: Sorteerrichting = Query(Sorteerrichting.asc),
     user: AuthenticatedUser = Depends(vereist_permissie(Entiteit.GEBRUIKERSGROEP, Actie.LEZEN)),
     session: AsyncSession = Depends(get_tenant_session),
 ):
+    """Server-side sorteerbare keyset-lijst (ADR-017 + CD020). `sort`/`order`
+    optioneel; weglaten = `created_at` oplopend. Onbekend sorteerveld/ongeldige
+    richting ⇒ 422; cursor-mismatch ⇒ 400 `ONGELDIGE_CURSOR`."""
     try:
         items, volgende = await svc.lijst(
-            session, user.tenant_id, limit=limit, after=after, applicatie_id=applicatie_id
+            session,
+            user.tenant_id,
+            limit=limit,
+            after=after,
+            applicatie_id=applicatie_id,
+            sort=sort.value,
+            order=order.value,
         )
     except ValueError:
         return _fout(400, "ONGELDIGE_CURSOR", "De opgegeven paginacursor is ongeldig.")

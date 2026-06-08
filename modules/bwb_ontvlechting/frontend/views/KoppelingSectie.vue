@@ -20,12 +20,17 @@ const toast = useToast()
 
 const mag = computed(() => auth.hasRole('medewerker', 'beheerder'))
 
-const uitgaand = reactive({ items: [], cursor: null, laden: false })
-const inkomend = reactive({ items: [], cursor: null, laden: false })
+// Elke richting heeft een eigen keyset-cursor én eigen sortering (CD020).
+const uitgaand = reactive({ items: [], cursor: null, laden: false, sort: null, order: null })
+const inkomend = reactive({ items: [], cursor: null, laden: false, sort: null, order: null })
 const fout = ref(null)
 
+// PrimeVue sortOrder (1/-1/0) uit de per-richting sort-state.
+const primeOrder = (state) => (state.sort ? (state.order === 'asc' ? 1 : -1) : 0)
+
+// Voor de bron/doel-pickers in de Dialog (de tabel toont de server-geleverde
+// `tegenpartij_naam`, zodat sorteren op naam coherent is — CD020).
 const applicaties = ref([])
-const appNaam = (id) => applicaties.value.find((a) => a.id === id)?.naam || id
 
 const dialogOpen = ref(false)
 const bewerkenId = ref(null)
@@ -52,7 +57,8 @@ async function _laadRichting(state, params, reset) {
   state.laden = true
   try {
     const after = reset ? undefined : state.cursor
-    const p = await api.koppelingen.lijst({ ...params, limit: 25, after })
+    const sortering = state.sort ? { sort: state.sort, order: state.order } : {}
+    const p = await api.koppelingen.lijst({ ...params, limit: 25, after, ...sortering })
     state.items = reset ? p.items : state.items.concat(p.items)
     state.cursor = p.volgende_cursor
   } catch (e) {
@@ -63,6 +69,16 @@ async function _laadRichting(state, params, reset) {
 }
 const laadUitgaand = (reset = false) => _laadRichting(uitgaand, { bronApplicatieId: props.applicatieId }, reset)
 const laadInkomend = (reset = false) => _laadRichting(inkomend, { doelApplicatieId: props.applicatieId }, reset)
+
+// Sorteerklik per richting → eigen cursor resetten en vanaf pagina 1 herladen.
+function _onSort(state, laadFn, event) {
+  state.sort = event.sortField
+  state.order = event.sortOrder === 1 ? 'asc' : 'desc'
+  state.cursor = null
+  laadFn(true)
+}
+const onSortUitgaand = (e) => _onSort(uitgaand, laadUitgaand, e)
+const onSortInkomend = (e) => _onSort(inkomend, laadInkomend, e)
 function laadBeide() {
   fout.value = null
   laadUitgaand(true)
@@ -226,12 +242,19 @@ laadBeide()
 
     <!-- Uitgaand: deze applicatie = bron -->
     <h3 class="font-semibold mt-[var(--cd-space-sm)]">Uitgaand (deze applicatie is bron)</h3>
-    <DataTable :value="uitgaand.items" data-testid="kp-tabel-uitgaand">
+    <DataTable
+      :value="uitgaand.items"
+      lazy
+      :sort-field="uitgaand.sort"
+      :sort-order="primeOrder(uitgaand)"
+      data-testid="kp-tabel-uitgaand"
+      @sort="onSortUitgaand"
+    >
       <Column header="Rol"><template #body>Bron</template></Column>
-      <Column header="Tegenpartij (doel)"><template #body="{ data }">{{ appNaam(data.doel_applicatie_id) }}</template></Column>
-      <Column header="Richting"><template #body="{ data }"><Tag :value="label(KOPPELRICHTING, data.richting)" /></template></Column>
-      <Column header="Protocol"><template #body="{ data }">{{ label(KOPPELPROTOCOL, data.protocol) }}</template></Column>
-      <Column header="Impact"><template #body="{ data }"><Tag :value="label(IMPACT_VERBREKING, data.impact_bij_verbreking)" :severity="IMPACT_SEVERITY[data.impact_bij_verbreking] || 'info'" /></template></Column>
+      <Column header="Tegenpartij (doel)" sort-field="tegenpartij_naam" sortable><template #body="{ data }">{{ data.tegenpartij_naam }}</template></Column>
+      <Column header="Richting" sort-field="richting" sortable><template #body="{ data }"><Tag :value="label(KOPPELRICHTING, data.richting)" /></template></Column>
+      <Column header="Protocol" sort-field="protocol" sortable><template #body="{ data }">{{ label(KOPPELPROTOCOL, data.protocol) }}</template></Column>
+      <Column header="Impact" sort-field="impact_bij_verbreking" sortable><template #body="{ data }"><Tag :value="label(IMPACT_VERBREKING, data.impact_bij_verbreking)" :severity="IMPACT_SEVERITY[data.impact_bij_verbreking] || 'info'" /></template></Column>
       <Column header="">
         <template #body="{ data }">
           <div v-if="mag" class="flex gap-[var(--cd-space-sm)]">
@@ -246,12 +269,19 @@ laadBeide()
 
     <!-- Inkomend: deze applicatie = doel -->
     <h3 class="font-semibold mt-[var(--cd-space-md)]">Inkomend (deze applicatie is doel)</h3>
-    <DataTable :value="inkomend.items" data-testid="kp-tabel-inkomend">
+    <DataTable
+      :value="inkomend.items"
+      lazy
+      :sort-field="inkomend.sort"
+      :sort-order="primeOrder(inkomend)"
+      data-testid="kp-tabel-inkomend"
+      @sort="onSortInkomend"
+    >
       <Column header="Rol"><template #body>Doel</template></Column>
-      <Column header="Tegenpartij (bron)"><template #body="{ data }">{{ appNaam(data.bron_applicatie_id) }}</template></Column>
-      <Column header="Richting"><template #body="{ data }"><Tag :value="label(KOPPELRICHTING, data.richting)" /></template></Column>
-      <Column header="Protocol"><template #body="{ data }">{{ label(KOPPELPROTOCOL, data.protocol) }}</template></Column>
-      <Column header="Impact"><template #body="{ data }"><Tag :value="label(IMPACT_VERBREKING, data.impact_bij_verbreking)" :severity="IMPACT_SEVERITY[data.impact_bij_verbreking] || 'info'" /></template></Column>
+      <Column header="Tegenpartij (bron)" sort-field="tegenpartij_naam" sortable><template #body="{ data }">{{ data.tegenpartij_naam }}</template></Column>
+      <Column header="Richting" sort-field="richting" sortable><template #body="{ data }"><Tag :value="label(KOPPELRICHTING, data.richting)" /></template></Column>
+      <Column header="Protocol" sort-field="protocol" sortable><template #body="{ data }">{{ label(KOPPELPROTOCOL, data.protocol) }}</template></Column>
+      <Column header="Impact" sort-field="impact_bij_verbreking" sortable><template #body="{ data }"><Tag :value="label(IMPACT_VERBREKING, data.impact_bij_verbreking)" :severity="IMPACT_SEVERITY[data.impact_bij_verbreking] || 'info'" /></template></Column>
       <Column header="">
         <template #body="{ data }">
           <div v-if="mag" class="flex gap-[var(--cd-space-sm)]">

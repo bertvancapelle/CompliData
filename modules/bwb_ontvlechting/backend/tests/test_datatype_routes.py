@@ -153,7 +153,7 @@ def test_lijst_filter_applicatie_id_doorgegeven(monkeypatch):
     app, svc = _maak_app(monkeypatch, _payload("viewer"))
     ontvangen = {}
 
-    async def _capture(session, tenant_id, *, limit, after, applicatie_id):
+    async def _capture(session, tenant_id, *, limit, after, applicatie_id, sort=None, order=None):
         ontvangen["applicatie_id"] = applicatie_id
         return ([], None)
 
@@ -161,6 +161,13 @@ def test_lijst_filter_applicatie_id_doorgegeven(monkeypatch):
     resp = _client(app).get(f"/api/v1/datatypes?applicatie_id={_APP_ID}")
     assert resp.status_code == 200
     assert str(ontvangen["applicatie_id"]) == _APP_ID
+
+
+def test_ongeldig_sortveld_geeft_422(monkeypatch):
+    """CD020: de allowlist-enum op `sort` weigert een onbekend veld met 422."""
+    app, _ = _maak_app(monkeypatch, _payload("viewer"))
+    assert _client(app).get("/api/v1/datatypes?sort=geheim").status_code == 422
+    assert _client(app).get("/api/v1/datatypes?order=zijwaarts").status_code == 422
 
 
 def test_ongeldige_uuid_pad_geeft_422(monkeypatch):

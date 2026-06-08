@@ -169,7 +169,7 @@ def test_lijst_filters_doorgegeven(monkeypatch):
     app, svc = _maak_app(monkeypatch, _payload("viewer"))
     ontvangen = {}
 
-    async def _capture(session, tenant_id, *, limit, after, applicatie_id, status):
+    async def _capture(session, tenant_id, *, limit, after, applicatie_id, status, sort=None, order=None):
         ontvangen["applicatie_id"] = applicatie_id
         ontvangen["status"] = status
         return ([], None)

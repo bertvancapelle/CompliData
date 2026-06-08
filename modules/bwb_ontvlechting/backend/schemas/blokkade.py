@@ -49,6 +49,23 @@ class BlokkadeSorteerveld(str, Enum):
     gewijzigd_op = "gewijzigd_op"
 
 
+class BlokkadeLijstSorteerveld(str, Enum):
+    """Allowlist van sorteerbare velden voor de **per-applicatie** blokkade-lijst
+    (`GET /blokkades`, retrofit CD020). Dit is de overzicht-allowlist mínus de
+    join-only velden (`applicatie_naam`/`vraag_code`) — die zijn betekenisloos in
+    een sectie van één applicatie (de per-app `lijst` joint niet). NOT NULL:
+    `status`, `gewijzigd_op`, `created_at`. Nullable (NULLS LAST): `toelichting`,
+    `eigenaar`, `opgelost_op`. `gewijzigd_op` mapt op `updated_at`.
+    """
+
+    created_at = "created_at"
+    status = "status"
+    toelichting = "toelichting"
+    eigenaar = "eigenaar"
+    opgelost_op = "opgelost_op"
+    gewijzigd_op = "gewijzigd_op"
+
+
 class BlokkadeUpdate(BaseModel):
     """Handmatige opvolging. `opgelost_op` wordt server-zijdig uit `status` afgeleid."""
 

@@ -7,6 +7,7 @@ worden hergebruikt uit `schemas.applicatie`.
 """
 import uuid
 from datetime import datetime
+from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
@@ -14,6 +15,21 @@ from models.models import ChecklistScore
 from schemas.applicatie import _optionele_tekst
 
 _VERPLICHTE_VELDEN = frozenset({"score"})
+
+
+class ChecklistscoreSorteerveld(str, Enum):
+    """Allowlist van sorteerbare lijst-velden (ADR-017 B2, retrofit CD020).
+
+    API-only retrofit (zie route-docstring): de frontend-sectie is bewust een
+    vraag-gedreven invulformulier, geen sorteerbare tabel. NOT NULL: `vraag_code`,
+    `created_at`. Nullable (NULLS LAST, ADR-017 B5): `score`, `eigenaar`. De
+    service mapt deze namen 1-op-1 op een kolom; een test borgt de synchroniteit.
+    """
+
+    created_at = "created_at"
+    vraag_code = "vraag_code"
+    score = "score"
+    eigenaar = "eigenaar"
 
 
 def _v_vraag_code(v: str) -> str:

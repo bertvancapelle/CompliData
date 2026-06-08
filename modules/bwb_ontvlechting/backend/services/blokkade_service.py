@@ -10,7 +10,7 @@ de applicatie `migratieklaar`.
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import select, tuple_
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.models import (
@@ -24,9 +24,7 @@ from schemas.blokkade import BlokkadeUpdate
 from services import lifecycle_service
 from services.errors import NietGevonden, OngeldigeStatusovergang
 from services.pagination import (
-    decode_cursor,
     decode_sort_cursor_nullable,
-    encode_cursor,
     encode_sort_cursor_nullable,
     keyset_order_by_nulls_last,
     keyset_seek_nulls_last,
@@ -66,6 +64,33 @@ _OVERZICHT_PARSERS = {
 }
 
 
+# ── Per-applicatie lijst (CD020 sorteer-retrofit) ───────────────────────────────
+#
+# Allowlist voor `GET /blokkades` = de overzicht-allowlist mínus de join-only
+# velden (`applicatie_naam`/`vraag_code`): de per-app `lijst` joint niet en die
+# velden zijn betekenisloos binnen één applicatie. `gewijzigd_op` → `updated_at`.
+
+_STANDAARD_LIJST_SORT = "created_at"
+_STANDAARD_LIJST_ORDER = "asc"
+
+_LIJST_KOLOMMEN = {
+    "created_at": Blokkade.created_at,
+    "status": Blokkade.status,
+    "toelichting": Blokkade.toelichting,
+    "eigenaar": Blokkade.eigenaar,
+    "opgelost_op": Blokkade.opgelost_op,
+    "gewijzigd_op": Blokkade.updated_at,
+}
+_LIJST_PARSERS = {
+    "created_at": datetime.fromisoformat,
+    "status": BlokkadeStatus,
+    "toelichting": str,
+    "eigenaar": str,
+    "opgelost_op": datetime.fromisoformat,
+    "gewijzigd_op": datetime.fromisoformat,
+}
+
+
 def _tenant_uuid(tenant_id) -> uuid.UUID:
     return tenant_id if isinstance(tenant_id, uuid.UUID) else uuid.UUID(str(tenant_id))
 
@@ -83,9 +108,24 @@ async def lijst(
     after: str | None = None,
     applicatie_id: uuid.UUID | None = None,
     status: BlokkadeStatus | None = None,
+    sort: str = _STANDAARD_LIJST_SORT,
+    order: str = _STANDAARD_LIJST_ORDER,
 ) -> tuple[list[Blokkade], str | None]:
+    """Server-side sorteerbare per-applicatie blokkade-lijst (ADR-017 + CD020).
+
+    Additief bovenop het CD016-bevroren contract: `sort`/`order` weglaten = exact
+    het pre-CD020-gedrag (`created_at` oplopend). Uniform NULLS-LAST-pad (CD016);
+    `Blokkade.id` = tiebreaker. Het tenant-brede `lijst_overzicht` (join) blijft
+    ongemoeid. Cursor die niet bij `sort`/`order` past ⇒ `ValueError` (route ⇒ 400).
+    """
     limit = max(1, min(limit, _MAX_LIMIT))
     tid = _tenant_uuid(tenant_id)
+
+    if sort not in _LIJST_KOLOMMEN:
+        raise ValueError(f"onbekend sorteerveld: {sort}")
+    if order not in (_STANDAARD_LIJST_ORDER, "desc"):
+        raise ValueError(f"onbekende sorteerrichting: {order}")
+    kolom = _LIJST_KOLOMMEN[sort]
 
     stmt = select(Blokkade).where(Blokkade.tenant_id == tid)
     if applicatie_id is not None:
@@ -93,16 +133,28 @@ async def lijst(
     if status is not None:
         stmt = stmt.where(Blokkade.status == status)
     if after:
-        cursor_created_at, cursor_id = decode_cursor(after)
+        c_sort, c_order, c_is_null, c_waarde_str, c_id = decode_sort_cursor_nullable(after)
+        if c_sort != sort or c_order != order:
+            raise ValueError("cursor past niet bij de actieve sortering")
+        c_waarde = None if c_is_null else _LIJST_PARSERS[sort](c_waarde_str)
         stmt = stmt.where(
-            tuple_(Blokkade.created_at, Blokkade.id) > (cursor_created_at, cursor_id)
+            keyset_seek_nulls_last(
+                kolom, Blokkade.id, order=order, is_null=c_is_null,
+                waarde=c_waarde, cursor_id=c_id,
+            )
         )
-    stmt = stmt.order_by(Blokkade.created_at, Blokkade.id).limit(limit + 1)
+    stmt = stmt.order_by(*keyset_order_by_nulls_last(kolom, Blokkade.id, order)).limit(limit + 1)
 
     rijen = list((await session.execute(stmt)).scalars().all())
     heeft_meer = len(rijen) > limit
     items = rijen[:limit]
-    volgende = encode_cursor(items[-1]) if heeft_meer else None
+    volgende = (
+        encode_sort_cursor_nullable(
+            sort=sort, order=order, waarde=getattr(items[-1], kolom.key), id=items[-1].id
+        )
+        if heeft_meer
+        else None
+    )
     return items, volgende
 
 

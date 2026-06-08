@@ -180,7 +180,7 @@ def test_lijst_filter_applicatie_id_doorgegeven(monkeypatch):
     app, svc = _maak_app(monkeypatch, _payload("viewer"))
     ontvangen = {}
 
-    async def _capture(session, tenant_id, *, limit, after, applicatie_id):
+    async def _capture(session, tenant_id, *, limit, after, applicatie_id, sort=None, order=None):
         ontvangen["applicatie_id"] = applicatie_id
         return ([], None)
 

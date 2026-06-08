@@ -9,10 +9,26 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
+from enum import Enum
+
 from models.models import DatatypeCategorie
 from schemas.applicatie import _optionele_tekst
 
 _VERPLICHTE_VELDEN = frozenset({"categorie"})
+
+
+class DatatypeSorteerveld(str, Enum):
+    """Allowlist van sorteerbare lijst-velden (ADR-017 B2, retrofit CD020).
+
+    Dekt de getoonde kolommen. NOT NULL: `categorie`, `created_at`. Nullable
+    (NULLS LAST, ADR-017 B5): `omschrijving`, `omvang_indicatie`. De service mapt
+    deze namen 1-op-1 op een kolom; een test borgt de synchroniteit.
+    """
+
+    created_at = "created_at"
+    categorie = "categorie"
+    omschrijving = "omschrijving"
+    omvang_indicatie = "omvang_indicatie"
 
 
 class DatatypeCreate(BaseModel):

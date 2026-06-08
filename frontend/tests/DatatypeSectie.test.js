@@ -18,6 +18,7 @@ vi.mock('@/api', () => ({
   },
 }))
 
+import DataTable from 'primevue/datatable'
 import { api } from '@/api'
 import { useAuthStore } from '@/store/auth'
 import DatatypeSectie from '@modules/bwb_ontvlechting/frontend/views/DatatypeSectie.vue'
@@ -120,5 +121,35 @@ describe('DatatypeSectie', () => {
     await flushPromises()
     expect(api.datatypes.maak).toHaveBeenCalledTimes(1)
     expect(api.datatypes.lijst.mock.calls.length).toBe(voor + 1) // refresh
+  })
+})
+
+describe('DatatypeSectie — sortering (CD020)', () => {
+  it('default-laad stuurt géén sort/order mee (backwards-compatible)', async () => {
+    await mountSectie()
+    expect(api.datatypes.lijst).toHaveBeenLastCalledWith({ applicatieId: APP, limit: 25, after: undefined })
+  })
+
+  it('sorteerklik → refetch met sort/order + cursor-reset', async () => {
+    api.datatypes.lijst.mockResolvedValueOnce({ items: [_dt('A', 'd1')], volgende_cursor: 'c1' })
+    const w = await mountSectie()
+    w.findComponent(DataTable).vm.$emit('sort', { sortField: 'omschrijving', sortOrder: -1 })
+    await flushPromises()
+    expect(api.datatypes.lijst).toHaveBeenLastCalledWith({
+      applicatieId: APP,
+      limit: 25,
+      after: undefined, // cursor-reset ondanks de eerdere volgende_cursor 'c1'
+      sort: 'omschrijving',
+      order: 'desc',
+    })
+  })
+
+  it('vertaalt sortOrder 1 naar asc', async () => {
+    const w = await mountSectie()
+    w.findComponent(DataTable).vm.$emit('sort', { sortField: 'categorie', sortOrder: 1 })
+    await flushPromises()
+    expect(api.datatypes.lijst).toHaveBeenLastCalledWith(
+      expect.objectContaining({ sort: 'categorie', order: 'asc' }),
+    )
   })
 })

@@ -22,9 +22,11 @@ from schemas.checklistscore import (
     ChecklistscoreOpties,
     ChecklistscorePagina,
     ChecklistscoreRead,
+    ChecklistscoreSorteerveld,
     ChecklistscoreUpdate,
 )
 from services import checklistscore_service as svc
+from services.pagination import Sorteerrichting
 
 router = APIRouter(prefix="/checklistscores", tags=["bwb:checklistscore"])
 
@@ -42,12 +44,29 @@ async def lijst_checklistscores(
     limit: int = Query(25, ge=1, le=100),
     after: str | None = Query(None),
     applicatie_id: uuid.UUID | None = Query(None),
+    sort: ChecklistscoreSorteerveld = Query(ChecklistscoreSorteerveld.created_at),
+    order: Sorteerrichting = Query(Sorteerrichting.asc),
     user: AuthenticatedUser = Depends(vereist_permissie(Entiteit.CHECKLISTSCORE, Actie.LEZEN)),
     session: AsyncSession = Depends(get_tenant_session),
 ):
+    """Server-side sorteerbare keyset-lijst (ADR-017 + CD020).
+
+    **API-only retrofit** (CD020, beslispunt 2): de sorteerbaarheid maakt dit
+    lijst-endpoint uniform met de overige entiteiten, maar de frontend-sectie
+    (`ChecklistscoreSectie.vue`) blijft bewust een vraag-gedreven invulformulier
+    (89 vragen, inline score-bewerking) — géén sorteerbare tabel. `sort`/`order`
+    optioneel; weglaten = `created_at` oplopend. Onbekend sorteerveld/ongeldige
+    richting ⇒ 422; cursor-mismatch ⇒ 400 `ONGELDIGE_CURSOR`.
+    """
     try:
         items, volgende = await svc.lijst(
-            session, user.tenant_id, limit=limit, after=after, applicatie_id=applicatie_id
+            session,
+            user.tenant_id,
+            limit=limit,
+            after=after,
+            applicatie_id=applicatie_id,
+            sort=sort.value,
+            order=order.value,
         )
     except ValueError:
         return _fout(400, "ONGELDIGE_CURSOR", "De opgegeven paginacursor is ongeldig.")

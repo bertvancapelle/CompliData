@@ -26,6 +26,13 @@ const laden = ref(false)
 const fout = ref(null)
 const opties = ref({ status: [] })
 
+// Sortering (CD020) — null = server-default (created_at asc), niet meegestuurd.
+const sortVeld = ref(null)
+const sortRichting = ref(null) // 'asc' | 'desc'
+const primeSortOrder = computed(() =>
+  sortRichting.value === 'asc' ? 1 : sortRichting.value === 'desc' ? -1 : 0,
+)
+
 const aantalOpen = computed(
   () => items.value.filter((b) => b.status === 'open' || b.status === 'in_behandeling').length,
 )
@@ -51,8 +58,12 @@ async function laad({ reset = false } = {}) {
   laden.value = true
   fout.value = null
   try {
-    const after = reset ? undefined : cursor.value
-    const p = await api.blokkades.lijst({ applicatieId: props.applicatieId, limit: 25, after })
+    const params = { applicatieId: props.applicatieId, limit: 25, after: reset ? undefined : cursor.value }
+    if (sortVeld.value) {
+      params.sort = sortVeld.value
+      params.order = sortRichting.value
+    }
+    const p = await api.blokkades.lijst(params)
     items.value = reset ? p.items : items.value.concat(p.items)
     cursor.value = p.volgende_cursor
   } catch (e) {
@@ -60,6 +71,13 @@ async function laad({ reset = false } = {}) {
   } finally {
     laden.value = false
   }
+}
+
+function onSort(event) {
+  sortVeld.value = event.sortField
+  sortRichting.value = event.sortOrder === 1 ? 'asc' : 'desc'
+  cursor.value = null
+  laad({ reset: true })
 }
 
 async function _laadOptiesEenmalig() {
@@ -150,10 +168,17 @@ laad({ reset: true })
 
     <p v-if="fout" role="alert" data-testid="bk-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ fout }}</p>
 
-    <DataTable :value="items" data-testid="bk-tabel">
-      <Column header="Status"><template #body="{ data }"><Tag :value="label(BLOKKADE_STATUS, data.status)" :severity="BLOKKADE_STATUS_SEVERITY[data.status] || 'info'" /></template></Column>
-      <Column field="toelichting" header="Toelichting" />
-      <Column field="eigenaar" header="Eigenaar" />
+    <DataTable
+      :value="items"
+      lazy
+      :sort-field="sortVeld"
+      :sort-order="primeSortOrder"
+      data-testid="bk-tabel"
+      @sort="onSort"
+    >
+      <Column header="Status" sort-field="status" sortable><template #body="{ data }"><Tag :value="label(BLOKKADE_STATUS, data.status)" :severity="BLOKKADE_STATUS_SEVERITY[data.status] || 'info'" /></template></Column>
+      <Column field="toelichting" header="Toelichting" sortable />
+      <Column field="eigenaar" header="Eigenaar" sortable />
       <Column header="">
         <template #body="{ data }">
           <Button v-if="mag" label="Bewerken" size="small" severity="secondary" :data-testid="`bk-bewerk-${data.id}`" @click="(e) => openBewerken(e, data)" />

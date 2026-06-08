@@ -94,8 +94,9 @@ export const api = {
   },
 
   datatypes: {
-    lijst: ({ applicatieId, limit, after } = {}) =>
-      request(`/datatypes${_query({ applicatie_id: applicatieId, limit, after })}`),
+    // sort/order optioneel (CD020) — weglaten = server-default (created_at asc).
+    lijst: ({ applicatieId, limit, after, sort, order } = {}) =>
+      request(`/datatypes${_query({ applicatie_id: applicatieId, limit, after, sort, order })}`),
     haal: (id) => request(`/datatypes/${id}`),
     maak: (data) => request('/datatypes', { method: 'POST', body: JSON.stringify(data) }),
     werkBij: (id, data) =>
@@ -105,8 +106,11 @@ export const api = {
   },
 
   gebruikersgroepen: {
-    lijst: ({ applicatieId, limit, after } = {}) =>
-      request(`/gebruikersgroepen${_query({ applicatie_id: applicatieId, limit, after })}`),
+    // sort/order optioneel (CD020) — weglaten = server-default (created_at asc).
+    lijst: ({ applicatieId, limit, after, sort, order } = {}) =>
+      request(
+        `/gebruikersgroepen${_query({ applicatie_id: applicatieId, limit, after, sort, order })}`,
+      ),
     haal: (id) => request(`/gebruikersgroepen/${id}`),
     maak: (data) =>
       request('/gebruikersgroepen', { method: 'POST', body: JSON.stringify(data) }),
@@ -119,13 +123,15 @@ export const api = {
   koppelingen: {
     // Eén ouder-filter per call (bron OF doel); de detail-view doet twee calls
     // en concateneert de disjuncte sets (DB-CHECK bron != doel → geen overlap).
-    lijst: ({ bronApplicatieId, doelApplicatieId, limit, after } = {}) =>
+    lijst: ({ bronApplicatieId, doelApplicatieId, limit, after, sort, order } = {}) =>
       request(
         `/koppelingen${_query({
           bron_applicatie_id: bronApplicatieId,
           doel_applicatie_id: doelApplicatieId,
           limit,
           after,
+          sort,
+          order,
         })}`,
       ),
     haal: (id) => request(`/koppelingen/${id}`),
@@ -148,8 +154,11 @@ export const api = {
 
   // Blokkade is systeem-afgeleid: geen maak/verwijder (backend kent ze niet).
   blokkades: {
-    lijst: ({ applicatieId, status, limit, after } = {}) =>
-      request(`/blokkades${_query({ applicatie_id: applicatieId, status, limit, after })}`),
+    // sort/order optioneel (CD020, per-app lijst) — weglaten = server-default.
+    lijst: ({ applicatieId, status, limit, after, sort, order } = {}) =>
+      request(
+        `/blokkades${_query({ applicatie_id: applicatieId, status, limit, after, sort, order })}`,
+      ),
     // Tenant-breed sorteerbaar overzicht (CD016, consument ADR-017).
     overzicht: ({ limit, after, status, sort, order } = {}) =>
       request(`/blokkades/overzicht${_query({ limit, after, status, sort, order })}`),

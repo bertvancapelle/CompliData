@@ -18,6 +18,7 @@ from app.middleware.authz import vereist_permissie
 from app.middleware.tenant import get_tenant_session
 from models.models import BlokkadeStatus
 from schemas.blokkade import (
+    BlokkadeLijstSorteerveld,
     BlokkadeOpties,
     BlokkadeOverzichtPagina,
     BlokkadePagina,
@@ -46,9 +47,15 @@ async def lijst_blokkades(
     after: str | None = Query(None),
     applicatie_id: uuid.UUID | None = Query(None),
     status: BlokkadeStatus | None = Query(None),
+    sort: BlokkadeLijstSorteerveld = Query(BlokkadeLijstSorteerveld.created_at),
+    order: Sorteerrichting = Query(Sorteerrichting.asc),
     user: AuthenticatedUser = Depends(vereist_permissie(Entiteit.BLOKKADE, Actie.LEZEN)),
     session: AsyncSession = Depends(get_tenant_session),
 ):
+    """Per-applicatie blokkade-lijst (ADR-017 + CD020). `sort`/`order` additief;
+    weglaten = `created_at` oplopend (pre-CD020-gedrag). Onbekend sorteerveld/
+    ongeldige richting ⇒ 422; cursor-mismatch ⇒ 400 `ONGELDIGE_CURSOR`. Het
+    tenant-brede `/overzicht` is een aparte route en blijft ongemoeid."""
     try:
         items, volgende = await svc.lijst(
             session,
@@ -57,6 +64,8 @@ async def lijst_blokkades(
             after=after,
             applicatie_id=applicatie_id,
             status=status,
+            sort=sort.value,
+            order=order.value,
         )
     except ValueError:
         return _fout(400, "ONGELDIGE_CURSOR", "De opgegeven paginacursor is ongeldig.")

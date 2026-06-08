@@ -20,6 +20,13 @@ const cursor = ref(null)
 const laden = ref(false)
 const fout = ref(null)
 
+// Sortering (CD020) — null = server-default (created_at asc), niet meegestuurd.
+const sortVeld = ref(null)
+const sortRichting = ref(null) // 'asc' | 'desc'
+const primeSortOrder = computed(() =>
+  sortRichting.value === 'asc' ? 1 : sortRichting.value === 'desc' ? -1 : 0,
+)
+
 const dialogOpen = ref(false)
 const bewerkenId = ref(null)
 const bezig = ref(false)
@@ -37,8 +44,12 @@ async function laad({ reset = false } = {}) {
   laden.value = true
   fout.value = null
   try {
-    const after = reset ? undefined : cursor.value
-    const p = await api.gebruikersgroepen.lijst({ applicatieId: props.applicatieId, limit: 25, after })
+    const params = { applicatieId: props.applicatieId, limit: 25, after: reset ? undefined : cursor.value }
+    if (sortVeld.value) {
+      params.sort = sortVeld.value
+      params.order = sortRichting.value
+    }
+    const p = await api.gebruikersgroepen.lijst(params)
     items.value = reset ? p.items : items.value.concat(p.items)
     cursor.value = p.volgende_cursor
   } catch (e) {
@@ -46,6 +57,13 @@ async function laad({ reset = false } = {}) {
   } finally {
     laden.value = false
   }
+}
+
+function onSort(event) {
+  sortVeld.value = event.sortField
+  sortRichting.value = event.sortOrder === 1 ? 'asc' : 'desc'
+  cursor.value = null
+  laad({ reset: true })
 }
 
 function _reset() {
@@ -164,10 +182,17 @@ laad({ reset: true })
 
     <p v-if="fout" role="alert" data-testid="gg-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ fout }}</p>
 
-    <DataTable :value="items" data-testid="gg-tabel">
-      <Column field="organisatie" header="Organisatie" />
-      <Column field="afdeling" header="Afdeling" />
-      <Column field="aantal_gebruikers" header="Aantal gebruikers" />
+    <DataTable
+      :value="items"
+      lazy
+      :sort-field="sortVeld"
+      :sort-order="primeSortOrder"
+      data-testid="gg-tabel"
+      @sort="onSort"
+    >
+      <Column field="organisatie" header="Organisatie" sortable />
+      <Column field="afdeling" header="Afdeling" sortable />
+      <Column field="aantal_gebruikers" header="Aantal gebruikers" sortable />
       <Column header="">
         <template #body="{ data }">
           <div v-if="mag" class="flex gap-[var(--cd-space-sm)]">

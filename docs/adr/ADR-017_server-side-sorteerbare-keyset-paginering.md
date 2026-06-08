@@ -170,8 +170,15 @@ aantoonbare druk", vgl. de Koppeling-OR-filter-notitie).
 
 ## Niet in scope
 
-- #12 blokkadesoverzicht (eerste consument ná dit fundament).
-- Retrofit van de overige keyset-lijsten (koppelingen e.a.).
-- De NULLS-LAST-implementatie (conventie vastgelegd; bouw bij eerste nullable
-  sorteerkolom).
-- Index-migraties (conditioneel, B6).
+- ~~#12 blokkadesoverzicht (eerste consument ná dit fundament).~~ **Afgerond (CD016).**
+- ~~Retrofit van de overige keyset-lijsten (koppelingen e.a.).~~ **Afgerond (CD020):**
+  datatype, gebruikersgroep, koppeling, checklistscore en de per-applicatie
+  blokkade-lijst zijn geretrofit naar het v2n NULLS-LAST-pad. Koppeling sorteert
+  ook op de gejoinde tegenpartij-naam (richting-afhankelijke join). Checklistscore
+  is een **API-only** retrofit: de frontend-sectie blijft per ontwerp een
+  vraag-gedreven invulformulier (geen sorteerbare tabel). Hiermee is **elke**
+  keyset-lijst server-side sorteerbaar; er blijft geen retrofit-schuld.
+- ~~De NULLS-LAST-implementatie (conventie vastgelegd; bouw bij eerste nullable
+  sorteerkolom).~~ **Geïmplementeerd (CD016), uniform hergebruikt (CD020).**
+- Index-migraties (conditioneel, B6) — nog steeds conditioneel; child-/sectie-
+  volumes blijven triviaal, dus geen migratie in CD020.

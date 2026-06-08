@@ -6,19 +6,43 @@ tenant-scoped bij aanmaken (ouder buiten tenant ⇒ 404 `NIET_GEVONDEN`),
 `applicatie_id` immutabel.
 """
 import uuid
+from datetime import datetime
 
-from sqlalchemy import select, tuple_
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.models import Gebruikersgroep
 from schemas.gebruikersgroep import GebruikersgroepCreate, GebruikersgroepUpdate
 from services import applicatie_service
 from services.errors import NietGevonden
-from services.pagination import decode_cursor, encode_cursor
+from services.pagination import (
+    decode_sort_cursor_nullable,
+    encode_sort_cursor_nullable,
+    keyset_order_by_nulls_last,
+    keyset_seek_nulls_last,
+)
 
 _ENTITEIT = "gebruikersgroep"
 _STANDAARD_LIMIT = 25
 _MAX_LIMIT = 100
+
+# Default-sortering = exact het pre-CD020-gedrag (created_at oplopend).
+_STANDAARD_SORT = "created_at"
+_STANDAARD_ORDER = "asc"
+
+# Allowlist-kolommen (ADR-017 B2) — single source naast `GebruikersgroepSorteerveld`.
+_SORTEERBARE_KOLOMMEN = {
+    "created_at": Gebruikersgroep.created_at,
+    "organisatie": Gebruikersgroep.organisatie,
+    "afdeling": Gebruikersgroep.afdeling,
+    "aantal_gebruikers": Gebruikersgroep.aantal_gebruikers,
+}
+_WAARDE_PARSERS = {
+    "created_at": datetime.fromisoformat,
+    "organisatie": str,
+    "afdeling": str,
+    "aantal_gebruikers": int,
+}
 
 
 def _tenant_uuid(tenant_id) -> uuid.UUID:
@@ -32,26 +56,52 @@ async def lijst(
     limit: int = _STANDAARD_LIMIT,
     after: str | None = None,
     applicatie_id: uuid.UUID | None = None,
+    sort: str = _STANDAARD_SORT,
+    order: str = _STANDAARD_ORDER,
 ) -> tuple[list[Gebruikersgroep], str | None]:
-    """Cursor-gepagineerde lijst binnen de tenant, optioneel gefilterd op ouder."""
+    """Server-side sorteerbare keyset-lijst binnen de tenant (ADR-017 + CD020).
+
+    Default (geen `sort`/`order`) = exact het pre-CD020-gedrag (`created_at`
+    oplopend). Uniform NULLS-LAST-pad (CD016); `Gebruikersgroep.id` = tiebreaker.
+    Cursor die niet bij `sort`/`order` past ⇒ `ValueError` (route ⇒ 400).
+    """
     limit = max(1, min(limit, _MAX_LIMIT))
     tid = _tenant_uuid(tenant_id)
+
+    if sort not in _SORTEERBARE_KOLOMMEN:
+        raise ValueError(f"onbekend sorteerveld: {sort}")
+    if order not in (_STANDAARD_ORDER, "desc"):
+        raise ValueError(f"onbekende sorteerrichting: {order}")
+    kolom = _SORTEERBARE_KOLOMMEN[sort]
 
     stmt = select(Gebruikersgroep).where(Gebruikersgroep.tenant_id == tid)
     if applicatie_id is not None:
         stmt = stmt.where(Gebruikersgroep.applicatie_id == applicatie_id)
     if after:
-        cursor_created_at, cursor_id = decode_cursor(after)
+        c_sort, c_order, c_is_null, c_waarde_str, c_id = decode_sort_cursor_nullable(after)
+        if c_sort != sort or c_order != order:
+            raise ValueError("cursor past niet bij de actieve sortering")
+        c_waarde = None if c_is_null else _WAARDE_PARSERS[sort](c_waarde_str)
         stmt = stmt.where(
-            tuple_(Gebruikersgroep.created_at, Gebruikersgroep.id)
-            > (cursor_created_at, cursor_id)
+            keyset_seek_nulls_last(
+                kolom, Gebruikersgroep.id, order=order, is_null=c_is_null,
+                waarde=c_waarde, cursor_id=c_id,
+            )
         )
-    stmt = stmt.order_by(Gebruikersgroep.created_at, Gebruikersgroep.id).limit(limit + 1)
+    stmt = stmt.order_by(
+        *keyset_order_by_nulls_last(kolom, Gebruikersgroep.id, order)
+    ).limit(limit + 1)
 
     rijen = list((await session.execute(stmt)).scalars().all())
     heeft_meer = len(rijen) > limit
     items = rijen[:limit]
-    volgende = encode_cursor(items[-1]) if heeft_meer else None
+    volgende = (
+        encode_sort_cursor_nullable(
+            sort=sort, order=order, waarde=getattr(items[-1], kolom.key), id=items[-1].id
+        )
+        if heeft_meer
+        else None
+    )
     return items, volgende
 
 

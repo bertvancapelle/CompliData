@@ -13,7 +13,7 @@ Naast de standaard tenant-bescherming (RLS + expliciete `tenant_id`-filter):
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import select, tuple_
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,11 +27,34 @@ from models.models import (
 from schemas.checklistscore import ChecklistscoreCreate, ChecklistscoreUpdate
 from services import applicatie_service, lifecycle_service
 from services.errors import ChecklistscoreConflict, NietGevonden
-from services.pagination import decode_cursor, encode_cursor
+from services.pagination import (
+    decode_sort_cursor_nullable,
+    encode_sort_cursor_nullable,
+    keyset_order_by_nulls_last,
+    keyset_seek_nulls_last,
+)
 
 _ENTITEIT = "checklistscore"
 _STANDAARD_LIMIT = 25
 _MAX_LIMIT = 100
+
+# Default-sortering = exact het pre-CD020-gedrag (created_at oplopend).
+_STANDAARD_SORT = "created_at"
+_STANDAARD_ORDER = "asc"
+
+# Allowlist-kolommen (ADR-017 B2) — single source naast `ChecklistscoreSorteerveld`.
+_SORTEERBARE_KOLOMMEN = {
+    "created_at": Checklistscore.created_at,
+    "vraag_code": Checklistscore.vraag_code,
+    "score": Checklistscore.score,
+    "eigenaar": Checklistscore.eigenaar,
+}
+_WAARDE_PARSERS = {
+    "created_at": datetime.fromisoformat,
+    "vraag_code": str,
+    "score": ChecklistScore,
+    "eigenaar": str,
+}
 
 # Scores die een actieve blokkade vereisen (ADR-013 B2).
 _BLOKKADE_VEREIST = (ChecklistScore.nee, ChecklistScore.deels)
@@ -124,25 +147,52 @@ async def lijst(
     limit: int = _STANDAARD_LIMIT,
     after: str | None = None,
     applicatie_id: uuid.UUID | None = None,
+    sort: str = _STANDAARD_SORT,
+    order: str = _STANDAARD_ORDER,
 ) -> tuple[list[Checklistscore], str | None]:
+    """Server-side sorteerbare keyset-lijst binnen de tenant (ADR-017 + CD020).
+
+    Default (geen `sort`/`order`) = exact het pre-CD020-gedrag (`created_at`
+    oplopend). Uniform NULLS-LAST-pad (CD016); `Checklistscore.id` = tiebreaker.
+    Cursor die niet bij `sort`/`order` past ⇒ `ValueError` (route ⇒ 400).
+    """
     limit = max(1, min(limit, _MAX_LIMIT))
     tid = _tenant_uuid(tenant_id)
+
+    if sort not in _SORTEERBARE_KOLOMMEN:
+        raise ValueError(f"onbekend sorteerveld: {sort}")
+    if order not in (_STANDAARD_ORDER, "desc"):
+        raise ValueError(f"onbekende sorteerrichting: {order}")
+    kolom = _SORTEERBARE_KOLOMMEN[sort]
 
     stmt = select(Checklistscore).where(Checklistscore.tenant_id == tid)
     if applicatie_id is not None:
         stmt = stmt.where(Checklistscore.applicatie_id == applicatie_id)
     if after:
-        cursor_created_at, cursor_id = decode_cursor(after)
+        c_sort, c_order, c_is_null, c_waarde_str, c_id = decode_sort_cursor_nullable(after)
+        if c_sort != sort or c_order != order:
+            raise ValueError("cursor past niet bij de actieve sortering")
+        c_waarde = None if c_is_null else _WAARDE_PARSERS[sort](c_waarde_str)
         stmt = stmt.where(
-            tuple_(Checklistscore.created_at, Checklistscore.id)
-            > (cursor_created_at, cursor_id)
+            keyset_seek_nulls_last(
+                kolom, Checklistscore.id, order=order, is_null=c_is_null,
+                waarde=c_waarde, cursor_id=c_id,
+            )
         )
-    stmt = stmt.order_by(Checklistscore.created_at, Checklistscore.id).limit(limit + 1)
+    stmt = stmt.order_by(
+        *keyset_order_by_nulls_last(kolom, Checklistscore.id, order)
+    ).limit(limit + 1)
 
     rijen = list((await session.execute(stmt)).scalars().all())
     heeft_meer = len(rijen) > limit
     items = rijen[:limit]
-    volgende = encode_cursor(items[-1]) if heeft_meer else None
+    volgende = (
+        encode_sort_cursor_nullable(
+            sort=sort, order=order, waarde=getattr(items[-1], kolom.key), id=items[-1].id
+        )
+        if heeft_meer
+        else None
+    )
     return items, volgende
 
 

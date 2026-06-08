@@ -24,6 +24,14 @@ const cursor = ref(null)
 const laden = ref(false)
 const fout = ref(null)
 
+// Sortering (CD020) — null = server-default (created_at asc), niet meegestuurd
+// (backwards-compatible). PrimeVue gebruikt sortOrder 1/-1; de API asc/desc.
+const sortVeld = ref(null)
+const sortRichting = ref(null) // 'asc' | 'desc'
+const primeSortOrder = computed(() =>
+  sortRichting.value === 'asc' ? 1 : sortRichting.value === 'desc' ? -1 : 0,
+)
+
 const dialogOpen = ref(false)
 const bewerkenId = ref(null)
 const bezig = ref(false)
@@ -42,8 +50,12 @@ async function laad({ reset = false } = {}) {
   laden.value = true
   fout.value = null
   try {
-    const after = reset ? undefined : cursor.value
-    const p = await api.datatypes.lijst({ applicatieId: props.applicatieId, limit: 25, after })
+    const params = { applicatieId: props.applicatieId, limit: 25, after: reset ? undefined : cursor.value }
+    if (sortVeld.value) {
+      params.sort = sortVeld.value
+      params.order = sortRichting.value
+    }
+    const p = await api.datatypes.lijst(params)
     items.value = reset ? p.items : items.value.concat(p.items)
     cursor.value = p.volgende_cursor
   } catch (e) {
@@ -51,6 +63,14 @@ async function laad({ reset = false } = {}) {
   } finally {
     laden.value = false
   }
+}
+
+function onSort(event) {
+  // Nieuwe sortering → cursor resetten en vanaf pagina 1 opnieuw ophalen.
+  sortVeld.value = event.sortField
+  sortRichting.value = event.sortOrder === 1 ? 'asc' : 'desc'
+  cursor.value = null
+  laad({ reset: true })
 }
 
 async function _laadOptiesEenmalig() {
@@ -177,12 +197,19 @@ laad({ reset: true })
 
     <p v-if="fout" role="alert" data-testid="dt-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ fout }}</p>
 
-    <DataTable :value="items" data-testid="dt-tabel">
-      <Column header="Categorie">
+    <DataTable
+      :value="items"
+      lazy
+      :sort-field="sortVeld"
+      :sort-order="primeSortOrder"
+      data-testid="dt-tabel"
+      @sort="onSort"
+    >
+      <Column header="Categorie" sort-field="categorie" sortable>
         <template #body="{ data }"><Tag :value="label(DATATYPE_CATEGORIE, data.categorie)" /></template>
       </Column>
-      <Column field="omschrijving" header="Omschrijving" />
-      <Column field="omvang_indicatie" header="Omvang" />
+      <Column field="omschrijving" header="Omschrijving" sortable />
+      <Column field="omvang_indicatie" header="Omvang" sortable />
       <Column header="">
         <template #body="{ data }">
           <div v-if="mag" class="flex gap-[var(--cd-space-sm)]">

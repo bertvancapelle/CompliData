@@ -7,12 +7,27 @@ zit in Create maar niet in Update (immutabel).
 """
 import uuid
 from datetime import datetime
+from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from schemas.applicatie import _optionele_tekst, _verplichte_tekst
 
 _VERPLICHTE_VELDEN = frozenset({"organisatie"})
+
+
+class GebruikersgroepSorteerveld(str, Enum):
+    """Allowlist van sorteerbare lijst-velden (ADR-017 B2, retrofit CD020).
+
+    Dekt de getoonde kolommen. NOT NULL: `organisatie`, `created_at`. Nullable
+    (NULLS LAST, ADR-017 B5): `afdeling`, `aantal_gebruikers`. De service mapt
+    deze namen 1-op-1 op een kolom; een test borgt de synchroniteit.
+    """
+
+    created_at = "created_at"
+    organisatie = "organisatie"
+    afdeling = "afdeling"
+    aantal_gebruikers = "aantal_gebruikers"
 
 
 class GebruikersgroepCreate(BaseModel):

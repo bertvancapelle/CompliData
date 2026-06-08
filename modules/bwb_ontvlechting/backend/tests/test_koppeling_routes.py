@@ -28,6 +28,7 @@ def _fake_koppeling():
         id=uuid.UUID(_ID),
         bron_applicatie_id=uuid.UUID(_BRON),
         doel_applicatie_id=uuid.UUID(_DOEL),
+        tegenpartij_naam="Doel-applicatie",  # CD020: lijst levert de join-naam
         richting="eenrichting",
         protocol="api",
         impact_bij_verbreking="hoog",
@@ -189,7 +190,10 @@ def test_lijst_filter_bron_doel_doorgegeven(monkeypatch):
     app, svc = _maak_app(monkeypatch, _payload("viewer"))
     ontvangen = {}
 
-    async def _capture(session, tenant_id, *, limit, after, bron_applicatie_id, doel_applicatie_id):
+    async def _capture(
+        session, tenant_id, *, limit, after, bron_applicatie_id, doel_applicatie_id,
+        sort=None, order=None,
+    ):
         ontvangen["bron"] = bron_applicatie_id
         ontvangen["doel"] = doel_applicatie_id
         return ([], None)
@@ -201,6 +205,13 @@ def test_lijst_filter_bron_doel_doorgegeven(monkeypatch):
     assert resp.status_code == 200
     assert str(ontvangen["bron"]) == _BRON
     assert str(ontvangen["doel"]) == _DOEL
+
+
+def test_ongeldig_sortveld_geeft_422(monkeypatch):
+    """CD020: de allowlist-enum op `sort` weigert een onbekend veld met 422
+    (incl. `tegenpartij_naam` als geldige join-sorteerkolom)."""
+    app, _ = _maak_app(monkeypatch, _payload("viewer"))
+    assert _client(app).get("/api/v1/koppelingen?sort=geheim").status_code == 422
 
 
 def test_ongeldige_uuid_pad_geeft_422(monkeypatch):
