@@ -41,10 +41,13 @@ from sqlalchemy import select  # noqa: E402
 
 from app.core.database import get_worker_session  # noqa: E402
 from models.models import (  # noqa: E402
+    AntwoordType,
     Applicatie,
     Blokkade,
     BlokkadeStatus,
     ChecklistScore,
+    ChecklistVraag,
+    ChecklistVraagOptie,
     Checklistscore,
     Koppeling,
 )
@@ -327,6 +330,79 @@ async def _seed_velden(session, app_nr: int, app_id) -> int:
     return gevuld
 
 
+async def _laad_catalogus(session) -> tuple[dict, dict]:
+    """(code → antwoordtype voor getypeerde vragen, code → [actieve optie_sleutels])."""
+    typed = {
+        code: at
+        for (code, at) in (
+            await session.execute(
+                select(ChecklistVraag.code, ChecklistVraag.antwoordtype).where(
+                    ChecklistVraag.antwoordtype != AntwoordType.geen
+                )
+            )
+        ).all()
+    }
+    opties_per_code: dict[str, list[str]] = {}
+    for code, sleutel in (
+        await session.execute(
+            select(ChecklistVraagOptie.vraag_code, ChecklistVraagOptie.optie_sleutel)
+            .where(ChecklistVraagOptie.actief.is_(True))
+            .order_by(ChecklistVraagOptie.vraag_code, ChecklistVraagOptie.volgorde)
+        )
+    ).all():
+        opties_per_code.setdefault(code, []).append(sleutel)
+    return typed, opties_per_code
+
+
+def _kies_antwoord(antwoordtype, code: str, app_nr: int, host: str, opties: list[str]):
+    """Deterministische, gevarieerde antwoord_waarde-envelope (of None)."""
+    if antwoordtype == AntwoordType.getal:
+        return {"getal": app_nr}  # 1..12 — onderling verschillend
+    if not opties:
+        return None
+    if antwoordtype == AntwoordType.enkelvoudige_keuze:
+        # 2.1 ← werkelijke hostingmodel van de app (sleutel = enum-waarde = host).
+        if code == "2.1" and host in opties:
+            return {"optie": host}
+        return {"optie": opties[app_nr % len(opties)]}
+    # meerkeuze: eerste optie, plus bij even app-index de tweede.
+    keuze = [opties[0]]
+    if app_nr % 2 == 0 and len(opties) > 1:
+        keuze.append(opties[1])
+    return {"opties": keuze}
+
+
+async def _seed_antwoord_waarden(
+    session, app_nr: int, host: str, app_id, typed: dict, opties_per_code: dict
+) -> int:
+    """Vul antwoord_waarde op bestaande gescoorde rijen van getypeerde vragen.
+
+    Via `checklistscore_service.werk_bij` (zónder `score`) zodat de 2B-validatie
+    meeloopt en de engine no-op blijft. Idempotent: reeds-gevulde rijen worden
+    overgeslagen.
+    """
+    scores = (
+        await session.execute(
+            select(Checklistscore).where(Checklistscore.applicatie_id == app_id)
+        )
+    ).scalars().all()
+
+    gevuld = 0
+    for s in scores:
+        if s.vraag_code not in typed or s.antwoord_waarde:
+            continue
+        waarde = _kies_antwoord(
+            typed[s.vraag_code], s.vraag_code, app_nr, host, opties_per_code.get(s.vraag_code, [])
+        )
+        if waarde is None:
+            continue
+        await checklistscore_service.werk_bij(
+            session, DEV_TENANT, s.id, ChecklistscoreUpdate(antwoord_waarde=waarde)
+        )
+        gevuld += 1
+    return gevuld
+
+
 async def main() -> None:
     print(f"dev-seed: tenant {DEV_TENANT}")
     async with get_worker_session(DEV_TENANT) as session:
@@ -348,6 +424,16 @@ async def main() -> None:
         for nr in sorted(app_ids):
             totaal += await _seed_velden(session, nr, app_ids[nr])
         print(f"  velden gevuld op {totaal} rij(en)")
+
+        print("antwoord_waarde (ADR-019):")
+        typed, opties_per_code = await _laad_catalogus(session)
+        totaal = 0
+        for nr in sorted(app_ids):
+            host = APPS[nr - 1]["host"]
+            totaal += await _seed_antwoord_waarden(
+                session, nr, host, app_ids[nr], typed, opties_per_code
+            )
+        print(f"  antwoord_waarde gevuld op {totaal} rij(en)")
     print("dev-seed: klaar")
 
 
