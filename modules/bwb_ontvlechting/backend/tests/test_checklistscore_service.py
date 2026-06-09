@@ -182,3 +182,55 @@ def test_haal_op_niet_gevonden():
     session.execute.return_value = _result(None)
     with pytest.raises(NietGevonden):
         asyncio.run(svc.haal_op(session, uuid.uuid4(), uuid.uuid4()))
+
+
+# ── FASE-1-invariant: velden-update zonder score raakt lifecycle/blokkade niet ──
+
+def test_werk_bij_zonder_score_raakt_blokkade_en_lifecycle_niet(monkeypatch):
+    """Een `ChecklistscoreUpdate` met enkel bevinding/eigenaar/actie (géén `score`)
+    mag de score-afgeleide blokkade en lifecycle NIET wijzigen.
+
+    Mechanisme (vastgelegd): omdat `score` niet in de update zit, blijft
+    `obj.score` gelijk aan `oude_score`; `_synchroniseer_blokkade` kruist dan geen
+    blokkerende grens en keert vroeg terug — vóór enige blokkade-query. De
+    sentinel op `session.execute` bewijst dat er geen blokkade-mutatie plaatsvindt.
+    """
+    from models.models import ChecklistScore
+    from schemas.checklistscore import ChecklistscoreUpdate
+    from services import checklistscore_service as svc, lifecycle_service
+
+    score_obj = SimpleNamespace(
+        id=uuid.uuid4(), applicatie_id=_APP, score=ChecklistScore.nee,
+        bevinding=None, eigenaar=None, actie=None,
+    )
+
+    async def _haal(*a, **k):
+        return score_obj
+
+    monkeypatch.setattr(svc, "haal_op", _haal)
+
+    herb = {}
+
+    async def _herb(session, tenant_id, app_id):
+        herb["called"] = True  # loopt, maar op ONGEWIJZIGDE feiten (score gelijk)
+
+    monkeypatch.setattr(lifecycle_service, "herbereken_lifecycle", _herb)
+
+    session = AsyncMock()
+    # _synchroniseer_blokkade hoort vroeg terug te keren ⇒ géén execute (geen
+    # blokkade-query/mutatie). Komt er tóch een execute, dan faalt de test.
+    session.execute.side_effect = AssertionError(
+        "geen blokkade-query verwacht bij een update zonder score (no-op)"
+    )
+
+    asyncio.run(
+        svc.werk_bij(
+            session, uuid.uuid4(), score_obj.id,
+            ChecklistscoreUpdate(bevinding="Onderbouwing.", eigenaar="Applicatiebeheerder"),
+        )
+    )
+
+    assert score_obj.bevinding == "Onderbouwing."   # veld toegepast
+    assert score_obj.eigenaar == "Applicatiebeheerder"
+    assert score_obj.score == ChecklistScore.nee     # score ongewijzigd
+    assert herb.get("called") is True                # herbereken aangeroepen (no-op qua feiten)

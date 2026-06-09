@@ -99,6 +99,56 @@ describe('ChecklistscoreSectie', () => {
     expect(w.find('[data-testid="cs-score-1.1"]').attributes('disabled')).toBeDefined()
   })
 
+  // ── CD026: uitklaprij bevinding/eigenaar/actie ─────────────────────────────
+  it('klapt een gescoorde rij uit en toont de drie velden', async () => {
+    const w = await mountSectie()
+    expect(w.find('[data-testid="cs-detail-1.2"]').exists()).toBe(false)
+    await w.find('[data-testid="cs-toggle-1.2"]').trigger('click')
+    expect(w.find('[data-testid="cs-detail-1.2"]').exists()).toBe(true)
+    expect(w.find('[data-testid="cs-bevinding-1.2"]').exists()).toBe(true)
+    expect(w.find('[data-testid="cs-eigenaar-1.2"]').exists()).toBe(true)
+    expect(w.find('[data-testid="cs-actie-1.2"]').exists()).toBe(true)
+    expect(w.find('[data-testid="cs-toggle-1.2"]').attributes('aria-expanded')).toBe('true')
+  })
+
+  it('toont bij een ongescoorde vraag de hint en géén opslaan-knop', async () => {
+    const w = await mountSectie()
+    await w.find('[data-testid="cs-toggle-1.1"]').trigger('click') // 1.1 = ongescoord
+    expect(w.find('[data-testid="cs-detail-hint-1.1"]').exists()).toBe(true)
+    expect(w.find('[data-testid="cs-bevinding-1.1"]').exists()).toBe(false)
+    expect(w.find('[data-testid="cs-velden-opslaan-1.1"]').exists()).toBe(false)
+  })
+
+  it('slaat bevinding/eigenaar/actie op zonder score mee te sturen', async () => {
+    api.checklistscores.werkBij.mockResolvedValue({
+      id: 's1', score: 'ja', bevinding: 'Onderbouwing.', eigenaar: 'Applicatiebeheerder', actie: 'Actie.',
+    })
+    const w = await mountSectie()
+    await w.find('[data-testid="cs-toggle-1.2"]').trigger('click')
+    await w.find('[data-testid="cs-bevinding-1.2"]').setValue('Onderbouwing.')
+    await w.find('[data-testid="cs-eigenaar-1.2"]').setValue('Applicatiebeheerder')
+    await w.find('[data-testid="cs-actie-1.2"]').setValue('Actie.')
+    await w.find('[data-testid="cs-velden-opslaan-1.2"]').trigger('click')
+    await flushPromises()
+    expect(api.checklistscores.werkBij).toHaveBeenCalledWith('s1', {
+      bevinding: 'Onderbouwing.',
+      eigenaar: 'Applicatiebeheerder',
+      actie: 'Actie.',
+    })
+    // geen score in de payload van de velden-opslag
+    const payload = api.checklistscores.werkBij.mock.calls.at(-1)[1]
+    expect(payload).not.toHaveProperty('score')
+    expect(w.find('[data-testid="cs-velden-status-1.2"]').text()).toContain('opgeslagen')
+  })
+
+  it('rol-gating: viewer ziet de velden alleen-lezen en geen opslaan-knop', async () => {
+    const w = await mountSectie({ rollen: ['viewer'] })
+    await w.find('[data-testid="cs-toggle-1.2"]').trigger('click')
+    expect(w.find('[data-testid="cs-bevinding-1.2"]').attributes('disabled')).toBeDefined()
+    expect(w.find('[data-testid="cs-eigenaar-1.2"]').attributes('disabled')).toBeDefined()
+    expect(w.find('[data-testid="cs-velden-opslaan-1.2"]').exists()).toBe(false)
+  })
+
   // ── CD022: filtering op categorie + globale voortgang ──────────────────────
   it('toont met categorieNr alleen de vragen van die categorie (voortgang blijft globaal)', async () => {
     api.checklistvragen.lijst.mockResolvedValue([
