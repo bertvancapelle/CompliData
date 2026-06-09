@@ -50,6 +50,16 @@ def test_sleutels_uniek_per_vraag():
         assert len(sleutels) == len(set(sleutels)), f"dubbele optie_sleutel in {code}"
 
 
+def test_75_bio2_is_bbn_niet_lmh():
+    # O2 (CD035): 7.5 levert in de fresh seed BBN1/2/3 (legacy L/M/H gaat via
+    # migratie 0004 soft-deactivate, niet via de seed-bron).
+    from services.seed_antwoordconfig import bouw_antwoordconfig
+
+    _, opties = bouw_antwoordconfig()
+    sleutels = [o["optie_sleutel"] for o in opties if o["vraag_code"] == "7.5"]
+    assert sleutels == ["bbn1", "bbn2", "bbn3"]
+
+
 def test_getal_vraag_heeft_geen_opties():
     from models.models import AntwoordType
     from services.seed_antwoordconfig import bouw_antwoordconfig

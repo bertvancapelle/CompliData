@@ -116,6 +116,12 @@ Mogelijk ADR-waardig.
 
 ## AFGEROND (sessie 2–3)
 
+- **O2** — 7.5 BIO2-classificatie → BBN (CD035): de default-optieset van vraag 7.5 is
+  **BBN1/BBN2/BBN3** i.p.v. Laag/Midden/Hoog. Expand/contract: `seed_antwoordconfig`
+  levert fresh deploys direct BBN; migratie **0004_bio2_bbn** soft-deactiveert de legacy
+  `laag/midden/hoog`-opties op bestaande deploys (incl. dev-DB). Bestaande
+  `antwoord_waarde` blijft resolvebaar (inactieve sleutels mét `actief`-vlag). Idempotent;
+  engine-tellingen (1·4·3·4 / 7·1·2) ongewijzigd. O3/O4 blijven open observaties.
 - **OP-15** — CLAUDE.md test-mode-comment (CD013): de comment was al rechtgezet in
   V004 — `COMPLIDATA_TEST_MODE` versoepelt alleen de Origin-check + rate-limit, geen
   auth-stub, seedt niets, inloggen vereist Keycloak. Punt afgesloten.

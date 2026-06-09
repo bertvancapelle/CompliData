@@ -37,7 +37,10 @@ _ENKELVOUDIG: dict[str, list[str]] = {
     "4.9": ["Openbaar", "Intern", "Vertrouwelijk", "Geheim"],
     "7.1": ["Active Directory", "Azure AD", "Lokaal", "Federatief"],
     "7.2": ["Gemeente-specifiek", "Gedeeld"],
-    "7.5": ["Laag", "Midden", "Hoog"],
+    # O2 (CD035): BIO2/BBN-niveaus i.p.v. Laag/Midden/Hoog. De legacy L/M/H-opties
+    # worden op bestaande deployments soft-gedeactiveerd via migratie 0004 (de
+    # contract-stap); deze seed levert fresh deploys direct BBN1/2/3.
+    "7.5": ["BBN1", "BBN2", "BBN3"],
     "8.1": ["BWB", "Tiel", "Gedeeld"],
     "8.2": ["Licentie", "SaaS-abonnement", "Maatwerkovereenkomst"],
     "11.1": ["Overdracht Tiel", "Overname BWB", "Tijdelijk gedeeld", "Beëindiging"],
