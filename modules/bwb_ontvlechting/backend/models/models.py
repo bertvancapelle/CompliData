@@ -5,7 +5,7 @@ Enums worden als PostgreSQL enum-types beheerd via de Alembic-migratie;
 de hier gedefinieerde `sa.Enum`-typeobjecten delen dezelfde namen.
 """
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from enum import Enum
 
 import sqlalchemy as sa
@@ -127,6 +127,25 @@ class AntwoordType(str, Enum):
     getal = "getal"
 
 
+class ContractType(str, Enum):
+    """ADR-020 — soort contract. `deelcontract` vereist een mantel (DB-CHECK
+    `ck_contract_mantel_consistentie`); `mantelcontract`/`los_contract` hebben er
+    juist géén."""
+
+    mantelcontract = "mantelcontract"
+    deelcontract = "deelcontract"
+    los_contract = "los_contract"
+
+
+class ContractConfigDimensie(str, Enum):
+    """ADR-020 — discriminator van de platform-brede classificatie-catalogus
+    `contractconfig_optie` (één tabel, drie dimensies)."""
+
+    dekking = "dekking"
+    kostenmodel = "kostenmodel"
+    relatie_rol = "relatie_rol"
+
+
 # Gedeelde sa.Enum-typeobjecten (één type per naam; migratie beheert de DDL).
 # `create_type=False`: de ORM emit nooit zelf CREATE TYPE — de migratie doet dat.
 hostingmodel_enum = sa.Enum(HostingModel, name="hostingmodel_enum")
@@ -141,6 +160,10 @@ checklist_score_enum = sa.Enum(ChecklistScore, name="checklist_score_enum")
 blokkade_status_enum = sa.Enum(BlokkadeStatus, name="blokkade_status_enum")
 checklist_prioriteit_enum = sa.Enum(ChecklistPrioriteit, name="checklist_prioriteit_enum")
 antwoordtype_enum = sa.Enum(AntwoordType, name="antwoordtype_enum")
+contracttype_enum = sa.Enum(ContractType, name="contracttype_enum")
+contractconfig_dimensie_enum = sa.Enum(
+    ContractConfigDimensie, name="contractconfig_dimensie_enum"
+)
 
 
 def _pk() -> Mapped[uuid.UUID]:
@@ -313,4 +336,151 @@ class Blokkade(Base, TenantMixin, TimestampMixin):
     eigenaar: Mapped[str | None] = mapped_column(String(255), nullable=True)
     opgelost_op: Mapped[datetime | None] = mapped_column(
         sa.DateTime(timezone=True), nullable=True
+    )
+
+
+# --------------------------------------------------------------------------
+# ADR-020 — leverancier-/contractregister (additieve feitenlaag, CD040)
+#
+# Puur registratief: voedt de lifecycle-/blokkade-engine NOOIT. Vijf tenant-
+# scoped tabellen (RLS via de migratie) + één platform-brede catalogus
+# (ContractConfigOptie, géén RLS). Cross-row-invarianten (ouder = mantel,
+# leverancier-erving, een mantel heeft zelf geen mantel) horen in de service-
+# laag van Fase B — hier alleen de DB-borging (CHECK + UNIQUE + FK-ondelete).
+# --------------------------------------------------------------------------
+
+class Leverancier(Base, TenantMixin, TimestampMixin):
+    """ADR-020 — leverancier (tenant-scoped, RLS). Eén platte contactset;
+    0..n contactpersonen is een latere uitbreiding (ADR-020 Niet in scope)."""
+
+    __tablename__ = "leverancier"
+
+    id: Mapped[uuid.UUID] = _pk()
+    naam: Mapped[str] = mapped_column(String(255), nullable=False)
+    straat_huisnummer: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    postcode: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    plaats: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    contactpersoon: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    telefoon: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    mobiel: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    omschrijving: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class Contract(Base, TenantMixin, TimestampMixin):
+    """ADR-020 — contract (tenant-scoped, RLS). `contracttype` + self-FK
+    `mantelcontract_id`; de DB-CHECK dwingt type↔mantel_id-consistentie af
+    (deelcontract ⇒ mantel verplicht; anders ⇒ géén mantel). Datums zijn puur
+    registratief (B4: geen validatie). De leverancier-FK is `RESTRICT` zodat een
+    leverancier met contracten niet stil verdwijnt; de self-FK idem (mantel met
+    deelcontracten)."""
+
+    __tablename__ = "contract"
+    __table_args__ = (
+        CheckConstraint(
+            "(contracttype = 'deelcontract' AND mantelcontract_id IS NOT NULL) "
+            "OR (contracttype <> 'deelcontract' AND mantelcontract_id IS NULL)",
+            name="ck_contract_mantel_consistentie",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = _pk()
+    leverancier_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("leverancier.id", ondelete="RESTRICT"), nullable=False
+    )
+    contracttype: Mapped[ContractType] = mapped_column(contracttype_enum, nullable=False)
+    mantelcontract_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("contract.id", ondelete="RESTRICT"), nullable=True
+    )
+    contractnaam: Mapped[str] = mapped_column(String(255), nullable=False)
+    extern_contract_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    leverancier_contract_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    begindatum: Mapped[date | None] = mapped_column(sa.Date, nullable=True)
+    einddatum: Mapped[date | None] = mapped_column(sa.Date, nullable=True)
+    vernieuwingsdatum: Mapped[date | None] = mapped_column(sa.Date, nullable=True)
+    omschrijving: Mapped[str | None] = mapped_column(Text, nullable=True)
+    toelichting: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class ContractDekking(Base, TenantMixin, TimestampMixin):
+    """ADR-020 — dekking-tag op een contract (0..n). `optie_sleutel` verwijst naar
+    de actieve catalogus (dimensie `dekking`); app-side gevalideerd in Fase B, géén
+    harde FK (catalogus is platform-referentiedata zonder tenant_id)."""
+
+    __tablename__ = "contract_dekking"
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id", "contract_id", "optie_sleutel", name="uq_contract_dekking"
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = _pk()
+    contract_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("contract.id", ondelete="CASCADE"), nullable=False
+    )
+    optie_sleutel: Mapped[str] = mapped_column(String(60), nullable=False)
+
+
+class ContractKostenmodel(Base, TenantMixin, TimestampMixin):
+    """ADR-020 — kostenmodel-tag op een contract (0..n). Zie `ContractDekking`
+    (dimensie `kostenmodel`)."""
+
+    __tablename__ = "contract_kostenmodel"
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id", "contract_id", "optie_sleutel", name="uq_contract_kostenmodel"
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = _pk()
+    contract_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("contract.id", ondelete="CASCADE"), nullable=False
+    )
+    optie_sleutel: Mapped[str] = mapped_column(String(60), nullable=False)
+
+
+class ApplicatieContract(Base, TenantMixin, TimestampMixin):
+    """ADR-020 — koppeling applicatie ↔ contract met precies één `relatie_rol`
+    (dimensie `relatie_rol`, app-side gevalideerd in Fase B). Eén applicatie mag aan
+    meerdere contracten hangen, maar hoogstens één keer aan hetzelfde contract
+    (UNIQUE). 'Valt-onder'/aanschaf is rol-conventie, niet structureel afgedwongen."""
+
+    __tablename__ = "applicatie_contract"
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id", "applicatie_id", "contract_id", name="uq_applicatie_contract"
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = _pk()
+    applicatie_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("applicatie.id", ondelete="CASCADE"), nullable=False
+    )
+    contract_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("contract.id", ondelete="CASCADE"), nullable=False
+    )
+    relatie_rol: Mapped[str] = mapped_column(String(60), nullable=False)
+
+
+class ContractConfigOptie(Base):
+    """ADR-020 Besluit 6 / ADR-012 Addendum B — platform-brede classificatie-
+    catalogus (GEEN RLS, GEEN tenant_id), één tabel met `dimensie`-discriminator
+    {dekking, kostenmodel, relatie_rol}. Stabiel `optie_sleutel` per dimensie;
+    bewerken = soft-deactiveren via `actief` (nooit hard verwijderen/hernummeren).
+    Zelfde soort referentiedata als `checklistvraag_optie` (ADR-019)."""
+
+    __tablename__ = "contractconfig_optie"
+    __table_args__ = (
+        UniqueConstraint("dimensie", "optie_sleutel", name="uq_contractconfig_optie"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    dimensie: Mapped[ContractConfigDimensie] = mapped_column(
+        contractconfig_dimensie_enum, nullable=False
+    )
+    optie_sleutel: Mapped[str] = mapped_column(String(60), nullable=False)
+    label: Mapped[str] = mapped_column(String(120), nullable=False)
+    volgorde: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
+    actief: Mapped[bool] = mapped_column(
+        sa.Boolean, nullable=False, server_default=text("true")
     )

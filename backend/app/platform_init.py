@@ -30,13 +30,15 @@ if str(_MOD_BACKEND) not in sys.path:
 
 from services.seed import seed_checklist_vragen  # noqa: E402
 from services.seed_antwoordconfig import seed_antwoordconfig  # noqa: E402
+from services.seed_contractconfig import seed_contractconfig  # noqa: E402
 
 
 async def platform_init(session_factory=None) -> int:
     """Zaait platform-brede referentiedata. Geeft het aantal checklistvragen terug.
 
-    Twee stappen op dezelfde platform-sessie: (1) de 89 checklistvragen, (2) de
-    ADR-019-antwoordconfiguratie (antwoordtype + optie-catalogus). Beide idempotent.
+    Drie stappen op dezelfde platform-sessie: (1) de 89 checklistvragen, (2) de
+    ADR-019-antwoordconfiguratie (antwoordtype + optie-catalogus), (3) de
+    ADR-020-contractconfig-catalogus. Alle idempotent.
     Gebruikt `get_platform_db_session()` (géén RLS-/tenant-context) — NOOIT
     `get_session(tenant_id)`. `session_factory` is injecteerbaar voor tests; in
     productie valt hij terug op de platform-sessie. De `app.core.database`-import
@@ -51,6 +53,7 @@ async def platform_init(session_factory=None) -> int:
     async with session_factory() as session:
         aantal_vragen = await seed_checklist_vragen(session)
         await seed_antwoordconfig(session)
+        await seed_contractconfig(session)
         return aantal_vragen
 
 
