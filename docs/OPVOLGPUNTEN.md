@@ -55,13 +55,15 @@ en DB-rollen (cd_app/cd_platform/cd_admin via `POSTGRES_PASSWORD`). Vóór
 productie vervangen door secrets; testgebruikers verwijderen of scheiden van
 productie-realm.
 
-### OP-16 — `tenantSlug`-getter leest verkeerd veld — OPEN
+### OP-16 — `tenantSlug`-getter leest verkeerd veld — AFGEROND (geverifieerd CD036)
 
-`frontend/src/store/auth.js` `tenantSlug` leest `user.tenant_slug`, maar `/auth/me`
-geeft `tenant_id` → altijd `null`. Raakt `useTheme`/per-tenant-thema's zodra die
-gebouwd worden.
+De getter is al gecorrigeerd: `frontend/src/store/auth.js` kent **geen** `tenantSlug`
+meer — de getter heet `tenantId` en leest `user.tenant_id` (de werkelijke `/auth/me`-
+payload). `useTheme` gebruikt `auth.tenantId`; gedekt door `tenantId.test.js`
+(`OP-16: tenantId-getter leest tenant_id`). De oorspronkelijke "leest verkeerd veld"-
+bug bestaat niet meer (gefixt in een eerdere sessie, hier tegen de code bevestigd).
 
-**Testrand (CD019)**: na het afhandelen van de `useTheme`-promise (`.catch` in
+**Resterende testrand (CD019, minor)**: na het afhandelen van de `useTheme`-promise (`.catch` in
 `tenantId.test.js`) resteert nog één pre-existing happy-dom `DOMException` (interne
 resource-`fetch` van de thema-stylesheet, afgebroken bij window-teardown) op stderr —
 telt niet als test-fout. Op te ruimen zodra `useTheme` echte call-sites + een
