@@ -13,7 +13,7 @@ bestaande patronen — geen ADR vereist.
 Statische route (geen `/{id}`) → geen volgorde-conflict.
 
 Foutgedrag:
-- geen/ongeldige sessie          → 401 (auth-laag; `{"detail":{…}}`, OP-7)
+- geen/ongeldige sessie          → 401 `NIET_GEAUTHENTICEERD` (canoniek `{"fout":{…}}`, ADR-014/CD005)
 - geldige sessie, te weinig recht → 403 `ONVOLDOENDE_RECHTEN`
 """
 from fastapi import APIRouter, Depends

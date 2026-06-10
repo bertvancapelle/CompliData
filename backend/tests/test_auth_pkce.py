@@ -257,6 +257,17 @@ def test_platform_me_zonder_cookie_401(client):
     assert r.json()["fout"]["code"] == "NIET_GEAUTHENTICEERD"
 
 
+def test_tenant_route_401_canoniek_envelope(client):
+    # OP-7: 401 op een guarded tenant-route levert hetzelfde canonieke envelope
+    # als /auth/me — `{"fout":{…}}`, niet `{"detail":…}`. (Guard slaat aan vóór de
+    # DB-sessie, dus geen DB nodig.)
+    r = client.get("/api/v1/applicaties")
+    assert r.status_code == 401
+    body = r.json()
+    assert body["fout"]["code"] == "NIET_GEAUTHENTICEERD"
+    assert "detail" not in body
+
+
 # ── /callback — foutpaden ────────────────────────────────────────────────────
 
 

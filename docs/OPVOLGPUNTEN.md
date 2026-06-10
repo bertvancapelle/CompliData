@@ -35,11 +35,15 @@ dus geen lek). Binnen de tenant geldt rol-gebaseerde autorisatie via
 bewerken. Fijnmazig per-gebruiker-eigenaarschap is bewust uitgesteld en pas te
 heroverwegen als een toekomstige eis daarom vraagt.
 
-### OP-7 — 401 en 403 in hetzelfde foutformaat (uit P3) — OPEN
+### OP-7 — 401 en 403 in hetzelfde foutformaat (uit P3) — AFGEROND (geverifieerd CD037)
 
-403 gebruikt het canonieke `{"fout":{...}}`-formaat; 401 volgt nog het
-bestaande `{"detail":{"code":...}}`-patroon van de auth-laag. Op termijn beide
-gelijktrekken naar `{"fout":{...}}`.
+401 is al canoniek `{"fout":{...}}` (CD005): `NietGeauthenticeerd` +
+`niet_geauthenticeerd_handler`, en `auth.py`-`_fout` levert hetzelfde envelope.
+Live bevestigd op tenant-endpoint, `/auth/me`, `/auth/platform/me` en bij decode-fout;
+de frontend (`api.js`) keyt op de **statuscode** en leest `body.fout.code`. 422 blijft
+bewust native (ADR-014). In CD037 zijn nog twee stale route-docstrings
+(`applicatie.py`/`dashboard.py`) rechtgezet en is een test toegevoegd die het
+canonieke 401-envelope op een guarded tenant-route vastlegt.
 
 ### OP-13 — Platform-tabel-grants Platforminstellingen/Platformmetadata — OPEN
 

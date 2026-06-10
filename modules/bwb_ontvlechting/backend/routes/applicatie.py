@@ -4,7 +4,7 @@ Dunne handlers: autorisatie via `vereist_permissie(Entiteit.APPLICATIE, …)`,
 tenant-sessie via `get_tenant_session` (RLS), business-logica in de service.
 
 Foutgedrag:
-- geen/ongeldige sessie         → 401 (auth-laag; `{"detail":{…}}`, OP-7)
+- geen/ongeldige sessie         → 401 `NIET_GEAUTHENTICEERD` (canoniek `{"fout":{…}}`, ADR-014/CD005)
 - geldige sessie, te weinig recht → 403 `ONVOLDOENDE_RECHTEN`
 - id buiten de tenant            → 404 `NIET_GEVONDEN` (OP-6; geen lek)
 - ongeldige statusovergang       → 409 `ONGELDIGE_STATUSOVERGANG`
