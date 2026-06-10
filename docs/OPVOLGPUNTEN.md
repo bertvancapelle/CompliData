@@ -14,11 +14,15 @@ opnieuw inloggen. Bouwen: `/auth/refresh`, veilige server-side opslag van de
 refresh-token gekoppeld aan een sessie-id, rotatie/intrekking, koppeling aan
 de 8-uurs refresh-grens (CLAUDE.md). Geen token client-leesbaar.
 
-### OP-4 — RP-initiated logout via Keycloak (uit P2) — OPEN
+### OP-4 — RP-initiated logout via Keycloak (uit P2) — AFGEROND (geverifieerd CD038)
 
-`auth/logout` wist nu alleen de lokale `cd_session`-cookie; de Keycloak-SSO-
-sessie blijft staan, waardoor een volgende `/login` stil kan herinloggen.
-Aanvulling: Keycloak end-session-endpoint aanroepen bij logout.
+Al geïmplementeerd (CD008/CD010): `POST /auth/logout` trekt het Redis-refresh-handle in
+(haalt `id_token_hint`), wist `cd_session`+`cd_refresh`, en geeft de Keycloak
+end-session-URL terug; de store (`auth.logout()`) navigeert ernaartoe zodat ook de
+SSO-sessie eindigt. Werkt identiek voor tenant- én platform-accounts (gedeelde
+login-/logout-infra). Gedekt door `logout.test.js` (redirect naar end-session-URL +
+`/login`-fallback). In CD038 is de stale `AppLayout.vue`-comment (die nog "buiten scope"
+beweerde) rechtgezet.
 
 ### OP-6 — Resource-ownership binnen tenant (P5/ADR-010) — AFGEDEKT (fase 1, P5)
 

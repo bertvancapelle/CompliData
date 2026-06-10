@@ -32,11 +32,10 @@ function toggleSidebar() {
 }
 
 async function uitloggen() {
-  // OP-4-beperking (bewust): dit wist ALLEEN de lokale `cd_session`-cookie via
-  // de auth-store; de Keycloak-SSO-sessie blijft staan. Een volgende /login kan
-  // de gebruiker daardoor stilzwijgend opnieuw binnenlaten. RP-initiated logout
-  // (Keycloak end-session) is OP-4 en valt buiten scope — hier geen eigen
-  // end-session-aanroep. De store regelt de redirect naar /login.
+  // RP-initiated logout (OP-4, CD008/CD010): de store roept `/auth/logout` aan
+  // (wist `cd_session`/`cd_refresh` + trekt het Redis-refresh-handle in) en
+  // navigeert naar de Keycloak end-session-URL, zodat óók de SSO-sessie eindigt
+  // (geen stil herinloggen). Zonder URL valt de store terug op `/login`.
   await auth.logout()
 }
 </script>
