@@ -219,3 +219,27 @@ op pagina 1). Filters/sortering zitten **niet** in de cursor — reset volstaat.
 - **Data-pass-discipline**: een ADR-die-bestaande-data-raakt (ADR-016) eerst tegen de
   DB tellen (read-only, als cd_admin); bij gevulde DB een herbereken-pass voorstellen,
   niet zelf draaien vóór akkoord. [CD011]
+
+## V006-patronen (CD025–CD038, ADR-019, geverifieerd)
+
+- **Optie-catalogus = referentiedata met stabiele, soft-deactiveerbare id's** (`checklistvraag_optie`,
+  geen RLS): `optie_sleutel` is **stabiel** — nooit hard verwijderen of hernummeren zodra in gebruik;
+  bewerken = **soft-deactivate** (`actief=false`) + evt. een nieuwe sleutel. Historische
+  `antwoord_waarde` blijft resolvebaar omdat de read **alle** opties levert (incl. inactieve, met
+  `actief`-vlag). `afgeleid_bron` markeert een uit een model-enum afgeleide set. [CD027/CD031]
+- **Expand/contract bij geseede referentie-opties**: de **seed** is de *expand* (fresh deploys
+  krijgen de nieuwe set; idempotent `ON CONFLICT DO NOTHING`); een **eenmalige, versie-getrackte
+  migratie** is de *contract* (legacy-opties soft-deactiveren op bestaande DB's). De migratie draait
+  vóór `platform_init`, dus op een fresh deploy raakt hij 0 rijen. Géén generieke "prune" in de seed
+  (zou beheerder-toegevoegde opties dempen) — de contract is specifiek. Voorbeeld: 7.5 L/M/H → BBN
+  (`0004_bio2_bbn`). [CD035]
+- **Single-source vs. bewust-onafhankelijk**: een optieset alleen **afleiden van een model-enum**
+  (read-only in de beheer-UI) waar de vraag *exact* hetzelfde domein beschrijft (2.1 ← `HostingModel`,
+  12.1 ← `NiveauEnum`). "**Zelfde labels ≠ zelfde domein**": waar de framing anders is, blijft de set
+  vrij configureerbaar (11.1 ontvlechtingsscenario ≠ `Migratiepad`-techniek). [CD027]
+- **`antwoord_waarde` = jsonb, nullable, geen FK**: envelope `{"optie": id}` / `{"opties": [id…]}` /
+  `{"getal": int}`. Geen DB-FK naar de catalogus — het `optie_sleutel` is stabiel en wordt nooit hard
+  verwijderd; integriteit wordt app-side gevalideerd (actief + hoort bij de vraag). [CD027/CD028]
+- **Additieve migratie + grants**: `0003_antwoordconfig` voegt kolom + tabel + jsonb toe (bestaande
+  tabellen ongemoeid). Grants least-privilege: `cd_app` **SELECT-only** op de catalogus (validatie),
+  `cd_platform` SELECT/INSERT/UPDATE (beheer); `cd_platform` SELECT/UPDATE op `checklistvraag`. [CD027]

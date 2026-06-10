@@ -452,11 +452,11 @@ Pas dan: klaar.
 
 | Veld | Waarde |
 |------|--------|
-| Build | V005 |
+| Build | V006 |
 | Datum | June 2026 |
-| Commit | 23a3db8 |
-| Tests | 461 backend + 123 frontend groen · 4 assen + 2 poorten |
-| TST-rapport | TST-V005-Validatierapport.md |
+| Commit | 0b0976b |
+| Tests | 519 backend + 151 frontend groen |
+| TST-rapport | TST-V006-Validatierapport.md |
 | Kritieke bevindingen | 0 |
 
 <!-- BOUWSTATUS_END -->

@@ -94,3 +94,21 @@ opdracht start (CLAUDE.md → Commit-discipline). Raakt de werktree tóch verstr
    **exact** opdracht A gestaged is.
 3. Commit opdracht A; daarna is al het resterende per definitie opdracht B → `git add -A` + commit.
 4. Schone tree + hertest + push; bevestig met `git log` dat de commits gescheiden zijn.
+
+## Sectie 8 — Verificatie-eerst & herstelcheck (les uit V006)
+
+8.1 **Verificatie-eerst tegen backlog-drift.** Verifieer een OPVOLGPUNT (of een aanname uit een
+skill/comment) **tegen de code** vóór je het (her)bouwt — `OPVOLGPUNTEN.md` en code-comments lopen
+achter op de werkelijkheid. In V006 bleken **3 van de 4** hardening-punten (OP-4/OP-7/OP-16) al
+opgelost in een eerdere sessie, met soms misleidende comments. Bij discrepantie skill/backlog ↔ code:
+**meld het en schrijf de echte stand op** (markeer AFGEROND), schrijf géén verzonnen "fix" op
+al-correcte code. Een korte verificatie-sweep over de resterende OPEN-punten loont periodiek.
+
+8.2 **Herstelcheck na een onderbroken CC-sessie.** Reconstrueer de stand **read-only** uit
+`git log --oneline`, `git status`, `alembic heads` en de testtellingen — niet uit aannames of uit het
+(mogelijk afgekapte) gespreksgeheugen. Stel per (deel)taak vast of de commit werkelijk in de historie
+staat vóór je verder bouwt.
+
+8.3 (Herbevestigd) **Gefaseerde bouw met analyse-gate + stop-vóór-commit per fase**; elke
+CC-instructie als `.md` met `START:`-trigger; **één opdracht/commit tegelijk** (push bevestigd vóór de
+volgende `START:`).

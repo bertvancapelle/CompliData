@@ -209,3 +209,22 @@ is onjuist — openstaand vervolgpunt.)
 - **VOORWAARDE-noot**: `revoke-refresh-token` moet **aan** in de realm, anders is de
   reuse-detectie uit ADR-015 B3 niet actief (oude refresh-tokens blijven geldig tot
   SSO-einde). Opvolgpunt OP-3-realm-hardening / OP-14. [CD007]
+
+## V006-patronen (CD025–CD038, ADR-012 Addendum A / ADR-019, geverifieerd)
+
+- **`PlatformEntiteit.CHECKLISTCONFIG`** (ADR-012 Addendum A): platformbeheerder `{L,A,W}`,
+  platformoperator `{L}`, **geen `V`** — een optie wordt soft-gedeactiveerd (W), nooit hard
+  verwijderd. De config-endpoints zijn geguard met `vereist_platform_permissie(CHECKLISTCONFIG, …)`
+  op `get_platform_session` (cd_platform). [CD031]
+- **Domeingrens als veiligheidsgrens, niet alleen scheiding**: `cd_platform` mag de tenant-tabel
+  `checklistscore` **niet lezen** → een cross-domain "is deze optie/dit type in gebruik?"-check is
+  onmogelijk. Conservatief blokkeren (antwoordtype alleen vanuit `geen`) is hier de veilige keuze;
+  `geen→type` is bewijsbaar antwoord-vrij. Soft-deactivate verweest niets (read levert inactieve
+  sleutels mét `actief`-vlag). [CD031]
+- **Platform-identiteit in de SPA**: `GET /auth/platform/me` (`get_current_platform_user`, géén
+  `tenant_id`); een sessie zónder platform-rol ⇒ 403 (`OnvoldoendeRechten`). De frontend detecteert
+  het sessietype via `/auth/me` (403 → platform) + `/auth/platform/me`; dezelfde PKCE-login/cookies/
+  RP-logout gelden voor beide domeinen. Platform-testusers staan in de realm (`platformbeheerder-test`/
+  `platformoperator-test`, géén `tenant_id`, wachtwoord `changeme_dev`). [CD032/CD033]
+- **401 al canoniek (OP-7, CD005)**: alle 401 → `{"fout":{"code":"NIET_GEAUTHENTICEERD",…}}` (handler +
+  `_fout`); de frontend keyt op de **statuscode** en leest `body.fout.code`. 422 blijft native. [CD037]

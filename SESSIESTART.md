@@ -1,6 +1,6 @@
-# SESSIESTART — CompliData V005
+# SESSIESTART — CompliData V006
 
-**Datum**: 2026-06-08
+**Datum**: 2026-06-10
 **Platform**: CompliData — een product van G. van Capelle Beheer B.V.
 
 ---
@@ -13,7 +13,7 @@
    - Zo ja: normale modus — lees alle complidata-skills + engineering/security
    - Zo nee: bootstrap-modus — lees alleen engineering/security
 3. Lees SESSIE_BRIEFING.md voor de actuele projectstatus
-4. Bevestig: "Sessiestart compleet — CompliData V005 — [N] skills geladen"
+4. Bevestig: "Sessiestart compleet — CompliData V006 — [N] skills geladen"
 5. Wacht op START: [naam] van Bert
 
 ---
@@ -40,9 +40,9 @@ claude.ai levert elke CC-opdracht ALTIJD aan als een .md-bestand
 
 ---
 
-# SESSIE_BRIEFING.md — CompliData V005
+# SESSIE_BRIEFING.md — CompliData V006
 
-**Gegenereerd**: 2026-06-08
+**Gegenereerd**: 2026-06-10
 
 ---
 
@@ -52,11 +52,11 @@ claude.ai levert elke CC-opdracht ALTIJD aan als een .md-bestand
 
 | Veld | Waarde |
 |------|--------|
-| Build | V005 |
+| Build | V006 |
 | Datum | June 2026 |
-| Commit | 23a3db8 |
-| Tests | 461 backend + 123 frontend groen · 4 assen + 2 poorten |
-| TST-rapport | TST-V005-Validatierapport.md |
+| Commit | 0b0976b |
+| Tests | 519 backend + 151 frontend groen |
+| TST-rapport | TST-V006-Validatierapport.md |
 | Kritieke bevindingen | 0 |
 
 ---
@@ -64,11 +64,11 @@ claude.ai levert elke CC-opdracht ALTIJD aan als een .md-bestand
 ## Recente commits
 
 ```
-23a3db8 docs(skills): ADR-017/018-patronen + filter/LIKE-escaping + AppTabs + commit-discipline vastgelegd (CD024)
-21ace2c feat(koppelingenkaart): visuele weergave van applicatie-relaties (CD023, #13)
-2a20d82 feat(applicatie-detail): herstructurering naar categorie-tabs (CD022, #11)
-e883814 refactor(paginering): verweesde legacy encode/decode_cursor verwijderd na ADR-017-retrofit (CD021)
-7b250fe feat(lijsten): sorteer-retrofit datatype/gebruikersgroep/koppeling/checklistscore/blokkade-sectie naar ADR-017 (CD020)
+0b0976b docs(auth): OP-4 afgerond — RP-initiated logout reeds geïmplementeerd (CD038)
+2a0b247 docs(auth): OP-7 afgerond — 401 reeds canoniek; stale docstrings + lock-test (CD037)
+216eec7 docs(opvolgpunten): OP-16 afgerond — tenantSlug-getter reeds gefixt (CD036)
+f5e1ccf feat(checklist): O2 — 7.5 BIO2-classificatie naar BBN1/2/3 via soft-deactivate (CD035)
+67b0171 feat(frontend): ADR-019 fase 2E-c — beheer-UI ChecklistConfigBeheer (CD034)
 ```
 
 ---
@@ -128,6 +128,6 @@ teardown-residu), OP-21 (eigenaar distinct-dropdown, optioneel). Productie-harde
 
 1. Lees deze briefing volledig
 2. Lees CLAUDE.md (sessiestart-protocol)
-3. Bevestig: "Sessie-briefing geladen — CompliData V005"
+3. Bevestig: "Sessie-briefing geladen — CompliData V006"
 4. Wacht op START: [naam] van Bert
 

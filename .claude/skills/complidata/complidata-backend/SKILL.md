@@ -232,3 +232,28 @@ ongedefinieerde methodes → 405.
   `tegenpartij_naam`) → een apart `*LijstItem`/`*LijstPagina`-schema náást de enkel-item `*Read`.
   White-box cursor-/route-tests bewegen mee met het cursorformaat; een default-pad-assertie is het
   bewijs dat het gedrag niet wijzigde. [CD020]
+
+## V006-patronen (CD025–CD038, ADR-019, geverifieerd)
+
+- **Oordeel ≠ antwoord (drie aparte lagen op `Checklistscore`)**: `score` = gereedheidsoordeel
+  ("afgehandeld/voldoet") en **voedt de engine**; `antwoord_waarde` (jsonb, nullable) = het
+  configureerbare **feitelijke** antwoord (keuze/getal) en **raakt de engine nooit**; `bevinding`
+  blijft vrije toelichting. Een additief nullable veld dat de engine niet leest is byte-identiek
+  bewijsbaar (`lifecycle_service` telt rij-bestaan + actieve blokkades; `_synchroniseer_blokkade`
+  reageert alleen op `score`). [CD027/CD028]
+- **Validatie-tweedeling (ADR-014-lijn)**: *structureel* (envelope-vorm `{optie}`/`{opties}`/
+  `{getal≥1}`, geen dubbele) in een Pydantic-validator → **422 native**; *semantisch* (past het type
+  bij de vraag, is de optie `actief` en hoort die erbij) in de service tegen de catalogus →
+  `OngeldigAntwoord` → **422-envelope**. De envelope-422 is gerechtvaardigd waar Pydantic niet kan
+  (DB-lookup nodig); 422 blijft anders native. [CD028]
+- **Domeingrens-respecterende validatie op de platform-laag**: `cd_platform` mag tenant-tabellen
+  (`checklistscore`) per ADR-012 **niet lezen** → een usage-based "blokkeer als in gebruik"-check
+  kan niet cross-domain. Daarom **conservatief blokkeren**: antwoordtype alleen wijzigbaar vanuit
+  `geen` (een `geen`-vraag kan per 2B-validatie geen `antwoord_waarde` hebben → bewijsbaar veilig);
+  wisselen van een reeds-getypeerde vraag ⇒ `ConfiguratieConflict` (409). [CD031]
+- **Platform-config-endpoints**: module-routebestand (`routes/checklistconfig.py`) geguard met
+  `vereist_platform_permissie(CHECKLISTCONFIG, …)` op `get_platform_session` (cd_platform) —
+  platform-rol-domein, raakt het score-/engine-pad niet (AST-guard in de test). [CD031]
+- **Platform-identiteit**: `GET /auth/platform/me` op `get_current_platform_user` (géén `tenant_id`);
+  een sessie zonder platform-rol (tenant-account) ⇒ 403 (strikte scheiding). Additief naast
+  `/auth/me`. [CD032]

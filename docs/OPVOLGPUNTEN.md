@@ -87,10 +87,13 @@ briefing-generatie), zodat `gen_sessie_briefing.py` het nieuwe `BOUWSTATUS`-blok
 Geborgd met `backend/tests/test_gen_build_volgorde.py` (functionele write-then-read +
 statische volgorde-guard via `inspect.getsource`).
 
-### OP-19 — Frontend bundle >500 kB — OPEN
+### OP-19 — Frontend bundle >500 kB — AFGEROND/gemitigeerd (geverifieerd CD038-sweep)
 
-De productie-bundle overschrijdt 500 kB (PrimeVue DataTable). Route-level
-lazy-loading / code-splitting als optimalisatie.
+`vite build`: géén ">500 kB"-waarschuwing meer; de grootste chunk is `column-*.js`
+(PrimeVue DataTable) op **384 kB** (<500 kB), geïsoleerd in een eigen chunk die alleen met
+`ApplicatieDetail` laadt. **6 route-level lazy-imports** (CD012) verkleinen de initiële bundle
+(`index` ≈ 164 kB). Het oorspronkelijke symptoom doet zich niet meer voor; verdere reductie is
+optioneel (geen verplichting).
 
 ### OP-21 — Eigenaar-filter als distinct-dropdown (UX, optioneel) — OPEN
 
