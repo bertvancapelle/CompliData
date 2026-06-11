@@ -24,6 +24,7 @@ zijn bestaande platform-referentiedata en vallen buiten deze seed).
 import asyncio
 import pathlib
 import sys
+from datetime import date
 
 # --- sys.path: portable in de container (/app + /modules) én lokaal -----------
 _HERE = pathlib.Path(__file__).resolve().parent  # backend/  (in container: /app)
@@ -43,23 +44,32 @@ from app.core.database import get_worker_session  # noqa: E402
 from models.models import (  # noqa: E402
     AntwoordType,
     Applicatie,
+    ApplicatieContract,
     Blokkade,
     BlokkadeStatus,
     ChecklistScore,
     ChecklistVraag,
     ChecklistVraagOptie,
     Checklistscore,
+    Contract,
     Koppeling,
+    Leverancier,
 )
 from schemas.applicatie import ApplicatieCreate  # noqa: E402
+from schemas.applicatie_contract import ApplicatieContractCreate  # noqa: E402
 from schemas.blokkade import BlokkadeUpdate  # noqa: E402
 from schemas.checklistscore import ChecklistscoreCreate, ChecklistscoreUpdate  # noqa: E402
+from schemas.contract import ContractCreate  # noqa: E402
 from schemas.koppeling import KoppelingCreate  # noqa: E402
+from schemas.leverancier import LeverancierCreate  # noqa: E402
 from services import (  # noqa: E402
+    applicatie_contract_service,
     applicatie_service,
     blokkade_service,
     checklistscore_service,
+    contract_service,
     koppeling_service,
+    leverancier_service,
 )
 from services.seed import CHECKLIST_VRAGEN  # noqa: E402
 
@@ -160,6 +170,80 @@ KOPPELINGEN = [
     (2, 8, "gegevenslevering", "middleware"),
     (4, 5, "persoonsbevraging", "api"),
     (6, 7, "debiteuren/boekingen", "api"),
+]
+
+
+# === Aanvulling D — contractlandschap (ADR-020) ===============================
+# Door Bert vastgesteld landschap (CD046). Deterministisch + idempotent; loopt via
+# de service-laag zodat de invarianten (I1/I2, catalogus-validatie, uniciteit) gelden.
+# Géén 'TIEL' in namen (fictieve, plausibele NL-gegevens; geen echte bedrijven).
+LEVERANCIERS_D = [
+    {"naam": "GemSoft B.V.", "straat_huisnummer": "Softwareplein 12", "postcode": "3811 AB",
+     "plaats": "Amersfoort", "contactpersoon": "Account Management",
+     "telefoon": "033-1234567", "mobiel": "06-12345678", "email": "contact@gemsoft.example"},
+    {"naam": "CivData Solutions", "straat_huisnummer": "Dataweg 8", "postcode": "3542 AD",
+     "plaats": "Utrecht", "contactpersoon": "Servicedesk",
+     "telefoon": "030-7654321", "mobiel": "06-87654321", "email": "info@civdata.example"},
+    # Minimaal: alleen plaats + email.
+    {"naam": "InfraHost Nederland", "plaats": "Rotterdam", "email": "support@infrahost.example"},
+    # Minimaal: alleen contactpersoon + telefoon.
+    {"naam": "GeoWorks B.V.", "contactpersoon": "Verkoop binnendienst", "telefoon": "020-5556677"},
+]
+
+# Mantel (#1) staat vóór de deelcontracten (#2/#3): de lijstvolgorde borgt dat de
+# mantel-id beschikbaar is wanneer een deelcontract eraan refereert.
+CONTRACTEN_D = [
+    {"contractnaam": "GemSoft Raamovereenkomst 2024-2028", "leverancier": "GemSoft B.V.",
+     "type": "mantelcontract", "mantel": None,
+     "dekking": ["licentie_aanschaf", "onderhoud_support"], "kostenmodel": [],
+     "begindatum": date(2024, 1, 1), "einddatum": date(2028, 12, 31),
+     "vernieuwingsdatum": date(2027, 10, 1),
+     "extern_contract_id": "RAAM-2024-001", "leverancier_contract_id": "GS-2024-RAAM"},
+    {"contractnaam": "Deel Burgerzaken-suite", "leverancier": "GemSoft B.V.",
+     "type": "deelcontract", "mantel": "GemSoft Raamovereenkomst 2024-2028",
+     "dekking": ["licentie_aanschaf", "onderhoud_support"], "kostenmodel": ["per_inwoner"],
+     "begindatum": date(2024, 3, 1), "einddatum": date(2028, 12, 31),
+     "leverancier_contract_id": "GS-BZ-2024"},  # extern-ID bewust leeg
+    {"contractnaam": "Deel Financiën", "leverancier": "GemSoft B.V.",
+     "type": "deelcontract", "mantel": "GemSoft Raamovereenkomst 2024-2028",
+     "dekking": ["licentie_aanschaf", "onderhoud_support"], "kostenmodel": ["saas_pxq"],
+     "begindatum": date(2024, 4, 1), "einddatum": date(2028, 12, 31)},  # beide ID's leeg
+    {"contractnaam": "CivData SaaS-overeenkomst", "leverancier": "CivData Solutions",
+     "type": "los_contract", "mantel": None,
+     "dekking": ["licentie_aanschaf", "hosting"], "kostenmodel": ["saas_pxq"],
+     "begindatum": date(2023, 1, 1), "einddatum": date(2026, 12, 31),
+     "vernieuwingsdatum": date(2026, 7, 1), "extern_contract_id": "CIV-SAAS-2023"},
+    {"contractnaam": "CivData Onderhoudscontract", "leverancier": "CivData Solutions",
+     "type": "los_contract", "mantel": None,
+     "dekking": ["onderhoud_support"], "kostenmodel": [],
+     "begindatum": date(2023, 6, 1), "einddatum": date(2026, 6, 1),
+     "toelichting": "Onderhoud op de bestaande implementatie; jaarlijkse evaluatie."},
+    {"contractnaam": "InfraHost Hostingdiensten", "leverancier": "InfraHost Nederland",
+     "type": "los_contract", "mantel": None,
+     "dekking": ["hosting"], "kostenmodel": ["volume"],
+     "begindatum": date(2024, 1, 1), "einddatum": date(2027, 12, 31)},
+    {"contractnaam": "GeoWorks Licentieovereenkomst", "leverancier": "GeoWorks B.V.",
+     "type": "los_contract", "mantel": None,
+     "dekking": ["licentie_aanschaf"], "kostenmodel": ["volume"],
+     "begindatum": date(2025, 1, 1),  # einddatum bewust leeg
+     "omschrijving": "Licentie voor de geo-/kaartfunctionaliteit."},
+]
+
+# Koppelingen: (app-index 1-based in APPS) → contractnaam, relatie_rol.
+# Belastingsysteem (6) is de multi-contract-app: valt_onder #3 + onderhoud #5 + hosting #6.
+# Zonder enige koppeling (bewust): Zaaksysteem (1), HR-systeem (11), e-Depot (12).
+KOPPELINGEN_D = [
+    (4, "Deel Burgerzaken-suite", "valt_onder"),        # Burgerzaken
+    (5, "Deel Burgerzaken-suite", "valt_onder"),        # BRP-bevraging
+    (6, "Deel Financiën", "valt_onder"),                # Belastingsysteem
+    (7, "Deel Financiën", "valt_onder"),                # Financieel
+    (3, "CivData SaaS-overeenkomst", "valt_onder"),     # DMS (saas)
+    (8, "CivData SaaS-overeenkomst", "valt_onder"),     # Sociaal-domein-suite (saas)
+    (6, "CivData Onderhoudscontract", "onderhoud"),     # Belastingsysteem (multi)
+    (6, "InfraHost Hostingdiensten", "hosting"),        # Belastingsysteem (multi)
+    (2, "InfraHost Hostingdiensten", "hosting"),        # Gegevensmakelaar (on-premise)
+    (10, "InfraHost Hostingdiensten", "hosting"),       # Subsidiemodel (on-premise)
+    (9, "GeoWorks Licentieovereenkomst", "valt_onder"), # GIS-viewer (geo/spatial)
 ]
 
 
@@ -403,6 +487,72 @@ async def _seed_antwoord_waarden(
     return gevuld
 
 
+async def _seed_aanvulling_d(session, app_ids: dict) -> dict:
+    """Aanvulling D — leveranciers/contracten/koppelingen via de service-laag.
+
+    Idempotent: leveranciers op naam, contracten op contractnaam, koppelingen op
+    (applicatie_id, contract_id). Tweede run wijzigt niets. De service-laag handhaaft
+    I1/I2 (mantel/leverancier-erving), catalogus-validatie en uniciteit.
+    """
+    # --- Leveranciers (idempotent op naam) ---
+    lev_ids = {
+        r.naam: r.id for r in (await session.execute(select(Leverancier))).scalars().all()
+    }
+    for lev in LEVERANCIERS_D:
+        if lev["naam"] in lev_ids:
+            print(f"  = leverancier {lev['naam']}: bestaat al — overgeslagen")
+            continue
+        obj = await leverancier_service.maak_aan(session, DEV_TENANT, LeverancierCreate(**lev))
+        lev_ids[lev["naam"]] = obj.id
+        print(f"  + leverancier {lev['naam']}")
+
+    # --- Contracten (idempotent op contractnaam; mantel vóór deel) ---
+    con_ids = {
+        r.contractnaam: r.id for r in (await session.execute(select(Contract))).scalars().all()
+    }
+    for c in CONTRACTEN_D:
+        if c["contractnaam"] in con_ids:
+            print(f"  = contract {c['contractnaam']}: bestaat al — overgeslagen")
+            continue
+        body = ContractCreate(
+            leverancier_id=lev_ids[c["leverancier"]],
+            contracttype=c["type"],
+            contractnaam=c["contractnaam"],
+            mantelcontract_id=con_ids[c["mantel"]] if c.get("mantel") else None,
+            extern_contract_id=c.get("extern_contract_id"),
+            leverancier_contract_id=c.get("leverancier_contract_id"),
+            begindatum=c.get("begindatum"),
+            einddatum=c.get("einddatum"),
+            vernieuwingsdatum=c.get("vernieuwingsdatum"),
+            omschrijving=c.get("omschrijving"),
+            toelichting=c.get("toelichting"),
+            dekking=c.get("dekking", []),
+            kostenmodel=c.get("kostenmodel", []),
+        )
+        res = await contract_service.maak_aan(session, DEV_TENANT, body)
+        con_ids[c["contractnaam"]] = res["id"]
+        print(f"  + contract {c['contractnaam']} ({c['type']})")
+
+    # --- Koppelingen (idempotent op (applicatie_id, contract_id)) ---
+    bestaande_kop = {
+        (r.applicatie_id, r.contract_id)
+        for r in (await session.execute(select(ApplicatieContract))).scalars().all()
+    }
+    for app_idx, contractnaam, rol in KOPPELINGEN_D:
+        app_id = app_ids[app_idx]
+        contract_id = con_ids[contractnaam]
+        if (app_id, contract_id) in bestaande_kop:
+            print(f"  = koppeling app{app_idx}→{contractnaam}: bestaat al — overgeslagen")
+            continue
+        await applicatie_contract_service.maak_aan(
+            session, DEV_TENANT,
+            ApplicatieContractCreate(applicatie_id=app_id, contract_id=contract_id, relatie_rol=rol),
+        )
+        print(f"  + koppeling app{app_idx}→{contractnaam} ({rol})")
+
+    return {"leveranciers": len(lev_ids), "contracten": len(con_ids)}
+
+
 async def main() -> None:
     print(f"dev-seed: tenant {DEV_TENANT}")
     async with get_worker_session(DEV_TENANT) as session:
@@ -434,6 +584,10 @@ async def main() -> None:
                 session, nr, host, app_ids[nr], typed, opties_per_code
             )
         print(f"  antwoord_waarde gevuld op {totaal} rij(en)")
+
+        print("Aanvulling D — contractlandschap (leveranciers/contracten/koppelingen):")
+        telling = await _seed_aanvulling_d(session, app_ids)
+        print(f"  leveranciers={telling['leveranciers']} contracten={telling['contracten']}")
     print("dev-seed: klaar")
 
 
