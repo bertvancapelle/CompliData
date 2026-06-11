@@ -8,7 +8,7 @@ import ToastService from 'primevue/toastservice'
 vi.mock('@/api', () => ({
   api: {
     koppelingen: { lijst: vi.fn(), maak: vi.fn(), werkBij: vi.fn(), verwijder: vi.fn(), opties: vi.fn() },
-    applicaties: { lijst: vi.fn() },
+    applicaties: { lijst: vi.fn(), haal: vi.fn() },
   },
 }))
 
@@ -60,7 +60,16 @@ beforeEach(() => {
     ],
     volgende_cursor: null,
   })
+  api.applicaties.haal.mockResolvedValue({ id: APP, naam: 'Deze App' }) // dezeAppNaam (ZoekSelect-label)
 })
+
+// ZoekSelect-interactie (CD049): focus → zoek → klik resultaat.
+async function kiesZoek(w, prefix, id) {
+  await w.find(`[data-testid="${prefix}-input"]`).trigger('focus')
+  await flushPromises()
+  await w.find(`[data-testid="${prefix}-optie-${id}"]`).trigger('mousedown')
+  await flushPromises()
+}
 afterEach(() => vi.restoreAllMocks())
 
 describe('KoppelingSectie', () => {
@@ -86,14 +95,14 @@ describe('KoppelingSectie', () => {
     expect((await mountSectie({ rollen: ['beheerder'] })).find('[data-testid="kp-toevoegen"]').exists()).toBe(true)
   })
 
-  it('vult bron/doel-pickers uit applicaties.lijst en weigert bron == doel', async () => {
+  it('vult bron met de default-app (ZoekSelect-label) en weigert bron == doel', async () => {
     const w = await mountSectie()
     await w.find('[data-testid="kp-toevoegen"]').trigger('click')
     await flushPromises()
-    // pickers gevuld
-    expect(w.find('[data-testid="kp-veld-bron"]').findAll('option').length).toBeGreaterThan(1)
-    // zet doel == bron (bron is default APP)
-    await w.find('[data-testid="kp-veld-doel"]').setValue(APP)
+    // bron toont de huidige applicatie als startwaarde
+    expect(w.find('[data-testid="kp-veld-bron-input"]').element.value).toBe('Deze App')
+    // zet doel == bron (APP) via de zoek-combobox
+    await kiesZoek(w, 'kp-veld-doel', APP)
     await w.find('[data-testid="kp-veld-richting"]').setValue('eenrichting')
     await w.find('[data-testid="kp-veld-protocol"]').setValue('api')
     await w.find('[data-testid="kp-veld-impact_bij_verbreking"]').setValue('hoog')
@@ -109,7 +118,7 @@ describe('KoppelingSectie', () => {
     const voor = api.koppelingen.lijst.mock.calls.length
     await w.find('[data-testid="kp-toevoegen"]').trigger('click')
     await flushPromises()
-    await w.find('[data-testid="kp-veld-doel"]').setValue(ANDER)
+    await kiesZoek(w, 'kp-veld-doel', ANDER)
     await w.find('[data-testid="kp-veld-richting"]').setValue('eenrichting')
     await w.find('[data-testid="kp-veld-protocol"]').setValue('api')
     await w.find('[data-testid="kp-veld-impact_bij_verbreking"]').setValue('hoog')

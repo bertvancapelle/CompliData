@@ -44,6 +44,14 @@ async function mountSectie({ rollen = ['beheerder'] } = {}) {
   return w
 }
 
+// ZoekSelect-interactie (CD049): focus → zoek → klik resultaat.
+async function kiesZoek(w, prefix, id) {
+  await w.find(`[data-testid="${prefix}-input"]`).trigger('focus')
+  await flushPromises()
+  await w.find(`[data-testid="${prefix}-optie-${id}"]`).trigger('mousedown')
+  await flushPromises()
+}
+
 const _rij = () => ({
   koppeling_id: 'k1', contract_id: 'c1', contractnaam: 'Contract A',
   contracttype: 'los_contract', leverancier_id: 'l1', leverancier_naam: 'Acme',
@@ -88,7 +96,7 @@ describe('ContractSectie', () => {
     const w = await mountSectie()
     await w.find('[data-testid="ct-koppelen"]').trigger('click')
     await flushPromises()
-    await w.find('[data-testid="ct-veld-contract"]').setValue('c2')
+    await kiesZoek(w, 'ct-veld-contract', 'c2')
     await w.find('[data-testid="ct-form"]').trigger('submit')
     await flushPromises()
     expect(w.find('[data-testid="ct-fout-rol"]').exists()).toBe(true)
@@ -101,7 +109,7 @@ describe('ContractSectie', () => {
     const voor = api.applicaties.contracten.mock.calls.length
     await w.find('[data-testid="ct-koppelen"]').trigger('click')
     await flushPromises()
-    await w.find('[data-testid="ct-veld-contract"]').setValue('c2')
+    await kiesZoek(w, 'ct-veld-contract', 'c2')
     await w.find('[data-testid="ct-veld-rol"]').setValue('onderhoud')
     await w.find('[data-testid="ct-form"]').trigger('submit')
     await flushPromises()
@@ -115,7 +123,7 @@ describe('ContractSectie', () => {
     const voor = api.applicaties.contracten.mock.calls.length
     await w.find('[data-testid="ct-koppelen"]').trigger('click')
     await flushPromises()
-    await w.find('[data-testid="ct-veld-contract"]').setValue('c2')
+    await kiesZoek(w, 'ct-veld-contract', 'c2')
     await w.find('[data-testid="ct-veld-rol"]').setValue('onderhoud')
     await w.find('[data-testid="ct-form"]').trigger('submit')
     await flushPromises()

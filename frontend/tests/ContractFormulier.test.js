@@ -44,8 +44,16 @@ async function mountForm({ id = null } = {}) {
   return { w, router }
 }
 
+// ZoekSelect-interactie: focus → zoek → klik resultaat (CD049).
+async function kiesZoek(w, prefix, id) {
+  await w.find(`[data-testid="${prefix}-input"]`).trigger('focus')
+  await flushPromises()
+  await w.find(`[data-testid="${prefix}-optie-${id}"]`).trigger('mousedown')
+  await flushPromises()
+}
+
 async function vulBasis(w) {
-  await w.find('[data-testid="veld-leverancier"]').setValue('l1')
+  await kiesZoek(w, 'veld-leverancier', 'l1')
   await w.find('[data-testid="veld-contracttype"]').setValue('los_contract')
   await w.find('[data-testid="veld-contractnaam"]').setValue('Contract A')
   await flushPromises()
@@ -64,20 +72,23 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks())
 
 describe('ContractFormulier', () => {
-  it('toont mantel-select alleen bij deelcontract en filtert op leverancier+type', async () => {
+  it('toont mantel-zoekveld alleen bij deelcontract en filtert server-side op leverancier+type', async () => {
     const { w } = await mountForm()
-    expect(w.find('[data-testid="veld-mantelcontract"]').exists()).toBe(false)
-    await w.find('[data-testid="veld-leverancier"]').setValue('l1')
+    expect(w.find('[data-testid="veld-mantelcontract-input"]').exists()).toBe(false)
+    await kiesZoek(w, 'veld-leverancier', 'l1')
     await w.find('[data-testid="veld-contracttype"]').setValue('deelcontract')
     await flushPromises()
-    expect(w.find('[data-testid="veld-mantelcontract"]').exists()).toBe(true)
+    expect(w.find('[data-testid="veld-mantelcontract-input"]').exists()).toBe(true)
+    // focus de mantel-zoek → server-side zoek met type+leverancier als extraFilters
+    await w.find('[data-testid="veld-mantelcontract-input"]').trigger('focus')
+    await flushPromises()
     expect(api.contracten.lijst).toHaveBeenCalledWith(
-      expect.objectContaining({ contracttype: 'mantelcontract', leverancierId: 'l1', limit: 100 }),
+      expect.objectContaining({ contracttype: 'mantelcontract', leverancierId: 'l1', limit: 11 }),
     )
     // terug naar los_contract → mantel-veld verdwijnt
     await w.find('[data-testid="veld-contracttype"]').setValue('los_contract')
     await flushPromises()
-    expect(w.find('[data-testid="veld-mantelcontract"]').exists()).toBe(false)
+    expect(w.find('[data-testid="veld-mantelcontract-input"]').exists()).toBe(false)
   })
 
   it('checkbox-groepen sturen een declaratieve set (dekking/kostenmodel)', async () => {

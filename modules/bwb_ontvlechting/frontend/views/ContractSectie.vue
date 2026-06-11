@@ -12,6 +12,7 @@ import { Button, Dialog, useToast } from '@/primevue'
 import { useAuthStore } from '@/store/auth'
 import { api } from '@/api'
 import { CONTRACTTYPE, REGISTER_FOUT, label } from '../labels'
+import ZoekSelect from './ZoekSelect.vue'
 
 const props = defineProps({ applicatieId: { type: String, required: true } })
 const auth = useAuthStore()
@@ -24,7 +25,9 @@ const valtOnder = computed(() => items.value.filter((r) => r.relatie_rol === 'va
 const laden = ref(false)
 const fout = ref(null)
 
-const contracten = ref([])
+// Contract-keuze: server-side zoeken (CD049) i.p.v. de volledige lijst vooraf laden.
+const zoekContracten = (params) => api.contracten.lijst(params)
+const contractWeergave = (c) => `${c.contractnaam} — ${c.leverancier_naam}`
 const rolOpties = ref([])
 const dialogOpen = ref(false)
 const bezig = ref(false)
@@ -67,15 +70,7 @@ async function _zorgRolOpties() {
 }
 
 async function _laadBronnenEenmalig() {
-  await _zorgRolOpties()
-  if (!contracten.value.length) {
-    try {
-      const p = await api.contracten.lijst({ limit: 100 })
-      contracten.value = p.items
-    } catch (e) {
-      _toastFout(e)
-    }
-  }
+  await _zorgRolOpties() // rol-select blijft native (catalogus); contract via ZoekSelect.
 }
 
 function _reset() {
@@ -90,10 +85,7 @@ async function openKoppelen(e) {
   dialogOpen.value = true
 }
 function focusEerste() {
-  setTimeout(() => {
-    const el = eersteVeld.value?.$el ?? eersteVeld.value
-    el?.focus?.()
-  }, 0)
+  setTimeout(() => eersteVeld.value?.focus?.(), 0) // ZoekSelect exposeert focus()
 }
 function onHide() {
   laatsteTrigger?.focus?.()
@@ -230,10 +222,16 @@ defineExpose({ items, laad })
       <form class="flex flex-col gap-[var(--cd-space-md)] min-w-[22rem]" data-testid="ct-form" @submit.prevent="koppel">
         <div class="flex flex-col gap-[var(--cd-space-xs)]">
           <label for="ct-contract" class="font-semibold">Contract *</label>
-          <select id="ct-contract" ref="eersteVeld" v-model="form.contract_id" data-testid="ct-veld-contract" :aria-invalid="!!fouten.contract_id" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white">
-            <option value="" disabled>— kies een contract —</option>
-            <option v-for="c in contracten" :key="c.id" :value="c.id">{{ c.contractnaam }} — {{ c.leverancier_naam }}</option>
-          </select>
+          <ZoekSelect
+            id="ct-contract"
+            ref="eersteVeld"
+            testid="ct-veld-contract"
+            v-model="form.contract_id"
+            :zoek-functie="zoekContracten"
+            :weergave="contractWeergave"
+            :invalid="!!fouten.contract_id"
+            placeholder="Zoek een contract…"
+          />
           <span v-if="fouten.contract_id" role="alert" data-testid="ct-fout-contract" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.contract_id }}</span>
         </div>
         <div class="flex flex-col gap-[var(--cd-space-xs)]">

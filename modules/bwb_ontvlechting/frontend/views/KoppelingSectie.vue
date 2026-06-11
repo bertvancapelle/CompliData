@@ -13,6 +13,7 @@ import { Button, Column, DataTable, Dialog, Tag, Textarea, useToast } from '@/pr
 import { useAuthStore } from '@/store/auth'
 import { api } from '@/api'
 import { IMPACT_SEVERITY, IMPACT_VERBREKING, KOPPELPROTOCOL, KOPPELRICHTING, label } from '../labels'
+import ZoekSelect from './ZoekSelect.vue'
 
 const props = defineProps({ applicatieId: { type: String, required: true } })
 const auth = useAuthStore()
@@ -28,9 +29,12 @@ const fout = ref(null)
 // PrimeVue sortOrder (1/-1/0) uit de per-richting sort-state.
 const primeOrder = (state) => (state.sort ? (state.order === 'asc' ? 1 : -1) : 0)
 
-// Voor de bron/doel-pickers in de Dialog (de tabel toont de server-geleverde
-// `tegenpartij_naam`, zodat sorteren op naam coherent is — CD020).
-const applicaties = ref([])
+// Bron/doel-pickers: server-side zoeken (CD049). `dezeAppNaam` + bron/doel-initieel
+// leveren de weergavelabels voor de reeds-gekozen waarden (default-bron / bewerken).
+const zoekApplicaties = (params) => api.applicaties.lijst(params)
+const dezeAppNaam = ref('')
+const bronInitieel = ref('')
+const doelInitieel = ref('')
 
 const dialogOpen = ref(false)
 const bewerkenId = ref(null)
@@ -93,10 +97,10 @@ async function _laadOptiesEenmalig() {
       _toastFout(e)
     }
   }
-  if (!applicaties.value.length) {
+  if (!dezeAppNaam.value) {
     try {
-      const p = await api.applicaties.lijst({ limit: 100 })
-      applicaties.value = p.items
+      const a = await api.applicaties.haal(props.applicatieId)
+      dezeAppNaam.value = a.naam
     } catch (e) {
       _toastFout(e)
     }
@@ -112,6 +116,8 @@ function _reset() {
     impact_bij_verbreking: '',
     omschrijving: '',
   })
+  bronInitieel.value = dezeAppNaam.value
+  doelInitieel.value = ''
   Object.keys(fouten).forEach((k) => delete fouten[k])
 }
 
@@ -136,15 +142,17 @@ async function openBewerken(e, rij) {
     impact_bij_verbreking: rij.impact_bij_verbreking,
     omschrijving: rij.omschrijving || '',
   })
+  // bron/doel zijn immutabel bij bewerken; één zijde is deze applicatie, de andere
+  // de tegenpartij (server-geleverde `tegenpartij_naam`).
+  const bronIsDeze = rij.bron_applicatie_id === props.applicatieId
+  bronInitieel.value = bronIsDeze ? dezeAppNaam.value : rij.tegenpartij_naam
+  doelInitieel.value = bronIsDeze ? rij.tegenpartij_naam : dezeAppNaam.value
   dialogOpen.value = true
 }
 
 function focusEerste() {
   // Ná de focustrap van PrimeVue Dialog (die anders de sluitknop focust).
-  setTimeout(() => {
-    const el = eersteVeld.value?.$el ?? eersteVeld.value
-    el?.focus?.()
-  }, 0)
+  setTimeout(() => eersteVeld.value?.focus?.(), 0) // ZoekSelect exposeert focus()
 }
 function onHide() {
   laatsteTrigger?.focus?.()
@@ -299,18 +307,32 @@ laadBeide()
       <form class="flex flex-col gap-[var(--cd-space-md)] min-w-[22rem]" data-testid="kp-form" @submit.prevent="opslaan">
         <div class="flex flex-col gap-[var(--cd-space-xs)]">
           <label for="kp-bron" class="font-semibold">Bron-applicatie *</label>
-          <select id="kp-bron" ref="eersteVeld" autofocus v-model="form.bron_applicatie_id" :disabled="!!bewerkenId" data-testid="kp-veld-bron" :aria-invalid="!!fouten.bron_applicatie_id" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white disabled:opacity-60">
-            <option value="" disabled>— kies —</option>
-            <option v-for="a in applicaties" :key="a.id" :value="a.id">{{ a.naam }}</option>
-          </select>
+          <ZoekSelect
+            id="kp-bron"
+            ref="eersteVeld"
+            testid="kp-veld-bron"
+            v-model="form.bron_applicatie_id"
+            :zoek-functie="zoekApplicaties"
+            :initieel-weergave="bronInitieel"
+            :disabled="!!bewerkenId"
+            :invalid="!!fouten.bron_applicatie_id"
+            placeholder="Zoek een applicatie…"
+          />
           <span v-if="fouten.bron_applicatie_id" role="alert" data-testid="kp-fout-bron" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.bron_applicatie_id }}</span>
         </div>
         <div class="flex flex-col gap-[var(--cd-space-xs)]">
           <label for="kp-doel" class="font-semibold">Doel-applicatie *</label>
-          <select id="kp-doel" v-model="form.doel_applicatie_id" :disabled="!!bewerkenId" data-testid="kp-veld-doel" :aria-invalid="!!fouten.doel_applicatie_id" aria-describedby="kp-fout-doel" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white disabled:opacity-60">
-            <option value="" disabled>— kies —</option>
-            <option v-for="a in applicaties" :key="a.id" :value="a.id">{{ a.naam }}</option>
-          </select>
+          <ZoekSelect
+            id="kp-doel"
+            testid="kp-veld-doel"
+            v-model="form.doel_applicatie_id"
+            :zoek-functie="zoekApplicaties"
+            :initieel-weergave="doelInitieel"
+            :disabled="!!bewerkenId"
+            :invalid="!!fouten.doel_applicatie_id"
+            aria-describedby="kp-fout-doel"
+            placeholder="Zoek een applicatie…"
+          />
           <span v-if="fouten.doel_applicatie_id" id="kp-fout-doel" role="alert" data-testid="kp-fout-doel" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.doel_applicatie_id }}</span>
         </div>
         <div v-for="veld in ['richting', 'protocol', 'impact_bij_verbreking']" :key="veld" class="flex flex-col gap-[var(--cd-space-xs)]">

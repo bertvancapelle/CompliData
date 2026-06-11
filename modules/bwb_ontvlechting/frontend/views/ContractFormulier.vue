@@ -13,6 +13,7 @@ import { Button, InputText, Textarea, useToast } from '@/primevue'
 import { useRouter } from '@/composables/router'
 import { api } from '@/api'
 import { CONTRACTTYPE, REGISTER_FOUT, label } from '../labels'
+import ZoekSelect from './ZoekSelect.vue'
 
 const props = defineProps({ id: { type: String, default: null } })
 const router = useRouter()
@@ -21,11 +22,13 @@ const toast = useToast()
 const bewerken = computed(() => !!props.id)
 const bezig = ref(false)
 
-const leveranciers = ref([])
 const dekkingOpties = ref([])
 const kostenmodelOpties = ref([])
-const mantelKandidaten = ref([])
 const TYPE_OPTIES = Object.keys(CONTRACTTYPE)
+// Bewerken-modus: labels voor reeds-geselecteerde entiteit-velden (ZoekSelect, CD049).
+const leverancierInitieel = ref('')
+const mantelInitieel = ref('')
+let _initFase = true
 
 const form = reactive({
   leverancier_id: '',
@@ -47,13 +50,18 @@ const registerFout = ref(null)
 
 const isDeel = computed(() => form.contracttype === 'deelcontract')
 
+// ZoekSelect-koppelingen (CD049): server-side zoeken i.p.v. volledige dropdowns.
+const zoekLeveranciers = (params) => api.leveranciers.lijst(params)
+const zoekMantels = (params) => api.contracten.lijst(params)
+// Mantel client-side gespiegeld op type+leverancier (I1/I2); de backend blijft de waarheid.
+const mantelFilters = computed(() => ({
+  contracttype: 'mantelcontract',
+  leverancierId: form.leverancier_id || undefined,
+}))
+
 async function laadBronnen() {
   try {
-    const [p, opties] = await Promise.all([
-      api.leveranciers.lijst({ limit: 100 }),
-      api.contractconfig.opties(),
-    ])
-    leveranciers.value = p.items
+    const opties = await api.contractconfig.opties()
     dekkingOpties.value = opties.dekking || []
     kostenmodelOpties.value = opties.kostenmodel || []
   } catch (e) {
@@ -61,62 +69,52 @@ async function laadBronnen() {
   }
 }
 
-// Mantelkandidaten: alleen mantelcontracten van dezelfde leverancier (I1/I2-spiegeling).
-async function laadMantelkandidaten() {
-  if (!isDeel.value || !form.leverancier_id) {
-    mantelKandidaten.value = []
-    return
-  }
-  try {
-    const p = await api.contracten.lijst({
-      contracttype: 'mantelcontract',
-      leverancierId: form.leverancier_id,
-      limit: 100,
-    })
-    mantelKandidaten.value = p.items.filter((c) => c.id !== props.id)
-  } catch {
-    mantelKandidaten.value = []
-  }
-}
-
-// Type≠deelcontract → mantel verbergen en leegmaken; anders kandidaten (her)laden.
-watch([() => form.contracttype, () => form.leverancier_id], () => {
-  if (!isDeel.value) {
+// Type≠deelcontract → mantel verbergen/leegmaken; leverancier gewijzigd → mantel reset
+// (de mantel hoort bij één leverancier, I2). De ZoekSelect zoekt zelf server-side.
+// Tijdens het initieel laden (bewerken) niet resetten — anders wist de Object.assign
+// zijn eigen mantelcontract_id.
+watch([() => form.contracttype, () => form.leverancier_id], ([, lev], [, oudLev]) => {
+  if (_initFase) return
+  if (!isDeel.value || lev !== oudLev) {
     form.mantelcontract_id = ''
-    mantelKandidaten.value = []
-    return
+    mantelInitieel.value = ''
   }
-  // Als de gekozen mantel niet meer bij de leverancier hoort: leegmaken.
-  if (form.mantelcontract_id && !mantelKandidaten.value.some((c) => c.id === form.mantelcontract_id)) {
-    // laat staan tot herladen; wordt na laadMantelkandidaten gevalideerd
-  }
-  laadMantelkandidaten()
 })
 
 async function init() {
   await laadBronnen()
-  if (!bewerken.value) return
-  try {
-    const c = await api.contracten.haal(props.id)
-    Object.assign(form, {
-      leverancier_id: c.leverancier_id,
-      contracttype: c.contracttype,
-      mantelcontract_id: c.mantelcontract_id || '',
-      contractnaam: c.contractnaam,
-      extern_contract_id: c.extern_contract_id || '',
-      leverancier_contract_id: c.leverancier_contract_id || '',
-      begindatum: c.begindatum || '',
-      einddatum: c.einddatum || '',
-      vernieuwingsdatum: c.vernieuwingsdatum || '',
-      omschrijving: c.omschrijving || '',
-      toelichting: c.toelichting || '',
-    })
-    gekozenDekking.value = (c.dekking || []).map((o) => o.optie_sleutel)
-    gekozenKostenmodel.value = (c.kostenmodel || []).map((o) => o.optie_sleutel)
-    await laadMantelkandidaten()
-  } catch (e) {
-    _toastFout(e)
+  if (bewerken.value) {
+    try {
+      const c = await api.contracten.haal(props.id)
+      Object.assign(form, {
+        leverancier_id: c.leverancier_id,
+        contracttype: c.contracttype,
+        mantelcontract_id: c.mantelcontract_id || '',
+        contractnaam: c.contractnaam,
+        extern_contract_id: c.extern_contract_id || '',
+        leverancier_contract_id: c.leverancier_contract_id || '',
+        begindatum: c.begindatum || '',
+        einddatum: c.einddatum || '',
+        vernieuwingsdatum: c.vernieuwingsdatum || '',
+        omschrijving: c.omschrijving || '',
+        toelichting: c.toelichting || '',
+      })
+      gekozenDekking.value = (c.dekking || []).map((o) => o.optie_sleutel)
+      gekozenKostenmodel.value = (c.kostenmodel || []).map((o) => o.optie_sleutel)
+      leverancierInitieel.value = c.leverancier_naam || ''
+      if (c.mantelcontract_id) {
+        try {
+          const m = await api.contracten.haal(c.mantelcontract_id)
+          mantelInitieel.value = m.contractnaam || ''
+        } catch {
+          /* mantel-naam optioneel; veld blijft leeg tot zoeken */
+        }
+      }
+    } catch (e) {
+      _toastFout(e)
+    }
   }
+  _initFase = false
 }
 
 function valideer() {
@@ -230,10 +228,16 @@ const typeLabel = (c) => label(CONTRACTTYPE, c)
     <form class="card flex flex-col gap-[var(--cd-space-md)] max-w-2xl" data-testid="contract-form" @submit.prevent="opslaan">
       <div class="flex flex-col gap-[var(--cd-space-xs)]">
         <label for="cf-leverancier" class="font-semibold">Leverancier *</label>
-        <select id="cf-leverancier" v-model="form.leverancier_id" data-testid="veld-leverancier" :aria-invalid="!!fouten.leverancier_id" aria-describedby="fout-leverancier" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white">
-          <option value="" disabled>— kies —</option>
-          <option v-for="l in leveranciers" :key="l.id" :value="l.id">{{ l.naam }}</option>
-        </select>
+        <ZoekSelect
+          id="cf-leverancier"
+          testid="veld-leverancier"
+          v-model="form.leverancier_id"
+          :zoek-functie="zoekLeveranciers"
+          :initieel-weergave="leverancierInitieel"
+          :invalid="!!fouten.leverancier_id"
+          aria-describedby="fout-leverancier"
+          placeholder="Zoek een leverancier…"
+        />
         <span v-if="fouten.leverancier_id" id="fout-leverancier" role="alert" data-testid="fout-leverancier_id" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.leverancier_id }}</span>
       </div>
 
@@ -248,10 +252,17 @@ const typeLabel = (c) => label(CONTRACTTYPE, c)
 
       <div v-if="isDeel" class="flex flex-col gap-[var(--cd-space-xs)]">
         <label for="cf-mantel" class="font-semibold">Mantelcontract *</label>
-        <select id="cf-mantel" v-model="form.mantelcontract_id" data-testid="veld-mantelcontract" :aria-invalid="!!fouten.mantelcontract_id" aria-describedby="fout-mantel" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white">
-          <option value="" disabled>— kies een mantelcontract van deze leverancier —</option>
-          <option v-for="m in mantelKandidaten" :key="m.id" :value="m.id">{{ m.contractnaam }}</option>
-        </select>
+        <ZoekSelect
+          id="cf-mantel"
+          testid="veld-mantelcontract"
+          v-model="form.mantelcontract_id"
+          :zoek-functie="zoekMantels"
+          :extra-filters="mantelFilters"
+          :initieel-weergave="mantelInitieel"
+          :invalid="!!fouten.mantelcontract_id"
+          aria-describedby="fout-mantel"
+          placeholder="Zoek een mantelcontract van deze leverancier…"
+        />
         <span v-if="fouten.mantelcontract_id" id="fout-mantel" role="alert" data-testid="fout-mantelcontract_id" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.mantelcontract_id }}</span>
         <span v-else class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">Een deelcontract erft de leverancier van zijn mantel.</span>
       </div>
