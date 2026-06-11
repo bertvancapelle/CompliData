@@ -29,6 +29,8 @@ VERWACHT = {
     PlatformEntiteit.PLATFORMMETADATA: {PlatformRol.PLATFORMBEHEERDER: _L, PlatformRol.PLATFORMOPERATOR: _L},
     # ADR-012 Addendum A: checklistconfig — beheerder LAW (geen V), operator L.
     PlatformEntiteit.CHECKLISTCONFIG: {PlatformRol.PLATFORMBEHEERDER: _LAW, PlatformRol.PLATFORMOPERATOR: _L},
+    # ADR-012 Addendum B: contractconfig — zelfde verdeling (geen V).
+    PlatformEntiteit.CONTRACTCONFIG: {PlatformRol.PLATFORMBEHEERDER: _LAW, PlatformRol.PLATFORMOPERATOR: _L},
 }
 
 
@@ -40,6 +42,16 @@ def test_checklistconfig_geen_verwijderen_voor_wie_dan_ook():
         )
     assert heeft_platform_permissie(["platformbeheerder"], PlatformEntiteit.CHECKLISTCONFIG, Actie.WIJZIGEN)
     assert not heeft_platform_permissie(["platformoperator"], PlatformEntiteit.CHECKLISTCONFIG, Actie.WIJZIGEN)
+
+
+def test_contractconfig_geen_verwijderen_voor_wie_dan_ook():
+    # Addendum B: soft-deactivate (W), nooit hard delete → V voor niemand.
+    for rol in PlatformRol:
+        assert not heeft_platform_permissie(
+            [rol.value], PlatformEntiteit.CONTRACTCONFIG, Actie.VERWIJDEREN
+        )
+    assert heeft_platform_permissie(["platformbeheerder"], PlatformEntiteit.CONTRACTCONFIG, Actie.WIJZIGEN)
+    assert not heeft_platform_permissie(["platformoperator"], PlatformEntiteit.CONTRACTCONFIG, Actie.WIJZIGEN)
 
 
 def test_platform_matrix_volledig_incl_negatief():

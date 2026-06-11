@@ -45,6 +45,7 @@ from routes.blokkade import router as blokkade_router  # noqa: E402
 from routes.checklistconfig import router as checklistconfig_router  # noqa: E402
 from routes.checklistscore import router as checklistscore_router  # noqa: E402
 from routes.contract import router as contract_router  # noqa: E402
+from routes.contractconfig import router as contractconfig_router  # noqa: E402
 from routes.dashboard import router as dashboard_router  # noqa: E402
 from routes.checklistvraag import router as checklistvraag_router  # noqa: E402
 from routes.datatype import router as datatype_router  # noqa: E402
@@ -128,4 +129,5 @@ app.include_router(checklistscore_router, prefix="/api/v1")
 app.include_router(blokkade_router, prefix="/api/v1")
 app.include_router(checklistvraag_router, prefix="/api/v1")
 app.include_router(checklistconfig_router, prefix="/api/v1")
+app.include_router(contractconfig_router, prefix="/api/v1")
 app.include_router(dashboard_router, prefix="/api/v1")
