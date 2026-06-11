@@ -22,6 +22,8 @@ function maakRouter() {
         children: [
           { path: '', name: 'dashboard', component: DashStub },
           { path: 'applicaties', name: 'applicatie-lijst', component: { template: '<div/>' } },
+          { path: 'leveranciers', name: 'leverancier-lijst', component: { template: '<div/>' } },
+          { path: 'contracten', name: 'contract-lijst', component: { template: '<div/>' } },
           { path: 'blokkades', name: 'blokkades', component: { template: '<div/>' } },
           { path: 'koppelingenkaart', name: 'koppelingenkaart', component: { template: '<div/>' } },
         ],

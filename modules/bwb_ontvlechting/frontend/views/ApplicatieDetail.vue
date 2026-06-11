@@ -26,6 +26,7 @@ import AppTabs from './AppTabs.vue'
 import DatatypeSectie from './DatatypeSectie.vue'
 import GebruikersgroepSectie from './GebruikersgroepSectie.vue'
 import KoppelingSectie from './KoppelingSectie.vue'
+import ContractSectie from './ContractSectie.vue'
 import ChecklistscoreSectie from './ChecklistscoreSectie.vue'
 import BlokkadeSectie from './BlokkadeSectie.vue'
 
@@ -121,6 +122,7 @@ const TOP_TABS = [
   { key: 'datatypes', label: 'Datatypes' },
   { key: 'gebruikersgroepen', label: 'Gebruikersgroepen' },
   { key: 'koppelingen', label: 'Koppelingen' },
+  { key: 'contracten', label: 'Contracten' },
   { key: 'blokkades', label: 'Blokkades' },
 ]
 const TOP_KEYS = TOP_TABS.map((t) => t.key)
@@ -319,6 +321,14 @@ onMounted(async () => {
         aria-labelledby="detailtabs-tab-koppelingen"
       >
         <KoppelingSectie :applicatie-id="props.id" />
+      </div>
+      <div
+        v-show="activeTop === 'contracten'"
+        id="detailtabs-panel-contracten"
+        role="tabpanel"
+        aria-labelledby="detailtabs-tab-contracten"
+      >
+        <ContractSectie :applicatie-id="props.id" />
       </div>
       <div
         v-show="activeTop === 'blokkades'"

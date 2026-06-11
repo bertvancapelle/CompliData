@@ -17,6 +17,14 @@ const ApplicatieLijst = () => import('@modules/bwb_ontvlechting/frontend/views/A
 const ApplicatieDetail = () => import('@modules/bwb_ontvlechting/frontend/views/ApplicatieDetail.vue')
 const ApplicatieFormulier = () =>
   import('@modules/bwb_ontvlechting/frontend/views/ApplicatieFormulier.vue')
+// ADR-020 contractregister (Fase D1), lazy (OP-19).
+const LeverancierLijst = () => import('@modules/bwb_ontvlechting/frontend/views/LeverancierLijst.vue')
+const LeverancierFormulier = () =>
+  import('@modules/bwb_ontvlechting/frontend/views/LeverancierFormulier.vue')
+const LeverancierDetail = () => import('@modules/bwb_ontvlechting/frontend/views/LeverancierDetail.vue')
+const ContractLijst = () => import('@modules/bwb_ontvlechting/frontend/views/ContractLijst.vue')
+const ContractFormulier = () => import('@modules/bwb_ontvlechting/frontend/views/ContractFormulier.vue')
+const ContractDetail = () => import('@modules/bwb_ontvlechting/frontend/views/ContractDetail.vue')
 // Platform-beheer-view (2E-c), lazy.
 const ChecklistConfigBeheer = () => import('../views/ChecklistConfigBeheer.vue')
 
@@ -50,6 +58,25 @@ const routes = [
         path: 'applicaties/:id/bewerken',
         name: 'applicatie-bewerken',
         component: ApplicatieFormulier,
+        props: true,
+      },
+      // ADR-020 contractregister — statische subpaden vóór de dynamische /:id.
+      { path: 'leveranciers', name: 'leverancier-lijst', component: LeverancierLijst },
+      { path: 'leveranciers/nieuw', name: 'leverancier-nieuw', component: LeverancierFormulier },
+      { path: 'leveranciers/:id', name: 'leverancier-detail', component: LeverancierDetail, props: true },
+      {
+        path: 'leveranciers/:id/bewerken',
+        name: 'leverancier-bewerken',
+        component: LeverancierFormulier,
+        props: true,
+      },
+      { path: 'contracten', name: 'contract-lijst', component: ContractLijst },
+      { path: 'contracten/nieuw', name: 'contract-nieuw', component: ContractFormulier },
+      { path: 'contracten/:id', name: 'contract-detail', component: ContractDetail, props: true },
+      {
+        path: 'contracten/:id/bewerken',
+        name: 'contract-bewerken',
+        component: ContractFormulier,
         props: true,
       },
     ],

@@ -187,3 +187,19 @@ class ContractLijstItem(BaseModel):
 class ContractPagina(BaseModel):
     items: list[ContractLijstItem]
     volgende_cursor: str | None = None
+
+
+class CatalogusKeuze(BaseModel):
+    """Eén actieve catalogus-optie voor formuliergebruik (CD043 §0)."""
+
+    optie_sleutel: str
+    label: str
+    volgorde: int
+
+
+class CatalogusOpties(BaseModel):
+    """Actieve opties per dimensie — tenant-leeszijde van de catalogus (CD043 §0)."""
+
+    dekking: list[CatalogusKeuze] = []
+    kostenmodel: list[CatalogusKeuze] = []
+    relatie_rol: list[CatalogusKeuze] = []

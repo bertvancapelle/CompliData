@@ -66,3 +66,34 @@ def resolveer(sleutels: list[str], label_map: dict[str, tuple[str, bool]]) -> li
 def resolveer_een(sleutel: str, label_map: dict[str, tuple[str, bool]]) -> str:
     """Resolveer één sleutel naar zijn label (fallback: de sleutel zelf)."""
     return label_map.get(sleutel, (sleutel, False))[0]
+
+
+async def actieve_opties_per_dimensie(session: AsyncSession) -> dict[str, list[dict]]:
+    """Actieve opties per dimensie voor tenant-formuliergebruik (CD043 §0).
+
+    `{dekking:[{optie_sleutel,label,volgorde}…], kostenmodel:[…], relatie_rol:[…]}`,
+    per dimensie gesorteerd op `volgorde`. Alleen-actief (inactieve sleutels blijven
+    via de Read-resolutie leesbaar, maar zijn niet nieuw aanvinkbaar)."""
+    rijen = (
+        await session.execute(
+            select(
+                ContractConfigOptie.dimensie,
+                ContractConfigOptie.optie_sleutel,
+                ContractConfigOptie.label,
+                ContractConfigOptie.volgorde,
+            )
+            .where(ContractConfigOptie.actief.is_(True))
+            .order_by(
+                ContractConfigOptie.dimensie,
+                ContractConfigOptie.volgorde,
+                ContractConfigOptie.id,
+            )
+        )
+    ).all()
+    uit: dict[str, list[dict]] = {d.value: [] for d in ContractConfigDimensie}
+    for r in rijen:
+        dim = r.dimensie.value if hasattr(r.dimensie, "value") else str(r.dimensie)
+        uit[dim].append(
+            {"optie_sleutel": r.optie_sleutel, "label": r.label, "volgorde": r.volgorde}
+        )
+    return uit

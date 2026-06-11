@@ -91,6 +91,8 @@ export const api = {
       request(`/applicaties/${id}/start-inventarisatie`, { method: 'POST' }),
     verwijder: (id) => request(`/applicaties/${id}`, { method: 'DELETE' }),
     opties: () => request('/applicaties/opties'),
+    // ADR-020: 'app → waar valt hij onder' (gekoppelde contracten met rol + leverancier).
+    contracten: (id) => request(`/applicaties/${id}/contracten`),
   },
 
   datatypes: {
@@ -140,6 +142,56 @@ export const api = {
       request(`/koppelingen/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     verwijder: (id) => request(`/koppelingen/${id}`, { method: 'DELETE' }),
     opties: () => request('/koppelingen/opties'),
+  },
+
+  // ADR-020 contractregister — leverancier (tenant-CRUD).
+  leveranciers: {
+    lijst: ({ limit, after, sort, order, zoek } = {}) =>
+      request(`/leveranciers${_query({ limit, after, sort, order, zoek })}`),
+    haal: (id) => request(`/leveranciers/${id}`),
+    maak: (data) => request('/leveranciers', { method: 'POST', body: JSON.stringify(data) }),
+    werkBij: (id, data) =>
+      request(`/leveranciers/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    verwijder: (id) => request(`/leveranciers/${id}`, { method: 'DELETE' }),
+  },
+
+  // ADR-020 contractregister — contract (tenant-CRUD) + sub-overzichten.
+  contracten: {
+    lijst: ({ limit, after, sort, order, leverancierId, contracttype, dekking, kostenmodel, zoek } = {}) =>
+      request(
+        `/contracten${_query({
+          limit,
+          after,
+          sort,
+          order,
+          leverancier_id: leverancierId,
+          contracttype,
+          dekking,
+          kostenmodel,
+          zoek,
+        })}`,
+      ),
+    haal: (id) => request(`/contracten/${id}`),
+    maak: (data) => request('/contracten', { method: 'POST', body: JSON.stringify(data) }),
+    werkBij: (id, data) =>
+      request(`/contracten/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    verwijder: (id) => request(`/contracten/${id}`, { method: 'DELETE' }),
+    deelcontracten: (id) => request(`/contracten/${id}/deelcontracten`),
+    applicaties: (id) => request(`/contracten/${id}/applicaties`),
+  },
+
+  // ADR-020 — applicatie↔contract-koppeling (precies één rol per koppeling).
+  applicatieContracten: {
+    maak: (data) => request('/applicatie-contracten', { method: 'POST', body: JSON.stringify(data) }),
+    werkBij: (id, data) =>
+      request(`/applicatie-contracten/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    verwijder: (id) => request(`/applicatie-contracten/${id}`, { method: 'DELETE' }),
+  },
+
+  // ADR-020 §0 (CD043) — tenant-leeszijde van de classificatie-catalogus: alleen
+  // ACTIEVE opties per dimensie (voor formulier-checkboxen + rol-select).
+  contractconfig: {
+    opties: () => request('/contracten/opties'),
   },
 
   checklistscores: {

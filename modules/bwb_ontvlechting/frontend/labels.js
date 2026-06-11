@@ -120,3 +120,28 @@ export const BLOKKADE_STATUS_SEVERITY = {
   in_behandeling: 'warn',
   opgelost: 'success',
 }
+
+// ── ADR-020 contractregister ─────────────────────────────────────────────────
+
+export const CONTRACTTYPE = {
+  mantelcontract: 'Mantelcontract',
+  deelcontract: 'Deelcontract',
+  los_contract: 'Los contract',
+}
+
+export const CONTRACTTYPE_SEVERITY = {
+  mantelcontract: 'info',
+  deelcontract: 'warn',
+  los_contract: 'success',
+}
+
+// Register-foutcodes → leesbare context-melding (de backend levert ook `bericht`;
+// dit is de fallback/samenvatting voor Toast/in-form).
+export const REGISTER_FOUT = {
+  ONGELDIGE_MANTEL: 'Het gekozen mantelcontract is ongeldig voor dit type.',
+  LEVERANCIER_MISMATCH: 'Een deelcontract erft de leverancier van zijn mantel.',
+  MANTEL_IN_GEBRUIK: 'Dit mantelcontract heeft deelcontracten; wijziging niet toegestaan.',
+  IN_GEBRUIK: 'Dit record is nog in gebruik en kan niet worden verwijderd.',
+  KOPPELING_BESTAAT: 'Deze applicatie is al aan dit contract gekoppeld.',
+  ONGELDIGE_OPTIE: 'De gekozen optie is onbekend of niet actief.',
+}

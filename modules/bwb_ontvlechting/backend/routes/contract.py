@@ -16,6 +16,7 @@ from app.middleware.tenant import get_tenant_session
 from models.models import ContractType
 from schemas.applicatie_contract import ApplicatieVoorContract
 from schemas.contract import (
+    CatalogusOpties,
     ContractCreate,
     ContractLijstItem,
     ContractPagina,
@@ -24,6 +25,7 @@ from schemas.contract import (
     ContractUpdate,
 )
 from services import contract_service as svc
+from services import contractconfig_catalog as catalog
 from services.pagination import Sorteerrichting
 
 router = APIRouter(prefix="/contracten", tags=["bwb:contract"])
@@ -61,6 +63,16 @@ async def lijst_contracten(
     except ValueError:
         return _fout(400, "ONGELDIGE_CURSOR", "De opgegeven paginacursor is ongeldig.")
     return {"items": items, "volgende_cursor": volgende}
+
+
+@router.get("/opties", response_model=CatalogusOpties)
+async def catalogus_opties(
+    _user: AuthenticatedUser = Depends(vereist_permissie(Entiteit.CONTRACT, Actie.LEZEN)),
+    session: AsyncSession = Depends(get_tenant_session),
+):
+    """Tenant-leeszijde van de classificatie-catalogus: actieve dekking-/kostenmodel-/
+    relatie_rol-opties (CD043 §0). Statisch subpad vóór `/{contract_id}`."""
+    return await catalog.actieve_opties_per_dimensie(session)
 
 
 @router.get("/{contract_id}", response_model=ContractRead)
