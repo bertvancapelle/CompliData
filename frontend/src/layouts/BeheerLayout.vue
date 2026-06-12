@@ -72,6 +72,13 @@ async function uitloggen() {
           >
             Contractcatalogus
           </router-link>
+          <router-link
+            :to="{ name: 'beheer-componentconfig' }"
+            data-testid="nav-componentconfig"
+            class="rounded-[var(--cd-radius-nav)] px-[var(--cd-space-md)] py-[var(--cd-space-sm)] text-[var(--cd-color-text)] hover:bg-[var(--cd-color-accent)] aria-[current=page]:bg-[var(--cd-color-accent)] aria-[current=page]:font-semibold"
+          >
+            Componentcatalogus
+          </router-link>
         </nav>
       </aside>
 

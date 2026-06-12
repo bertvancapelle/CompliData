@@ -1,0 +1,102 @@
+"""Service-laag — platform-beheer van de componentcatalogus (ADR-021 Besluit 8,
+ADR-012 Addendum C). Spiegel van `contractconfig_service` op `get_platform_session`
+(cd_platform). Geen hard delete (Addendum C + ontbrekende DB-grant — dubbele borging).
+
+Systeem-sleutel-bescherming (Addendum C Besluit 5): de rij `componenttype.applicatie`
+hangt aan het subtype-mechanisme (ADR-021) en kan NIET worden gedeactiveerd
+(`actief=false` ⇒ 422 `SYSTEEM_SLEUTEL_BESCHERMD`). Label/volgorde wijzigen mag wél;
+sleutel/dimensie zijn al generiek immutabel.
+"""
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from models.models import ComponentConfigDimensie, ComponentConfigOptie
+from schemas.componentconfig import ComponentConfigOptieCreate, ComponentConfigOptieUpdate
+from services.errors import ConfiguratieConflict, NietGevonden, OngeldigeRegistratie
+
+_SYSTEEM_DIMENSIE = ComponentConfigDimensie.componenttype
+_SYSTEEM_SLEUTEL = "applicatie"
+
+
+async def lijst(session: AsyncSession, dimensie: str | None = None) -> list[ComponentConfigOptie]:
+    stmt = select(ComponentConfigOptie)
+    if dimensie:
+        stmt = stmt.where(ComponentConfigOptie.dimensie == ComponentConfigDimensie(dimensie))
+    stmt = stmt.order_by(
+        ComponentConfigOptie.dimensie, ComponentConfigOptie.volgorde, ComponentConfigOptie.id
+    )
+    return list((await session.execute(stmt)).scalars().all())
+
+
+async def _haal(session: AsyncSession, optie_id: int) -> ComponentConfigOptie:
+    obj = (
+        await session.execute(
+            select(ComponentConfigOptie).where(ComponentConfigOptie.id == optie_id)
+        )
+    ).scalar_one_or_none()
+    if obj is None:
+        raise NietGevonden("componentconfig_optie", optie_id)
+    return obj
+
+
+async def voeg_toe(session: AsyncSession, data: ComponentConfigOptieCreate) -> ComponentConfigOptie:
+    """Voeg een optie toe. Duplicaat `(dimensie, optie_sleutel)` ⇒ 409. `volgorde`
+    default = max(volgorde)+1 binnen de dimensie."""
+    bestaat = (
+        await session.execute(
+            select(ComponentConfigOptie.id).where(
+                ComponentConfigOptie.dimensie == data.dimensie,
+                ComponentConfigOptie.optie_sleutel == data.optie_sleutel,
+            )
+        )
+    ).scalar_one_or_none()
+    if bestaat is not None:
+        raise ConfiguratieConflict("Een optie met deze sleutel bestaat al in deze dimensie.")
+
+    if data.volgorde is None:
+        huidige_max = (
+            await session.execute(
+                select(func.max(ComponentConfigOptie.volgorde)).where(
+                    ComponentConfigOptie.dimensie == data.dimensie
+                )
+            )
+        ).scalar_one()
+        volgorde = 0 if huidige_max is None else huidige_max + 1
+    else:
+        volgorde = data.volgorde
+
+    obj = ComponentConfigOptie(
+        dimensie=data.dimensie,
+        optie_sleutel=data.optie_sleutel,
+        label=data.label,
+        volgorde=volgorde,
+        actief=True,
+    )
+    session.add(obj)
+    await session.commit()
+    await session.refresh(obj)
+    return obj
+
+
+async def wijzig(
+    session: AsyncSession, optie_id: int, data: ComponentConfigOptieUpdate
+) -> ComponentConfigOptie:
+    """Wijzig label / volgorde / actief. Soft-deactivate/reactivate toegestaan, BEHALVE
+    deactiveren van de systeem-sleutel `componenttype.applicatie` (422
+    `SYSTEEM_SLEUTEL_BESCHERMD`). Onbekend id ⇒ 404."""
+    obj = await _haal(session, optie_id)
+    velden = data.model_dump(exclude_unset=True)
+    if (
+        velden.get("actief") is False
+        and obj.dimensie == _SYSTEEM_DIMENSIE
+        and obj.optie_sleutel == _SYSTEEM_SLEUTEL
+    ):
+        raise OngeldigeRegistratie(
+            "SYSTEEM_SLEUTEL_BESCHERMD",
+            "Het componenttype 'applicatie' is een systeem-sleutel en kan niet worden gedeactiveerd.",
+        )
+    for veld, waarde in velden.items():
+        setattr(obj, veld, waarde)
+    await session.commit()
+    await session.refresh(obj)
+    return obj

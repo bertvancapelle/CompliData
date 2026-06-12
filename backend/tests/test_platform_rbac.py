@@ -31,6 +31,8 @@ VERWACHT = {
     PlatformEntiteit.CHECKLISTCONFIG: {PlatformRol.PLATFORMBEHEERDER: _LAW, PlatformRol.PLATFORMOPERATOR: _L},
     # ADR-012 Addendum B: contractconfig — zelfde verdeling (geen V).
     PlatformEntiteit.CONTRACTCONFIG: {PlatformRol.PLATFORMBEHEERDER: _LAW, PlatformRol.PLATFORMOPERATOR: _L},
+    # ADR-012 Addendum C: componentconfig — zelfde verdeling (geen V).
+    PlatformEntiteit.COMPONENTCONFIG: {PlatformRol.PLATFORMBEHEERDER: _LAW, PlatformRol.PLATFORMOPERATOR: _L},
 }
 
 

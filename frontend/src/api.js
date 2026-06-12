@@ -257,4 +257,13 @@ export const api = {
     werkBij: (id, data) =>
       request(`/platform/contractconfig/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   },
+
+  // ADR-021 Besluit 8 / ADR-012 Addendum C — platform-beheer van de componentcatalogus.
+  // GÉÉN verwijder (geen DELETE-endpoint; soft-deactivate via werkBij `actief`).
+  platformComponentconfig: {
+    lijst: ({ dimensie } = {}) => request(`/platform/componentconfig${_query({ dimensie })}`),
+    maak: (data) => request('/platform/componentconfig', { method: 'POST', body: JSON.stringify(data) }),
+    werkBij: (id, data) =>
+      request(`/platform/componentconfig/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  },
 }

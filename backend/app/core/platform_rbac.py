@@ -26,6 +26,8 @@ class PlatformEntiteit(str, Enum):
     CHECKLISTCONFIG = "checklistconfig"
     # ADR-012 Addendum B / ADR-020: beheer van de contract-classificatie-catalogus.
     CONTRACTCONFIG = "contractconfig"
+    # ADR-012 Addendum C / ADR-021: beheer van de componentcatalogus.
+    COMPONENTCONFIG = "componentconfig"
 
 
 KNOWN_PLATFORM_ROLES: frozenset[str] = frozenset(r.value for r in PlatformRol)
@@ -58,6 +60,11 @@ PLATFORM_PERMISSIES: dict[PlatformEntiteit, dict[PlatformRol, frozenset[Actie]]]
     },
     # Addendum B: contractcatalogus — beheerder LAW (geen V), operator L.
     PlatformEntiteit.CONTRACTCONFIG: {
+        PlatformRol.PLATFORMBEHEERDER: _LAW,
+        PlatformRol.PLATFORMOPERATOR: _L,
+    },
+    # Addendum C: componentcatalogus — beheerder LAW (geen V), operator L.
+    PlatformEntiteit.COMPONENTCONFIG: {
         PlatformRol.PLATFORMBEHEERDER: _LAW,
         PlatformRol.PLATFORMOPERATOR: _L,
     },

@@ -29,6 +29,8 @@ const ContractDetail = () => import('@modules/bwb_ontvlechting/frontend/views/Co
 const ChecklistConfigBeheer = () => import('../views/ChecklistConfigBeheer.vue')
 // ADR-020 fase E — platform-beheer contractcatalogus, lazy.
 const ContractConfigBeheer = () => import('../views/ContractConfigBeheer.vue')
+// ADR-021 fase C — platform-beheer componentcatalogus, lazy.
+const ComponentConfigBeheer = () => import('../views/ComponentConfigBeheer.vue')
 
 // Publieke routes staan standalone (geen app-shell). Geauthenticeerde routes
 // hangen als children onder AppLayout: door de meta-merge erven zij
@@ -94,6 +96,7 @@ const routes = [
       { path: '', name: 'beheer-home', redirect: { name: 'beheer-checklistconfig' } },
       { path: 'checklistconfig', name: 'beheer-checklistconfig', component: ChecklistConfigBeheer },
       { path: 'contractconfig', name: 'beheer-contractconfig', component: ContractConfigBeheer },
+      { path: 'componentconfig', name: 'beheer-componentconfig', component: ComponentConfigBeheer },
     ],
   },
 
