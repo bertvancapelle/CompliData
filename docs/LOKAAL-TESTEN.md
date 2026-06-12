@@ -34,6 +34,30 @@ Containers en poorten: postgres `:5432` · keycloak `:8080` · rabbitmq `:5672/:
 · redis `:6379` · minio `:9000/:9001` · **api `:8000`**. (De `ui`-container heeft
 `profiles: [production]` en start lokaal niet mee — gebruik de dev-server hieronder.)
 
+Keycloak heeft sinds **CD055** een **eigen database** `keycloak` (rol `kc_user`),
+losgekoppeld van de app-DB `complidata` — geen schema-collision meer en de
+`complidata`-dump bevat geen Keycloak-data (OP-22).
+
+### 1b. Schoon resetten / herseeden
+
+De Postgres-data zit in een **named volume** (CD055), dus `down -v` reset de DB echt:
+
+```bash
+docker compose down -v && docker compose up -d   # wist DB → migratie 0006 + platform-seed
+```
+
+De **platform-seed** (89 checklistvragen + beide catalogi, 9/9) loopt automatisch in de
+init-container. De **dev-testdata** (12 applicaties, 14 componenten, register, structuur)
+is een aparte, idempotente fixture — draai hem ná de reset handmatig:
+
+```bash
+docker exec -w /app cd-api python3 dev_seed_testdata.py
+```
+
+Schone baseline daarna: componenten **14** · structuur **3** · leveranciers **4** ·
+contracten **7** · koppelingen **10** · applicaties **12** · blokkades **10** ·
+component-contract **11**.
+
 ### 2. Frontend dev-server starten
 
 ```bash

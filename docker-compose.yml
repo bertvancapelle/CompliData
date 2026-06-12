@@ -12,7 +12,9 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ~/complidata/data/postgres:/var/lib/postgresql/data
+      # CD055 (B): named volume i.p.v. host-bind-mount, zodat `docker compose down -v`
+      # de DB daadwerkelijk reset (de gedocumenteerde reseed-methode klopt weer).
+      - cd_postgres_data:/var/lib/postgresql/data
       - ./init-db:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U cd_admin -d complidata"]
@@ -26,9 +28,12 @@ services:
     command: start-dev --health-enabled=true --import-realm
     environment:
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres:5432/complidata
-      KC_DB_USERNAME: cd_admin
-      KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      # CD055 (A1): Keycloak heeft een eigen database `keycloak` + eigen rol `kc_user`
+      # (aangemaakt door init-db/02_keycloak.sql). Nooit meer de app-DB complidata —
+      # lost de COMPONENT-collision op en houdt Keycloak uit de complidata-dump (OP-22).
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: kc_user
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD:-changeme_dev}
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
     ports:
@@ -192,3 +197,9 @@ services:
       - "3000:3000"
     depends_on:
       - api
+
+# CD055 (B): named volume voor de Postgres-data. `down -v` verwijdert dit volume →
+# schone reset (init-scripts + migratie + seed lopen opnieuw). De overige services
+# houden hun host-bind-mounts (buiten scope van deze fix).
+volumes:
+  cd_postgres_data:
