@@ -30,6 +30,9 @@ class Entiteit(str, Enum):
     LEVERANCIER = "leverancier"
     CONTRACT = "contract"
     APPLICATIE_CONTRACT = "applicatie_contract"
+    # ADR-021 — component-herfundering (tenant-zijde, inhoud-entiteiten)
+    COMPONENT = "component"
+    COMPONENT_STRUCTUUR = "component_structuur"
     CHECKLISTVRAAG = "checklistvraag"
     AUDITLOG = "auditlog"
     GEBRUIKERSBEHEER = "gebruikersbeheer"
@@ -72,6 +75,9 @@ PERMISSIES: dict[Entiteit, dict[Rol, frozenset[Actie]]] = {
     Entiteit.LEVERANCIER: dict(_INHOUD),
     Entiteit.CONTRACT: dict(_INHOUD),
     Entiteit.APPLICATIE_CONTRACT: dict(_INHOUD),
+    # ADR-021 — component/structuurrelatie, zelfde inhoud-patroon als Applicatie.
+    Entiteit.COMPONENT: dict(_INHOUD),
+    Entiteit.COMPONENT_STRUCTUUR: dict(_INHOUD),
     # Referentietabel — voor iedereen alleen-lezen.
     Entiteit.CHECKLISTVRAAG: {
         Rol.VIEWER: _L,

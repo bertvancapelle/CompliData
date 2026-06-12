@@ -1,0 +1,79 @@
+"""Catalogus-lookup/-validatie voor de componentcatalogus (ADR-021 Besluit 8).
+
+Spiegel van `contractconfig_catalog` voor `componentconfig_optie` (dimensies
+`componenttype` + `structuurrelatie_type`). De tenant-sessie (`cd_app`) mag de
+platform-brede catalogus LEZEN (SELECT-grant, CD051). Valideren tegen de **actieve**
+opties van de **juiste dimensie**; uitlezen resolvet ook gedeactiveerde sleutels.
+"""
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from models.models import ComponentConfigDimensie, ComponentConfigOptie
+from services.errors import OngeldigeRegistratie
+
+
+async def _opties(session: AsyncSession, dimensie: ComponentConfigDimensie, *, alleen_actief: bool):
+    stmt = select(
+        ComponentConfigOptie.optie_sleutel,
+        ComponentConfigOptie.label,
+        ComponentConfigOptie.actief,
+    ).where(ComponentConfigOptie.dimensie == dimensie)
+    if alleen_actief:
+        stmt = stmt.where(ComponentConfigOptie.actief.is_(True))
+    return list((await session.execute(stmt)).all())
+
+
+async def actieve_sleutels(session: AsyncSession, dimensie: ComponentConfigDimensie) -> set[str]:
+    return {r.optie_sleutel for r in await _opties(session, dimensie, alleen_actief=True)}
+
+
+async def labels(
+    session: AsyncSession, dimensie: ComponentConfigDimensie
+) -> dict[str, tuple[str, bool]]:
+    """`{optie_sleutel: (label, actief)}` voor ALLE opties (incl. inactieve)."""
+    return {r.optie_sleutel: (r.label, r.actief) for r in await _opties(session, dimensie, alleen_actief=False)}
+
+
+async def valideer_sleutel(
+    session: AsyncSession, dimensie: ComponentConfigDimensie, sleutel: str
+) -> None:
+    """Weiger een onbekende/inactieve/verkeerd-gedimensioneerde sleutel ⇒ 422 `ONGELDIGE_OPTIE`."""
+    if sleutel in await actieve_sleutels(session, dimensie):
+        return
+    raise OngeldigeRegistratie(
+        "ONGELDIGE_OPTIE",
+        f"Onbekende of inactieve optie '{sleutel}' voor dimensie '{dimensie.value}'.",
+    )
+
+
+def resolveer_een(sleutel: str, label_map: dict[str, tuple[str, bool]]) -> str:
+    """Resolveer één sleutel naar zijn label (fallback: de sleutel zelf)."""
+    return label_map.get(sleutel, (sleutel, False))[0]
+
+
+async def actieve_opties_per_dimensie(session: AsyncSession) -> dict[str, list[dict]]:
+    """Actieve opties per dimensie voor formuliergebruik (CD052 §5).
+
+    `{componenttype:[{optie_sleutel,label}…], structuurrelatie_type:[…]}`, per dimensie
+    gesorteerd op `volgorde`. Alleen-actief."""
+    rijen = (
+        await session.execute(
+            select(
+                ComponentConfigOptie.dimensie,
+                ComponentConfigOptie.optie_sleutel,
+                ComponentConfigOptie.label,
+                ComponentConfigOptie.volgorde,
+            )
+            .where(ComponentConfigOptie.actief.is_(True))
+            .order_by(
+                ComponentConfigOptie.dimensie,
+                ComponentConfigOptie.volgorde,
+                ComponentConfigOptie.id,
+            )
+        )
+    ).all()
+    uit: dict[str, list[dict]] = {d.value: [] for d in ComponentConfigDimensie}
+    for r in rijen:
+        dim = r.dimensie.value if hasattr(r.dimensie, "value") else str(r.dimensie)
+        uit[dim].append({"optie_sleutel": r.optie_sleutel, "label": r.label})
+    return uit

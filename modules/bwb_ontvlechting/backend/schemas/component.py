@@ -1,0 +1,118 @@
+"""Pydantic v2-schemas voor Component (ADR-021 Besluit 1/4/9).
+
+`componenttype` is een tekst-sleutel (app-side gevalideerd tegen de actieve
+componentcatalogus). Het type `applicatie` is beschermd: components met dat type
+ontstaan/verdwijnen uitsluitend via het applicatie-pad (CD051). `eigenaar_organisatie`
+is in de DB NOT NULL maar API-optioneel — de service defaultt None → "" voor kale infra.
+"""
+import uuid
+from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict, field_validator
+
+from models.models import HostingModel
+from schemas.applicatie import _verplichte_tekst
+
+
+class ComponentCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    naam: str
+    componenttype: str
+    hostingmodel: HostingModel = HostingModel.onbekend
+    eigenaar_organisatie: str | None = None
+    eigenaar_naam: str | None = None
+    leverancier: str | None = None
+    beschrijving: str | None = None
+
+    @field_validator("naam")
+    @classmethod
+    def _v_naam(cls, v: str) -> str:
+        return _verplichte_tekst(v, "naam", 255)
+
+    @field_validator("componenttype")
+    @classmethod
+    def _v_type(cls, v: str) -> str:
+        return _verplichte_tekst(v, "componenttype", 60)
+
+
+class ComponentUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    naam: str | None = None
+    componenttype: str | None = None
+    hostingmodel: HostingModel | None = None
+    eigenaar_organisatie: str | None = None
+    eigenaar_naam: str | None = None
+    leverancier: str | None = None
+    beschrijving: str | None = None
+
+    @field_validator("naam")
+    @classmethod
+    def _v_naam(cls, v: str | None) -> str | None:
+        return v if v is None else _verplichte_tekst(v, "naam", 255)
+
+    @field_validator("componenttype")
+    @classmethod
+    def _v_type(cls, v: str | None) -> str | None:
+        return v if v is None else _verplichte_tekst(v, "componenttype", 60)
+
+
+class ComponentRead(BaseModel):
+    id: uuid.UUID
+    naam: str
+    componenttype: str
+    componenttype_label: str
+    hostingmodel: HostingModel
+    eigenaar_organisatie: str
+    eigenaar_naam: str | None
+    leverancier: str | None
+    beschrijving: str | None
+    heeft_applicatie_subtype: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+class ComponentLijstItem(BaseModel):
+    id: uuid.UUID
+    naam: str
+    componenttype: str
+    componenttype_label: str
+    hostingmodel: HostingModel
+    heeft_applicatie_subtype: bool
+
+
+class ComponentPagina(BaseModel):
+    items: list[ComponentLijstItem]
+    volgende_cursor: str | None = None
+
+
+class ComponentKeuze(BaseModel):
+    optie_sleutel: str
+    label: str
+
+
+class ComponentOpties(BaseModel):
+    """Actieve catalogus-opties per dimensie (formulier-databron, CD052 §5)."""
+
+    componenttype: list[ComponentKeuze] = []
+    structuurrelatie_type: list[ComponentKeuze] = []
+
+
+class StructuurRelatieItem(BaseModel):
+    """Eén buur-component in het structuur-overzicht (met relatietype-label)."""
+
+    structuur_id: uuid.UUID
+    component_id: uuid.UUID
+    naam: str
+    componenttype: str
+    relatietype: str
+    relatietype_label: str
+    omschrijving: str | None
+
+
+class ComponentStructuurOverzicht(BaseModel):
+    """Beide richtingen in één respons (ADR-021 Besluit 6, Fase D/E-databron)."""
+
+    draait_op: list[StructuurRelatieItem] = []      # waar dit component op steunt
+    gebruikt_door: list[StructuurRelatieItem] = []  # wie op dit component steunt

@@ -43,6 +43,8 @@ VERWACHT = {
     Entiteit.LEVERANCIER: _INHOUD,
     Entiteit.CONTRACT: _INHOUD,
     Entiteit.APPLICATIE_CONTRACT: _INHOUD,
+    Entiteit.COMPONENT: _INHOUD,            # ADR-021 Fase B (CD052)
+    Entiteit.COMPONENT_STRUCTUUR: _INHOUD,  # ADR-021 Fase B (CD052)
     Entiteit.CHECKLISTVRAAG: {r: _L for r in Rol},
     Entiteit.AUDITLOG: {
         Rol.VIEWER: _GEEN, Rol.MEDEWERKER: _GEEN, Rol.BEHEERDER: _L, Rol.AUDITOR: _L,
