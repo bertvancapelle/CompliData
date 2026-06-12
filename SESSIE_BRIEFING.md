@@ -1,6 +1,6 @@
-# SESSIE_BRIEFING.md — CompliData V006
+# SESSIE_BRIEFING.md — CompliData V007
 
-**Gegenereerd**: 2026-06-10
+**Gegenereerd**: 2026-06-12
 
 ---
 
@@ -10,11 +10,11 @@
 
 | Veld | Waarde |
 |------|--------|
-| Build | V006 |
+| Build | V007 |
 | Datum | June 2026 |
-| Commit | 0b0976b |
-| Tests | 519 backend + 151 frontend groen |
-| TST-rapport | TST-V006-Validatierapport.md |
+| Commit | fb130df |
+| Tests | 631 backend + 239 frontend groen |
+| TST-rapport | TST-V007-Validatierapport.md |
 | Kritieke bevindingen | 0 |
 
 ---
@@ -22,62 +22,70 @@
 ## Recente commits
 
 ```
-0b0976b docs(auth): OP-4 afgerond — RP-initiated logout reeds geïmplementeerd (CD038)
-2a0b247 docs(auth): OP-7 afgerond — 401 reeds canoniek; stale docstrings + lock-test (CD037)
-216eec7 docs(opvolgpunten): OP-16 afgerond — tenantSlug-getter reeds gefixt (CD036)
-f5e1ccf feat(checklist): O2 — 7.5 BIO2-classificatie naar BBN1/2/3 via soft-deactivate (CD035)
-67b0171 feat(frontend): ADR-019 fase 2E-c — beheer-UI ChecklistConfigBeheer (CD034)
+fb130df docs(kennisborging): patronen CD039–CD056 vastgelegd in skills/CLAUDE.md + ADR-022-voorbereiding + OPVOLGPUNTEN-sweep incl. OP-22-sluiting (CD057)
+97a48cb feat(component): ADR-021 fase E — impactanalyse: read-only afhankelijkheids-traversal met readiness- en contractcontext (CD056)
+8f44aff feat(component): ADR-021 fase D-2 v2 — verenigde Componenten-UI: convergente aanmaak, besturingskolommen, menu-sanering (CD054b)
+a733039 fix(infra): Keycloak eigen database + named volume voor Postgres — lost COMPONENT-collision op en sluit OP-22 (CD055)
+f8a70d9 refactor(component): ADR-021 fase D-1 — padconsolidatie app→component-contracten + ContractSectie-generalisatie (CD054a)
 ```
 
 ---
 
 ## Prioriteiten volgende sessie
 
-# NEXT_SESSION.md — CompliData V005
+# NEXT_SESSION.md — CompliData V007
 
-**Gegenereerd**: 2026-06-08
-**Vorige build (deze afsluiting)**: V004 → **V005** (gen_build bumpt de teller in fase 3)
-**Laatste commit vóór de bump**: 23a3db8
+**Gegenereerd**: 2026-06-12
+**Vorige build (deze afsluiting)**: V006 → **V007**
+**Laatste commit vóór de bump**: fb130df (CD057)
 
 ---
 
-## Stand van zaken (V005)
+## Stand van zaken (V007)
 
-Sessie CD013–CD024 bovenop V004:
+Sessie CD039–CD058 bovenop V006 — twee ADR-blokken + infra + borging:
 
-- **Dashboard tenant-breed** (lifecycle-telling, open blokkades, recent gewijzigd). [CD014, #9]
-- **Server-side sorteerbare keyset-lijsten** (ADR-017, v2/v2n) + **applicatieregister-filter**
-  (status/hostingmodel/eigenaar/zoek, LIKE-escaping). [CD015/CD017, #10]
-- **Tenant-breed blokkadesoverzicht** (NULLS-LAST-keyset). [CD016, #12]
-- **Sorteer-retrofit** van de 5 legacy-lijsten (datatype/gebruikersgroep/koppeling/
-  checklistscore/blokkade-sectie) + **legacy-cursor opgeruimd**. [CD020/CD021]
-- **Applicatie-detail → categorie-tabs** (2-laags, `AppTabs`, deep-link). [CD022, #11]
-- **Koppelingenkaart** (gefocuste ego-graaf + toegankelijke relatietabel, ADR-018). [CD023, #13]
-- **gen_build volgordefix** (bouwstatus vóór briefing-generatie). [CD018]
-- **Patronen + commit-discipline vastgelegd** in de complidata-skills + CLAUDE.md/CONTRIBUTING §7. [CD024]
-- **461 backend + 123 frontend-tests groen**; geen migraties deze sessie.
-
-Backlog #1–#13 afgerond, **op #14 en #15 na** (geblokkeerd): #14 wacht op #17, #15 wacht op #16.
+- **ADR-020 contractregister** (CD039–046): leverancier-/contractregister (RLS, CHECK/UNIQUE,
+  platform-catalogus), tenant-UI, categorie-8-contextpaneel, catalogus-beheer-UI.
+- **RLS-poolfix** (CD047/048): tenant-context transactie-lokaal (`after_begin`-hook) — 500-na-
+  commit gedicht. **ZoekSelect** (CD049).
+- **ADR-021 component-herfundering** (CD050–054, 056): supertype/subtype shared-PK, landschaps-
+  graaf, verenigde Componenten-UI (convergente aanmaak + menu-sanering), impactanalyse.
+- **CD055 Keycloak-scheiding** (eigen DB + named volume → OP-22 gesloten). **CD057 kennisborging**.
+- **631 backend + 239 frontend** groen; 1 migratie (`0006_component_herfundering`).
 
 ---
 
 ## Top-5 prioriteiten volgende sessie (Bert prioriteert)
 
-1. **#16 — Tenant-onboarding / user-management-backend** (deblokkeert #15; platform-domein
-   ADR-012/`cd_platform`, raakt OP-13 platform-tabel-grants).
-2. **#17 — Audit-trail (ADR-006)** — hash-chained, append-only auditlog (deblokkeert #14).
-3. **#15 (na #16)** en **#14 (na #17)** — de geblokkeerde backlog-items oppakken zodra hun
+1. **ADR-022-afpelling** — checklist/beoordelingsprofiel per componenttype; werk de **vier open
+   ontwerpvragen** uit `docs/adr/ADR-022_VOORBEREIDING.md` af (lifecycle vs. alleen scores;
+   readiness-rapportage; configuratievorm; relatie tot het subtype-mechanisme).
+2. **ADR-006 — audit-trail** (hash-chained, append-only). Het drie-lagen-advies ligt vast in de
+   chat-besluiten; ADR-022 gaat **vóór** ADR-006 (audit logt het definitieve besturingsmodel).
+3. **#16 — Tenant-/usermanagement-backend** (deblokkeert #15; platform-domein ADR-012, raakt
+   OP-13 platform-tabel-grants).
+4. **#14** (na ADR-006) en **#15** (na #16) — geblokkeerde backlog oppakken zodra hun
    afhankelijkheid staat.
-4. **Productie-hardening**: OP-14 (dev-credentials vervangen), OP-7 (401/403 in hetzelfde foutformaat).
-5. **Live-DB-verificatie (#23 / OP-20)**: NULLS-LAST-paginering empirisch tegen Postgres
-   bevestigen (asc/desc over de NULL-grens).
+5. **OP-28 VPS-deployment** t.z.t. (raakt OP-14 secrets-hardening) — alleen op Berts sein.
 
 ---
 
-## Uitgestelde punten
+## Uitgestelde punten (achtergrond)
 
-Zie `docs/OPVOLGPUNTEN.md`: OP-20 (NULL live-verificatie), OP-16-testrand (happy-dom
-teardown-residu), OP-21 (eigenaar distinct-dropdown, optioneel). Productie-hardening: OP-7, OP-13, OP-14.
+Zie `docs/OPVOLGPUNTEN.md`: OP-3 (refresh-token), OP-13 (platform-tabel-grants), OP-14 (secrets),
+OP-20 (live NULLS-LAST), OP-21 (eigenaar distinct-dropdown), **OP-23** (cyclus-padbewaking bij
+invoer), **OP-24** (C-drempel zoekvelden), **OP-25** (Uvicorn-accesslog timestamps), **OP-26**
+(`component.eigenaar_organisatie` nullable), **OP-27** (dev-seed init-stap), **OP-28** (VPS).
+
+---
+
+## Werkwijze (triggerdiscipline)
+
+Elke opdracht-`.md` begint op **regel 1** met `START: [taaknaam]`. **`AKKOORD: commit`** is
+exclusief de commit-trigger op een groen eindrapport; "akkoord"/"doorgaan" stemt alleen met een
+advies in. CC verifieert zélf de groene staat vóór elke commit. Reset-procedure (named volume +
+handmatige dev-seed): `docs/LOKAAL-TESTEN.md`.
 
 
 ---
@@ -86,5 +94,5 @@ teardown-residu), OP-21 (eigenaar distinct-dropdown, optioneel). Productie-harde
 
 1. Lees deze briefing volledig
 2. Lees CLAUDE.md (sessiestart-protocol)
-3. Bevestig: "Sessie-briefing geladen — CompliData V006"
+3. Bevestig: "Sessie-briefing geladen — CompliData V007"
 4. Wacht op START: [naam] van Bert

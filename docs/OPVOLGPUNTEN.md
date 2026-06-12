@@ -150,6 +150,16 @@ Optioneel: een **dev-guarded** init-stap (bv. env-flag `SEED_DEV=true`) die de d
 automatisch draait in lokale/dev-omgevingen, zodat `down -v && up -d` direct de volledige baseline
 geeft — zonder risico op prod-seeding. Raakt de seed-pipeline → eigen besluit. [CD055]
 
+### OP-28 — VPS-deployment — OPEN (roadmap-kandidaat, t.z.t.)
+
+Besluit Bert: in een volgende sessie oppakken. Doel nog te bepalen (demo/test vs. productie).
+Raakt: **OP-14** (secrets-hardening — overal `changeme_dev` vervangen door echte secrets); een
+**productie-compose-variant** + reverse proxy/HTTPS (alleen 80/443 open); **Keycloak
+production-mode** (`KC_HOSTNAME`, redirect-URI's/CORS op het echte domein i.p.v. localhost);
+**offsite backups** (de pg_dump-keten bestaat al en is sinds CD055 Keycloak-vrij). Bij een
+**productie**-doel zijn **ADR-006** (audit-trail) en **#16** (user-/tenantmanagement)
+voorwaarden. EU-jurisdictie-VPS conform de platform-uitgangspunten.
+
 ### OP-22 — Backup-scope / secops: Keycloak-secrets in de DB-dump — AFGEROND (geverifieerd CD055)
 
 Opgelost via de tweede optie: **Keycloak draait op een eigen database** `keycloak` (rol
