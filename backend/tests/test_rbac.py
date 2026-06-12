@@ -42,7 +42,7 @@ VERWACHT = {
     Entiteit.BLOKKADE: _INHOUD,
     Entiteit.LEVERANCIER: _INHOUD,
     Entiteit.CONTRACT: _INHOUD,
-    Entiteit.APPLICATIE_CONTRACT: _INHOUD,
+    Entiteit.COMPONENT_CONTRACT: _INHOUD,
     Entiteit.COMPONENT: _INHOUD,            # ADR-021 Fase B (CD052)
     Entiteit.COMPONENT_STRUCTUUR: _INHOUD,  # ADR-021 Fase B (CD052)
     Entiteit.CHECKLISTVRAAG: {r: _L for r in Rol},

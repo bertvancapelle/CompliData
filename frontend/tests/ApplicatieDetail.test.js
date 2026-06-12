@@ -15,8 +15,9 @@ vi.mock('@/api', () => {
         startInventarisatie: vi.fn(),
         verwijder: vi.fn(),
         lijst: vi.fn(leeg), // KoppelingSectie-pickers (bij dialog-open)
-        contracten: vi.fn(() => Promise.resolve([])), // ContractSectie (app→contracten)
       },
+      // ContractSectie laadt nu via component→contracten (CD054 padconsolidatie).
+      componenten: { contracten: vi.fn(() => Promise.resolve([])) },
       // Embedded child-secties laden bij mount hun lijst (default: leeg).
       datatypes: { lijst: vi.fn(leeg) },
       gebruikersgroepen: { lijst: vi.fn(leeg) },
@@ -275,7 +276,7 @@ describe('ApplicatieDetail — context-paneel categorie 8 (CD044 §5)', () => {
   it('toont de geregistreerde contracten incl. datums en is read-only', async () => {
     api.applicaties.haal.mockResolvedValue(_app())
     api.checklistvragen.lijst.mockResolvedValue(_vragen)
-    api.applicaties.contracten.mockResolvedValue([_koppeling])
+    api.componenten.contracten.mockResolvedValue([_koppeling])
     const { wrapper } = await mountDetail({ query: '?tab=checklist&cat=8' })
     const paneel = wrapper.find('[data-testid="context-paneel-cat8"]')
     expect(paneel.attributes('role')).toBe('complementary')
@@ -291,7 +292,7 @@ describe('ApplicatieDetail — context-paneel categorie 8 (CD044 §5)', () => {
   it('lege-staat: paneel met melding + link naar de Contracten-sectie', async () => {
     api.applicaties.haal.mockResolvedValue(_app())
     api.checklistvragen.lijst.mockResolvedValue(_vragen)
-    api.applicaties.contracten.mockResolvedValue([])
+    api.componenten.contracten.mockResolvedValue([])
     const { wrapper } = await mountDetail({ query: '?tab=checklist&cat=8' })
     expect(wrapper.find('[data-testid="context-paneel-leeg"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="context-paneel-naar-sectie"]').exists()).toBe(true)

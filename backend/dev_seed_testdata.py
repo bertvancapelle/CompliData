@@ -59,14 +59,14 @@ from models.models import (  # noqa: E402
     Leverancier,
 )
 from schemas.applicatie import ApplicatieCreate  # noqa: E402
-from schemas.applicatie_contract import ApplicatieContractCreate  # noqa: E402
+from schemas.component_contract import ComponentContractCreate  # noqa: E402
 from schemas.blokkade import BlokkadeUpdate  # noqa: E402
 from schemas.checklistscore import ChecklistscoreCreate, ChecklistscoreUpdate  # noqa: E402
 from schemas.contract import ContractCreate  # noqa: E402
 from schemas.koppeling import KoppelingCreate  # noqa: E402
 from schemas.leverancier import LeverancierCreate  # noqa: E402
 from services import (  # noqa: E402
-    applicatie_contract_service,
+    component_contract_service,
     applicatie_service,
     blokkade_service,
     checklistscore_service,
@@ -547,9 +547,9 @@ async def _seed_aanvulling_d(session, app_ids: dict) -> dict:
         if (app_id, contract_id) in bestaande_kop:
             print(f"  = koppeling app{app_idx}→{contractnaam}: bestaat al — overgeslagen")
             continue
-        await applicatie_contract_service.maak_aan(
+        await component_contract_service.maak_aan(
             session, DEV_TENANT,
-            ApplicatieContractCreate(applicatie_id=app_id, contract_id=contract_id, relatie_rol=rol),
+            ComponentContractCreate(component_id=app_id, contract_id=contract_id, relatie_rol=rol),
         )
         print(f"  + koppeling app{app_idx}→{contractnaam} ({rol})")
 

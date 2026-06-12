@@ -85,10 +85,11 @@ def test_contract_applicaties_bevat_lifecycle(monkeypatch):
 
 # ── §0b — app→contracten met begin-/einddatum ──────────────────────────────────
 
-def test_app_contracten_bevat_datums(monkeypatch):
+def test_component_contracten_bevat_datums(monkeypatch):
+    # CD054 padconsolidatie: het overzicht loopt nu via component_contract_service.
     from models.models import ContractType
-    from services import applicatie_contract_service as svc
-    from services import applicatie_service
+    from services import component_contract_service as svc
+    from services import component_service
     from services import contractconfig_catalog as catalog
 
     async def _ok(*a, **k):
@@ -97,7 +98,7 @@ def test_app_contracten_bevat_datums(monkeypatch):
     async def _labels(s, dim):
         return {"valt_onder": ("Valt onder", True)}
 
-    monkeypatch.setattr(applicatie_service, "haal_op", _ok)
+    monkeypatch.setattr(component_service, "haal_op", _ok)
     monkeypatch.setattr(catalog, "labels", _labels)
 
     row = SimpleNamespace(
@@ -108,9 +109,9 @@ def test_app_contracten_bevat_datums(monkeypatch):
     )
     session = AsyncMock()
     session.execute.return_value = _all([row])
-    out = asyncio.run(svc.contracten_van_applicatie(session, "11111111-1111-1111-1111-111111111111", "a1"))
+    out = asyncio.run(svc.contracten_van_component(session, "11111111-1111-1111-1111-111111111111", "c1"))
     assert out[0]["begindatum"] == date(2026, 1, 1)
     assert out[0]["einddatum"] is None
 
-    from schemas.applicatie_contract import ContractVoorApplicatie
-    assert {"begindatum", "einddatum"} <= set(ContractVoorApplicatie.model_fields)
+    from schemas.component_contract import ContractVoorComponent
+    assert {"begindatum", "einddatum"} <= set(ContractVoorComponent.model_fields)

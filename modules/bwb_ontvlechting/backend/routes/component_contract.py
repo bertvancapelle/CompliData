@@ -1,10 +1,9 @@
 """HTTP-routes voor ComponentContract (ADR-021 Besluit 7 — Fase B).
 
-RBAC: dezelfde contract-koppeling-entiteit als CD041 (`Entiteit.APPLICATIE_CONTRACT`) —
-component_contract is dezelfde soort koppeling, alleen component-breed. Het
-component→contracten-overzicht hangt aan de component-router
-(`/componenten/{id}/contracten`). De bestaande `/applicatie-contracten`-paden blijven
-ongewijzigd werken (byte-compat; padconsolidatie is een Fase D-besluit).
+RBAC via `Entiteit.COMPONENT_CONTRACT` (de contract-koppeling generaliseerde naar
+component-niveau, ADR-021 Fase D). Het component→contracten-overzicht hangt aan de
+component-router (`/componenten/{id}/contracten`). De oude `/applicatie-contracten`-paden
+zijn vervallen (CD054 padconsolidatie) — de frontend gebruikt uitsluitend deze paden.
 """
 import uuid
 
@@ -29,7 +28,7 @@ router = APIRouter(prefix="/component-contracten", tags=["bwb:component-contract
 @router.post("", response_model=ComponentContractRead, status_code=201)
 async def maak_koppeling(
     body: ComponentContractCreate,
-    user: AuthenticatedUser = Depends(vereist_permissie(Entiteit.APPLICATIE_CONTRACT, Actie.AANMAKEN)),
+    user: AuthenticatedUser = Depends(vereist_permissie(Entiteit.COMPONENT_CONTRACT, Actie.AANMAKEN)),
     session: AsyncSession = Depends(get_tenant_session),
 ):
     return await svc.maak_aan(session, user.tenant_id, body)
@@ -39,7 +38,7 @@ async def maak_koppeling(
 async def werk_koppeling_bij(
     koppeling_id: uuid.UUID,
     body: ComponentContractUpdate,
-    user: AuthenticatedUser = Depends(vereist_permissie(Entiteit.APPLICATIE_CONTRACT, Actie.WIJZIGEN)),
+    user: AuthenticatedUser = Depends(vereist_permissie(Entiteit.COMPONENT_CONTRACT, Actie.WIJZIGEN)),
     session: AsyncSession = Depends(get_tenant_session),
 ):
     return await svc.werk_bij(session, user.tenant_id, koppeling_id, body)
@@ -48,7 +47,7 @@ async def werk_koppeling_bij(
 @router.delete("/{koppeling_id}", status_code=204)
 async def verwijder_koppeling(
     koppeling_id: uuid.UUID,
-    user: AuthenticatedUser = Depends(vereist_permissie(Entiteit.APPLICATIE_CONTRACT, Actie.VERWIJDEREN)),
+    user: AuthenticatedUser = Depends(vereist_permissie(Entiteit.COMPONENT_CONTRACT, Actie.VERWIJDEREN)),
     session: AsyncSession = Depends(get_tenant_session),
 ):
     await svc.verwijder(session, user.tenant_id, koppeling_id)

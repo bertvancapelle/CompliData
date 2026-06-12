@@ -1,4 +1,8 @@
-"""Unit-tests — ApplicatieContract service-laag (ADR-020 fase B). DB gemockt."""
+"""Unit-tests — ComponentContract service-laag (ADR-021 fase B; CD054 padconsolidatie).
+
+Omgezet uit test_applicatie_contract_service (de koppeling generaliseerde naar component-
+niveau). DB gemockt; validatie loopt nu via `component_service` i.p.v. `applicatie_service`.
+"""
 import asyncio
 import uuid
 from unittest.mock import AsyncMock, MagicMock
@@ -9,16 +13,16 @@ TID = "11111111-1111-1111-1111-111111111111"
 
 
 def _create(rol="valt_onder"):
-    from schemas.applicatie_contract import ApplicatieContractCreate
+    from schemas.component_contract import ComponentContractCreate
 
-    return ApplicatieContractCreate(
-        applicatie_id=uuid.uuid4(), contract_id=uuid.uuid4(), relatie_rol=rol
+    return ComponentContractCreate(
+        component_id=uuid.uuid4(), contract_id=uuid.uuid4(), relatie_rol=rol
     )
 
 
 def test_maak_aan_dubbele_koppeling_geeft_conflict(monkeypatch):
-    from services import applicatie_contract_service as svc
-    from services import applicatie_service, contract_service
+    from services import component_contract_service as svc
+    from services import component_service, contract_service
     from services import contractconfig_catalog as catalog
     from services.errors import RegistratieConflict
 
@@ -28,13 +32,13 @@ def test_maak_aan_dubbele_koppeling_geeft_conflict(monkeypatch):
     async def _val(session, dim, sleutels):
         return None
 
-    monkeypatch.setattr(applicatie_service, "haal_op", _ok)
+    monkeypatch.setattr(component_service, "haal_op", _ok)
     monkeypatch.setattr(contract_service, "haal_op", _ok)
     monkeypatch.setattr(catalog, "valideer_sleutels", _val)
 
     session = AsyncMock()
     bestaat = MagicMock()
-    bestaat.scalar_one_or_none.return_value = uuid.uuid4()  # koppeling bestaat al
+    bestaat.scalar_one_or_none.return_value = uuid.uuid4()
     session.execute.return_value = bestaat
 
     with pytest.raises(RegistratieConflict) as e:
@@ -44,8 +48,8 @@ def test_maak_aan_dubbele_koppeling_geeft_conflict(monkeypatch):
 
 
 def test_maak_aan_ongeldige_rol_geeft_422(monkeypatch):
-    from services import applicatie_contract_service as svc
-    from services import applicatie_service, contract_service
+    from services import component_contract_service as svc
+    from services import component_service, contract_service
     from services import contractconfig_catalog as catalog
     from services.errors import OngeldigeRegistratie
 
@@ -53,9 +57,9 @@ def test_maak_aan_ongeldige_rol_geeft_422(monkeypatch):
         return MagicMock()
 
     async def _actief(session, dim):
-        return set()  # geen actieve rollen → elke rol ongeldig
+        return set()
 
-    monkeypatch.setattr(applicatie_service, "haal_op", _ok)
+    monkeypatch.setattr(component_service, "haal_op", _ok)
     monkeypatch.setattr(contract_service, "haal_op", _ok)
     monkeypatch.setattr(catalog, "actieve_sleutels", _actief)
 
@@ -66,17 +70,17 @@ def test_maak_aan_ongeldige_rol_geeft_422(monkeypatch):
 
 
 def test_maak_aan_contract_buiten_tenant_geeft_404(monkeypatch):
-    from services import applicatie_contract_service as svc
-    from services import applicatie_service, contract_service
+    from services import component_contract_service as svc
+    from services import component_service, contract_service
     from services.errors import NietGevonden
 
-    async def _app_ok(*a, **k):
+    async def _comp_ok(*a, **k):
         return MagicMock()
 
     async def _contract_weg(session, tenant_id, cid):
         raise NietGevonden("contract", cid)
 
-    monkeypatch.setattr(applicatie_service, "haal_op", _app_ok)
+    monkeypatch.setattr(component_service, "haal_op", _comp_ok)
     monkeypatch.setattr(contract_service, "haal_op", _contract_weg)
 
     session = AsyncMock()
@@ -86,7 +90,7 @@ def test_maak_aan_contract_buiten_tenant_geeft_404(monkeypatch):
 
 
 def test_haal_op_niet_gevonden():
-    from services import applicatie_contract_service as svc
+    from services import component_contract_service as svc
     from services.errors import NietGevonden
 
     session = AsyncMock()

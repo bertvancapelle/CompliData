@@ -29,7 +29,8 @@ class Entiteit(str, Enum):
     # ADR-020 — contractregister (tenant-zijde, inhoud-entiteiten)
     LEVERANCIER = "leverancier"
     CONTRACT = "contract"
-    APPLICATIE_CONTRACT = "applicatie_contract"
+    # ADR-021 Fase D — contract-koppeling generaliseerde naar component-niveau.
+    COMPONENT_CONTRACT = "component_contract"
     # ADR-021 — component-herfundering (tenant-zijde, inhoud-entiteiten)
     COMPONENT = "component"
     COMPONENT_STRUCTUUR = "component_structuur"
@@ -74,7 +75,7 @@ PERMISSIES: dict[Entiteit, dict[Rol, frozenset[Actie]]] = {
     # ADR-020 contractregister — zelfde inhoud-patroon als Applicatie.
     Entiteit.LEVERANCIER: dict(_INHOUD),
     Entiteit.CONTRACT: dict(_INHOUD),
-    Entiteit.APPLICATIE_CONTRACT: dict(_INHOUD),
+    Entiteit.COMPONENT_CONTRACT: dict(_INHOUD),
     # ADR-021 — component/structuurrelatie, zelfde inhoud-patroon als Applicatie.
     Entiteit.COMPONENT: dict(_INHOUD),
     Entiteit.COMPONENT_STRUCTUUR: dict(_INHOUD),

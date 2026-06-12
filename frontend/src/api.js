@@ -91,8 +91,6 @@ export const api = {
       request(`/applicaties/${id}/start-inventarisatie`, { method: 'POST' }),
     verwijder: (id) => request(`/applicaties/${id}`, { method: 'DELETE' }),
     opties: () => request('/applicaties/opties'),
-    // ADR-020: 'app → waar valt hij onder' (gekoppelde contracten met rol + leverancier).
-    contracten: (id) => request(`/applicaties/${id}/contracten`),
   },
 
   datatypes: {
@@ -181,11 +179,33 @@ export const api = {
   },
 
   // ADR-020 — applicatie↔contract-koppeling (precies één rol per koppeling).
-  applicatieContracten: {
-    maak: (data) => request('/applicatie-contracten', { method: 'POST', body: JSON.stringify(data) }),
+  // ADR-021 — componenten (technische laag) + structuurgraaf. Met de shared-PK is een
+  // applicatie-id identiek aan zijn component-id (zelfde waarden).
+  componenten: {
+    lijst: ({ limit, after, sort, order, componenttype, zoek } = {}) =>
+      request(`/componenten${_query({ limit, after, sort, order, componenttype, zoek })}`),
+    haal: (id) => request(`/componenten/${id}`),
+    maak: (data) => request('/componenten', { method: 'POST', body: JSON.stringify(data) }),
+    werkBij: (id, data) => request(`/componenten/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    verwijder: (id) => request(`/componenten/${id}`, { method: 'DELETE' }),
+    opties: () => request('/componenten/opties'),
+    structuur: (id) => request(`/componenten/${id}/structuur`),
+    // 'component → contracten' (vervangt het oude app→contracten-overzicht, CD054).
+    contracten: (id) => request(`/componenten/${id}/contracten`),
+  },
+
+  componentStructuren: {
+    maak: (data) => request('/component-structuren', { method: 'POST', body: JSON.stringify(data) }),
     werkBij: (id, data) =>
-      request(`/applicatie-contracten/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-    verwijder: (id) => request(`/applicatie-contracten/${id}`, { method: 'DELETE' }),
+      request(`/component-structuren/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    verwijder: (id) => request(`/component-structuren/${id}`, { method: 'DELETE' }),
+  },
+
+  componentContracten: {
+    maak: (data) => request('/component-contracten', { method: 'POST', body: JSON.stringify(data) }),
+    werkBij: (id, data) =>
+      request(`/component-contracten/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    verwijder: (id) => request(`/component-contracten/${id}`, { method: 'DELETE' }),
   },
 
   // ADR-020 §0 (CD043) — tenant-leeszijde van de classificatie-catalogus: alleen

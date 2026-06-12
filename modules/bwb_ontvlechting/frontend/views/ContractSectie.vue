@@ -51,7 +51,7 @@ async function laad() {
   laden.value = true
   fout.value = null
   try {
-    items.value = await api.applicaties.contracten(props.applicatieId)
+    items.value = await api.componenten.contracten(props.applicatieId)
   } catch (e) {
     fout.value = e?.message || 'Laden van gekoppelde contracten mislukt.'
   } finally {
@@ -102,8 +102,8 @@ async function koppel() {
   if (!valideer()) return
   bezig.value = true
   try {
-    await api.applicatieContracten.maak({
-      applicatie_id: props.applicatieId,
+    await api.componentContracten.maak({
+      component_id: props.applicatieId,  // shared-PK: applicatie-id == component-id
       contract_id: form.contract_id,
       relatie_rol: form.relatie_rol,
     })
@@ -120,7 +120,7 @@ async function koppel() {
 async function wijzigRol(rij, event) {
   const nieuw = event.target.value
   try {
-    await api.applicatieContracten.werkBij(rij.koppeling_id, { relatie_rol: nieuw })
+    await api.componentContracten.werkBij(rij.koppeling_id, { relatie_rol: nieuw })
     toast.add({ severity: 'success', summary: 'Rol gewijzigd', life: 2500 })
     await laad()
   } catch (e) {
@@ -139,7 +139,7 @@ function vraagOntkoppel(e, rij) {
 async function bevestigOntkoppel() {
   bezig.value = true
   try {
-    await api.applicatieContracten.verwijder(teOntkoppelen.value.koppeling_id)
+    await api.componentContracten.verwijder(teOntkoppelen.value.koppeling_id)
     toast.add({ severity: 'success', summary: 'Ontkoppeld', life: 3000 })
     verwijderOpen.value = false
     await laad()

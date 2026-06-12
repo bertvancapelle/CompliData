@@ -8,10 +8,10 @@ import ToastService from 'primevue/toastservice'
 
 vi.mock('@/api', () => ({
   api: {
-    applicaties: { contracten: vi.fn() },
+    componenten: { contracten: vi.fn() },
     contractconfig: { opties: vi.fn() },
     contracten: { lijst: vi.fn() },
-    applicatieContracten: { maak: vi.fn(), werkBij: vi.fn(), verwijder: vi.fn() },
+    componentContracten: { maak: vi.fn(), werkBij: vi.fn(), verwijder: vi.fn() },
   },
 }))
 
@@ -60,7 +60,7 @@ const _rij = () => ({
 
 beforeEach(() => {
   vi.clearAllMocks()
-  api.applicaties.contracten.mockResolvedValue([_rij()])
+  api.componenten.contracten.mockResolvedValue([_rij()])
   api.contractconfig.opties.mockResolvedValue({
     dekking: [], kostenmodel: [],
     relatie_rol: [
@@ -100,56 +100,56 @@ describe('ContractSectie', () => {
     await w.find('[data-testid="ct-form"]').trigger('submit')
     await flushPromises()
     expect(w.find('[data-testid="ct-fout-rol"]').exists()).toBe(true)
-    expect(api.applicatieContracten.maak).not.toHaveBeenCalled()
+    expect(api.componentContracten.maak).not.toHaveBeenCalled()
   })
 
   it('koppelt met contract+rol en ververst de sectie', async () => {
-    api.applicatieContracten.maak.mockResolvedValueOnce({ id: 'k2' })
+    api.componentContracten.maak.mockResolvedValueOnce({ id: 'k2' })
     const w = await mountSectie()
-    const voor = api.applicaties.contracten.mock.calls.length
+    const voor = api.componenten.contracten.mock.calls.length
     await w.find('[data-testid="ct-koppelen"]').trigger('click')
     await flushPromises()
     await kiesZoek(w, 'ct-veld-contract', 'c2')
     await w.find('[data-testid="ct-veld-rol"]').setValue('onderhoud')
     await w.find('[data-testid="ct-form"]').trigger('submit')
     await flushPromises()
-    expect(api.applicatieContracten.maak).toHaveBeenCalledWith({ applicatie_id: APP, contract_id: 'c2', relatie_rol: 'onderhoud' })
-    expect(api.applicaties.contracten.mock.calls.length).toBe(voor + 1) // refetch
+    expect(api.componentContracten.maak).toHaveBeenCalledWith({ component_id: APP, contract_id: 'c2', relatie_rol: 'onderhoud' })
+    expect(api.componenten.contracten.mock.calls.length).toBe(voor + 1) // refetch
   })
 
   it('409 KOPPELING_BESTAAT: geen refetch', async () => {
-    api.applicatieContracten.maak.mockRejectedValueOnce({ status: 409, code: 'KOPPELING_BESTAAT', message: 'al gekoppeld' })
+    api.componentContracten.maak.mockRejectedValueOnce({ status: 409, code: 'KOPPELING_BESTAAT', message: 'al gekoppeld' })
     const w = await mountSectie()
-    const voor = api.applicaties.contracten.mock.calls.length
+    const voor = api.componenten.contracten.mock.calls.length
     await w.find('[data-testid="ct-koppelen"]').trigger('click')
     await flushPromises()
     await kiesZoek(w, 'ct-veld-contract', 'c2')
     await w.find('[data-testid="ct-veld-rol"]').setValue('onderhoud')
     await w.find('[data-testid="ct-form"]').trigger('submit')
     await flushPromises()
-    expect(api.applicatieContracten.maak).toHaveBeenCalledTimes(1)
-    expect(api.applicaties.contracten.mock.calls.length).toBe(voor)
+    expect(api.componentContracten.maak).toHaveBeenCalledTimes(1)
+    expect(api.componenten.contracten.mock.calls.length).toBe(voor)
   })
 
   it('rol-wijzigen via inline select → werkBij + refetch', async () => {
-    api.applicatieContracten.werkBij.mockResolvedValueOnce({})
+    api.componentContracten.werkBij.mockResolvedValueOnce({})
     const w = await mountSectie()
-    const voor = api.applicaties.contracten.mock.calls.length
+    const voor = api.componenten.contracten.mock.calls.length
     await w.find('[data-testid="ct-rol-k1"]').setValue('onderhoud')
     await flushPromises()
-    expect(api.applicatieContracten.werkBij).toHaveBeenCalledWith('k1', { relatie_rol: 'onderhoud' })
-    expect(api.applicaties.contracten.mock.calls.length).toBe(voor + 1)
+    expect(api.componentContracten.werkBij).toHaveBeenCalledWith('k1', { relatie_rol: 'onderhoud' })
+    expect(api.componenten.contracten.mock.calls.length).toBe(voor + 1)
   })
 
   it('ontkoppelen via bevestiging → verwijder + refetch', async () => {
-    api.applicatieContracten.verwijder.mockResolvedValueOnce(null)
+    api.componentContracten.verwijder.mockResolvedValueOnce(null)
     const w = await mountSectie()
-    const voor = api.applicaties.contracten.mock.calls.length
+    const voor = api.componenten.contracten.mock.calls.length
     await w.find('[data-testid="ct-ontkoppel-k1"]').trigger('click')
     await w.find('[data-testid="ct-ontkoppel-bevestig"]').trigger('click')
     await flushPromises()
-    expect(api.applicatieContracten.verwijder).toHaveBeenCalledWith('k1')
-    expect(api.applicaties.contracten.mock.calls.length).toBe(voor + 1)
+    expect(api.componentContracten.verwijder).toHaveBeenCalledWith('k1')
+    expect(api.componenten.contracten.mock.calls.length).toBe(voor + 1)
   })
 })
 
@@ -162,7 +162,7 @@ describe('ContractSectie — §3 valt-onder-samenvatting', () => {
   })
 
   it('geen koppeling met rol valt_onder → expliciete melding', async () => {
-    api.applicaties.contracten.mockResolvedValueOnce([
+    api.componenten.contracten.mockResolvedValueOnce([
       { ..._rij(), relatie_rol: 'onderhoud', relatie_rol_label: 'Onderhoud' },
     ])
     const w = await mountSectie()
@@ -170,7 +170,7 @@ describe('ContractSectie — §3 valt-onder-samenvatting', () => {
   })
 
   it('meerdere valt_onder-koppelingen → alle getoond (conventie A)', async () => {
-    api.applicaties.contracten.mockResolvedValueOnce([
+    api.componenten.contracten.mockResolvedValueOnce([
       { ..._rij(), koppeling_id: 'k1', contract_id: 'c1', contractnaam: 'Contract A' },
       { ..._rij(), koppeling_id: 'k2', contract_id: 'c2', contractnaam: 'Contract B' },
     ])
