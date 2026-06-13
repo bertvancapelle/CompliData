@@ -142,6 +142,13 @@ services:
       dockerfile: Dockerfile
     image: complidata-api:local
     container_name: cd-api
+    # Lokaal-dev-only: hot-reload i.p.v. het Dockerfile-CMD (`--workers 2`, prod-default).
+    # uvicorn staat `--reload` niet toe naast meerdere workers → één worker in dev.
+    # De code zit op twee mounts (/app + /modules); beide in de reload-scope, anders
+    # worden module-wijzigingen niet opgepikt. NIET voor productie (geen reload, multi-worker).
+    command:
+      ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000",
+       "--reload", "--reload-dir", "/app", "--reload-dir", "/modules"]
     environment:
       # App-laag: UITSLUITEND cd_app (RLS) + cd_platform (platform-endpoints).
       # GEEN cd_admin in de app-container (OP-11 / ADR-012).
