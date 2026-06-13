@@ -76,13 +76,14 @@ def test_componentconfig_opties_groepering():
     session = AsyncMock()
     res = MagicMock()
     res.all.return_value = [
-        SimpleNamespace(dimensie=D.componenttype, optie_sleutel="database", label="Database", volgorde=1),
-        SimpleNamespace(dimensie=D.structuurrelatie_type, optie_sleutel="draait_op", label="Draait op", volgorde=0),
+        SimpleNamespace(dimensie=D.componenttype, optie_sleutel="database", label="Database", volgorde=1, checklist_dragend=False),
+        SimpleNamespace(dimensie=D.structuurrelatie_type, optie_sleutel="draait_op", label="Draait op", volgorde=0, checklist_dragend=False),
     ]
     session.execute.return_value = res
     out = asyncio.run(catalog.actieve_opties_per_dimensie(session))
     assert set(out) == {d.value for d in D}
-    assert out["componenttype"][0] == {"optie_sleutel": "database", "label": "Database"}
+    # ADR-022 Fase E: opties dragen nu `checklist_dragend` mee.
+    assert out["componenttype"][0] == {"optie_sleutel": "database", "label": "Database", "checklist_dragend": False}
     assert out["structuurrelatie_type"][0]["label"] == "Draait op"
 
 
@@ -209,8 +210,10 @@ def test_lijst_levert_besturingsvelden_en_statusfilter():
     assert app["lifecycle_status"] is not None and app["complexiteit"] is not None
     assert infra["heeft_applicatie_subtype"] is False
     assert infra["lifecycle_status"] is None and infra["complexiteit"] is None
-    # status-filter levert uitsluitend subtypen (kale infra heeft geen lifecycle).
-    assert gefilterd and all(i["heeft_applicatie_subtype"] for i in gefilterd)
+    # ADR-022 Fase E: het status-filter matcht elk checklist-dragend component (heeft een
+    # profiel ⇒ lifecycle), niet langer uitsluitend applicatie-subtypen. Invariant: alle
+    # gefilterde rijen hebben een lifecycle_status (kale infra zonder profiel valt eruit).
+    assert gefilterd and all(i["lifecycle_status"] is not None for i in gefilterd)
 
 
 @integratie

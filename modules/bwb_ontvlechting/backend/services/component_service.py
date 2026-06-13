@@ -203,11 +203,37 @@ async def _lees(session: AsyncSession, tid: uuid.UUID, obj: Component) -> dict:
         "leverancier": obj.leverancier,
         "beschrijving": obj.beschrijving,
         "heeft_applicatie_subtype": await _heeft_subtype(session, tid, obj.id),
+        # ADR-022 Fase E: of dit componenttype checklist-dragend is (UI toont dan de
+        # checklist-sectie + start-knop ook voor niet-`applicatie`-componenten).
+        "checklist_dragend": await catalog.is_checklist_dragend(session, obj.componenttype),
+        # ADR-022 Fase E: lifecycle uit het generieke profiel (null als geen profiel) —
+        # voedt de status-indicator + de "Start beoordeling"-knop (zichtbaar bij `concept`).
+        "lifecycle_status": (
+            await session.execute(
+                select(ComponentProfiel.lifecycle_status).where(
+                    ComponentProfiel.id == obj.id, ComponentProfiel.tenant_id == tid
+                )
+            )
+        ).scalar_one_or_none(),
         # ADR-022 Fase C: capability-hint voor de UI (de PATCH herevalueert zelf).
         "type_wijzigbaar": not (await _toestand_tellingen(session, tid, obj.id))["gevuld"],
         "created_at": obj.created_at,
         "updated_at": obj.updated_at,
     }
+
+
+async def start_beoordeling(session: AsyncSession, tenant_id, component_id) -> dict:
+    """ADR-022 Fase E — type-generieke "start beoordeling" (concept → in_inventarisatie)
+    op een checklist-dragend component. Onbekend component ⇒ 404; geen profiel
+    (niet checklist-dragend) ⇒ 404; niet vanuit `concept` ⇒ 409 (in lifecycle_service)."""
+    from services import lifecycle_service
+
+    tid = _tenant_uuid(tenant_id)
+    obj = await haal_op(session, tenant_id, component_id)  # 404 kruis-tenant (OP-6)
+    await lifecycle_service.start_beoordeling(session, tid, component_id)
+    await session.commit()
+    await session.refresh(obj)
+    return await _lees(session, tid, obj)
 
 
 async def lees_detail(session: AsyncSession, tenant_id, component_id) -> dict:
@@ -335,6 +361,13 @@ async def maak_aan(session: AsyncSession, tenant_id, data: ComponentCreate) -> d
         beschrijving=data.beschrijving,
     )
     session.add(obj)
+    await session.flush()  # obj.id beschikbaar voor een eventueel profiel
+    # ADR-022 Fase E (Besluit 1+2): een checklist-dragend (niet-`applicatie`) type krijgt
+    # een generiek profiel ZONDER subtype-tabel; engine-state start in `concept`.
+    if await catalog.is_checklist_dragend(session, data.componenttype):
+        session.add(
+            ComponentProfiel(id=obj.id, tenant_id=tid, lifecycle_status=LifecycleStatus.concept)
+        )
     await session.commit()
     await session.refresh(obj)
     return await _lees(session, tid, obj)
@@ -345,29 +378,36 @@ async def _wissel_type(session: AsyncSession, tid: uuid.UUID, obj: Component, ni
     transactie-lokaal herwaarderen en de invariant afdwingen.
 
     - Gevuld → `SUBTYPE_HEEFT_DATA` (422), met tellingen in het bericht.
-    - Leeg → schone lei: een leeg profiel + applicatie-subtype (+ lege, niet-beantwoorde
-      score-rijen via CASCADE) worden verwijderd; géén overdracht van oude scores. Is het
-      doeltype checklist-dragend (`applicatie`), dan ontstaat een vers profiel met defaults
-      (lifecycle `concept`, conform de Fase B-vloer). Doeltype kaal ⇒ geen profiel.
+    - Leeg → schone lei: een leeg profiel (+ applicatie-subtype indien aanwezig, + lege
+      niet-beantwoorde score-rijen via CASCADE) wordt verwijderd; géén overdracht van oude
+      scores. ADR-022 Fase E (Besluit 2): is het doeltype checklist-dragend, dan ontstaat een
+      vers profiel met defaults (lifecycle `concept`, Fase B-vloer); alléén `applicatie` krijgt
+      daarnaast zijn subtype-rij. Niet-checklist-dragend doeltype ⇒ geen profiel.
     """
     await catalog.valideer_sleutel(session, ComponentConfigDimensie.componenttype, nieuw)
     t = await _toestand_tellingen(session, tid, obj.id, lock=True)
     if t["gevuld"]:
         raise OngeldigeRegistratie("SUBTYPE_HEEFT_DATA", _heeft_data_bericht(t))
 
-    # Leeg: ruim een eventueel (leeg) profiel + applicatie-subtype op. Het verwijderen
-    # van het profiel cascadeert eventuele niet-beantwoorde score-rijen/blokkades; het
-    # verwijderen van het subtype cascadeert (afwezige) datatypes/gebruikersgroepen.
-    if await _heeft_subtype(session, tid, obj.id):
-        await session.execute(delete(ComponentProfiel).where(ComponentProfiel.id == obj.id))
-        await session.execute(delete(Applicatie).where(Applicatie.id == obj.id))
-        await session.flush()
+    # Leeg: ruim een eventueel (leeg) profiel én applicatie-subtype op — onafhankelijk
+    # van elkaar, want een niet-`applicatie` checklist-dragend type heeft wél een profiel
+    # maar géén subtype. Profiel-delete cascadeert niet-beantwoorde scores/blokkades;
+    # subtype-delete cascadeert (afwezige) datatypes/gebruikersgroepen.
+    await session.execute(delete(ComponentProfiel).where(ComponentProfiel.id == obj.id))
+    await session.execute(delete(Applicatie).where(Applicatie.id == obj.id))
+    await session.flush()
 
     obj.componenttype = nieuw
 
     if nieuw == _APPLICATIE_TYPE:
-        # Promotie naar het checklist-dragende type: vers subtype + profiel (defaults).
+        # Promotie naar `applicatie`: subtype-rij (type-eigen velden) + generiek profiel.
         session.add(Applicatie(id=obj.id, tenant_id=tid, **_SUBTYPE_DEFAULTS))
+        session.add(
+            ComponentProfiel(id=obj.id, tenant_id=tid, lifecycle_status=LifecycleStatus.concept)
+        )
+        await session.flush()
+    elif await catalog.is_checklist_dragend(session, nieuw):
+        # Promotie naar een ander checklist-dragend type: alléén het generieke profiel.
         session.add(
             ComponentProfiel(id=obj.id, tenant_id=tid, lifecycle_status=LifecycleStatus.concept)
         )

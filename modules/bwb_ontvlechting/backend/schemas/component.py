@@ -83,6 +83,11 @@ class ComponentRead(BaseModel):
     leverancier: str | None
     beschrijving: str | None
     heeft_applicatie_subtype: bool
+    # ADR-022 Fase E: of dit componenttype checklist-dragend is (UI toont dan de checklist).
+    checklist_dragend: bool
+    # ADR-022 Fase E: lifecycle uit het generieke profiel (null als geen profiel) —
+    # voedt de status-indicator + "Start beoordeling"-knop (zichtbaar bij `concept`).
+    lifecycle_status: LifecycleStatus | None = None
     # ADR-022 Fase C: capability-hint — het type is vrij wijzigbaar zolang het
     # component niet "gevuld" is. De UI is hint; de PATCH herevalueert server-side.
     type_wijzigbaar: bool
@@ -122,6 +127,9 @@ class ComponentPagina(BaseModel):
 class ComponentKeuze(BaseModel):
     optie_sleutel: str
     label: str
+    # ADR-022 Fase E: per componenttype of het checklist-dragend is (krijgt profiel +
+    # checklist). Voor andere dimensies (structuurrelatie_type) altijd false.
+    checklist_dragend: bool = False
 
 
 class ComponentOpties(BaseModel):

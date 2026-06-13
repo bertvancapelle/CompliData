@@ -608,6 +608,95 @@ async def _seed_technische_laag(session, app_ids: dict) -> dict:
     return {"componenten_extra": 2, "structuurrelaties": len(relaties)}
 
 
+async def _seed_tweede_type(session) -> dict:
+    """ADR-022 Fase E — een TWEEDE checklist-dragend type (`applicatieserver`) end-to-end.
+
+    1. markeer het type platform-breed checklist-dragend (catalogus, als cd_platform);
+    2. enkele tenant-eigen vragen voor dat type;
+    3. twee componenten van het type (krijgen een generiek profiel, start `concept`);
+    4. één component gestart (`in_inventarisatie`) + volledig gescoord → `migratieklaar`;
+       de tweede blijft op `concept` (demonstreert de "Start beoordeling"-knop).
+    Idempotent op vraag-code resp. component-naam."""
+    from app.core.database import platform_session_factory
+    from sqlalchemy import text as _text
+
+    from schemas.checklistconfig import VraagCreate
+    from schemas.checklistscore import ChecklistscoreCreate
+    from schemas.component import ComponentCreate
+    from services import checklistconfig_service as cc
+    from services import component_service as comp
+    from services import lifecycle_service
+
+    TYPE = "applicatieserver"
+    # 1. Catalogus-vlag (platform; cd_platform mag componentconfig_optie UPDATEn).
+    async with platform_session_factory() as ps:
+        await ps.execute(
+            _text(
+                "UPDATE componentconfig_optie SET checklist_dragend = true "
+                "WHERE dimensie = 'componenttype' AND optie_sleutel = :t"
+            ),
+            {"t": TYPE},
+        )
+        await ps.commit()
+
+    # 2. Tenant-vragen voor het type (idempotent op code).
+    bestaande_codes = {
+        c for (c,) in (
+            await session.execute(
+                select(ChecklistVraag.code).where(ChecklistVraag.componenttype == TYPE)
+            )
+        ).all()
+    }
+    AS_VRAGEN = [
+        ("AS.1", "Is het besturingssysteem-patchniveau actueel?"),
+        ("AS.2", "Is er een back-up- en herstelprocedure vastgelegd?"),
+        ("AS.3", "Zijn de beheeraccounts persoonsgebonden (geen gedeeld)?"),
+    ]
+    for code, vraag in AS_VRAGEN:
+        if code in bestaande_codes:
+            continue
+        await cc.maak_vraag(
+            session, DEV_TENANT,
+            VraagCreate(componenttype=TYPE, code=code, vraag=vraag, categorie_nr=1, categorie_naam="Applicatieserver"),
+        )
+    code_to_id = {
+        c: i for (c, i) in (
+            await session.execute(
+                select(ChecklistVraag.code, ChecklistVraag.id).where(ChecklistVraag.componenttype == TYPE)
+            )
+        ).all()
+    }
+
+    # 3. Twee componenten (idempotent op naam) — krijgen een generiek profiel.
+    bestaande_namen = {
+        c.naam for c in (
+            await session.execute(select(Component).where(Component.componenttype == TYPE))
+        ).scalars().all()
+    }
+    srv_gestart = None
+    for naam, start in (("Applicatieserver PRD-01", True), ("Applicatieserver ACC-02", False)):
+        if naam in bestaande_namen:
+            continue
+        c = await comp.maak_aan(
+            session, DEV_TENANT,
+            ComponentCreate(naam=naam, componenttype=TYPE, hostingmodel=HostingModel.on_premise, eigenaar_organisatie="ICT-beheer"),
+        )
+        if start:
+            srv_gestart = c["id"]
+            # 4. Start beoordeling (concept → in_inventarisatie) + volledig scoren → migratieklaar.
+            await lifecycle_service.start_beoordeling(session, DEV_TENANT, c["id"])
+            await session.commit()
+            for code in ("AS.1", "AS.2", "AS.3"):
+                await checklistscore_service.maak_aan(
+                    session, DEV_TENANT,
+                    ChecklistscoreCreate(component_id=c["id"], checklistvraag_id=code_to_id[code], score="ja"),
+                )
+            print(f"  + {naam}: gestart + 3/3 gescoord (→ migratieklaar)")
+        else:
+            print(f"  + {naam}: aangemaakt (concept — demonstreert Start beoordeling)")
+    return {"type": TYPE, "vragen": len(code_to_id), "gestart_component": srv_gestart}
+
+
 async def main() -> None:
     print(f"dev-seed: tenant {DEV_TENANT}")
     async with get_worker_session(DEV_TENANT) as session:
@@ -664,6 +753,10 @@ async def main() -> None:
         print("Aanvulling E — technische laag (componenten + structuurrelaties):")
         tl = await _seed_technische_laag(session, app_ids)
         print(f"  extra componenten={tl['componenten_extra']} structuurrelaties={tl['structuurrelaties']}")
+
+        print("ADR-022 Fase E — tweede checklist-dragend type (applicatieserver):")
+        e = await _seed_tweede_type(session)
+        print(f"  type={e['type']} vragen={e['vragen']}")
     print("dev-seed: klaar")
 
 

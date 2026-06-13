@@ -14,11 +14,16 @@ vi.mock('@/api', () => ({
       contracten: vi.fn(),
       opties: vi.fn(),
       verwijder: vi.fn(),
+      startBeoordeling: vi.fn(),
     },
     componentStructuren: { maak: vi.fn(), werkBij: vi.fn(), verwijder: vi.fn() },
     componentContracten: { maak: vi.fn(), werkBij: vi.fn(), verwijder: vi.fn() },
     contractconfig: { opties: vi.fn() },
     contracten: { lijst: vi.fn() },
+    // ADR-022 Fase E — ChecklistscoreSectie doet bij mount API-calls; mocken zodat
+    // de meegerenderde sectie de overige asserts niet laat klappen.
+    checklistvragen: { lijst: vi.fn() },
+    checklistscores: { lijst: vi.fn(), maak: vi.fn(), werkBij: vi.fn(), opties: vi.fn() },
   },
 }))
 
@@ -68,6 +73,8 @@ const _component = (over = {}) => ({
   leverancier: 'Oracle',
   beschrijving: null,
   heeft_applicatie_subtype: false,
+  checklist_dragend: false,
+  lifecycle_status: null,
   ...over,
 })
 
@@ -103,6 +110,10 @@ beforeEach(() => {
   ])
   api.componenten.opties.mockResolvedValue({ componenttype: [], structuurrelatie_type: [] })
   api.contractconfig.opties.mockResolvedValue({ relatie_rol: [] })
+  // ChecklistscoreSectie mount-calls (alleen relevant bij checklist_dragend).
+  api.checklistvragen.lijst.mockResolvedValue([])
+  api.checklistscores.lijst.mockResolvedValue({ items: [], volgende_cursor: null })
+  api.checklistscores.opties.mockResolvedValue({ score: [] })
 })
 
 afterEach(() => {
@@ -143,6 +154,62 @@ describe('ComponentDetail', () => {
     await w.find('[data-testid="verwijder-bevestig"]').trigger('click')
     await flushPromises()
     expect(router.currentRoute.value.name).toBe('component-lijst')
+  })
+
+  // ── ADR-022 Fase E: checklist alleen voor checklist-dragende typen ─────────
+  it('toont de checklist-sectie bij checklist_dragend === true', async () => {
+    api.componenten.haal.mockResolvedValue(_component({ checklist_dragend: true }))
+    const { w } = await mountDetail()
+    expect(w.find('[data-testid="cs-voortgang"]').exists()).toBe(true)
+    // de vragenset wordt op het componenttype gescoped
+    expect(api.checklistvragen.lijst).toHaveBeenCalledWith('database')
+  })
+
+  it('toont de checklist-sectie NIET bij checklist_dragend === false', async () => {
+    const { w } = await mountDetail() // default checklist_dragend: false
+    expect(w.find('[data-testid="cs-voortgang"]').exists()).toBe(false)
+    expect(api.checklistvragen.lijst).not.toHaveBeenCalled()
+  })
+
+  // ── ADR-022 Fase E: "Start beoordeling" (concept → in_inventarisatie) ──────
+  it('toont de Start-beoordeling-knop bij checklist_dragend:true + concept + bewerk-rechten', async () => {
+    api.componenten.haal.mockResolvedValue(_component({ checklist_dragend: true, lifecycle_status: 'concept' }))
+    const { w } = await mountDetail()
+    expect(w.find('[data-testid="start-beoordeling-knop"]').exists()).toBe(true)
+    // lifecycle-status-Tag wordt getoond zodra lifecycle_status gezet is
+    expect(w.find('[data-testid="detail-status"]').text()).toContain('Concept')
+  })
+
+  it('verbergt de Start-beoordeling-knop bij een andere status dan concept', async () => {
+    api.componenten.haal.mockResolvedValue(_component({ checklist_dragend: true, lifecycle_status: 'in_inventarisatie' }))
+    const { w } = await mountDetail()
+    expect(w.find('[data-testid="start-beoordeling-knop"]').exists()).toBe(false)
+  })
+
+  it('verbergt de Start-beoordeling-knop bij checklist_dragend:false', async () => {
+    api.componenten.haal.mockResolvedValue(_component({ checklist_dragend: false, lifecycle_status: 'concept' }))
+    const { w } = await mountDetail()
+    expect(w.find('[data-testid="start-beoordeling-knop"]').exists()).toBe(false)
+  })
+
+  it('verbergt de Start-beoordeling-knop zonder bewerk-rechten', async () => {
+    api.componenten.haal.mockResolvedValue(_component({ checklist_dragend: true, lifecycle_status: 'concept' }))
+    const { w } = await mountDetail({ rollen: ['lezer'] })
+    expect(w.find('[data-testid="start-beoordeling-knop"]').exists()).toBe(false)
+  })
+
+  it('klik op Start beoordeling roept de API aan en herlaadt', async () => {
+    api.componenten.haal.mockResolvedValueOnce(_component({ checklist_dragend: true, lifecycle_status: 'concept' }))
+    api.componenten.startBeoordeling.mockResolvedValueOnce(
+      _component({ checklist_dragend: true, lifecycle_status: 'in_inventarisatie' }),
+    )
+    api.componenten.haal.mockResolvedValue(_component({ checklist_dragend: true, lifecycle_status: 'in_inventarisatie' }))
+    const { w } = await mountDetail()
+    await w.find('[data-testid="start-beoordeling-knop"]').trigger('click')
+    await flushPromises()
+    expect(api.componenten.startBeoordeling).toHaveBeenCalledWith(ID)
+    // na herladen is de status gewijzigd → knop weg
+    expect(w.find('[data-testid="start-beoordeling-knop"]').exists()).toBe(false)
   })
 
   it('applicatie-subtype: hint naar ApplicatieDetail, geen bewerk-/verwijderknop', async () => {

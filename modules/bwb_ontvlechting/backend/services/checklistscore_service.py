@@ -25,9 +25,11 @@ from models.models import (
     ChecklistVraag,
     ChecklistVraagOptie,
     Checklistscore,
+    Component,
+    ComponentProfiel,
 )
 from schemas.checklistscore import ChecklistscoreCreate, ChecklistscoreUpdate
-from services import applicatie_service, lifecycle_service
+from services import lifecycle_service
 from services.errors import ChecklistscoreConflict, NietGevonden, OngeldigAntwoord
 from services.pagination import (
     decode_sort_cursor_nullable,
@@ -70,6 +72,21 @@ def _tenant_uuid(tenant_id) -> uuid.UUID:
 def enum_opties() -> dict[str, list[str]]:
     """Read-only keuzewaarden voor de score (single source, DB-vrij)."""
     return {"score": [e.value for e in ChecklistScore]}
+
+
+async def _componenttype_van_profiel(session: AsyncSession, tid: uuid.UUID, component_id) -> str:
+    """Het componenttype van een **scoorbaar** component (= heeft een `component_profiel`,
+    ADR-022 Fase E). Geen profiel binnen de tenant ⇒ `NietGevonden` (niet scoorbaar)."""
+    componenttype = (
+        await session.execute(
+            select(Component.componenttype)
+            .join(ComponentProfiel, ComponentProfiel.id == Component.id)
+            .where(Component.id == component_id, Component.tenant_id == tid)
+        )
+    ).scalar_one_or_none()
+    if componenttype is None:
+        raise NietGevonden("component_profiel", component_id)
+    return componenttype
 
 
 async def _valideer_checklistvraag_id(
@@ -271,13 +288,12 @@ async def maak_aan(
     session: AsyncSession, tenant_id, data: ChecklistscoreCreate
 ) -> Checklistscore:
     tid = _tenant_uuid(tenant_id)
-    # Ouder (applicatie-profiel; component_id == applicatie-id, shared-PK) + vraag
-    # valideren (beide tenant-/referentie-scoped) → 404. De vraagvalidatie is
-    # type-bewust (ADR-022 Fase B): de vraag moet bij het componenttype horen.
-    parent = await applicatie_service.haal_op(session, tenant_id, data.component_id)
-    await _valideer_checklistvraag_id(
-        session, data.checklistvraag_id, parent.component.componenttype
-    )
+    # ADR-022 Fase E: het score-anker is het generieke `component_profiel` van een
+    # checklist-dragend component (niet langer `applicatie`-gebonden). Bestaat er geen
+    # profiel ⇒ niet scoorbaar (404). Het componenttype komt van de component en stuurt
+    # de type-bewuste vraagvalidatie (Fase B): de vraag moet bij dat type horen.
+    componenttype = await _componenttype_van_profiel(session, tid, data.component_id)
+    await _valideer_checklistvraag_id(session, data.checklistvraag_id, componenttype)
 
     # Uniciteit up-front (tenant, component, checklistvraag) → 409.
     bestaat = (

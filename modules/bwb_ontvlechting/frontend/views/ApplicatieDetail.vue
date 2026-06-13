@@ -357,6 +357,7 @@ onMounted(async () => {
           <ChecklistscoreSectie
             ref="scoreSectie"
             :applicatie-id="props.id"
+            :componenttype="'applicatie'"
             :categorie-nr="actieveCategorieNr"
             @gewijzigd="onScoreGewijzigd"
           />

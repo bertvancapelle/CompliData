@@ -110,16 +110,9 @@ def enum_opties() -> dict[str, list[str]]:
     }
 
 
-def volgende_status_na_start(huidige: LifecycleStatus) -> LifecycleStatus:
-    """Pure overgangsregel voor 'start inventarisatie'.
-
-    Alleen `concept → in_inventarisatie` is geldig; elke andere uitgangsstatus
-    levert `OngeldigeStatusovergang`. Apart en puur gehouden, zodat de regel
-    zonder DB testbaar is.
-    """
-    if huidige != LifecycleStatus.concept:
-        raise OngeldigeStatusovergang(huidige, LifecycleStatus.in_inventarisatie)
-    return LifecycleStatus.in_inventarisatie
+# ADR-022 Fase E: de pure start-regel is verhuisd naar de generieke lifecycle-laag
+# (type-generieke "start beoordeling"). Hier ge-re-exporteerd voor bestaande callers/tests.
+from services.lifecycle_service import volgende_status_na_start  # noqa: E402,F401
 
 
 async def lijst(
@@ -332,11 +325,9 @@ async def start_inventarisatie(session: AsyncSession, tenant_id, applicatie_id) 
     from services import lifecycle_service
 
     obj = await haal_op(session, tenant_id, applicatie_id)
-    # ADR-022 Fase A: lifecycle leeft op het profiel (shared-PK); schrijven gaat
-    # via obj.profiel (de read-only proxy obj.lifecycle_status blijft leesbaar).
-    obj.profiel.lifecycle_status = volgende_status_na_start(obj.profiel.lifecycle_status)
-    # Additief: herleid de canonieke status uit de feiten (transitie zelf blijft).
-    await lifecycle_service.herbereken_lifecycle(session, tenant_id, applicatie_id)
+    # ADR-022 Fase E: de start is type-generiek geworden — applicatie loopt via dezelfde
+    # kern (`start_beoordeling` zet `concept → in_inventarisatie` op het profiel + herleidt).
+    await lifecycle_service.start_beoordeling(session, tenant_id, applicatie_id)
     await session.commit()
     await session.refresh(obj)
     return obj

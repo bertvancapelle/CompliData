@@ -29,47 +29,36 @@ def _result(waarde):
 
 # ── maak_aan: validatie-paden ───────────────────────────────────────────────
 
-def test_maak_aan_ouder_ontbreekt(monkeypatch):
-    from services import applicatie_service, checklistscore_service as svc
+def test_maak_aan_ouder_ontbreekt():
+    # ADR-022 Fase E: geen component_profiel binnen de tenant ⇒ niet scoorbaar (404).
+    from services import checklistscore_service as svc
     from services.errors import NietGevonden
 
-    async def _raise(*a, **k):
-        raise NietGevonden("applicatie", "x")
-
-    monkeypatch.setattr(applicatie_service, "haal_op", _raise)
-    with pytest.raises(NietGevonden):
-        asyncio.run(svc.maak_aan(AsyncMock(), uuid.uuid4(), _create()))
-
-
-def test_maak_aan_onbekende_checklistvraag_id(monkeypatch):
-    from services import applicatie_service, checklistscore_service as svc
-    from services.errors import NietGevonden
-
-    async def _ok(*a, **k):
-        # ADR-022 Fase B: maak_aan leest parent.component.componenttype (type-bewuste
-        # vraagvalidatie).
-        return SimpleNamespace(component=SimpleNamespace(componenttype="applicatie"))
-
-    monkeypatch.setattr(applicatie_service, "haal_op", _ok)
     session = AsyncMock()
-    session.execute.side_effect = [_result(None)]  # checklistvraag_id niet gevonden
+    session.execute.side_effect = [_result(None)]  # _componenttype_van_profiel → geen profiel
     with pytest.raises(NietGevonden):
         asyncio.run(svc.maak_aan(session, uuid.uuid4(), _create()))
 
 
-def test_maak_aan_dubbele_score(monkeypatch):
-    from services import applicatie_service, checklistscore_service as svc
+def test_maak_aan_onbekende_checklistvraag_id():
+    from services import checklistscore_service as svc
+    from services.errors import NietGevonden
+
+    session = AsyncMock()
+    # 1) componenttype van profiel (scoorbaar), 2) checklistvraag_id niet gevonden.
+    session.execute.side_effect = [_result("applicatie"), _result(None)]
+    with pytest.raises(NietGevonden):
+        asyncio.run(svc.maak_aan(session, uuid.uuid4(), _create()))
+
+
+def test_maak_aan_dubbele_score():
+    from services import checklistscore_service as svc
     from services.errors import ChecklistscoreConflict
 
-    async def _ok(*a, **k):
-        # ADR-022 Fase B: maak_aan leest parent.component.componenttype (type-bewuste
-        # vraagvalidatie).
-        return SimpleNamespace(component=SimpleNamespace(componenttype="applicatie"))
-
-    monkeypatch.setattr(applicatie_service, "haal_op", _ok)
     session = AsyncMock()
     session.execute.side_effect = [
-        _result(_VRAAG),         # checklistvraag_id bestaat
+        _result("applicatie"),   # componenttype van profiel (scoorbaar)
+        _result(_VRAAG),         # checklistvraag_id bestaat (juiste type)
         _result(uuid.uuid4()),   # bestaande score gevonden → conflict
     ]
     with pytest.raises(ChecklistscoreConflict):
@@ -77,14 +66,8 @@ def test_maak_aan_dubbele_score(monkeypatch):
 
 
 def test_maak_aan_roept_herbereken(monkeypatch):
-    from services import applicatie_service, checklistscore_service as svc, lifecycle_service
+    from services import checklistscore_service as svc, lifecycle_service
 
-    async def _ok(*a, **k):
-        # ADR-022 Fase B: maak_aan leest parent.component.componenttype (type-bewuste
-        # vraagvalidatie).
-        return SimpleNamespace(component=SimpleNamespace(componenttype="applicatie"))
-
-    monkeypatch.setattr(applicatie_service, "haal_op", _ok)
     aangeroepen = {}
 
     async def _herb(session, tenant_id, app_id):
@@ -94,8 +77,10 @@ def test_maak_aan_roept_herbereken(monkeypatch):
 
     session = AsyncMock()
     session.add = lambda o: None
-    # vraag bestaat, geen dup, geen bestaande blokkade (score nvt → geen blokkade)
-    session.execute.side_effect = [_result(_VRAAG), _result(None), _result(None)]
+    # componenttype van profiel, vraag bestaat, geen dup, geen bestaande blokkade (nvt).
+    session.execute.side_effect = [
+        _result("applicatie"), _result(_VRAAG), _result(None), _result(None)
+    ]
     asyncio.run(svc.maak_aan(session, uuid.uuid4(), _create(score="nvt")))
     assert aangeroepen.get("yes") is True
 

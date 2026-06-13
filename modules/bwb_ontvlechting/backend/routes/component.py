@@ -134,6 +134,18 @@ async def maak_component(
     return await svc.maak_aan(session, user.tenant_id, body)
 
 
+@router.post("/{component_id}/start-beoordeling", response_model=ComponentRead)
+async def start_beoordeling(
+    component_id: uuid.UUID,
+    user: AuthenticatedUser = Depends(vereist_permissie(Entiteit.COMPONENT, Actie.WIJZIGEN)),
+    session: AsyncSession = Depends(get_tenant_session),
+):
+    """ADR-022 Fase E — type-generieke "start beoordeling" (concept → in_inventarisatie)
+    voor een checklist-dragend component. Niet checklist-dragend ⇒ 404; niet vanuit
+    `concept` ⇒ 409 `ONGELDIGE_STATUSOVERGANG`."""
+    return await svc.start_beoordeling(session, user.tenant_id, component_id)
+
+
 @router.patch("/{component_id}", response_model=ComponentRead)
 async def werk_component_bij(
     component_id: uuid.UUID,

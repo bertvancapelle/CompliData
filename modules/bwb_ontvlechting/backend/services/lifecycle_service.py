@@ -26,11 +26,23 @@ from models.models import (
     ComponentProfiel,
     LifecycleStatus,
 )
-from services.errors import NietGevonden
+from services.errors import NietGevonden, OngeldigeStatusovergang
 
 
 def _tenant_uuid(tenant_id) -> uuid.UUID:
     return tenant_id if isinstance(tenant_id, uuid.UUID) else uuid.UUID(str(tenant_id))
+
+
+def volgende_status_na_start(huidige: LifecycleStatus) -> LifecycleStatus:
+    """Pure overgangsregel voor "start beoordeling" (ADR-022 Fase E, type-generiek).
+
+    Alleen `concept → in_inventarisatie` is geldig; elke andere uitgangsstatus levert
+    `OngeldigeStatusovergang`. DB-vrij gehouden zodat hij zonder DB testbaar is.
+    Verhuisd van `applicatie_service` (was applicatie-gebonden) naar de generieke
+    lifecycle-laag; `applicatie_service` re-exporteert hem voor bestaande callers."""
+    if huidige != LifecycleStatus.concept:
+        raise OngeldigeStatusovergang(huidige, LifecycleStatus.in_inventarisatie)
+    return LifecycleStatus.in_inventarisatie
 
 
 def bepaal_lifecycle(
@@ -134,3 +146,25 @@ async def herbereken_lifecycle(
     if nieuwe != profiel.lifecycle_status:
         profiel.lifecycle_status = nieuwe
     return nieuwe
+
+
+async def start_beoordeling(session: AsyncSession, tenant_id, component_id) -> LifecycleStatus:
+    """ADR-022 Fase E — type-generieke "start beoordeling": `concept →
+    in_inventarisatie` op het `component_profiel` van **elk** checklist-dragend
+    component (geen `applicatie`-subtype-aanname). Ongeldige uitgangsstatus ⇒
+    `OngeldigeStatusovergang` (409); geen profiel binnen de tenant ⇒ `NietGevonden`
+    (niet checklist-dragend). Ná de transitie volgt `herbereken_lifecycle` (een al
+    volledig gescoord component landt meteen op de juiste afgeleide status). De
+    aanroepende service commit. Retourneert de (nieuwe) status."""
+    tid = _tenant_uuid(tenant_id)
+    profiel = (
+        await session.execute(
+            select(ComponentProfiel).where(
+                ComponentProfiel.id == component_id, ComponentProfiel.tenant_id == tid
+            )
+        )
+    ).scalar_one_or_none()
+    if profiel is None:
+        raise NietGevonden("component_profiel", component_id)
+    profiel.lifecycle_status = volgende_status_na_start(profiel.lifecycle_status)
+    return await herbereken_lifecycle(session, tid, component_id)

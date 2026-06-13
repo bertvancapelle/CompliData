@@ -22,12 +22,12 @@ const VRAGEN = [
   { id: 2, code: '1.2', categorie_nr: 1, categorie_naam: 'C', vraag: 'Vraag twee', prioriteit: 'hoog' },
 ]
 
-async function mountSectie({ rollen = ['medewerker'], categorieNr = null } = {}) {
+async function mountSectie({ rollen = ['medewerker'], categorieNr = null, componenttype } = {}) {
   const pinia = createPinia()
   const auth = useAuthStore(pinia)
   auth.user = { sub: 's', tenant_id: 't', email: 'a@b.nl', roles: rollen }
   const wrapper = mount(ChecklistscoreSectie, {
-    props: { applicatieId: APP, categorieNr },
+    props: { applicatieId: APP, categorieNr, ...(componenttype !== undefined ? { componenttype } : {}) },
     global: { plugins: [pinia, [PrimeVue, { unstyled: true }], ToastService] },
   })
   await flushPromises()
@@ -58,6 +58,17 @@ describe('ChecklistscoreSectie', () => {
   it('toont de voortgang X/N', async () => {
     const w = await mountSectie()
     expect(w.find('[data-testid="cs-voortgang"]').text()).toContain('1/2')
+  })
+
+  // ── ADR-022 Fase E: componenttype-scoping van de vragenset ─────────────────
+  it('zonder componenttype: haalt de vragen ongescoped op', async () => {
+    await mountSectie()
+    expect(api.checklistvragen.lijst).toHaveBeenCalledWith(null)
+  })
+
+  it('met componenttype: geeft die door aan checklistvragen.lijst', async () => {
+    await mountSectie({ componenttype: 'applicatie' })
+    expect(api.checklistvragen.lijst).toHaveBeenCalledWith('applicatie')
   })
 
   it('maakt een score aan voor een ongescoorde vraag (checklistvraag_id)', async () => {

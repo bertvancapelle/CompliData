@@ -13,10 +13,12 @@ import { Button, Dialog, Tag, useToast } from '@/primevue'
 import { useRouter } from '@/composables/router'
 import { useAuthStore } from '@/store/auth'
 import { api } from '@/api'
-import { HOSTINGMODEL, REGISTER_FOUT, label } from '../labels'
+import { HOSTINGMODEL, LIFECYCLE, LIFECYCLE_SEVERITY, REGISTER_FOUT, label } from '../labels'
 import StructuurSectie from './StructuurSectie.vue'
 import ContractSectie from './ContractSectie.vue'
 import ImpactSectie from './ImpactSectie.vue'
+// ADR-022 Fase E — checklist (scoring) voor checklist-dragende NIET-applicatie-typen.
+import ChecklistscoreSectie from './ChecklistscoreSectie.vue'
 
 const props = defineProps({ id: { type: String, required: true } })
 const router = useRouter()
@@ -49,6 +51,11 @@ const verwijderHeeftData = computed(() => {
 const isSubtype = computed(() => !!component.value?.heeft_applicatie_subtype)
 const magBewerken = computed(() => auth.hasRole('medewerker', 'beheerder') && !isSubtype.value)
 const magVerwijderen = computed(() => auth.hasRole('beheerder') && !isSubtype.value)
+// ADR-022 Fase E: "Start beoordeling" alleen bij checklist-dragend + status 'concept'
+// + bewerk-rechten; verdwijnt zodra de lifecycle-status niet meer 'concept' is.
+const magStarten = computed(
+  () => magBewerken.value && component.value?.checklist_dragend === true && component.value?.lifecycle_status === 'concept',
+)
 
 function _toastFout(e) {
   const detail =
@@ -75,6 +82,19 @@ async function laad() {
 
 function naarBewerken() {
   router.push({ name: 'component-bewerken', params: { id: props.id } })
+}
+
+async function startBeoordeling() {
+  bezig.value = true
+  try {
+    await api.componenten.startBeoordeling(props.id)
+    await laad()
+    toast.add({ severity: 'success', summary: 'Beoordeling gestart', life: 3000 })
+  } catch (e) {
+    _toastFout(e)
+  } finally {
+    bezig.value = false
+  }
 }
 
 async function bevestigVerwijderen() {
@@ -104,6 +124,13 @@ onMounted(laad)
           {{ component.naam }}
         </h1>
         <Tag data-testid="detail-type" :value="component.componenttype_label" :severity="isSubtype ? 'info' : 'secondary'" />
+        <!-- ADR-022 Fase E: lifecycle-status voor checklist-dragende componenten. -->
+        <Tag
+          v-if="component.lifecycle_status"
+          data-testid="detail-status"
+          :value="label(LIFECYCLE, component.lifecycle_status)"
+          :severity="LIFECYCLE_SEVERITY[component.lifecycle_status] || 'info'"
+        />
       </div>
 
       <p
@@ -132,6 +159,14 @@ onMounted(laad)
 
       <div class="mt-[var(--cd-space-lg)] flex flex-wrap gap-[var(--cd-space-md)]">
         <Button v-if="magBewerken" label="Bewerken" data-testid="bewerken-knop" @click="naarBewerken" />
+        <Button
+          v-if="magStarten"
+          label="Start beoordeling"
+          severity="secondary"
+          data-testid="start-beoordeling-knop"
+          :disabled="bezig"
+          @click="startBeoordeling"
+        />
         <Button v-if="magVerwijderen" label="Verwijderen" severity="danger" data-testid="verwijder-knop" @click="openVerwijderDialog" />
       </div>
 
@@ -139,6 +174,13 @@ onMounted(laad)
         <StructuurSectie :component-id="props.id" />
         <ContractSectie :applicatie-id="props.id" />
         <ImpactSectie :component-id="props.id" />
+        <!-- ADR-022 Fase E — checklist alleen voor checklist-dragende typen. -->
+        <ChecklistscoreSectie
+          v-if="component.checklist_dragend === true"
+          :applicatie-id="component.id"
+          :componenttype="component.componenttype"
+          @gewijzigd="laad"
+        />
       </div>
     </template>
 

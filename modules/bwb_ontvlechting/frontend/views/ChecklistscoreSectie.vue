@@ -29,6 +29,9 @@ const props = defineProps({
   // CD022: filtert de getoonde vragen op één checklist-categorie (categorie_nr).
   // null = alle vragen (zelfstandig gebruik / volledige lijst).
   categorieNr: { type: Number, default: null },
+  // ADR-022 Fase E: scoping van de vragenset op componenttype (symmetrisch met de
+  // engine). null = alle actieve vragen.
+  componenttype: { type: String, default: null },
 })
 const emit = defineEmits(['gewijzigd'])
 const auth = useAuthStore()
@@ -118,7 +121,7 @@ async function laad() {
     // Vragen + scores parallel ophalen; scoreMap pas vullen NÁ het zetten van
     // `vragen` (id → code-join vereist de vragenlijst).
     const [vragenResp, scoresPagina] = await Promise.all([
-      api.checklistvragen.lijst(),
+      api.checklistvragen.lijst(props.componenttype),
       api.checklistscores.lijst({ applicatieId: props.applicatieId, limit: 100 }),
       (async () => {
         if (!opties.value.score.length) opties.value = await api.checklistscores.opties()

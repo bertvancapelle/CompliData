@@ -676,3 +676,9 @@ class ComponentConfigOptie(Base):
     actief: Mapped[bool] = mapped_column(
         sa.Boolean, nullable=False, server_default=text("true")
     )
+    # ADR-022 Fase E (Besluit 1): markeert een `componenttype` als checklist-dragend
+    # (krijgt een component_profiel + engine). Enige bron; alléén relevant voor
+    # dim=`componenttype`. `applicatie`=true; overige typen default false.
+    checklist_dragend: Mapped[bool] = mapped_column(
+        sa.Boolean, nullable=False, server_default=text("false")
+    )

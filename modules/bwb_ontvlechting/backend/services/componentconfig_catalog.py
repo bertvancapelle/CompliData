@@ -27,6 +27,21 @@ async def actieve_sleutels(session: AsyncSession, dimensie: ComponentConfigDimen
     return {r.optie_sleutel for r in await _opties(session, dimensie, alleen_actief=True)}
 
 
+async def is_checklist_dragend(session: AsyncSession, componenttype: str) -> bool:
+    """ADR-022 Fase E (Besluit 1): de catalogus-vlag is de ENIGE bron voor
+    "krijgt dit type een component_profiel + engine". Onbekend type ⇒ False."""
+    return bool(
+        (
+            await session.execute(
+                select(ComponentConfigOptie.checklist_dragend).where(
+                    ComponentConfigOptie.dimensie == ComponentConfigDimensie.componenttype,
+                    ComponentConfigOptie.optie_sleutel == componenttype,
+                )
+            )
+        ).scalar_one_or_none()
+    )
+
+
 async def labels(
     session: AsyncSession, dimensie: ComponentConfigDimensie
 ) -> dict[str, tuple[str, bool]]:
@@ -63,6 +78,7 @@ async def actieve_opties_per_dimensie(session: AsyncSession) -> dict[str, list[d
                 ComponentConfigOptie.optie_sleutel,
                 ComponentConfigOptie.label,
                 ComponentConfigOptie.volgorde,
+                ComponentConfigOptie.checklist_dragend,
             )
             .where(ComponentConfigOptie.actief.is_(True))
             .order_by(
@@ -75,5 +91,8 @@ async def actieve_opties_per_dimensie(session: AsyncSession) -> dict[str, list[d
     uit: dict[str, list[dict]] = {d.value: [] for d in ComponentConfigDimensie}
     for r in rijen:
         dim = r.dimensie.value if hasattr(r.dimensie, "value") else str(r.dimensie)
-        uit[dim].append({"optie_sleutel": r.optie_sleutel, "label": r.label})
+        # ADR-022 Fase E: `checklist_dragend` meeleveren (alleen zinvol voor componenttype).
+        uit[dim].append(
+            {"optie_sleutel": r.optie_sleutel, "label": r.label, "checklist_dragend": r.checklist_dragend}
+        )
     return uit

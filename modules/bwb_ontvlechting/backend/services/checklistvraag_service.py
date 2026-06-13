@@ -16,23 +16,23 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.models import ChecklistVraag, ChecklistVraagOptie
 
 
-async def lijst_alle(session: AsyncSession) -> list[dict]:
+async def lijst_alle(session: AsyncSession, componenttype: str | None = None) -> list[dict]:
     """De **actieve** tenant-vragenset (scoring-read) + hun opties.
 
     ADR-022 W1: `checklistvraag` is tenant-scoped (RLS) → auto-tenant-scoping. Alleen
-    `actief=true`-vragen zijn scoorbaar: dit is byte-identiek aan de set die de engine
-    voor `aantal_vragen` telt (`herbereken_lifecycle`), zodat de scoringslijst en de
-    telling nooit divergeren. Een soft-gedeactiveerde vraag valt uit deze lijst; een
-    reeds bestaande score op zo'n vraag blijft als historie in de DB bestaan (W1) maar
-    verschijnt niet meer als scoorbaar item."""
+    `actief=true`-vragen zijn scoorbaar: byte-identiek aan de set die de engine voor
+    `aantal_vragen` telt (`herbereken_lifecycle`), zodat de scoringslijst en de telling
+    nooit divergeren. Een soft-gedeactiveerde vraag valt uit deze lijst; een reeds
+    bestaande score op zo'n vraag blijft als historie in de DB bestaan (W1).
+
+    ADR-022 Fase E (Besluit 3): met `componenttype` gescoped op het type van het
+    component dat gescoord wordt — symmetrisch met de per-type engine-telling (een
+    `applicatie`-scoring ziet géén vragen van een ander type en omgekeerd)."""
+    stmt = select(ChecklistVraag).where(ChecklistVraag.actief.is_(True))
+    if componenttype is not None:
+        stmt = stmt.where(ChecklistVraag.componenttype == componenttype)
     vragen = list(
-        (
-            await session.execute(
-                select(ChecklistVraag)
-                .where(ChecklistVraag.actief.is_(True))
-                .order_by(ChecklistVraag.componenttype, ChecklistVraag.code)
-            )
-        )
+        (await session.execute(stmt.order_by(ChecklistVraag.componenttype, ChecklistVraag.code)))
         .scalars()
         .all()
     )

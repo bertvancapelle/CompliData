@@ -193,6 +193,8 @@ export const api = {
     werkBij: (id, data) => request(`/componenten/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     verwijder: (id) => request(`/componenten/${id}`, { method: 'DELETE' }),
     opties: () => request('/componenten/opties'),
+    // ADR-022 Fase E — type-generieke beoordeling starten (concept → in_inventarisatie).
+    startBeoordeling: (id) => request(`/componenten/${id}/start-beoordeling`, { method: 'POST' }),
     structuur: (id) => request(`/componenten/${id}/structuur`),
     // ADR-022 Fase C — read-only "wat verdwijnt"-samenvatting bij verwijderen.
     verwijderImpact: (id) => request(`/componenten/${id}/verwijder-impact`),
@@ -250,8 +252,11 @@ export const api = {
   },
 
   // Read-only referentiedata (89 vragen), één respons (geen cursor).
+  // ADR-022 Fase E: optionele `componenttype`-scoping (symmetrisch met de engine);
+  // weggelaten = alle actieve vragen.
   checklistvragen: {
-    lijst: () => request('/checklistvragen'),
+    lijst: (componenttype) =>
+      request(`/checklistvragen${componenttype ? `?componenttype=${encodeURIComponent(componenttype)}` : ''}`),
   },
 
   // ADR-022 W1 — TENANT-beheer van de checklist-vragenset + antwoordconfiguratie
