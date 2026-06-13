@@ -1,0 +1,7 @@
+# Lokale Claude Code-instellingen — per-machine, NOOIT committen.
+# (Tot nu toe enkel via de globale ~/.config/git/ignore genegeerd; hier durable
+#  in-repo zodat het ook bij verse clones/andere machines geldt.)
+settings.local.json
+settings.local.json.*
+*.org.json
+.DS_Store

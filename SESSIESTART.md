@@ -1,6 +1,6 @@
-# SESSIESTART — CompliData V007
+# SESSIESTART — CompliData V008
 
-**Datum**: 2026-06-12
+**Datum**: 2026-06-13
 **Platform**: CompliData — een product van G. van Capelle Beheer B.V.
 
 ---
@@ -13,7 +13,7 @@
    - Zo ja: normale modus — lees alle complidata-skills + engineering/security
    - Zo nee: bootstrap-modus — lees alleen engineering/security
 3. Lees SESSIE_BRIEFING.md voor de actuele projectstatus
-4. Bevestig: "Sessiestart compleet — CompliData V007 — [N] skills geladen"
+4. Bevestig: "Sessiestart compleet — CompliData V008 — [N] skills geladen"
 5. Wacht op START: [naam] van Bert
 
 ---
@@ -40,9 +40,9 @@ claude.ai levert elke CC-opdracht ALTIJD aan als een .md-bestand
 
 ---
 
-# SESSIE_BRIEFING.md — CompliData V007
+# SESSIE_BRIEFING.md — CompliData V008
 
-**Gegenereerd**: 2026-06-12
+**Gegenereerd**: 2026-06-13
 
 ---
 
@@ -52,11 +52,11 @@ claude.ai levert elke CC-opdracht ALTIJD aan als een .md-bestand
 
 | Veld | Waarde |
 |------|--------|
-| Build | V007 |
+| Build | V008 |
 | Datum | June 2026 |
-| Commit | fb130df |
-| Tests | 631 backend + 239 frontend groen |
-| TST-rapport | TST-V007-Validatierapport.md |
+| Commit | 5ac30d6 |
+| Tests | 567 module + 72 platform (1 pre-existing env-test) + 255 frontend groen |
+| TST-rapport | TST-V008-Validatierapport.md |
 | Kritieke bevindingen | 0 |
 
 ---
@@ -64,11 +64,11 @@ claude.ai levert elke CC-opdracht ALTIJD aan als een .md-bestand
 ## Recente commits
 
 ```
-fb130df docs(kennisborging): patronen CD039–CD056 vastgelegd in skills/CLAUDE.md + ADR-022-voorbereiding + OPVOLGPUNTEN-sweep incl. OP-22-sluiting (CD057)
-97a48cb feat(component): ADR-021 fase E — impactanalyse: read-only afhankelijkheids-traversal met readiness- en contractcontext (CD056)
-8f44aff feat(component): ADR-021 fase D-2 v2 — verenigde Componenten-UI: convergente aanmaak, besturingskolommen, menu-sanering (CD054b)
-a733039 fix(infra): Keycloak eigen database + named volume voor Postgres — lost COMPONENT-collision op en sluit OP-22 (CD055)
-f8a70d9 refactor(component): ADR-021 fase D-1 — padconsolidatie app→component-contracten + ContractSectie-generalisatie (CD054a)
+5ac30d6 feat(dashboard): ADR-022 Fase F — readiness per componenttype uitgesplitst (Besluit 3)
+2a71ec1 feat(component): ADR-022 Fase E — tweede checklist-dragend componenttype end-to-end + type-generieke start beoordeling
+dd3ec6b fix(checklist): scoringslijst-read filtert op actief=true — byte-identiek aan de engine-set (ADR-022 W1)
+2681637 chore(dev): cd-api hot-reload als dev-default (uvicorn --reload, één worker, reload-dirs /app+/modules)
+d530010 feat(component): ADR-022 W1 — tenant-eigendom vragenset: tenant-scoped checklistvraag + tenant vraag-CRUD + in-tenant fan-out
 ```
 
 ---
@@ -136,6 +136,6 @@ handmatige dev-seed): `docs/LOKAAL-TESTEN.md`.
 
 1. Lees deze briefing volledig
 2. Lees CLAUDE.md (sessiestart-protocol)
-3. Bevestig: "Sessie-briefing geladen — CompliData V007"
+3. Bevestig: "Sessie-briefing geladen — CompliData V008"
 4. Wacht op START: [naam] van Bert
 

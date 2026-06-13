@@ -7,6 +7,42 @@ Bron: sessie 2–3 (P1–P5, OP-9 t/m OP-12). Status per punt expliciet vermeld.
 
 ## OPEN
 
+### Stand V008 (sessie-afsluiting 2026-06-13) — ADR-022 volledig afgerond
+
+Build **V008**, migratie head **`0009`** (3 ADR-022-migraties: `0007` profiel, `0008` tenant-vragenset,
+`0009` `checklist_dragend`-vlag). Tests: **567** module + **72** platform (1 pre-existing env-auth-test,
+zie OP-30) + **255** frontend groen. ADR-022 (Fase A–F + W1) compleet: een componenttype kan een
+eigen, **tenant-eigen** checklist dragen — profiel, scoring, lifecycle, toestand-gebaseerde type-lock,
+per-type readiness — losgekoppeld van `applicatie`.
+
+**Volgende prioriteiten**:
+1. **ADR-006 — hash-chained audit-trail (#17)**: volgende grote prioriteit. ADR-022 ging er bewust
+   vóór, zodat de audit-trail het definitieve besturingsmodel logt (append-only, nooit verwijderen).
+2. **Tenant-onboarding (#16)**: automatische **baseline-kopie** van de vragenset bij `POST /tenants`
+   (de #16-knip uit W1) — vandaag seedt alléén `dev_seed` per tenant; de platform-onboarding-hook
+   ontbreekt. De seed schrijft tenant-scoped data → `cd_app` met de nieuwe tenant-RLS-context.
+
+**Bewust vastgelegde foutcode-keuzes (ADR-022)**: `SUBTYPE_HEEFT_DATA` = HTTP **422** (Fase C
+type-lock, via `OngeldigeRegistratie`; heroverweging naar 409 is open); checklistvraag type-mismatch
+= HTTP **404** (`NietGevonden`, Fase B/E; OP-6-stijl, geen nieuwe code).
+
+**Afgehandeld deze sessie**: lokale CC-settings (`settings.local.json`) nu **durable in-repo**
+genegeerd via `.claude/.gitignore` (`*.org.json`, `.DS_Store`) — voorheen enkel via de globale
+`~/.config/git/ignore`; het stray-bestand `settings.local.json.org.json` is opgeruimd.
+
+### OP-29 — Impact-/graaf-lens veldlabel `aantal_applicaties` (naamsmell sinds Fase E) — OPEN (nice-to-have)
+
+`component_service.impact_analyse` / `schemas.component.ImpactSamenvatting.aantal_applicaties` telt
+sinds ADR-022 Fase E **alle** profiel-dragende geraakte componenten, niet alleen `applicatie`. De
+lens is functioneel correct (profiel-generiek sinds Fase A); alleen het veldlabel is misleidend.
+Verheldering = rename (bv. `aantal_beoordeeld`) — bewust buiten Fase E/F gehouden.
+
+### OP-30 — `test_auth_pkce` Secure-cookie env-test faalt omgevingsgebonden — OPEN
+
+`test_auth_pkce.py::test_callback_succes_zet_cd_session_cookie` faalt op de Secure-cookievlag in
+test/dev; faalt identiek op een schone `HEAD` (los van ADR-022). Te onderzoeken: de Secure-cookie-
+assertie omgevings-onafhankelijk maken (bv. `cookie_secure` expliciet in de testconfig forceren).
+
 ### OP-3 — Refresh-token-subsysteem (uit P2) — OPEN
 
 P2 zet bewust geen refresh-token; sessie verloopt na 15 min en vereist
