@@ -2,6 +2,8 @@
 
 **Status**: Aanvaard (besluit). Implementatie openstaand — concreet datamodel, migratie en
 RLS-policies volgen als afzonderlijk, gegate blok (CC stop-and-report vóór schema-/engine-werk).
+**Wijziging W1** herziet Besluit 4 (platform-beheerd → tenant-eigendom van de vragenset); zie de
+sectie "Wijziging W1" onderaan.
 **Volgorde**: ADR-022 **vóór** ADR-006 — de audit-trail logt het definitieve besturingsmodel;
 eerst het model vaststellen, dan auditen.
 **Voortbouwend op**: ADR-021 (component-herfundering, supertype/subtype shared-PK,
@@ -66,6 +68,8 @@ Sluit aan op de bestaande landschapslens (graaf + impactanalyse, CD056).
 
 ### Besluit 4 — Eén platform-beheerd vragenbeheer met type-discriminator
 
+**[Herzien — zie Wijziging W1]**
+
 Vragensets worden in één beheerscherm onderhouden; per vraag een binding aan een `componenttype`.
 Hergebruik `checklistvraag` met een type-discriminator — geen aparte vragentabel per type. Het
 catalogus-familiepatroon (ADR-012-addenda) is van toepassing: platform-beheerd, stabiele
@@ -95,6 +99,42 @@ wijst naar het generieke profiel.
 Concreet datamodel, kolommen, migratie, RLS-policies, service- en UI-realisatie. Dit volgt als
 afzonderlijk blok met een CC stop-and-report-checkpoint vóór wijzigingen aan datamodel, migraties,
 RLS-policies, auth- of query-semantiek.
+
+## Wijziging W1 — Besluit 4 herzien: tenant-eigendom van de vragenset
+
+**Aanleiding**: functionele eis — elke tenant moet zijn eigen checklistvragen kunnen definiëren en
+volledig aanpassen (toevoegen, bewerken, verwijderen). Dit vervangt het platform-beheerde model uit
+het oorspronkelijke Besluit 4 en lost tevens de cross-tenant fan-out-knoop op (zie onder).
+
+**Herziening**:
+
+- `checklistvraag` wordt **tenant-scoped** (`tenant_id` + RLS + FORCE), eigendom van de tenant.
+  Identiteit: `UNIQUE(tenant_id, componenttype, code)` (surrogate-PK `id` blijft — Knoop 3 Optie B).
+  `checklistvraag_optie` volgt als tenant-data (RLS).
+- **Volledige CRUD door de tenant** via `cd_app` binnen de eigen RLS-context. De grants op
+  `checklistvraag`/`checklistvraag_optie` verschuiven van `cd_platform`-CRUD naar `cd_app`-CRUD
+  onder RLS. Het bestaande optie-beheer (`/platform/checklistconfig`, `cd_platform`,
+  `ChecklistConfigBeheer.vue`) verhuist naar een **tenant-facing** pad.
+- **Verwijderen = soft-deactivatie** via `checklistvraag.actief` (ontpart de eerder geparkeerde
+  whole-question-deactivatie). Een gedeactiveerde vraag valt uit de actieve set en uit
+  `aantal_vragen`; bestaande scores blijven als historie bestaan. Harde verwijdering hooguit voor
+  een nooit-gescoorde vraag (optioneel).
+- **Platform-baseline als kopie-bij-onboarding**: een baseline-vragenset (de huidige
+  seed-definitie) wordt bij tenant-onboarding (#16) in de tenant gekopieerd; daarna volledig
+  eigendom van de tenant en vrij aanpasbaar. Geen levende gedeelde platform-vragentabel, geen
+  koppeling tussen tenants.
+
+**Gevolg voor de fan-out** (vervangt de cross-tenant-analyse): doordat vragen tenant-scoped zijn,
+raakt een vraag-mutatie uitsluitend de eigen tenant. De lifecycle-herberekening van bestaande
+componenten van het betrokken componenttype gebeurt **in-tenant**, atomair, in één `cd_app`-
+transactie binnen RLS. Er is **geen** cross-tenant write, **geen** BYPASSRLS-rol en **geen**
+stale-venster. `lifecycle_status` blijft opgeslagen (ADR-013 ongemoeid).
+
+**Gevolg voor Besluit 3 (readiness)**: readiness is per definitie per-tenant (elke tenant een eigen
+vragenset); cross-tenant vergelijking is bewust niet aan de orde.
+
+**Ongewijzigd**: Besluit 1 (checklist-dragend = engine-dragend), Besluit 2 (toestand-gebaseerde
+type-lock), Besluit 5 (generiek profiel-construct; `applicatie` behoudt zijn eigen subtype-tabel).
 
 ## Openstaand
 
