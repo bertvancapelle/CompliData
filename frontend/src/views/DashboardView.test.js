@@ -20,7 +20,22 @@ import DashboardView from './DashboardView.vue'
 import { useAuthStore } from '../store/auth'
 
 const VOORBEELD = {
-  lifecycle_telling: { concept: 3, in_inventarisatie: 2, geblokkeerd: 1, migratieklaar: 4 },
+  readiness_per_type: [
+    {
+      componenttype: 'applicatie',
+      componenttype_label: 'Applicatie',
+      telling: { concept: 3, in_inventarisatie: 2, geblokkeerd: 1, migratieklaar: 4 },
+      totaal: 10,
+      migratieklaar: 4,
+    },
+    {
+      componenttype: 'database',
+      componenttype_label: 'Database',
+      telling: { concept: 1, in_inventarisatie: 0, geblokkeerd: 0, migratieklaar: 2 },
+      totaal: 3,
+      migratieklaar: 2,
+    },
+  ],
   open_blokkades: 5,
   recent_gewijzigd: [
     { id: 'a1', naam: 'Zaaksysteem', lifecycle_status: 'geblokkeerd', gewijzigd_op: '2026-06-07T10:00:00Z' },
@@ -82,12 +97,36 @@ describe('DashboardView — begroeting', () => {
 })
 
 describe('DashboardView — data', () => {
-  it('toont de lifecycle-telling per status', async () => {
+  it('rendert per type een readiness-blok met label, tellingen en de "n van m"-rollup', async () => {
     const w = await mountDashboard()
-    expect(w.find('[data-testid="lifecycle-telling"]').exists()).toBe(true)
-    expect(w.find('[data-testid="telling-concept"]').text()).toContain('3')
-    expect(w.find('[data-testid="telling-geblokkeerd"]').text()).toContain('1')
-    expect(w.find('[data-testid="telling-migratieklaar"]').text()).toContain('4')
+    const blok = w.find('[data-testid="readiness-type-applicatie"]')
+    expect(blok.exists()).toBe(true)
+    expect(blok.text()).toContain('Applicatie')
+    expect(blok.find('[data-testid="telling-applicatie-concept"]').text()).toContain('3')
+    expect(blok.find('[data-testid="telling-applicatie-geblokkeerd"]').text()).toContain('1')
+    expect(blok.find('[data-testid="telling-applicatie-migratieklaar"]').text()).toContain('4')
+    const rollup = w.find('[data-testid="readiness-rollup-applicatie"]')
+    expect(rollup.exists()).toBe(true)
+    expect(rollup.text()).toContain('4 van 10 migratieklaar')
+  })
+
+  it('rendert twee verschillende typen als twee gescheiden blokken (geen vermenging)', async () => {
+    const w = await mountDashboard()
+    const blokken = w.findAll('[data-testid^="readiness-type-"]')
+    expect(blokken).toHaveLength(2)
+    const db = w.find('[data-testid="readiness-type-database"]')
+    expect(db.exists()).toBe(true)
+    expect(db.text()).toContain('Database')
+    // De database-telling staat in het database-blok, niet in het applicatie-blok.
+    expect(db.find('[data-testid="telling-database-migratieklaar"]').text()).toContain('2')
+    expect(w.find('[data-testid="readiness-rollup-database"]').text()).toContain('2 van 3 migratieklaar')
+    expect(w.find('[data-testid="readiness-type-applicatie"]').find('[data-testid="telling-database-migratieklaar"]').exists()).toBe(false)
+  })
+
+  it('defaultt ontbrekende statussen naar 0 in de telling', async () => {
+    const w = await mountDashboard()
+    const db = w.find('[data-testid="readiness-type-database"]')
+    expect(db.find('[data-testid="telling-database-in_inventarisatie"]').text()).toContain('0')
   })
 
   it('toont de open-blokkades-teller als doorklik naar het blokkadesoverzicht', async () => {
@@ -117,15 +156,26 @@ describe('DashboardView — laad/leeg/fout', () => {
     expect(w.find('[data-testid="dashboard-laden"]').exists()).toBe(true)
   })
 
-  it('toont een lege-staat als er geen recent gewijzigde applicaties zijn', async () => {
+  it('toont een lege-staat als er geen recent gewijzigde componenten zijn', async () => {
     api.dashboard.mockResolvedValue({
-      lifecycle_telling: { concept: 0, in_inventarisatie: 0, geblokkeerd: 0, migratieklaar: 0 },
+      readiness_per_type: [],
       open_blokkades: 0,
       recent_gewijzigd: [],
     })
     const w = await mountDashboard()
     expect(w.find('[data-testid="recent-leeg"]').exists()).toBe(true)
     expect(w.find('[data-testid="recent-lijst"]').exists()).toBe(false)
+  })
+
+  it('toont een lege-staat als er geen beoordeelde componenttypen zijn', async () => {
+    api.dashboard.mockResolvedValue({
+      readiness_per_type: [],
+      open_blokkades: 0,
+      recent_gewijzigd: [],
+    })
+    const w = await mountDashboard()
+    expect(w.find('[data-testid="readiness-leeg"]').exists()).toBe(true)
+    expect(w.findAll('[data-testid^="readiness-type-"]')).toHaveLength(0)
   })
 
   it('toont een foutmelding in role="alert" bij een fout', async () => {

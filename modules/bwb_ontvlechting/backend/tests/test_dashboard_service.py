@@ -49,22 +49,31 @@ def _recent_rij(naam, status, tijd):
     )
 
 
+def _label_rij(sleutel, label):
+    return SimpleNamespace(optie_sleutel=sleutel, label=label, actief=True)
+
+
 def test_dashboard_vorm_en_telling():
+    # ADR-022 Fase F: readiness PER TYPE. Execute-volgorde: (1) group-by
+    # (componenttype, status, count), (2) catalogus-labels, (3) open-blokkades, (4) recent.
     nu = datetime(2026, 6, 7, 10, 0, tzinfo=timezone.utc)
     group_rows = [
-        (LifecycleStatus.concept, 3),
-        (LifecycleStatus.geblokkeerd, 2),
-        (LifecycleStatus.migratieklaar, 1),
+        ("applicatie", LifecycleStatus.concept, 3),
+        ("applicatie", LifecycleStatus.geblokkeerd, 2),
+        ("applicatie", LifecycleStatus.migratieklaar, 1),
         # Transient — moet genegeerd worden, niet als sleutel verschijnen:
-        (LifecycleStatus.checklist_compleet, 9),
+        ("applicatie", LifecycleStatus.checklist_compleet, 9),
+        ("database", LifecycleStatus.in_inventarisatie, 2),
     ]
+    label_rows = [_label_rij("applicatie", "Applicatie"), _label_rij("database", "Database")]
     recent_rows = [
         _recent_rij("Zaaksysteem", LifecycleStatus.geblokkeerd, nu),
-        _recent_rij("DMS", LifecycleStatus.migratieklaar, nu),
+        _recent_rij("Oracle FIN-DB", LifecycleStatus.in_inventarisatie, nu),
     ]
     sessie = _SeqSession(
         [
             _FakeResult(rows=group_rows),
+            _FakeResult(rows=label_rows),
             _FakeResult(scalar=4),
             _FakeResult(rows=recent_rows),
         ]
@@ -72,32 +81,37 @@ def test_dashboard_vorm_en_telling():
 
     resultaat = asyncio.run(svc.haal_dashboard(sessie, TENANT_A))
 
-    # Telling: exact de 4 reële statussen, 0-default, transient genegeerd.
-    assert set(resultaat["lifecycle_telling"]) == {
-        "concept",
-        "in_inventarisatie",
-        "geblokkeerd",
-        "migratieklaar",
-    }
-    assert "checklist_compleet" not in resultaat["lifecycle_telling"]
-    assert resultaat["lifecycle_telling"]["concept"] == 3
-    assert resultaat["lifecycle_telling"]["geblokkeerd"] == 2
-    assert resultaat["lifecycle_telling"]["migratieklaar"] == 1
-    assert resultaat["lifecycle_telling"]["in_inventarisatie"] == 0  # niet in group-by
+    # Per-type, gesorteerd op componenttype; geen gefuseerd cijfer (Besluit 3).
+    per_type = {r["componenttype"]: r for r in resultaat["readiness_per_type"]}
+    assert list(per_type) == ["applicatie", "database"]
+    app = per_type["applicatie"]
+    assert app["componenttype_label"] == "Applicatie"
+    # Exact de 4 reële statussen, 0-default, transient genegeerd.
+    assert set(app["telling"]) == {"concept", "in_inventarisatie", "geblokkeerd", "migratieklaar"}
+    assert "checklist_compleet" not in app["telling"]
+    assert app["telling"]["concept"] == 3
+    assert app["telling"]["geblokkeerd"] == 2
+    assert app["telling"]["migratieklaar"] == 1
+    assert app["telling"]["in_inventarisatie"] == 0
+    assert app["totaal"] == 6 and app["migratieklaar"] == 1  # "n van m gereed"
+    db = per_type["database"]
+    assert db["componenttype_label"] == "Database"
+    assert db["telling"]["in_inventarisatie"] == 2 and db["totaal"] == 2 and db["migratieklaar"] == 0
 
     # Open blokkades = de scalar.
     assert resultaat["open_blokkades"] == 4
 
-    # Recent: mapping updated_at → gewijzigd_op, volgorde behouden.
-    assert [r["naam"] for r in resultaat["recent_gewijzigd"]] == ["Zaaksysteem", "DMS"]
+    # Recent (type-generiek): mapping updated_at → gewijzigd_op, volgorde behouden.
+    assert [r["naam"] for r in resultaat["recent_gewijzigd"]] == ["Zaaksysteem", "Oracle FIN-DB"]
     assert resultaat["recent_gewijzigd"][0]["gewijzigd_op"] == nu
     assert "id" in resultaat["recent_gewijzigd"][0]
 
 
-def test_dashboard_leeg_geeft_nul_telling_en_lege_recent():
+def test_dashboard_leeg_geeft_lege_rollup_en_recent():
     sessie = _SeqSession(
         [
-            _FakeResult(rows=[]),  # geen applicaties
+            _FakeResult(rows=[]),  # geen profiel-dragende componenten
+            _FakeResult(rows=[]),  # catalogus-labels
             _FakeResult(scalar=0),
             _FakeResult(rows=[]),
         ]
@@ -105,12 +119,7 @@ def test_dashboard_leeg_geeft_nul_telling_en_lege_recent():
 
     resultaat = asyncio.run(svc.haal_dashboard(sessie, TENANT_A))
 
-    assert resultaat["lifecycle_telling"] == {
-        "concept": 0,
-        "in_inventarisatie": 0,
-        "geblokkeerd": 0,
-        "migratieklaar": 0,
-    }
+    assert resultaat["readiness_per_type"] == []  # geen type met profielen
     assert resultaat["open_blokkades"] == 0
     assert resultaat["recent_gewijzigd"] == []
 

@@ -1,12 +1,13 @@
-"""Service-laag voor het tenant-brede dashboard (CD014, #9).
+"""Service-laag voor het tenant-brede dashboard (CD014, #9; ADR-022 Fase F).
 
-Read-only aggregatie over de applicaties van de tenant: telling per reële
-lifecycle-status, aantal open blokkades en de recentst gewijzigde applicaties.
+Read-only aggregatie binnen één tenant (RLS-context via `get_tenant_session` ÉN
+expliciete `tenant_id`-filter — dubbele tenant-bescherming). Strikt tenant-scoped.
 
-Elke query draait binnen de tenant-sessie (RLS-context via `get_tenant_session`)
-ÉN filtert expliciet op `tenant_id` — dubbele tenant-bescherming
-(complidata-security). Strikt tenant-scoped: nooit een tenant-overschrijdende
-telling.
+ADR-022 Fase F (Besluit 3): de readiness wordt **per componenttype** uitgesplitst —
+géén gefuseerd gereedheidscijfer over heterogene typen. Alleen checklist-dragende
+componenten hebben een `component_profiel`; kale typen (zonder profiel) verschijnen
+dus vanzelf niet in de rollup. `recent_gewijzigd` is type-generiek (alle
+profiel-dragende componenten, niet langer alleen `applicatie`).
 """
 import uuid
 
@@ -15,26 +16,26 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.models import (
     ACTIEVE_BLOKKADE_STATUSSEN,
-    Applicatie,
     Blokkade,
     Component,
+    ComponentConfigDimensie,
     ComponentProfiel,
     LifecycleStatus,
 )
+from services import componentconfig_catalog as catalog
 
-# Vast server-side limiet voor "recent gewijzigd" — geen client-input, dus geen
-# extra validatie-oppervlak.
+# Vast server-side limiet voor "recent gewijzigd" — geen client-input.
 _RECENT_LIMIT = 5
 
 # De reële lifecycle-statussen die het dashboard telt. `checklist_compleet` is
-# transient (ADR-013 B4 — nooit opgeslagen) en valt hier bewust buiten, zodat de
-# UI-vorm stabiel is en geen "dode" status toont.
+# transient (ADR-013 B4 — nooit opgeslagen) en valt hier bewust buiten.
 _GETOONDE_STATUSSEN = (
     LifecycleStatus.concept,
     LifecycleStatus.in_inventarisatie,
     LifecycleStatus.geblokkeerd,
     LifecycleStatus.migratieklaar,
 )
+_MIGRATIEKLAAR = LifecycleStatus.migratieklaar.value
 
 
 def _tenant_uuid(tenant_id) -> uuid.UUID:
@@ -46,27 +47,49 @@ async def haal_dashboard(session: AsyncSession, tenant_id) -> dict:
     """Stel het tenant-brede dashboard-overzicht samen (tenant-scoped).
 
     Returnt een dict in de vorm van `DashboardRead`:
-    `lifecycle_telling` (4 reële statussen, 0-default), `open_blokkades` en
-    `recent_gewijzigd` (≤ `_RECENT_LIMIT`, gesorteerd op `updated_at` aflopend).
+    `readiness_per_type` (per checklist-dragend type: statusverdeling + totaal +
+    migratieklaar), `open_blokkades`, en `recent_gewijzigd` (≤ `_RECENT_LIMIT`,
+    alle profiel-dragende componenten, `updated_at` aflopend).
     """
     tid = _tenant_uuid(tenant_id)
 
-    # 1. Telling per lifecycle-status — geseed op de getoonde statussen.
-    telling = {status.value: 0 for status in _GETOONDE_STATUSSEN}
-    # ADR-022 Fase A: lifecycle_status leeft op het profiel (1-op-1 met applicatie).
+    # 1. Readiness PER TYPE — join Component voor het type; alleen profiel-dragende
+    #    (checklist-dragende) componenten tellen mee (Besluit 3: geen mengcijfer).
     rijen = (
         await session.execute(
-            select(ComponentProfiel.lifecycle_status, func.count())
-            .where(ComponentProfiel.tenant_id == tid)
-            .group_by(ComponentProfiel.lifecycle_status)
+            select(
+                Component.componenttype,
+                ComponentProfiel.lifecycle_status,
+                func.count(),
+            )
+            .join(ComponentProfiel, ComponentProfiel.id == Component.id)
+            .where(Component.tenant_id == tid)
+            .group_by(Component.componenttype, ComponentProfiel.lifecycle_status)
         )
     ).all()
-    for status, aantal in rijen:
-        sleutel = status.value if isinstance(status, LifecycleStatus) else str(status)
-        if sleutel in telling:  # transient checklist_compleet (zou 0 zijn) genegeerd
-            telling[sleutel] = aantal
 
-    # 2. Open blokkades (ADR-013-definitie: open of in_behandeling).
+    type_labels = await catalog.labels(session, ComponentConfigDimensie.componenttype)
+    per_type: dict[str, dict[str, int]] = {}
+    for componenttype, status, aantal in rijen:
+        sleutel = status.value if isinstance(status, LifecycleStatus) else str(status)
+        bucket = per_type.setdefault(
+            componenttype, {s.value: 0 for s in _GETOONDE_STATUSSEN}
+        )
+        if sleutel in bucket:  # transient checklist_compleet (zou 0 zijn) genegeerd
+            bucket[sleutel] = aantal
+
+    readiness_per_type = [
+        {
+            "componenttype": ct,
+            "componenttype_label": catalog.resolveer_een(ct, type_labels),
+            "telling": telling,
+            "totaal": sum(telling.values()),
+            "migratieklaar": telling.get(_MIGRATIEKLAAR, 0),
+        }
+        for ct, telling in sorted(per_type.items())
+    ]
+
+    # 2. Open blokkades (ADR-013-definitie: open of in_behandeling), tenant-breed.
     open_blokkades = (
         await session.execute(
             select(func.count())
@@ -78,19 +101,18 @@ async def haal_dashboard(session: AsyncSession, tenant_id) -> dict:
         )
     ).scalar_one()
 
-    # 3. Recentst gewijzigde applicaties (vast limiet; kolom-select, geen volledige ORM).
+    # 3. Recentst gewijzigde profiel-dragende componenten (type-generiek, ADR-022 Fase F).
     recent_rijen = (
         await session.execute(
             select(
-                Applicatie.id,
-                Component.naam,  # naam verhuisde naar de component (ADR-021)
-                ComponentProfiel.lifecycle_status,  # lifecycle verhuisde naar het profiel (ADR-022)
-                Applicatie.updated_at,
+                Component.id,
+                Component.naam,
+                ComponentProfiel.lifecycle_status,
+                Component.updated_at,
             )
-            .join(Component, Component.id == Applicatie.id)
-            .join(ComponentProfiel, ComponentProfiel.id == Applicatie.id)
-            .where(Applicatie.tenant_id == tid)
-            .order_by(Applicatie.updated_at.desc(), Applicatie.id.desc())
+            .join(ComponentProfiel, ComponentProfiel.id == Component.id)
+            .where(Component.tenant_id == tid)
+            .order_by(Component.updated_at.desc(), Component.id.desc())
             .limit(_RECENT_LIMIT)
         )
     ).all()
@@ -105,7 +127,7 @@ async def haal_dashboard(session: AsyncSession, tenant_id) -> dict:
     ]
 
     return {
-        "lifecycle_telling": telling,
+        "readiness_per_type": readiness_per_type,
         "open_blokkades": open_blokkades,
         "recent_gewijzigd": recent,
     }

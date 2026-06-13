@@ -24,15 +24,27 @@ class DashboardRecentItem(BaseModel):
     gewijzigd_op: datetime
 
 
+class DashboardReadinessType(BaseModel):
+    """ADR-022 Fase F — readiness van één checklist-dragend componenttype (Besluit 3:
+    per type, geen gefuseerd mengcijfer). `telling` = aantal per reële lifecycle-status
+    (vaste sleutels, 0-default); `migratieklaar` van `totaal` = de "n van m gereed"-rollup."""
+
+    componenttype: str
+    componenttype_label: str
+    telling: dict[str, int]
+    totaal: int
+    migratieklaar: int
+
+
 class DashboardRead(BaseModel):
     """Tenant-breed dashboard-overzicht (één respons).
 
-    - `lifecycle_telling`: aantal applicaties per reële lifecycle-status
-      (vaste sleutels, 0-default; `checklist_compleet` transient → niet getoond).
+    - `readiness_per_type`: per checklist-dragend type de statusverdeling + rollup
+      (ADR-022 Fase F, Besluit 3). Kale typen (zonder profiel) verschijnen niet.
     - `open_blokkades`: aantal nog niet opgeloste blokkades (ADR-013-definitie).
-    - `recent_gewijzigd`: de meest recent gewijzigde applicaties (vast limiet).
+    - `recent_gewijzigd`: de meest recent gewijzigde profiel-dragende componenten.
     """
 
-    lifecycle_telling: dict[str, int]
+    readiness_per_type: list[DashboardReadinessType]
     open_blokkades: int
     recent_gewijzigd: list[DashboardRecentItem]

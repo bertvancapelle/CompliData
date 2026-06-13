@@ -14,12 +14,16 @@ from app.core.config import settings
 TENANT_A = "11111111-1111-1111-1111-111111111111"
 
 _DASHBOARD = {
-    "lifecycle_telling": {
-        "concept": 2,
-        "in_inventarisatie": 1,
-        "geblokkeerd": 0,
-        "migratieklaar": 0,
-    },
+    # ADR-022 Fase F: readiness per type (Besluit 3).
+    "readiness_per_type": [
+        {
+            "componenttype": "applicatie",
+            "componenttype_label": "Applicatie",
+            "telling": {"concept": 2, "in_inventarisatie": 1, "geblokkeerd": 0, "migratieklaar": 0},
+            "totaal": 3,
+            "migratieklaar": 0,
+        }
+    ],
     "open_blokkades": 0,
     "recent_gewijzigd": [],
 }
@@ -85,7 +89,8 @@ def test_lezen_rol_geeft_200(monkeypatch, rol):
     resp = client.get("/api/v1/dashboard")
     assert resp.status_code == 200, resp.text
     body = resp.json()
-    assert set(body["lifecycle_telling"]) == {
+    assert body["readiness_per_type"][0]["componenttype"] == "applicatie"
+    assert set(body["readiness_per_type"][0]["telling"]) == {
         "concept",
         "in_inventarisatie",
         "geblokkeerd",

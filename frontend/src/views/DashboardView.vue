@@ -1,10 +1,11 @@
 <script setup>
 /**
- * DashboardView — tenant-breed overzicht (CD014, #9).
+ * DashboardView — tenant-breed overzicht (CD014, #9; ADR-022 Fase F, Besluit 3).
  *
  * Drie blokken op basis van één read-only aggregatie (`GET /api/v1/dashboard`):
- * (a) applicaties per lifecycle-status, (b) open-blokkades-teller,
- * (c) recentst gewijzigde applicaties. Begroeting met gebruiker/rol blijft.
+ * (a) readiness per componenttype (één blok per checklist-dragend type, geen
+ * gefuseerd totaal), (b) open-blokkades-teller, (c) recentst gewijzigde
+ * componenten. Begroeting met gebruiker/rol blijft.
  *
  * Module-presentatie (labels/severity) via de cross-root-barrel
  * `@modules/bwb_ontvlechting/frontend/labels` — geen platform↔module-koppeling
@@ -88,27 +89,53 @@ onMounted(laad)
     </p>
 
     <div v-else-if="data" class="flex flex-col gap-[var(--cd-space-lg)]">
-      <!-- (a) Applicaties per lifecycle-status -->
-      <div aria-labelledby="dashboard-lifecycle-titel">
+      <!-- (a) Readiness per componenttype (ADR-022 Fase F, Besluit 3) -->
+      <div aria-labelledby="dashboard-readiness-titel">
         <h2
-          id="dashboard-lifecycle-titel"
+          id="dashboard-readiness-titel"
           class="text-[length:var(--cd-text-lg)] font-semibold mb-[var(--cd-space-sm)]"
         >
-          Applicaties per status
+          Readiness per componenttype
         </h2>
-        <div data-testid="lifecycle-telling" class="grid grid-cols-2 md:grid-cols-4 gap-[var(--cd-space-md)]">
+
+        <div
+          v-if="data.readiness_per_type.length"
+          class="flex flex-col gap-[var(--cd-space-md)]"
+        >
           <div
-            v-for="status in STATUS_VOLGORDE"
-            :key="status"
-            :data-testid="`telling-${status}`"
-            class="card flex flex-col gap-[var(--cd-space-xs)] bg-[var(--cd-color-surface)] rounded-[var(--cd-radius-card)] shadow-[var(--cd-shadow-sm)] p-[var(--cd-space-md)]"
+            v-for="t in data.readiness_per_type"
+            :key="t.componenttype"
+            :data-testid="`readiness-type-${t.componenttype}`"
+            aria-labelledby="dashboard-readiness-titel"
           >
-            <span class="text-[length:var(--cd-text-2xl)] font-semibold text-[var(--cd-color-primary)]">
-              {{ data.lifecycle_telling[status] ?? 0 }}
-            </span>
-            <Tag :value="lifecycleLabel(status)" :severity="lifecycleSeverity(status)" />
+            <h3 class="text-[length:var(--cd-text-md)] font-semibold mb-[var(--cd-space-xs)]">
+              {{ t.componenttype_label }}
+            </h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-[var(--cd-space-md)]">
+              <div
+                v-for="status in STATUS_VOLGORDE"
+                :key="status"
+                :data-testid="`telling-${t.componenttype}-${status}`"
+                class="card flex flex-col gap-[var(--cd-space-xs)] bg-[var(--cd-color-surface)] rounded-[var(--cd-radius-card)] shadow-[var(--cd-shadow-sm)] p-[var(--cd-space-md)]"
+              >
+                <span class="text-[length:var(--cd-text-2xl)] font-semibold text-[var(--cd-color-primary)]">
+                  {{ t.telling[status] ?? 0 }}
+                </span>
+                <Tag :value="lifecycleLabel(status)" :severity="lifecycleSeverity(status)" />
+              </div>
+            </div>
+            <p
+              :data-testid="`readiness-rollup-${t.componenttype}`"
+              class="mt-[var(--cd-space-xs)] text-[var(--cd-color-text-muted)]"
+            >
+              {{ t.migratieklaar }} van {{ t.totaal }} migratieklaar
+            </p>
           </div>
         </div>
+
+        <p v-else data-testid="readiness-leeg" class="text-[var(--cd-color-text-muted)]">
+          Nog geen beoordeelde componenten in deze tenant.
+        </p>
       </div>
 
       <!-- (b) Open blokkades -->
