@@ -1,6 +1,6 @@
-# SESSIE_BRIEFING.md — CompliData V008
+# SESSIE_BRIEFING.md — CompliData V009
 
-**Gegenereerd**: 2026-06-13
+**Gegenereerd**: 2026-06-15
 
 ---
 
@@ -10,11 +10,11 @@
 
 | Veld | Waarde |
 |------|--------|
-| Build | V008 |
+| Build | V009 |
 | Datum | June 2026 |
-| Commit | 5ac30d6 |
-| Tests | 567 module + 72 platform (1 pre-existing env-test) + 255 frontend groen |
-| TST-rapport | TST-V008-Validatierapport.md |
+| Commit | 038f100 |
+| Tests | 651 backend (1 pre-existing env-test) + 255 frontend groen |
+| TST-rapport | TST-V009-Validatierapport.md |
 | Kritieke bevindingen | 0 |
 
 ---
@@ -22,70 +22,97 @@
 ## Recente commits
 
 ```
+038f100 feat(archimate): ADR-023 ArchiMate-uitlijning — element-identiteit + getypeerd relatiemodel (cutover, Fase A–B compleet)
+6eb0699 feat(audit): ADR-006 audit-trail Fase A–E — append-only spoor + hash-keten
+b6858c0 docs(adr): ADR-006 audit-trail vastgelegd — append-only wijzigingsspoor
+10d2a46 chore(sessie): afsluiting V007→V008 — ADR-022 volledig afgerond (Fase A–F + W1) + dev hot-reload
 5ac30d6 feat(dashboard): ADR-022 Fase F — readiness per componenttype uitgesplitst (Besluit 3)
-2a71ec1 feat(component): ADR-022 Fase E — tweede checklist-dragend componenttype end-to-end + type-generieke start beoordeling
-dd3ec6b fix(checklist): scoringslijst-read filtert op actief=true — byte-identiek aan de engine-set (ADR-022 W1)
-2681637 chore(dev): cd-api hot-reload als dev-default (uvicorn --reload, één worker, reload-dirs /app+/modules)
-d530010 feat(component): ADR-022 W1 — tenant-eigendom vragenset: tenant-scoped checklistvraag + tenant vraag-CRUD + in-tenant fan-out
 ```
 
 ---
 
 ## Prioriteiten volgende sessie
 
-# NEXT_SESSION.md — CompliData V007
+# NEXT_SESSION.md — CompliData V009
 
-**Gegenereerd**: 2026-06-12
-**Vorige build (deze afsluiting)**: V006 → **V007**
-**Laatste commit vóór de bump**: fb130df (CD057)
-
----
-
-## Stand van zaken (V007)
-
-Sessie CD039–CD058 bovenop V006 — twee ADR-blokken + infra + borging:
-
-- **ADR-020 contractregister** (CD039–046): leverancier-/contractregister (RLS, CHECK/UNIQUE,
-  platform-catalogus), tenant-UI, categorie-8-contextpaneel, catalogus-beheer-UI.
-- **RLS-poolfix** (CD047/048): tenant-context transactie-lokaal (`after_begin`-hook) — 500-na-
-  commit gedicht. **ZoekSelect** (CD049).
-- **ADR-021 component-herfundering** (CD050–054, 056): supertype/subtype shared-PK, landschaps-
-  graaf, verenigde Componenten-UI (convergente aanmaak + menu-sanering), impactanalyse.
-- **CD055 Keycloak-scheiding** (eigen DB + named volume → OP-22 gesloten). **CD057 kennisborging**.
-- **631 backend + 239 frontend** groen; 1 migratie (`0006_component_herfundering`).
+**Gegenereerd**: 2026-06-14
+**Vorige build (deze afsluiting)**: V008 → **V009**
+**Laatste commits vóór de bump**: `6eb0699` (ADR-006 audit-trail) → `038f100` (ADR-023 cutover)
 
 ---
 
-## Top-5 prioriteiten volgende sessie (Bert prioriteert)
+## Stand van zaken (V009)
 
-1. **ADR-022-afpelling** — checklist/beoordelingsprofiel per componenttype; werk de **vier open
-   ontwerpvragen** uit `docs/adr/ADR-022_VOORBEREIDING.md` af (lifecycle vs. alleen scores;
-   readiness-rapportage; configuratievorm; relatie tot het subtype-mechanisme).
-2. **ADR-006 — audit-trail** (hash-chained, append-only). Het drie-lagen-advies ligt vast in de
-   chat-besluiten; ADR-022 gaat **vóór** ADR-006 (audit logt het definitieve besturingsmodel).
-3. **#16 — Tenant-/usermanagement-backend** (deblokkeert #15; platform-domein ADR-012, raakt
-   OP-13 platform-tabel-grants).
-4. **#14** (na ADR-006) en **#15** (na #16) — geblokkeerde backlog oppakken zodra hun
-   afhankelijkheid staat.
-5. **OP-28 VPS-deployment** t.z.t. (raakt OP-14 secrets-hardening) — alleen op Berts sein.
+Twee volledig afgeronde + gelande architectuurtrajecten bovenop V008:
+
+- **ADR-006 audit-trail (#17)** (`6eb0699`, migratie `0010`): append-only `audit_log` (tenant) +
+  `platform_audit_log`, FORCE RLS, `REVOKE ALL` + `BEFORE UPDATE/DELETE/TRUNCATE`-trigger,
+  capture-hook (`before/after_flush`, ORM-only), actor via ContextVar, per-tenant SHA-256 hash-keten
+  met `pg_advisory_xact_lock`-serialisatie, lees-API `GET /auditlog` + RBAC `AUDITLOG`.
+- **ADR-023 ArchiMate-cutover (Fase A + B)** (`038f100`, 57 bestanden, live-geverifieerd, migratie
+  t/m `0017`): element-supertype (shared-PK) + ArchiMate-typing-catalogus; één getypeerd `relatie`-model;
+  element-promotie datatype/gebruikersgroep/contract; cutover koppeling→flow, component_structuur→
+  assignment/aggregation, component_contract→association, datatype/gebruikersgroep-band→access/serving
+  (drop `applicatie_id`, CASCADE-wijziging Besluit 13, wees-detectie). Oude tabellen gedropt.
+- **651** backend (1 pre-existing env-test) + **255** frontend groen. Migratie head `0017`.
+
+---
+
+## Top-5 prioriteiten volgende sessie
+
+1. **ADR-023 Fase C — technologielaag eersteklas** (node/system_software): database/applicatieserver/
+   middleware/fileshare als volwaardige technology-laag-elementen met juiste mapping/relaties. Start hier.
+2. **ADR-023 Fase D** — contract-element-verfijning + dekkingstests rond de association-relatie.
+3. **ADR-023 Fase E** — migratielaag (plateau/gap/work_package/deliverable) + checklist-consistentiecheck
+   technische plaatsing.
+4. **ADR-023 Fase F** — gelaagde ArchiMate-lees-API + gap/plateau-view + migratie-UI + RBAC nieuwe
+   entiteiten + audit-allowlist; opruim-follow-ups (a/b/c) meenemen. Fase G (export) buiten scope.
+5. **Opruim** — dode `KoppelingConflict`-refs + checklistconfig stray docstring (follow-up c);
+   live-test-teardown-residu structureel (follow-up a).
+
+---
+
+## Bekende risico's en aandachtspunten
+
+- **Na een `down -v`-reset opnieuw inloggen in de UI** — verlopen sessie (Redis/Keycloak-DB leeg),
+  géén bug.
+- **Live-test-teardown-residu**: integratietests laten 11 `element`-supertype-rijen achter (subtype +
+  relatie wél opgeruimd). Productiecode correct (element-cascade). `down -v` wist het.
+
+---
+
+## Technische schuld
+
+- (a) Live-test-teardowns ruimen de in ADR-023 nieuwe `element`-supertabel niet op.
+- (b) Migratie-revisie-ID-conventie: ≤32 tekens (`alembic_version` is `varchar(32)`).
+- (c) Dode `KoppelingConflict`-referenties + checklistconfig stray docstring.
+- Pre-existing env-test `test_auth_pkce::…secure…` (cookie `Secure`-vlag in dev/test; DB-onafhankelijk).
 
 ---
 
 ## Uitgestelde punten (achtergrond)
 
 Zie `docs/OPVOLGPUNTEN.md`: OP-3 (refresh-token), OP-13 (platform-tabel-grants), OP-14 (secrets),
-OP-20 (live NULLS-LAST), OP-21 (eigenaar distinct-dropdown), **OP-23** (cyclus-padbewaking bij
-invoer), **OP-24** (C-drempel zoekvelden), **OP-25** (Uvicorn-accesslog timestamps), **OP-26**
-(`component.eigenaar_organisatie` nullable), **OP-27** (dev-seed init-stap), **OP-28** (VPS).
+OP-21, OP-23, OP-24, OP-25, OP-26, OP-27, OP-28 (VPS), OP-29 (impact-lens label), OP-30 (auth-cookie env-test).
+
+---
+
+## Geleerde patronen deze sessie
+
+- **Big-bang cutover in reviewbare slices** + één verplichte live-stop met DB-reset: elke slice
+  offline-groen, daarna één keer live verifiëren (datamigratie-equivalentie + richting, RLS/composiet-FK,
+  append-only audit).
+- **Verse-DB-verificatie legde twee mechanische defecten bloot** die offline onzichtbaar waren:
+  revisie-ID > `varchar(32)` en een multi-row `pg_insert` met niet-uniforme dict-keys.
 
 ---
 
 ## Werkwijze (triggerdiscipline)
 
-Elke opdracht-`.md` begint op **regel 1** met `START: [taaknaam]`. **`AKKOORD: commit`** is
-exclusief de commit-trigger op een groen eindrapport; "akkoord"/"doorgaan" stemt alleen met een
-advies in. CC verifieert zélf de groene staat vóór elke commit. Reset-procedure (named volume +
-handmatige dev-seed): `docs/LOKAAL-TESTEN.md`.
+Elke opdracht-`.md` begint op **regel 1** met `START: [taaknaam]`. **`AKKOORD: commit`** is exclusief
+de commit-trigger op een groen eindrapport. CC verifieert zélf de groene staat vóór elke commit. Dev:
+`cd-api` draait met `--reload`. Reset-procedure: `docs/LOKAAL-TESTEN.md`. Startpunt volgende sessie:
+`docs/_output/CompliData_Sessiestart_V009.zip` → **ADR-023 Fase C**.
 
 
 ---
@@ -94,5 +121,5 @@ handmatige dev-seed): `docs/LOKAAL-TESTEN.md`.
 
 1. Lees deze briefing volledig
 2. Lees CLAUDE.md (sessiestart-protocol)
-3. Bevestig: "Sessie-briefing geladen — CompliData V008"
+3. Bevestig: "Sessie-briefing geladen — CompliData V009"
 4. Wacht op START: [naam] van Bert
