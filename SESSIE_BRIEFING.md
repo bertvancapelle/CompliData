@@ -1,4 +1,4 @@
-# SESSIE_BRIEFING.md — CompliData V009
+# SESSIE_BRIEFING.md — CompliData V010
 
 **Gegenereerd**: 2026-06-15
 
@@ -10,11 +10,11 @@
 
 | Veld | Waarde |
 |------|--------|
-| Build | V009 |
+| Build | V010 |
 | Datum | June 2026 |
-| Commit | 038f100 |
-| Tests | 651 backend (1 pre-existing env-test) + 255 frontend groen |
-| TST-rapport | TST-V009-Validatierapport.md |
+| Commit | 2dc38aa |
+| Tests | 692 backend + 258 frontend groen (1 pre-existing env-test) |
+| TST-rapport | TST-V010-Validatierapport.md |
 | Kritieke bevindingen | 0 |
 
 ---
@@ -22,11 +22,11 @@
 ## Recente commits
 
 ```
-038f100 feat(archimate): ADR-023 ArchiMate-uitlijning — element-identiteit + getypeerd relatiemodel (cutover, Fase A–B compleet)
-6eb0699 feat(audit): ADR-006 audit-trail Fase A–E — append-only spoor + hash-keten
-b6858c0 docs(adr): ADR-006 audit-trail vastgelegd — append-only wijzigingsspoor
-10d2a46 chore(sessie): afsluiting V007→V008 — ADR-022 volledig afgerond (Fase A–F + W1) + dev hot-reload
-5ac30d6 feat(dashboard): ADR-022 Fase F — readiness per componenttype uitgesplitst (Besluit 3)
+2dc38aa feat(archimate): ADR-023 Fase E (E3) — Deliverable + realisatieketen
+8adb32e feat(archimate): ADR-023 Fase E (E2) — Work Package + hiërarchie
+21597ef refactor(catalogus): relatie_rol verhuisd van ContractConfig naar relatie-kenmerk-catalogus
+4a20572 feat(archimate): ADR-023 Fase E (E0+E1) — Plateau + relatie-kenmerk-catalogus
+e683976 feat(archimate): ADR-023 Fase D — leverancier-onderscheid + ArchiMate-laag-borging
 ```
 
 ---
@@ -121,5 +121,5 @@ de commit-trigger op een groen eindrapport. CC verifieert zélf de groene staat 
 
 1. Lees deze briefing volledig
 2. Lees CLAUDE.md (sessiestart-protocol)
-3. Bevestig: "Sessie-briefing geladen — CompliData V009"
+3. Bevestig: "Sessie-briefing geladen — CompliData V010"
 4. Wacht op START: [naam] van Bert

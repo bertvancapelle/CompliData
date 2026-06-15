@@ -2,7 +2,7 @@
 name: complidata-backend
 description: Backend-patronen voor CompliData (FastAPI + SQLAlchemy + Alembic). Beschrijft de werkelijke V001-staat.
 stack: Python 3.12, FastAPI, Pydantic v2, SQLAlchemy asyncio, Alembic, PostgreSQL 16
-bijgewerkt: V007
+bijgewerkt: V010
 ---
 
 # CompliData Backend Skill
@@ -174,7 +174,7 @@ Ouder-FK's zijn immutabel (niet in Update).
 |---|---|---|
 | `NietGevonden` | 404 | `NIET_GEVONDEN` |
 | `OngeldigeStatusovergang` | 409 | `ONGELDIGE_STATUSOVERGANG` |
-| `KoppelingConflict` | 409 | `KOPPELING_CONFLICT` (DB-CHECK-backstop) |
+| `RegistratieConflict("KOPPELING_BESTAAT")` | 409 | component↔contract = `association` via `component_contract_service` (ADR-023; de oude `Koppeling`-entiteit + `KoppelingConflict` zijn met de cutover vervallen) |
 | `ChecklistscoreConflict` | 409 | `CHECKLISTSCORE_BESTAAT_AL` (unieke-index-backstop) |
 
 ### Foutformaat-conventie
@@ -289,3 +289,28 @@ ongedefinieerde methodes → 405.
   belangrijkste eis). **Iteratieve BFS per niveau** is het referentiepatroon: één query per niveau
   op de structuurrelatie, gejoined met `component`; geeft van nature de kortste afstand (`niveau`)
   + het pad. Read-only, geen schrijfpaden, geen engine-koppeling (ADR-021 Fase E). [CD056]
+
+## V009/V010-patronen (ADR-023 Fase A–E + ADR-006, geverifieerd)
+
+- **Facade-over-Relatie-conventie voor een nieuw verband**: een nieuw verband loopt via het **bestaande**
+  unified relatiemodel met een **bestaand** relatietype, via een **dunne service-facade** die `Relatie`
+  direct bouwt — zoals `component_contract_service` (`association`, rol als kenmerk), `plateau_service`
+  (`aggregation`, dispositie + bevestiging als kenmerken) en `deliverable_service` (`realization`-keten
+  work_package → deliverable → plateau). De facade valideert het toegestane **`element_type` van bron/
+  doel per richting** (realiseerder → gerealiseerde) → **422** bij ongeldig type; dubbel → **409** (de
+  `UNIQUE(tenant,bron,doel,relatietype)`). **Geen** nieuw relatietype en **geen** FK-kolommen — TENZIJ
+  een **vaste ariteit** dat vereist (gap↔plateau: twee verplichte composiet-FK's op het subtype).
+  Relaties worden **expliciet** gelegd (ADR-023 Besluit 8); het systeem leidt nooit relaties af;
+  read-traversals zijn afgeleid en **cyclus-veilig** (visited-set).
+- **Engine-onaangeroerd (score = de ENIGE lifecycle-driver)**: een nieuwe entiteit/feature die naast de
+  engine staat importeert aantoonbaar géén `lifecycle_service`/`herbereken_lifecycle`/`ComponentProfiel`/
+  `Blokkade`/`Checklistscore`. Readiness is **puur read-only afgeleid** uit de bestaande lifecycle (geen
+  opgeslagen tweede bron); een consistentiecheck is **signalering** (geen tweede engine-poort).
+- **Nieuwe tenant-entiteit ⇒ RBAC + audit bewegen mee**: nieuwe `Entiteit`-waarde + `PERMISSIES` in het
+  `_INHOUD`-patroon (Viewer L · Medewerker LAW · Beheerder LAWV · Auditor L) — de RBAC-matrix-teltest
+  beweegt mee; voeg de tabelnaam toe aan `AUDIT_TENANT_ENTITEITEN` (platform-catalogi →
+  `AUDIT_PLATFORM_ENTITEITEN`). Relatie-koppelingen worden al via het `relatie`-spoor geauditeerd.
+- **ADR-006 audit-trail**: één centrale `before/after_flush`-capture-hook (ORM-only) → append-only
+  `audit_log` (tenant, hash-keten per tenant) resp. `platform_audit_log`; actie `derive` voor
+  systeem-afgeleide mutaties (`component_profiel`/`blokkade`). De audit-tabellen zelf staan NIET in de
+  capture (via core-INSERT geschreven).

@@ -475,11 +475,11 @@ Pas dan: klaar.
 
 | Veld | Waarde |
 |------|--------|
-| Build | V009 |
+| Build | V010 |
 | Datum | June 2026 |
-| Commit | 038f100 |
-| Tests | 651 backend (1 pre-existing env-test) + 255 frontend groen |
-| TST-rapport | TST-V009-Validatierapport.md |
+| Commit | 2dc38aa |
+| Tests | 692 backend + 258 frontend groen (1 pre-existing env-test) |
+| TST-rapport | TST-V010-Validatierapport.md |
 | Kritieke bevindingen | 0 |
 
 <!-- BOUWSTATUS_END -->

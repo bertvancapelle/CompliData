@@ -1,80 +1,61 @@
-# NEXT_SESSION.md — CompliData V009
+# NEXT_SESSION.md — CompliData V010
 
-**Gegenereerd**: 2026-06-14
-**Vorige build (deze afsluiting)**: V008 → **V009**
-**Laatste commits vóór de bump**: `6eb0699` (ADR-006 audit-trail) → `038f100` (ADR-023 cutover)
+**Gegenereerd**: 2026-06-15 (sessie DC009)
+**Build**: V009 → **V010**
+**Laatste commit vóór de afsluiting**: `2dc38aa` (ADR-023 Fase E E3 — Deliverable)
+**Migratie head**: `0021_adr023_deliverable`
+**Tests**: 692 backend + 258 frontend groen (1 pre-existing, omgevingsgebonden env-test)
 
 ---
 
-## Stand van zaken (V009)
+## Stand van zaken (V010)
 
-Twee volledig afgeronde + gelande architectuurtrajecten bovenop V008:
+ADR-023 grotendeels geland; **migratielaag (Fase E) is op één slice na klaar**:
 
-- **ADR-006 audit-trail (#17)** (`6eb0699`, migratie `0010`): append-only `audit_log` (tenant) +
-  `platform_audit_log`, FORCE RLS, `REVOKE ALL` + `BEFORE UPDATE/DELETE/TRUNCATE`-trigger,
-  capture-hook (`before/after_flush`, ORM-only), actor via ContextVar, per-tenant SHA-256 hash-keten
-  met `pg_advisory_xact_lock`-serialisatie, lees-API `GET /auditlog` + RBAC `AUDITLOG`.
-- **ADR-023 ArchiMate-cutover (Fase A + B)** (`038f100`, 57 bestanden, live-geverifieerd, migratie
-  t/m `0017`): element-supertype (shared-PK) + ArchiMate-typing-catalogus; één getypeerd `relatie`-model;
-  element-promotie datatype/gebruikersgroep/contract; cutover koppeling→flow, component_structuur→
-  assignment/aggregation, component_contract→association, datatype/gebruikersgroep-band→access/serving
-  (drop `applicatie_id`, CASCADE-wijziging Besluit 13, wees-detectie). Oude tabellen gedropt.
-- **651** backend (1 pre-existing env-test) + **255** frontend groen. Migratie head `0017`.
+- **Fase C** (`a20c74e`) — technologielaag: laag-filter/-labels + draait-op-aanmaak via `/relaties`.
+- **Fase D** (`e683976`) — leverancier-onderscheid + ArchiMate-laag-borging (element-typing + dekkingstest).
+- **Fase E E1** (`4a20572`) — Plateau + lidmaatschap (aggregation, dispositie + contractuele bevestiging)
+  + nieuwe relatie-kenmerk-catalogus.
+- **Opruim** (`21597ef`) — `relatie_rol` verhuisd naar de relatie-kenmerk-catalogus.
+- **Fase E E2** (`8adb32e`) — Work Package + hiërarchie (composiet self-FK RESTRICT, cycluspreventie).
+- **Fase E E3** (`2dc38aa`) — Deliverable + realisatieketen (work_package → deliverable → plateau via
+  `realization`).
+
+Score blijft de enige lifecycle-driver — engine onaangeroerd, dubbel geborgd (offline import-afwezigheid
++ live geen-profiel). Skills (db/backend/tests) bijgewerkt naar V010 met de 4 canonieke patronen.
 
 ---
 
 ## Top-5 prioriteiten volgende sessie
 
-1. **ADR-023 Fase C — technologielaag eersteklas** (node/system_software): database/applicatieserver/
-   middleware/fileshare als volwaardige technology-laag-elementen met juiste mapping/relaties. Start hier.
-2. **ADR-023 Fase D** — contract-element-verfijning + dekkingstests rond de association-relatie.
-3. **ADR-023 Fase E** — migratielaag (plateau/gap/work_package/deliverable) + checklist-consistentiecheck
-   technische plaatsing.
-4. **ADR-023 Fase F** — gelaagde ArchiMate-lees-API + gap/plateau-view + migratie-UI + RBAC nieuwe
-   entiteiten + audit-allowlist; opruim-follow-ups (a/b/c) meenemen. Fase G (export) buiten scope.
-5. **Opruim** — dode `KoppelingConflict`-refs + checklistconfig stray docstring (follow-up c);
-   live-test-teardown-residu structureel (follow-up a).
+1. **ADR-023 Fase E — E4 (Gap + readiness-rollup)** — de afsluitende migratielaag-slice. Gap = element-
+   subtype met **vaste 2-ariteit** baseline/doel-plateau (FK-kolommen, géén relatie — uitzondering op de
+   facade-conventie). **Readiness = ROLLUP** puur read-only uit de bestaande lifecycle (geen tweede bron;
+   alleen checklist-dragende leden tellen mee). **Schema-rakend → gate** vóór commit. Start hier.
+2. **ADR-023 Fase F** — gelaagde ArchiMate-lees-API + gap/plateau-/migratie-views (frontend) +
+   **E-8 checklist-consistentiecheck** (read-only signalering: antwoord-ja ↔ draait_op-relatie) +
+   RBAC/audit-afronding. Open Exchange-export blijft buiten scope.
+3. **Latente `applicatie.checklist_dragend`-drift oplossen** (OPVOLGPUNTEN #2) — vóór code de vlag voor
+   `applicatie` gaat vertrouwen (aannemelijk in Fase E/F): seed ↔ migratie 0009 in lijn brengen.
+4. **Platform-beheerscherm relatie-kenmerk-catalogus** (OPVOLGPUNTEN #1) — `dispositie`/`relatie_rol`
+   beheerbaar maken (nu alleen geseed). Fase-F-werk.
+5. **checklist-dragend als beheerder-functie** (OPVOLGPUNTEN #3) — productkeuze + type-specifieke vragen;
+   Fase F / onboarding.
 
 ---
 
 ## Bekende risico's en aandachtspunten
 
-- **Na een `down -v`-reset opnieuw inloggen in de UI** — verlopen sessie (Redis/Keycloak-DB leeg),
-  géén bug.
-- **Live-test-teardown-residu**: integratietests laten 11 `element`-supertype-rijen achter (subtype +
-  relatie wél opgeruimd). Productiecode correct (element-cascade). `down -v` wist het.
-
----
-
-## Technische schuld
-
-- (a) Live-test-teardowns ruimen de in ADR-023 nieuwe `element`-supertabel niet op.
-- (b) Migratie-revisie-ID-conventie: ≤32 tekens (`alembic_version` is `varchar(32)`).
-- (c) Dode `KoppelingConflict`-referenties + checklistconfig stray docstring.
-- Pre-existing env-test `test_auth_pkce::…secure…` (cookie `Secure`-vlag in dev/test; DB-onafhankelijk).
-
----
-
-## Uitgestelde punten (achtergrond)
-
-Zie `docs/OPVOLGPUNTEN.md`: OP-3 (refresh-token), OP-13 (platform-tabel-grants), OP-14 (secrets),
-OP-21, OP-23, OP-24, OP-25, OP-26, OP-27, OP-28 (VPS), OP-29 (impact-lens label), OP-30 (auth-cookie env-test).
-
----
-
-## Geleerde patronen deze sessie
-
-- **Big-bang cutover in reviewbare slices** + één verplichte live-stop met DB-reset: elke slice
-  offline-groen, daarna één keer live verifiëren (datamigratie-equivalentie + richting, RLS/composiet-FK,
-  append-only audit).
-- **Verse-DB-verificatie legde twee mechanische defecten bloot** die offline onzichtbaar waren:
-  revisie-ID > `varchar(32)` en een multi-row `pg_insert` met niet-uniforme dict-keys.
+- **Na een `down -v`-reset opnieuw inloggen in de UI** (verlopen sessie) — géén bug.
+- **`applicatie.checklist_dragend=false` in de catalogus** terwijl applicaties wél checklist-dragend zijn
+  (hardgecodeerd pad). De vlag is niet betrouwbaar voor `applicatie` — zie OPVOLGPUNTEN #2.
+- **Pre-existing env-test** `test_auth_pkce` (Secure-cookie, DB-onafhankelijk) — omgevingsgebonden.
 
 ---
 
 ## Werkwijze (triggerdiscipline)
 
-Elke opdracht-`.md` begint op **regel 1** met `START: [taaknaam]`. **`AKKOORD: commit`** is exclusief
-de commit-trigger op een groen eindrapport. CC verifieert zélf de groene staat vóór elke commit. Dev:
-`cd-api` draait met `--reload`. Reset-procedure: `docs/LOKAAL-TESTEN.md`. Startpunt volgende sessie:
-`docs/_output/CompliData_Sessiestart_V009.zip` → **ADR-023 Fase C**.
+Elke opdracht-`.md` begint op **regel 1** met `START: [taaknaam]`. **`AKKOORD: commit`** is exclusief de
+commit-trigger op een groen (gate-)rapport. Schema-rakende slices = **gate** vóór commit; licht/additief
+= doorloop. CC verifieert zélf de groene staat vóór elke commit. Reset-procedure: `docs/LOKAAL-TESTEN.md`.
+Startpunt volgende sessie: `docs/_output/CompliData_Sessiestart_V010.zip` → **ADR-023 Fase E (E4 — Gap)**.

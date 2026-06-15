@@ -2,7 +2,7 @@
 name: complidata-tests
 description: Test-patronen voor CompliData (pytest unit-tests + TST-validatiecyclus). Beschrijft de werkelijke V001-staat.
 stack: pytest, asyncio, unittest.mock, SQLAlchemy models, vitest, @vue/test-utils
-bijgewerkt: V007
+bijgewerkt: V010
 ---
 
 # CompliData Tests Skill
@@ -172,3 +172,28 @@ empirisch geverifieerd tegen de draaiende stack (zie `docs/LOKAAL-TESTEN.md`).
 - **Allowlist-synctest per sorteerbare lijst**: `{e.value for e in <Sorteerveld>} == set(svc._SORTEERBARE_KOLOMMEN)`
   — borgt dat de schema-enum en de service-allowlist 1-op-1 blijven (geen rauwe kolomnaam in
   `ORDER BY`). [CD054]
+
+## V009/V010-patronen (ADR-023 Fase A–E, geverifieerd)
+
+- **Gate-per-schema-slice vs. doorloop-bij-licht-additief.** Een **schema-rakende** bouwslice (nieuwe
+  tabel/RLS/migratie/RBAC/audit, of iets dat werkend domein raakt): bouw volledig uit, draai de tests,
+  en **STOP met een gate-rapport VÓÓR de commit** — Bert verifieert en geeft pas dan `AKKOORD: commit`;
+  zo wordt elke nieuwe entiteit geverifieerd vóór de volgende erop bouwt. Een **doorloop-tot-eindrapport-
+  met-afsluitende-commit** geldt **alléén** voor lichte, volledig additieve fasen zonder open knopen
+  (alleen read-side/frontend/constants/docs — géén schema). De bouwopdracht-`.md` markeert expliciet
+  gate of doorloop. In beide gevallen: bij iets buiten de vastgelegde beslissingen (onvoorziene
+  model-/RLS-/semantiekkeuze) STOP + terugkoppelen.
+- **Engine-onaangeroerd = dubbele regressie-borging** (machine-geborgd, niet beweerd): (a) **offline
+  import-afwezigheidstest** — `import <service> as m; assert not hasattr(m, naam)` voor
+  `lifecycle_service`/`herbereken_lifecycle`/`bepaal_lifecycle`/`ComponentProfiel`/`Blokkade`/
+  `Checklistscore` (een tekstscan struikelt over docstrings — gebruik import-afwezigheid); (b) **live
+  test** — de nieuwe entiteit/koppeling doet géén `component_profiel`/lifecycle-state ontstaan of
+  muteren. Readiness wordt altijd puur read-only afgeleid; consistentiechecks zijn signalering.
+- **Live-test-teardown structureel** (V009-follow-up a): live element-subtype-tests ruimen hun
+  `element`-rijen op via `DELETE FROM element` (cascade subtype + relaties); bij een self-FK (RESTRICT)
+  **leaf→root**. Residu-check ná de run = **0**. Harness: `zet_tenant_context` + `zet_audit_context` +
+  `session.info['rls']=True` op een verse async-sessie; `skipif` als de cd_app-DB onbereikbaar is
+  (offline blijft alles groen via de offline-tests). Importeer `app.core.audit` zodat de capture-hook
+  actief is bij een live audit-test.
+- **Nieuwe migratie ⇒ dev-DB bijwerken vóór de live-run**: pas de migratie als `cd_admin` toe
+  (`alembic upgrade head`) zodat de skip-if-DB-tests de nieuwe tabellen zien; ID ≤32 tekens.

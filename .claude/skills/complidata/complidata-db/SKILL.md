@@ -2,7 +2,7 @@
 name: complidata-db
 description: Database-patronen voor CompliData (PostgreSQL 16, RLS, Alembic). Beschrijft de werkelijke V001-staat.
 stack: PostgreSQL 16, SQLAlchemy asyncio, Alembic
-bijgewerkt: V007
+bijgewerkt: V010
 ---
 
 # CompliData Database Skill
@@ -267,3 +267,37 @@ op pagina 1). Filters/sortering zitten **niet** in de cursor — reset volstaat.
   (`cd_postgres_data`), zodat `down -v && up -d` echt reset; de dev-seed
   (`dev_seed_testdata.py`) is een bewuste **handmatige** fixture (niet in de init-container,
   dev-only). Reset-procedure: zie `docs/LOKAAL-TESTEN.md`.
+
+## V009/V010-patronen (ADR-023 Fase A–E, geverifieerd)
+
+- **Element-supertype + getypeerd relatiemodel (ADR-023)**: één `element`-identiteitsruimte
+  (`UNIQUE(tenant_id,id)`, FORCE RLS); `component`/`datatype`/`gebruikersgroep`/`contract` én de
+  migratielaag (`plateau`/`work_package`/`deliverable`; `gap` volgt in E4) zijn **element-subtypes**
+  (shared-PK). Eén `relatie`-tabel — gericht `bron_id`→`doel_id`, composiet-FK's
+  `(tenant_id,bron|doel)`→`element`, `CHECK bron≠doel`, `UNIQUE(tenant,bron,doel,relatietype)` — met de
+  gecureerde **acht** ArchiMate-relatietypes (composition/aggregation/serving/assignment/flow/
+  realization/association/access). `element_type_enum` bevat alle waarden al sinds migratie `0011`.
+- **Element-subtype-bouwrecept (herhaalbaar — ADR-023 Besluit 9/12)** — elk nieuw subtype: eigen `id`
+  PK `gen_random_uuid()`; **composiet-FK `(tenant_id,id)` → `element(tenant_id,id)` `ON DELETE
+  CASCADE`** (`fk_<type>_element`); `ENABLE` + **`FORCE ROW LEVEL SECURITY`** + `tenant_isolation`-
+  policy + `REVOKE ALL`/`GRANT SELECT,INSERT,UPDATE,DELETE … TO cd_app`; **type-eigen velden alléén**
+  (subtype enkel als er type-eigen velden zijn — een "kaal" type blijft generiek `component`). Aanmaak
+  in de service: `Element(element_type=…)` → `flush` → subtype-rij met **dezelfde `id`**; delete via
+  het element-supertype (cascade element → subtype → relaties). Een nieuw migratielaag-subtype hoeft de
+  enum NIET te wijzigen.
+- **Composiet self-FK + RESTRICT bij hiërarchie** (work_package): een self-FK `(tenant_id, ouder_id)` →
+  eigen tabel `(tenant_id,id)` vereist een **`UNIQUE(tenant_id,id)`** op de tabel; `ON DELETE RESTRICT`
+  + een service-pre-check (409) voorkomt het stilzwijgend wegvagen van een subboom. RESTRICT en de
+  element-CASCADE **componeren** (RESTRICT wint en blokkeert de cascade; het kind wordt niet geweesd);
+  een `CHECK ouder<>id` is de directe-self-parent-backstop. Transitieve cycluspreventie = servicelaag
+  (visited-set), **géén** DB-trigger.
+- **Catalogus-scheiding (consistentie)**: relatie-kenmerk-vocabulaires (`dispositie`, `relatie_rol`)
+  horen in de **`relatiekenmerk_optie`**-catalogus (`RelatieKenmerkDimensie`), níét in ContractConfig
+  (dat draagt alleen contract-eigen `dekking`/`kostenmodel`). De relatie-kenmerk-validatie routeert per
+  `{"type":"catalogus","catalogus":"relatiekenmerk|contractconfig","dimensie":…}`. PostgreSQL kan
+  enum-waarden niet droppen → een verhuisde dimensie-waarde blijft als **ongebruikte** enum-waarde staan
+  (fresh deploy schoon; documenteer dit in de migratie).
+- **Migratie-ID ≤32 tekens** (`alembic_version` = `varchar(32)`) is een **harde** conventie; korte,
+  sprekende ID's (`0018_adr023_plateau` … `0021_adr023_deliverable`). Bij een **herschreven** migratie:
+  de dev-DB **schoon reconcilieren** (oude effecten via SQL terugdraaien → `alembic_version` terug naar
+  de voorganger → de nieuwe migratie toepassen) i.p.v. een vuile downgrade draaien.
