@@ -221,7 +221,11 @@ onMounted(init)
 
       <div class="flex flex-col gap-[var(--cd-space-xs)]">
         <label for="f-leverancier" class="font-semibold">Leverancier</label>
-        <InputText id="f-leverancier" v-model="form.leverancier" data-testid="veld-leverancier" />
+        <InputText id="f-leverancier" v-model="form.leverancier" data-testid="veld-leverancier" aria-describedby="f-leverancier-help" />
+        <p id="f-leverancier-help" data-testid="leverancier-help" class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">
+          Vrije inventarisatie-notitie (interne/feitelijke benaming). Staat los van de contractuele
+          leverancier — die leg je vast via het contract.
+        </p>
       </div>
 
       <div class="flex flex-col gap-[var(--cd-space-xs)]">

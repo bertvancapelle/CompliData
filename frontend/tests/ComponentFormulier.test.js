@@ -80,6 +80,14 @@ describe('ComponentFormulier', () => {
     expect(router.currentRoute.value.params.id).toBe('app-new')
   })
 
+  it('het leverancier-veld verduidelijkt de inventarisatie-notitie (a11y-gekoppeld; ADR-023 Fase D)', async () => {
+    const { w } = await mountForm()
+    const help = w.find('[data-testid="leverancier-help"]')
+    expect(help.exists()).toBe(true)
+    expect(help.text()).toContain('contractuele')
+    expect(w.find('[data-testid="veld-leverancier"]').attributes('aria-describedby')).toBe('f-leverancier-help')
+  })
+
   it('naam is verplicht (geen API-call bij leeg)', async () => {
     const { w } = await mountForm()
     await w.find('[data-testid="veld-componenttype"]').setValue('database')

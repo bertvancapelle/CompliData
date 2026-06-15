@@ -71,6 +71,14 @@ describe('ApplicatieFormulier', () => {
     expect(teksten).toContain('On-premise')
   })
 
+  it('verduidelijkt het leverancier-veld als inventarisatie-notitie (a11y-gekoppeld; ADR-023 Fase D)', async () => {
+    const { wrapper } = await mountForm()
+    const help = wrapper.find('[data-testid="leverancier-help"]')
+    expect(help.exists()).toBe(true)
+    expect(help.text()).toContain('contractuele')
+    expect(wrapper.find('[data-testid="veld-leverancier"]').attributes('aria-describedby')).toBe('f-leverancier-help')
+  })
+
   it('weigert opslaan bij een lege verplichte naam (clientvalidatie)', async () => {
     const { wrapper } = await mountForm()
     await wrapper.find('[data-testid="applicatie-form"]').trigger('submit')
