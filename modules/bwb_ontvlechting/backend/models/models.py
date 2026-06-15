@@ -445,6 +445,44 @@ class Plateau(Base, TenantMixin, TimestampMixin):
     toelichting: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
+class WorkPackage(Base, TenantMixin, TimestampMixin):
+    """ADR-023 Fase E (E2, Besluit 2/11) — migratielaag-element: een eenheid van
+    migratiewerk, hiërarchisch opdeelbaar in subpakketten. Element-subtype (shared-PK via
+    composiet-FK `(tenant_id, id)` → `element`, FORCE RLS via de migratie; cross-tenant
+    uitgesloten).
+
+    Type-eigen velden: `naam` (verplicht) + `toelichting`. `bovenliggend_id` is een
+    **composiet self-FK** `(tenant_id, bovenliggend_id)` → `work_package(tenant_id, id)`
+    (tenant-consistent, Besluit 12) met **`ON DELETE RESTRICT`**: een werkpakket met
+    directe subpakketten kan niet verwijderd worden (geen stilzwijgend wegvagen van de
+    subboom — de service geeft 409 `HEEFT_SUBPAKKETTEN`; RESTRICT is de DB-backstop).
+    Cycluspreventie (zelf-ouder + transitieve kring) zit in de servicelaag (E-4); de
+    DB-CHECK borgt alléén de directe self-parent als extra vangnet."""
+
+    __tablename__ = "work_package"
+    __table_args__ = (
+        # Composiet-FK-target voor de self-FK (tenant-consistent).
+        UniqueConstraint("tenant_id", "id", name="uq_work_package_tenant_id"),
+        CheckConstraint(
+            "bovenliggend_id IS NULL OR bovenliggend_id <> id",
+            name="ck_work_package_geen_self_parent",
+        ),
+        ForeignKeyConstraint(
+            ["tenant_id", "id"], ["element.tenant_id", "element.id"],
+            name="fk_work_package_element", ondelete="CASCADE",
+        ),
+        ForeignKeyConstraint(
+            ["tenant_id", "bovenliggend_id"], ["work_package.tenant_id", "work_package.id"],
+            name="fk_work_package_bovenliggend", ondelete="RESTRICT",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = _pk()
+    naam: Mapped[str] = mapped_column(String(255), nullable=False)
+    toelichting: Mapped[str | None] = mapped_column(Text, nullable=True)
+    bovenliggend_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+
+
 # ADR-023 B-mig-2 slice 1: het `Koppeling`-model is vervangen door `flow`-relaties in het
 # unified relatiemodel (`Relatie`). De enums Koppelrichting/Koppelprotocol/ImpactVerbreking
 # blijven — ze typeren nu de flow-kenmerken (richting/protocol/impact_bij_verbreking).
