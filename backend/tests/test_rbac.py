@@ -49,6 +49,7 @@ VERWACHT = {
     Entiteit.PLATEAU: _INHOUD,              # ADR-023 Fase E — migratielaag
     Entiteit.WORK_PACKAGE: _INHOUD,         # ADR-023 Fase E — migratielaag
     Entiteit.DELIVERABLE: _INHOUD,          # ADR-023 Fase E — migratielaag
+    Entiteit.GAP: _INHOUD,                  # ADR-023 Fase E — migratielaag (E4)
     Entiteit.CHECKLISTVRAAG: _INHOUD,  # ADR-022 W1: tenant-eigen vragenset (CRUD)
     Entiteit.AUDITLOG: {
         Rol.VIEWER: _GEEN, Rol.MEDEWERKER: _GEEN, Rol.BEHEERDER: _L, Rol.AUDITOR: _L,
@@ -63,7 +64,7 @@ VERWACHT = {
 
 
 def test_matrix_volledig_inclusief_negatief():
-    """Elke entiteit × rol × actie (16×4×4 = 256 combinaties) tegen de spec."""
+    """Elke entiteit × rol × actie (17×4×4 = 272 combinaties) tegen de spec."""
     assert set(VERWACHT) == set(Entiteit)  # geen entiteit gemist
     for entiteit, per_rol in VERWACHT.items():
         for rol in Rol:

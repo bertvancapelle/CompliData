@@ -508,6 +508,48 @@ class WorkPackage(Base, TenantMixin, TimestampMixin):
     bovenliggend_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
 
 
+class Gap(Base, TenantMixin, TimestampMixin):
+    """ADR-023 Fase E (E4, Besluit 2/11) — migratielaag-element: een geregistreerde kloof
+    tussen een baseline-situatie en een doel-situatie. Element-subtype (shared-PK via
+    composiet-FK `(tenant_id, id)` → `element`, FORCE RLS via de migratie; cross-tenant
+    uitgesloten).
+
+    Type-eigen velden: `naam` (verplicht) + `toelichting`. **2-ariteit hard in het schema**
+    (Besluit 1): `baseline_plateau_id` en `doel_plateau_id` zijn twee verplichte composiet-FK-
+    kolommen `(tenant_id, <kolom>) → element(tenant_id, id)` (NOT NULL). Dat het écht plateaus
+    zijn wordt door de service afgedwongen (422 `ONGELDIG_PLATEAU`); baseline ≠ doel is een
+    service-check (422 `BASELINE_GELIJK_AAN_DOEL`) met de DB-CHECK als backstop.
+
+    Gap-leden (component/contract) lopen via het unified relatiemodel als `association`-relatie
+    (bron=gap → doel=lid) — géén aparte membership-tabel, géén nieuw relatietype (Besluit 8).
+    De twee readiness-cijfers (technisch + contractueel) zijn **puur read-only afgeleid** uit
+    de bestaande lifecycle resp. de doel-plateau-bevestiging — er wordt niets opgeslagen en de
+    engine wordt niet geraakt."""
+
+    __tablename__ = "gap"
+    __table_args__ = (
+        CheckConstraint("baseline_plateau_id <> doel_plateau_id", name="ck_gap_baseline_ne_doel"),
+        ForeignKeyConstraint(
+            ["tenant_id", "id"], ["element.tenant_id", "element.id"],
+            name="fk_gap_element", ondelete="CASCADE",
+        ),
+        ForeignKeyConstraint(
+            ["tenant_id", "baseline_plateau_id"], ["element.tenant_id", "element.id"],
+            name="fk_gap_baseline_plateau",
+        ),
+        ForeignKeyConstraint(
+            ["tenant_id", "doel_plateau_id"], ["element.tenant_id", "element.id"],
+            name="fk_gap_doel_plateau",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = _pk()
+    naam: Mapped[str] = mapped_column(String(255), nullable=False)
+    toelichting: Mapped[str | None] = mapped_column(Text, nullable=True)
+    baseline_plateau_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    doel_plateau_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+
+
 # ADR-023 B-mig-2 slice 1: het `Koppeling`-model is vervangen door `flow`-relaties in het
 # unified relatiemodel (`Relatie`). De enums Koppelrichting/Koppelprotocol/ImpactVerbreking
 # blijven — ze typeren nu de flow-kenmerken (richting/protocol/impact_bij_verbreking).
