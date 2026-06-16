@@ -47,6 +47,14 @@ const filterLaag = ref('') // ADR-023 Fase C: '' = alle ArchiMate-lagen
 const filterHosting = ref('')
 const filterEigenaar = ref('')
 const filterZoek = ref('')
+
+// Server-side sortering (ADR-017) — null = server-default (created_at asc), niet
+// meegestuurd. Spiegelt BlokkadeOverzichtView: @sort → sort/order + cursor-reset + refetch.
+const sortVeld = ref(null)
+const sortRichting = ref(null) // 'asc' | 'desc'
+const primeSortOrder = computed(() =>
+  sortRichting.value === 'asc' ? 1 : sortRichting.value === 'desc' ? -1 : 0,
+)
 // ArchiMate-laag-filteropties afgeleid uit de catalogus-typing (distinct lagen).
 const laagOpties = computed(() => {
   const seen = new Map()
@@ -76,6 +84,10 @@ async function laad({ reset = false } = {}) {
     if (filterHosting.value) params.hostingmodel = filterHosting.value
     if (filterEigenaar.value.trim()) params.eigenaar = filterEigenaar.value.trim()
     if (filterZoek.value.trim()) params.zoek = filterZoek.value.trim()
+    if (sortVeld.value) {
+      params.sort = sortVeld.value
+      params.order = sortRichting.value
+    }
     const pagina = await api.componenten.lijst(params)
     items.value = reset ? pagina.items : items.value.concat(pagina.items)
     cursor.value = pagina.volgende_cursor
@@ -85,6 +97,13 @@ async function laad({ reset = false } = {}) {
     laden.value = false
     eersteGeladen.value = true
   }
+}
+
+function onSort(event) {
+  sortVeld.value = event.sortField
+  sortRichting.value = event.sortOrder === 1 ? 'asc' : 'desc'
+  cursor.value = null
+  laad({ reset: true })
 }
 
 function herfilter() {
@@ -267,12 +286,18 @@ onMounted(async () => {
       {{ fout }}
     </p>
 
+    <!-- Server-side sortering (ADR-017): lazy + @sort → sort/order + cursor-reset.
+         Laag is bewust NIET sorteerbaar (afgeleide ArchiMate-projectie, geen kolom). -->
     <DataTable
       :value="items"
+      lazy
+      :sort-field="sortVeld"
+      :sort-order="primeSortOrder"
       data-testid="componenten-tabel"
       class="bg-[var(--cd-color-surface)] rounded-[var(--cd-radius-card)] shadow-[var(--cd-shadow-sm)]"
+      @sort="onSort"
     >
-      <Column field="naam" header="Naam">
+      <Column field="naam" header="Naam" sortable>
         <template #body="{ data }">
           <router-link
             :to="rijRoute(data)"
@@ -283,7 +308,7 @@ onMounted(async () => {
           </router-link>
         </template>
       </Column>
-      <Column header="Type">
+      <Column header="Type" sort-field="componenttype" sortable>
         <template #body="{ data }">
           <Tag :value="data.componenttype_label" :severity="data.heeft_applicatie_subtype ? 'info' : 'secondary'" />
         </template>
@@ -299,19 +324,19 @@ onMounted(async () => {
           </span>
         </template>
       </Column>
-      <Column header="Eigenaar">
+      <Column header="Eigenaar" sort-field="eigenaar" sortable>
         <template #body="{ data }">{{ data.eigenaar_organisatie || '—' }}</template>
       </Column>
-      <Column header="Hosting">
+      <Column header="Hosting" sort-field="hostingmodel" sortable>
         <template #body="{ data }">{{ hosting(data.hostingmodel) }}</template>
       </Column>
-      <Column header="Complexiteit">
+      <Column header="Complexiteit" sort-field="complexiteit" sortable>
         <template #body="{ data }">{{ niveau(data.complexiteit) }}</template>
       </Column>
-      <Column header="Prioriteit">
+      <Column header="Prioriteit" sort-field="prioriteit" sortable>
         <template #body="{ data }">{{ niveau(data.prioriteit) }}</template>
       </Column>
-      <Column header="Status">
+      <Column header="Status" sort-field="lifecycle_status" sortable>
         <template #body="{ data }">
           <Tag v-if="data.lifecycle_status" :value="lifecycleLabel(data.lifecycle_status)" :severity="lifecycleSeverity(data.lifecycle_status)" />
           <span v-else data-testid="status-leeg">—</span>

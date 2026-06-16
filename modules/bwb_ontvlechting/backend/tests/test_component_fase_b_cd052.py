@@ -46,11 +46,27 @@ def test_maak_aan_applicatie_type_convergeert(monkeypatch):
 
 
 def test_component_sort_allowlist_synchroon():
-    # ADR-017 B2: de schema-enum en de service-allowlist blijven 1-op-1.
+    # ADR-017 B2: de schema-enum, de service-allowlist én de parsers blijven 1-op-1.
     from schemas.component import ComponentSorteerveld
     from services import component_service as svc
 
-    assert {e.value for e in ComponentSorteerveld} == set(svc._SORTEERBARE_KOLOMMEN)
+    enum_namen = {e.value for e in ComponentSorteerveld}
+    assert enum_namen == set(svc._SORTEERBARE_KOLOMMEN)
+    assert enum_namen == set(svc._WAARDE_PARSERS)
+    # De twee additieve velden zitten in de allowlist en mappen op echte Component-kolommen.
+    assert {"eigenaar", "hostingmodel"} <= enum_namen
+    assert svc._SORTEERBARE_KOLOMMEN["eigenaar"].key == "eigenaar_organisatie"
+    assert svc._SORTEERBARE_KOLOMMEN["hostingmodel"].key == "hostingmodel"
+
+
+def test_sorteer_waarde_mapt_eigenaar_en_hostingmodel():
+    # Cursor-sleutel: `eigenaar` → kolom eigenaar_organisatie; hostingmodel direct.
+    from models.models import HostingModel
+    from services.component_service import _sorteer_waarde
+
+    comp = SimpleNamespace(eigenaar_organisatie="Gemeente X", hostingmodel=HostingModel.saas)
+    assert _sorteer_waarde(comp, None, None, "eigenaar") == "Gemeente X"
+    assert _sorteer_waarde(comp, None, None, "hostingmodel") == HostingModel.saas
 
 
 # De statische SUBTYPE_BESCHERMD-type-guard is vervangen door de toestand-gebaseerde
@@ -260,3 +276,66 @@ def test_component_contract_op_niet_applicatie_component():
         return True
 
     assert asyncio.run(_sessie_run(_flow))
+
+
+@integratie
+def test_server_side_sort_eigenaar_en_hostingmodel_live():
+    """Server-side keyset-sortering op de twee additieve velden, beide richtingen.
+    Eigenaar = alfabetisch; hostingmodel = enum-definitievolgorde. `zoek` isoleert de
+    drie testcomponenten. Onbekend/afgeleid sorteerveld (Laag) ⇒ ValueError (route → 400)."""
+    from models.models import HostingModel
+    from schemas.component import ComponentCreate
+    from services import component_service as svc
+
+    sfx = f"SORT{uuid.uuid4().hex[:8]}"
+    # (eigenaar, hostingmodel) — bewust niet vooraf gesorteerd.
+    rijen = [
+        (f"{sfx}-een", "MMM-org", HostingModel.saas),
+        (f"{sfx}-twee", "AAA-org", HostingModel.on_premise),
+        (f"{sfx}-drie", "ZZZ-org", HostingModel.iaas),
+    ]
+
+    async def _flow(s):
+        ids = []
+        try:
+            for naam, eig, host in rijen:
+                c = await svc.maak_aan(
+                    s, _TID,
+                    ComponentCreate(naam=naam, componenttype="database",
+                                    eigenaar_organisatie=eig, hostingmodel=host),
+                )
+                ids.append(c["id"])
+
+            async def _eig(order):
+                items, _ = await svc.lijst(s, _TID, sort="eigenaar", order=order, zoek=sfx, limit=50)
+                return [i["eigenaar_organisatie"] for i in items if i["id"] in ids]
+
+            async def _host(order):
+                items, _ = await svc.lijst(s, _TID, sort="hostingmodel", order=order, zoek=sfx, limit=50)
+                return [i["hostingmodel"] for i in items if i["id"] in ids]
+
+            eig_asc, eig_desc = await _eig("asc"), await _eig("desc")
+            host_asc, host_desc = await _host("asc"), await _host("desc")
+
+            onbekend = None
+            try:
+                await svc.lijst(s, _TID, sort="laag", order="asc", zoek=sfx)
+            except ValueError as e:
+                onbekend = str(e)
+            return eig_asc, eig_desc, host_asc, host_desc, onbekend
+        finally:
+            for cid in ids:
+                await svc.verwijder(s, _TID, cid)
+
+    eig_asc, eig_desc, host_asc, host_desc, onbekend = asyncio.run(_sessie_run(_flow))
+
+    # Eigenaar alfabetisch (NULLS-LAST no-op; alle NOT NULL).
+    assert eig_asc == ["AAA-org", "MMM-org", "ZZZ-org"]
+    assert eig_desc == ["ZZZ-org", "MMM-org", "AAA-org"]
+    # Hostingmodel op enum-definitievolgorde: on_premise < saas < iaas.
+    _idx = {h: i for i, h in enumerate(HostingModel)}
+    assert host_asc == sorted(host_asc, key=lambda h: _idx[HostingModel(h)])
+    assert host_desc == list(reversed(host_asc))
+    assert host_asc[0] == HostingModel.on_premise.value  # vroegst in de enum
+    # Afgeleide kolom (Laag) is geen sorteerveld → geweigerd (route geeft 400).
+    assert onbekend is not None

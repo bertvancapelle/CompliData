@@ -58,6 +58,9 @@ _SORTEERBARE_KOLOMMEN = {
     "created_at": Component.created_at,
     "naam": Component.naam,
     "componenttype": Component.componenttype,
+    # Beide bestaande Component-kolommen (NOT NULL) — additief, geen schema/migratie.
+    "eigenaar": Component.eigenaar_organisatie,
+    "hostingmodel": Component.hostingmodel,
     "complexiteit": Applicatie.complexiteit,
     "prioriteit": Applicatie.prioriteit,
     # ADR-022 Fase A: lifecycle_status leeft op het generieke profiel (shared-PK).
@@ -67,6 +70,8 @@ _WAARDE_PARSERS = {
     "created_at": datetime.fromisoformat,
     "naam": str,
     "componenttype": str,
+    "eigenaar": str,
+    "hostingmodel": HostingModel,  # enum (cursor round-trip via .value)
     "complexiteit": NiveauEnum,
     "prioriteit": NiveauEnum,
     "lifecycle_status": LifecycleStatus,
@@ -258,7 +263,9 @@ def _sorteer_waarde(comp: Component, app: Applicatie | None, lifecycle, sort: st
         return lifecycle
     if sort in ("complexiteit", "prioriteit"):
         return getattr(app, sort) if app is not None else None
-    return getattr(comp, sort)
+    if sort == "eigenaar":
+        return comp.eigenaar_organisatie  # schema-veld `eigenaar` → kolom `eigenaar_organisatie`
+    return getattr(comp, sort)  # naam / componenttype / hostingmodel / created_at
 
 
 async def lijst(

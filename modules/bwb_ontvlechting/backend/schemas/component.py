@@ -23,6 +23,8 @@ class ComponentSorteerveld(str, Enum):
     created_at = "created_at"
     naam = "naam"
     componenttype = "componenttype"
+    eigenaar = "eigenaar"            # eigenaar_organisatie (tekst, alfabetisch)
+    hostingmodel = "hostingmodel"   # enum-volgorde (PostgreSQL enum-definitievolgorde)
     complexiteit = "complexiteit"
     prioriteit = "prioriteit"
     lifecycle_status = "lifecycle_status"

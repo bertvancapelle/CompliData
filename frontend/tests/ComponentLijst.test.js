@@ -10,6 +10,7 @@ vi.mock('@/api', () => ({
 }))
 
 import { api } from '@/api'
+import { Column, DataTable } from '@/primevue'
 import ComponentLijst from '@modules/bwb_ontvlechting/frontend/views/ComponentLijst.vue'
 import { useAuthStore } from '@/store/auth'
 
@@ -241,5 +242,49 @@ describe('ComponentLijst', () => {
     await mountLijst({ pad: '/componenten?status=onzin' })
     const call = api.componenten.lijst.mock.calls.at(-1)[0]
     expect(call.status).toBeUndefined()
+  })
+
+  // ── Server-side kolomsortering (ADR-017) ───────────────────────────────────
+  it('default-laad stuurt GEEN sort/order mee (server-default created_at asc)', async () => {
+    api.componenten.lijst.mockResolvedValue({ items: [], volgende_cursor: null })
+    await mountLijst()
+    const call = api.componenten.lijst.mock.calls.at(-1)[0]
+    expect(call.sort).toBeUndefined()
+    expect(call.order).toBeUndefined()
+  })
+
+  it('een sorteerklik stuurt sort/order mee, reset de cursor en herlaadt', async () => {
+    api.componenten.lijst.mockResolvedValue({ items: [], volgende_cursor: null })
+    const w = await mountLijst()
+    w.findComponent(DataTable).vm.$emit('sort', { sortField: 'hostingmodel', sortOrder: -1 })
+    await flushPromises()
+    expect(api.componenten.lijst).toHaveBeenLastCalledWith(
+      expect.objectContaining({ sort: 'hostingmodel', order: 'desc', after: undefined }),
+    )
+  })
+
+  it('de 7 kolommen zijn sorteerbaar en Laag bewust niet', async () => {
+    api.componenten.lijst.mockResolvedValue({ items: [], volgende_cursor: null })
+    const w = await mountLijst()
+    const sortFields = w.findAllComponents(Column).map((c) => ({
+      header: c.props('header'),
+      sortable: c.props('sortable'),
+    }))
+    const sorteerbaar = sortFields.filter((c) => c.sortable).map((c) => c.header)
+    expect(sorteerbaar).toEqual(
+      expect.arrayContaining(['Naam', 'Type', 'Eigenaar', 'Hosting', 'Complexiteit', 'Prioriteit', 'Status']),
+    )
+    expect(sorteerbaar).toHaveLength(7)
+    expect(sorteerbaar).not.toContain('Laag')
+  })
+
+  it('sorteren behoudt een actief filter', async () => {
+    api.componenten.lijst.mockResolvedValue({ items: [], volgende_cursor: null })
+    const w = await mountLijst({ pad: '/componenten?type=applicatie' })
+    w.findComponent(DataTable).vm.$emit('sort', { sortField: 'naam', sortOrder: 1 })
+    await flushPromises()
+    expect(api.componenten.lijst).toHaveBeenLastCalledWith(
+      expect.objectContaining({ sort: 'naam', order: 'asc', componenttype: 'applicatie' }),
+    )
   })
 })
