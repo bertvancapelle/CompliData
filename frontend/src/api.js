@@ -301,6 +301,7 @@ export const api = {
   // handhaaft alle regels (CHECKLISTVRAAG_BESTAAT-409, orphan-409, afgeleid, type).
   checklistconfig: {
     lijst: () => request('/checklistconfig'),
+    betekenissen: () => request('/checklistconfig/betekenissen'),
     impact: (componenttype) =>
       request(`/checklistconfig/impact?componenttype=${encodeURIComponent(componenttype)}`),
     maakVraag: (data) =>
@@ -311,6 +312,11 @@ export const api = {
       request(`/checklistconfig/vragen/${id}/antwoordtype`, {
         method: 'PATCH',
         body: JSON.stringify({ antwoordtype }),
+      }),
+    zetBetekenis: (id, betekenis) =>
+      request(`/checklistconfig/vragen/${id}/betekenis`, {
+        method: 'PATCH',
+        body: JSON.stringify({ betekenis }),
       }),
     zetActief: (id, actief) =>
       request(`/checklistconfig/vragen/${id}/actief`, {

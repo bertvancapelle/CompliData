@@ -15,7 +15,7 @@ CHECKLIST_VRAGEN = [
     {"code": "1.5", "categorie_nr": 1, "categorie_naam": "Applicatie-identiteit en eigenaarschap", "vraag": "Is de applicatie exclusief in gebruik bij Tiel, of ook bij andere gemeenten/BWB?", "prioriteit": "hoog"},
     {"code": "1.6", "categorie_nr": 1, "categorie_naam": "Applicatie-identiteit en eigenaarschap", "vraag": "Is er een verwerkersovereenkomst aanwezig en met wie?", "prioriteit": "hoog"},
     {"code": "2.1", "categorie_nr": 2, "categorie_naam": "Technische inrichting en hosting", "vraag": "Wat is het hostingmodel: SaaS / on-premise (BWB) / IaaS / PaaS / hybride?", "prioriteit": "hoog"},
-    {"code": "2.2", "categorie_nr": 2, "categorie_naam": "Technische inrichting en hosting", "vraag": "Op welke infrastructuur draait de applicatie (server, datacenter, cloudplatform)?", "prioriteit": "hoog"},
+    {"code": "2.2", "categorie_nr": 2, "categorie_naam": "Technische inrichting en hosting", "vraag": "Op welke infrastructuur draait de applicatie (server, datacenter, cloudplatform)?", "prioriteit": "hoog", "betekenis": "technische_plaatsing"},
     {"code": "2.3", "categorie_nr": 2, "categorie_naam": "Technische inrichting en hosting", "vraag": "Wat is het besturingssysteem en de technische stack?", "prioriteit": "midden"},
     {"code": "2.4", "categorie_nr": 2, "categorie_naam": "Technische inrichting en hosting", "vraag": "Zijn er specifieke hardware- of netwerkafhankelijkheden?", "prioriteit": "midden"},
     {"code": "2.5", "categorie_nr": 2, "categorie_naam": "Technische inrichting en hosting", "vraag": "Is er een acceptatieomgeving of testomgeving aanwezig?", "prioriteit": "midden"},
@@ -114,6 +114,9 @@ async def seed_checklist_vragen(session, tenant_id) -> int:
             "tenant_id": tenant_id,
             "componenttype": "applicatie",
             "prioriteit": ChecklistPrioriteit(v["prioriteit"]),
+            # ADR-023 Fase F (F-3): de baseline draagt de betekenis al → fresh deploys zijn
+            # meteen gelijk aan de gemigreerde stand. Alle rijen dezelfde sleutels (pg_insert).
+            "betekenis": v.get("betekenis"),
         }
         for v in CHECKLIST_VRAGEN
     ]

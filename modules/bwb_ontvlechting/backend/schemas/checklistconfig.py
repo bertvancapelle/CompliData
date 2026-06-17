@@ -41,6 +41,8 @@ class ConfigVraagRead(BaseModel):
     prioriteit: ChecklistPrioriteit
     antwoordtype: AntwoordType
     actief: bool
+    # ADR-023 Fase F (F-3): toegekende betekenis (optie_sleutel) of None.
+    betekenis: str | None = None
     opties: list[ConfigOptieRead] = []
 
 
@@ -121,6 +123,31 @@ class AntwoordTypeUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     antwoordtype: AntwoordType
+
+
+class BetekenisOptieRead(BaseModel):
+    """Eén betekenis uit de platform-brede catalogus (keuzeveld, read-only)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    optie_sleutel: str
+    label: str
+    volgorde: int
+
+
+class BetekenisUpdate(BaseModel):
+    """ADR-023 Fase F (F-3) — de betekenis van een vraag (her)toekennen of wissen.
+    `betekenis=None` wist de toekenning; een waarde wordt tegen de actieve catalogus
+    gevalideerd. Geen fan-out (classificatie, voedt de engine niet)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    betekenis: str | None = None
+
+    @field_validator("betekenis")
+    @classmethod
+    def _v_betekenis(cls, v: str | None) -> str | None:
+        return v if v is None else _optionele_tekst(v, 60)
 
 
 class OptieCreate(BaseModel):

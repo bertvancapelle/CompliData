@@ -25,6 +25,7 @@ const TYPE_LABEL = {
 const toast = useToast()
 const vragen = ref([])
 const componenttypeOpties = ref([]) // [{ optie_sleutel, label }]
+const betekenisOpties = ref([]) // [{ optie_sleutel, label }] — ADR-023 Fase F (F-3)
 const laden = ref(false)
 const fout = ref(null)
 const actieFout = ref(null)
@@ -98,12 +99,14 @@ async function laad() {
   laden.value = true
   fout.value = null
   try {
-    const [lijst, opties] = await Promise.all([
+    const [lijst, opties, betekenissen] = await Promise.all([
       api.checklistconfig.lijst(),
       api.componenten.opties(),
+      api.checklistconfig.betekenissen(),
     ])
     vragen.value = lijst
     componenttypeOpties.value = opties?.componenttype || []
+    betekenisOpties.value = betekenissen || []
   } catch (e) {
     fout.value = e?.message || 'Laden van de configuratie mislukt.'
   } finally {
@@ -159,6 +162,20 @@ async function zetType(vraag, nieuwType) {
   } catch (e) {
     _toonFout(e)
     _vervangVraag({ ...vraag }) // forceer re-render → dropdown terug naar huidige type
+  }
+}
+
+async function zetBetekenis(vraag, waarde) {
+  // Leeg = betekenis wissen (null); anders de gekozen sleutel. Geen fan-out.
+  const nieuw = waarde || null
+  if (nieuw === (vraag.betekenis || null)) return
+  actieFout.value = null
+  try {
+    const updated = await api.checklistconfig.zetBetekenis(vraag.id, nieuw)
+    _vervangVraag(updated)
+  } catch (e) {
+    _toonFout(e)
+    _vervangVraag({ ...vraag }) // forceer re-render → dropdown terug naar huidige waarde
   }
 }
 
@@ -331,6 +348,20 @@ laad()
               @change="zetType(vraag, $event.target.value)"
             >
               <option v-for="t in ANTWOORDTYPES" :key="t" :value="t">{{ TYPE_LABEL[t] }}</option>
+            </select>
+          </label>
+          <!-- ADR-023 Fase F (F-3): betekenis-toekenning. Leeg = geen betekenis; de server
+               handhaaft de uniciteit per (tenant, componenttype) en de catalogus-validatie. -->
+          <label class="flex items-center gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
+            Betekenis
+            <select
+              :data-testid="`cfg-betekenis-${vraag.code}`"
+              :value="vraag.betekenis || ''"
+              class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white"
+              @change="zetBetekenis(vraag, $event.target.value)"
+            >
+              <option value="">— geen —</option>
+              <option v-for="b in betekenisOpties" :key="b.optie_sleutel" :value="b.optie_sleutel">{{ b.label }}</option>
             </select>
           </label>
         </div>

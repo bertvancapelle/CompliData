@@ -22,6 +22,8 @@ from app.middleware.tenant import get_tenant_session
 from schemas.checklistconfig import (
     ActiefUpdate,
     AntwoordTypeUpdate,
+    BetekenisOptieRead,
+    BetekenisUpdate,
     ConfigOptieRead,
     ConfigVraagRead,
     OptieCreate,
@@ -59,6 +61,16 @@ async def impact(
     return {"aantal_componenten": await svc.impact_telling(session, componenttype)}
 
 
+@router.get("/betekenissen", response_model=list[BetekenisOptieRead])
+async def lijst_betekenissen(
+    _user=Depends(_LEZEN),
+    session: AsyncSession = Depends(get_tenant_session),
+):
+    """Actieve betekenissen uit de platform-brede catalogus (voor het keuzeveld).
+    Statisch subpad — vóór `/vragen/{id}`."""
+    return await svc.lijst_betekenissen(session)
+
+
 @router.post("/vragen", response_model=ConfigVraagRead, status_code=201)
 async def maak_vraag(
     body: VraagCreate,
@@ -89,6 +101,18 @@ async def zet_antwoordtype(
     session: AsyncSession = Depends(get_tenant_session),
 ):
     return await svc.zet_antwoordtype(session, checklistvraag_id, body)
+
+
+@router.patch("/vragen/{checklistvraag_id}/betekenis", response_model=ConfigVraagRead)
+async def zet_betekenis(
+    checklistvraag_id: uuid.UUID,
+    body: BetekenisUpdate,
+    _user=Depends(_WIJZIGEN),
+    session: AsyncSession = Depends(get_tenant_session),
+):
+    """(Her)toekennen of wissen van de betekenis van een vraag (ADR-023 Fase F / F-3).
+    Classificatie — geen lifecycle-herberekening."""
+    return await svc.zet_betekenis(session, checklistvraag_id, body)
 
 
 @router.post("/vragen/{checklistvraag_id}/actief", response_model=ConfigVraagRead)

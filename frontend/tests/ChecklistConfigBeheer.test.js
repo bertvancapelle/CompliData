@@ -12,10 +12,12 @@ vi.mock('@/api', () => ({
   api: {
     checklistconfig: {
       lijst: vi.fn(),
+      betekenissen: vi.fn(),
       impact: vi.fn(),
       maakVraag: vi.fn(),
       werkVraagBij: vi.fn(),
       zetAntwoordtype: vi.fn(),
+      zetBetekenis: vi.fn(),
       zetActief: vi.fn(),
       voegOptieToe: vi.fn(),
       wijzigOptie: vi.fn(),
@@ -33,18 +35,23 @@ import ChecklistConfigBeheer from '@/views/ChecklistConfigBeheer.vue'
 const VRAGEN = [
   {
     id: 'v1', componenttype: 'applicatie', code: '9.1', categorie_nr: 9, categorie_naam: 'Overig',
-    vraag: 'V negen', prioriteit: 'midden', antwoordtype: 'geen', actief: true, opties: [],
+    vraag: 'V negen', prioriteit: 'midden', antwoordtype: 'geen', actief: true, betekenis: null, opties: [],
   },
   {
     id: 'v2', componenttype: 'applicatie', code: '2.1', categorie_nr: 2, categorie_naam: 'Hosting',
     vraag: 'Hosting', prioriteit: 'midden', antwoordtype: 'enkelvoudige_keuze', actief: true,
+    betekenis: 'technische_plaatsing',
     opties: [{ id: 'o1', optie_sleutel: 'saas', label: 'SaaS', volgorde: 0, actief: true, afgeleid_bron: 'HostingModel' }],
   },
   {
     id: 'v3', componenttype: 'database', code: '1.3', categorie_nr: 1, categorie_naam: 'Eigenaar',
-    vraag: 'Eigenaar', prioriteit: 'midden', antwoordtype: 'enkelvoudige_keuze', actief: true,
+    vraag: 'Eigenaar', prioriteit: 'midden', antwoordtype: 'enkelvoudige_keuze', actief: true, betekenis: null,
     opties: [{ id: 'o2', optie_sleutel: 'bwb', label: 'BWB', volgorde: 0, actief: true, afgeleid_bron: null }],
   },
+]
+
+const BETEKENISSEN = [
+  { optie_sleutel: 'technische_plaatsing', label: 'Technische plaatsing (waar draait dit op)', volgorde: 0 },
 ]
 
 const TYPE_OPTIES = {
@@ -65,6 +72,7 @@ async function mountView() {
 beforeEach(() => {
   vi.clearAllMocks()
   api.checklistconfig.lijst.mockResolvedValue(structuredClone(VRAGEN))
+  api.checklistconfig.betekenissen.mockResolvedValue(structuredClone(BETEKENISSEN))
   api.componenten.opties.mockResolvedValue(structuredClone(TYPE_OPTIES))
   api.checklistconfig.impact.mockResolvedValue({ aantal_componenten: 4 })
 })
@@ -199,5 +207,42 @@ describe('ChecklistConfigBeheer', () => {
     await w.find('[data-testid="cfg-vraag-actief-9.1"]').trigger('click')
     await flushPromises()
     expect(api.checklistconfig.zetActief).not.toHaveBeenCalled()
+  })
+
+  // ── ADR-023 Fase F (F-3): betekenis-toekenning ──────────────────────────────
+  it('toont de betekenis-keuze + de huidige toekenning uit de respons', async () => {
+    const w = await mountView()
+    // v2 (code 2.1) draagt technische_plaatsing; v1 (9.1) geen.
+    expect(w.find('[data-testid="cfg-betekenis-2.1"]').element.value).toBe('technische_plaatsing')
+    expect(w.find('[data-testid="cfg-betekenis-9.1"]').element.value).toBe('')
+    // De catalogus-optie is als keuze beschikbaar.
+    expect(w.find('[data-testid="cfg-betekenis-9.1"]').text()).toContain('Technische plaatsing')
+  })
+
+  it('kent een betekenis toe (id-adressering)', async () => {
+    api.checklistconfig.zetBetekenis.mockResolvedValue({ ...VRAGEN[0], betekenis: 'technische_plaatsing' })
+    const w = await mountView()
+    await w.find('[data-testid="cfg-betekenis-9.1"]').setValue('technische_plaatsing')
+    await flushPromises()
+    expect(api.checklistconfig.zetBetekenis).toHaveBeenCalledWith('v1', 'technische_plaatsing')
+  })
+
+  it('wist een betekenis (leeg = null)', async () => {
+    api.checklistconfig.zetBetekenis.mockResolvedValue({ ...VRAGEN[1], betekenis: null })
+    const w = await mountView()
+    await w.find('[data-testid="cfg-betekenis-2.1"]').setValue('')
+    await flushPromises()
+    expect(api.checklistconfig.zetBetekenis).toHaveBeenCalledWith('v2', null)
+  })
+
+  it('toont een 409 (uniciteit) bij betekenis-toekenning netjes', async () => {
+    const err = new Error('Een andere vraag van dit componenttype draagt deze betekenis al.')
+    err.status = 409
+    err.code = 'CONFIGURATIE_CONFLICT'
+    api.checklistconfig.zetBetekenis.mockRejectedValue(err)
+    const w = await mountView()
+    await w.find('[data-testid="cfg-betekenis-9.1"]').setValue('technische_plaatsing')
+    await flushPromises()
+    expect(w.find('[data-testid="cfg-actie-fout"]').text()).toContain('draagt deze betekenis al')
   })
 })

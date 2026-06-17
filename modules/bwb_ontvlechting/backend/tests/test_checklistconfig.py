@@ -52,6 +52,7 @@ def _vraag(code, antwoordtype):
         prioriteit=ChecklistPrioriteit.midden,
         antwoordtype=antwoordtype,
         actief=True,
+        betekenis=None,
     )
 
 

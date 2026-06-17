@@ -32,6 +32,7 @@ from models.models import (
 )
 from schemas.checklistconfig import (
     AntwoordTypeUpdate,
+    BetekenisUpdate,
     OptieCreate,
     OptieUpdate,
     VraagCreate,
@@ -39,6 +40,7 @@ from schemas.checklistconfig import (
 )
 from services import componentconfig_catalog as catalog
 from services import lifecycle_service
+from services import vraagbetekenis_catalog
 from services.errors import ConfiguratieConflict, NietGevonden, RegistratieConflict
 
 
@@ -57,6 +59,7 @@ def _vraag_read(vraag: ChecklistVraag, opties: list[ChecklistVraagOptie]) -> dic
         "prioriteit": vraag.prioriteit,
         "antwoordtype": vraag.antwoordtype,
         "actief": vraag.actief,
+        "betekenis": vraag.betekenis,
         "opties": opties,
     }
 
@@ -251,6 +254,36 @@ async def zet_antwoordtype(
             "bestaande antwoorden zouden verweesd kunnen raken."
         )
     vraag.antwoordtype = data.antwoordtype
+    await session.commit()
+    await session.refresh(vraag)
+    return _vraag_read(vraag, await _opties_van(session, vraag.id))
+
+
+# ── ADR-023 Fase F (F-3): betekenis-toekenning ────────────────────────────────
+
+async def lijst_betekenissen(session: AsyncSession) -> list[dict]:
+    """Actieve betekenissen uit de platform-brede catalogus (keuzeveld). Read-only."""
+    return await vraagbetekenis_catalog.actieve_opties(session)
+
+
+async def zet_betekenis(
+    session: AsyncSession, checklistvraag_id, data: BetekenisUpdate
+) -> dict:
+    """(Her)toekennen of wissen van de betekenis van een vraag. `None` wist; een waarde
+    wordt tegen de actieve catalogus gevalideerd (⇒ 422 `ONGELDIGE_OPTIE`). Uniciteit
+    `(tenant, componenttype, betekenis)` ⇒ 409 `CONFIGURATIE_CONFLICT`. Géén fan-out:
+    betekenis is classificatie en voedt de engine NIET (lifecycle/score onaangeroerd)."""
+    vraag = await _haal_vraag(session, checklistvraag_id)
+    if data.betekenis is not None:
+        await vraagbetekenis_catalog.valideer_sleutel(session, data.betekenis)
+    vraag.betekenis = data.betekenis
+    try:
+        await session.flush()
+    except IntegrityError as exc:
+        await session.rollback()
+        raise ConfiguratieConflict(
+            "Een andere vraag van dit componenttype draagt deze betekenis al."
+        ) from exc
     await session.commit()
     await session.refresh(vraag)
     return _vraag_read(vraag, await _opties_van(session, vraag.id))

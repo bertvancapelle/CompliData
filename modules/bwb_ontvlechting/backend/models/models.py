@@ -573,6 +573,12 @@ class ChecklistVraag(Base, TenantMixin):
     __table_args__ = (
         UniqueConstraint("tenant_id", "componenttype", "code", name="uq_checklistvraag_type_code"),
         UniqueConstraint("tenant_id", "id", name="uq_checklistvraag_tenant_id"),
+        # ADR-023 Fase F (F-3): per (tenant, componenttype) draagt hoogstens één vraag een
+        # gegeven betekenis. NULL is distinct in Postgres → onbeperkt veel vragen zonder
+        # betekenis; uniciteit geldt alleen voor toegekende (niet-NULL) betekenissen.
+        UniqueConstraint(
+            "tenant_id", "componenttype", "betekenis", name="uq_checklistvraag_betekenis"
+        ),
     )
 
     id: Mapped[uuid.UUID] = _pk()
@@ -593,6 +599,13 @@ class ChecklistVraag(Base, TenantMixin):
     actief: Mapped[bool] = mapped_column(
         sa.Boolean, nullable=False, server_default=text("true")
     )
+    # ADR-023 Fase F (F-3): optionele **betekenis** (stabiele `optie_sleutel` uit de
+    # platform-brede `vraagbetekenis_optie`-catalogus) — classificeert wat de vraag
+    # inhoudelijk aanduidt (eerste: 'technische_plaatsing'), zodat de consistentie-
+    # signalering op de betekenis leunt i.p.v. op een vast vraagnummer. App-side
+    # gevalideerd tegen de catalogus (stabiele sleutel, geen harde FK). Voedt de engine
+    # NIET (geen lifecycle/score/blokkade) — louter classificatie.
+    betekenis: Mapped[str | None] = mapped_column(String(60), nullable=True)
 
 
 class ChecklistVraagOptie(Base, TenantMixin):
@@ -839,6 +852,29 @@ class RelatieKenmerkOptie(Base):
     dimensie: Mapped[RelatieKenmerkDimensie] = mapped_column(
         relatiekenmerk_dimensie_enum, nullable=False
     )
+    optie_sleutel: Mapped[str] = mapped_column(String(60), nullable=False)
+    label: Mapped[str] = mapped_column(String(120), nullable=False)
+    volgorde: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
+    actief: Mapped[bool] = mapped_column(
+        sa.Boolean, nullable=False, server_default=text("true")
+    )
+
+
+class VraagBetekenisOptie(Base):
+    """ADR-023 Fase F (F-3) — platform-brede catalogus van **checklistvraag-betekenissen**
+    (GEEN RLS, GEEN tenant_id). Een betekenis classificeert wat een vraag inhoudelijk
+    aanduidt (eerste: 'technische_plaatsing' — "waar draait dit op"), zodat de
+    consistentie-signalering kan leunen op de betekenis i.p.v. op een vast vraagnummer.
+    Zelfde shape/grants/soft-deactivate-semantiek als `relatiekenmerk_optie`, maar ZONDER
+    dimensie-discriminator (één doel) — vandaar uniciteit op enkel `optie_sleutel`.
+    Gekoppeld vanaf `checklistvraag.betekenis` (stabiele sleutel). Voedt de engine NIET."""
+
+    __tablename__ = "vraagbetekenis_optie"
+    __table_args__ = (
+        UniqueConstraint("optie_sleutel", name="uq_vraagbetekenis_optie"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     optie_sleutel: Mapped[str] = mapped_column(String(60), nullable=False)
     label: Mapped[str] = mapped_column(String(120), nullable=False)
     volgorde: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
