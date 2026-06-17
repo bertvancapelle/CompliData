@@ -247,3 +247,20 @@ Vang een toch-403 netjes af (Toast). Nooit tokens in `localStorage` (httpOnly).
   componenten (naam·type·niveau·relatie·lifecycle·open blokkades), pad uitgeklapt bij niveau > 1,
   subtype-rij → ApplicatieDetail. Gemount op zowel ComponentDetail (sectie) als ApplicatieDetail
   (tab) — élk type kan onderlegger zijn. Géén acties/schrijf-affordances. [CD056]
+
+## V010-patronen (ADR-023 Fase F — F-1…F-3, geverifieerd)
+
+- **Read-only lees-/inzicht-views in `frontend/src/views/`** (migratielaag-lijsten, `ArchitectuurView`,
+  `PlaatsingSignalenView`): lazy import + child-route onder `AppLayout`, gegate op **`MIGRATIE_ROLLEN`**
+  (= de `ARCHITECTUUR.LEZEN`-rollen: viewer/medewerker/beheerder/auditor); labels via
+  `@modules/bwb_ontvlechting/frontend/labels`. De nav-link in `AppLayout.vue` is de affordance
+  (`v-if="magArchitectuurZien"`/`magMigratieZien`); de **backend handhaaft** (`vereist_permissie`).
+- **Test-router-gotcha (recurring)**: een gegate `router-link` naar een **nieuwe named route** vereist
+  die naam in **beide** AppLayout-testrouters — `AppLayout.test.js` (children-array) **én**
+  `AppLayout.gating.test.js` (`NAMEN`-lijst) — anders gooit vue-router bij mount. Voeg de naam in beide
+  toe tegelijk met de nav-link.
+- **Signaal/afgeleide weergave = leesbare tekst, backend levert de grond**: de view mapt sleutels naar
+  leesbare labels (bv. `beoordeeld_niet_vastgelegd` → "Plaatsing beoordeeld maar niet vastgelegd") en
+  toont de door de backend geleverde `reden`; de sleutel zelf is **niet** zichtbaar (test asserteert dat).
+  Lege staat expliciet ("geen signalen") + foutregel met `role="alert"`. Eenvoudige `<table>` volstaat
+  voor een begrensd afgeleid overzicht (geen DataTable/paginering nodig).

@@ -21,6 +21,18 @@ Geparkeerde punten en volgende prioriteiten. Bijgewerkt bij sessie-afsluiting.
 
 ---
 
+## ADR-023 Fase F — F-3 stap 2 afgerond; latere toevoegingen op de signalering
+
+De plaatsingssignalering (`GET /signalen/plaatsing` + signalenlijst-view) is read-only en
+generiek over componenttypen. Latere, bewust niet in deze slice meegenomen toevoegingen:
+
+1. **Badge op het component-detail** — toon het plaatsingssignaal (indien aanwezig) ook op
+   het detailscherm van het betreffende component.
+2. **Dashboard-telling-doorklik** — een teller "componenten met plaatsingssignaal" op het
+   dashboard, doorklikkend naar de signalenlijst (analoog aan de bestaande statustegels).
+
+---
+
 ## Geparkeerde follow-ups (bewust uitgesteld)
 
 1. **Platform-beheerscherm voor de relatie-kenmerk-catalogus ontbreekt.** `dispositie` + `relatie_rol`

@@ -196,4 +196,31 @@ empirisch geverifieerd tegen de draaiende stack (zie `docs/LOKAAL-TESTEN.md`).
   (offline blijft alles groen via de offline-tests). Importeer `app.core.audit` zodat de capture-hook
   actief is bij een live audit-test.
 - **Nieuwe migratie ⇒ dev-DB bijwerken vóór de live-run**: pas de migratie als `cd_admin` toe
-  (`alembic upgrade head`) zodat de skip-if-DB-tests de nieuwe tabellen zien; ID ≤32 tekens.
+  (`DATABASE_URL_SYNC=postgresql://cd_admin:changeme_dev@localhost:5432/complidata python3 -m alembic
+  upgrade head`) zodat de skip-if-DB-tests de nieuwe tabellen/kolommen zien; ID ≤32 tekens. Een
+  ORM-`SELECT` die een **nog niet gemigreerde** kolom noemt → "column does not exist" + aborted
+  transaction in **alle** live-tests van dat bestand (signaal: migratie nog niet toegepast).
+
+## V010 — Fase F afgerond (F-3): signaal-fixtures + werkwijze (geverifieerd)
+
+- **Live signaal-fixture (oriëntatie + scope-via-markering)**: maak componenten **direct via ORM**
+  (`Element`→`flush`→subtype) — dit triggert **géén** lifecycle/profiel, dus de plaatsingsvraag is van
+  nature **ongescoord** (handig om `vastgelegd_niet_beoordeeld` te bewijzen). Leg een `assignment`
+  (`bron=host, doel=app`) → de app telt als `draait_op` (oriëntatie `doel==component`); een app die enkel
+  als **bron** in een assignment zit telt **niet** (bewijst de oriëntatie). Een componenttype **zonder**
+  de betekenis-markering (bv. `applicatieserver`) valt buiten scope ondanks `draait_op` (bewijst scope-
+  via-markering). Teardown: `DELETE FROM element` cascadeert subtypes **én** relaties → residu 0.
+- **Pure signaal-matrix offline**: test de afleidings-helper (bv. `_signaal(score, draait_op)`) DB-vrij
+  over alle combinaties (positief/niet-positief/ongescoord × draait_op aan/uit), en `lijst` met een
+  gemockte `session.execute().all()` die rijen van **meerdere** componenttypen levert (bewijst genericiteit
+  + dat alleen gesignaleerde rijen + `reden` terugkomen, en dat de session **niet** muteert).
+- **Read-only meting in het gate-rapport (borging)**: bij een afgeleide read-API meet je de **feitelijke
+  dev-stand** (welke componenten welk signaal, met waarom) via een klein script onder `_run_rls`, en zet
+  je die in het gate-rapport zodat Bert de regel op echte data toetst (F-3: 8× `beoordeeld_niet_vastgelegd`).
+- **OPVOLGPUNTEN.md is TRACKED** (niet untracked, anders dan bouwopdrachten vaak aannemen — geverifieerd
+  `git ls-files`, niet in `.gitignore`). Houd een wijziging eraan **buiten** een feature-commit via
+  **gerichte staging**: `git add <expliciete F-x-paden>` + `git diff --cached --stat` als bewijs dat
+  OPVOLGPUNTEN.md niet meelift. De tracked/untracked-discrepantie zelf oplossen bij sessie-afsluiting.
+- **Dev-ergonomie**: `psql` staat **niet** op de host → `docker exec cd-postgres psql -U cd_admin -d
+  complidata -At -F'|' -c "…"` voor read-only metingen als cd_admin (ziet álle tenants). `rm` is in de
+  sandbox geweigerd → ruim een per ongeluk aangemaakt stray-bestand op met `find <pad> -type f -delete`.

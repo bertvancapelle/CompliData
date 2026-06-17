@@ -301,3 +301,28 @@ op pagina 1). Filters/sortering zitten **niet** in de cursor — reset volstaat.
   sprekende ID's (`0018_adr023_plateau` … `0021_adr023_deliverable`). Bij een **herschreven** migratie:
   de dev-DB **schoon reconcilieren** (oude effecten via SQL terugdraaien → `alembic_version` terug naar
   de voorganger → de nieuwe migratie toepassen) i.p.v. een vuile downgrade draaien.
+
+## V010 — Fase F (F-3): betekenis-marker + cross-tenant datamigratie (geverifieerd)
+
+- **Cross-tenant datamigratie op een FORCE-RLS-tabel**: `cd_admin` = `POSTGRES_USER` = **superuser** →
+  bypasst FORCE RLS. Een migratie-`UPDATE` over een tenant-scoped tabel **zonder** tenant-filter raakt
+  daarom **álle tenants** in één statement — precies wat een backfill nodig heeft. Voorbeeld `0024`:
+  `UPDATE checklistvraag SET betekenis='technische_plaatsing' WHERE code='2.2' AND componenttype='applicatie'`
+  (geverifieerd als cd_admin: per tenant exact díé ene drager, 0 andere). `cd_app`/`cd_platform` bypassen
+  RLS **niet** — alleen de migratierol. (Naast het bestaande "Data-pass-discipline": een ADR-die-data-
+  raakt eerst read-only tellen als cd_admin.)
+- **Classificatie-marker-patroon (naast de catalogus-familie)**: een **enkel-doel** platform-catalogus
+  (`vraagbetekenis_optie` — géén `dimensie`-discriminator, géén RLS; grants exact als `relatiekenmerk_optie`:
+  `cd_app` SELECT, `cd_platform` SELECT/INSERT/UPDATE + sequence, **geen DELETE**) + een **nullable
+  marker-kolom** op de tenant-eigen entiteit (`checklistvraag.betekenis`, de stabiele `optie_sleutel`,
+  app-side gevalideerd, **geen harde FK**). Gebruik dit waar één betekenis-as volstaat; gebruik de
+  `dimensie`-catalogus-familie waar meerdere vocabulaires één tabel delen.
+- **Uniciteit met NULL-distinct (geen partial index)**: `UNIQUE(tenant_id, componenttype, betekenis)` —
+  Postgres behandelt NULL als **distinct**, dus de constraint dwingt uniciteit **alleen op niet-NULL**
+  af en laat onbeperkt veel NULL-rijen toe. **Geen `postgresql_where`-partial index nodig** (er is ook
+  geen partial-index-precedent in de codebase). De `(tenant, componenttype, betekenis)`-vorm laat elk
+  componenttype zijn eigen drager markeren (generiek), uniek binnen het type.
+- **Expand/contract bij een marker**: de **seed** is de expand (de baseline-rij draagt de marker al →
+  fresh deploy = gemigreerde stand; alle pg_insert-rijen dezelfde sleutels, `v.get("betekenis")`); de
+  **migratie** is de contract (eenmalige cross-tenant backfill). Catalogus zelf wordt door de migratie
+  **én** door `platform_init`/`seed_*` idempotent geseed.

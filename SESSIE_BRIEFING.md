@@ -1,6 +1,6 @@
-# SESSIE_BRIEFING.md — CompliData V010
+# SESSIE_BRIEFING.md — CompliData V011
 
-**Gegenereerd**: 2026-06-15
+**Gegenereerd**: 2026-06-17
 
 ---
 
@@ -10,11 +10,11 @@
 
 | Veld | Waarde |
 |------|--------|
-| Build | V010 |
+| Build | V011 |
 | Datum | June 2026 |
-| Commit | 2dc38aa |
-| Tests | 692 backend + 258 frontend groen (1 pre-existing env-test) |
-| TST-rapport | TST-V010-Validatierapport.md |
+| Commit | f5bc0ed |
+| Tests | 746 backend + 311 frontend groen (1 pre-existing env-test) |
+| TST-rapport | TST-V011-Validatierapport.md |
 | Kritieke bevindingen | 0 |
 
 ---
@@ -22,97 +22,64 @@
 ## Recente commits
 
 ```
-2dc38aa feat(archimate): ADR-023 Fase E (E3) — Deliverable + realisatieketen
-8adb32e feat(archimate): ADR-023 Fase E (E2) — Work Package + hiërarchie
-21597ef refactor(catalogus): relatie_rol verhuisd van ContractConfig naar relatie-kenmerk-catalogus
-4a20572 feat(archimate): ADR-023 Fase E (E0+E1) — Plateau + relatie-kenmerk-catalogus
-e683976 feat(archimate): ADR-023 Fase D — leverancier-onderscheid + ArchiMate-laag-borging
+f5bc0ed feat(signalen): ADR-023 Fase F (F-3 stap 2) — consistentie-signalering technische plaatsing
+69ae820 feat(checklist): ADR-023 Fase F (F-3 stap 1) — betekenis-markering checklistvraag
+77b643b feat(architectuur): ADR-023 Fase F (F-2) — cross-element laagprojectie (read-only)
+4a1ae36 feat(platform): ADR-023 Fase F (F-4) — relatie-kenmerk-catalogus-beheer
+b81d8e8 feat(component): componententabel server-side sorteerbaar (7 kolommen)
 ```
 
 ---
 
 ## Prioriteiten volgende sessie
 
-# NEXT_SESSION.md — CompliData V009
+# NEXT_SESSION.md — CompliData V011
 
-**Gegenereerd**: 2026-06-14
-**Vorige build (deze afsluiting)**: V008 → **V009**
-**Laatste commits vóór de bump**: `6eb0699` (ADR-006 audit-trail) → `038f100` (ADR-023 cutover)
+**Gegenereerd**: 2026-06-17 (sessie DC010)
+**Build**: V010 → **V011**
+**Laatste feature-commit vóór de afsluiting**: `f5bc0ed` (ADR-023 Fase F — F-3 stap 2, signalering); de afsluit-commit (docs/skills/build) volgt hierop.
+**Migratie head**: `0024_adr023_vraagbetekenis`
+**Tests**: 746 backend + 311 frontend groen (1 pre-existing, omgevingsgebonden env-test `test_auth_pkce`)
 
 ---
 
-## Stand van zaken (V009)
+## Stand van zaken (V011) — ADR-023 Fase F AFGEROND
 
-Twee volledig afgeronde + gelande architectuurtrajecten bovenop V008:
+Hele Fase F geland deze sessie (boven op de in V010 geleverde Fase A–E):
 
-- **ADR-006 audit-trail (#17)** (`6eb0699`, migratie `0010`): append-only `audit_log` (tenant) +
-  `platform_audit_log`, FORCE RLS, `REVOKE ALL` + `BEFORE UPDATE/DELETE/TRUNCATE`-trigger,
-  capture-hook (`before/after_flush`, ORM-only), actor via ContextVar, per-tenant SHA-256 hash-keten
-  met `pg_advisory_xact_lock`-serialisatie, lees-API `GET /auditlog` + RBAC `AUDITLOG`.
-- **ADR-023 ArchiMate-cutover (Fase A + B)** (`038f100`, 57 bestanden, live-geverifieerd, migratie
-  t/m `0017`): element-supertype (shared-PK) + ArchiMate-typing-catalogus; één getypeerd `relatie`-model;
-  element-promotie datatype/gebruikersgroep/contract; cutover koppeling→flow, component_structuur→
-  assignment/aggregation, component_contract→association, datatype/gebruikersgroep-band→access/serving
-  (drop `applicatie_id`, CASCADE-wijziging Besluit 13, wees-detectie). Oude tabellen gedropt.
-- **651** backend (1 pre-existing env-test) + **255** frontend groen. Migratie head `0017`.
+- **F-6** (`d6ecc42`) — `checklist_dragend`-drift hersteld (seed expliciet; demo-type → `client_software`).
+- **F-1** (`ec4f1ba`) — migratielaag frontend-overzicht (Migratie-navgroep, 4 lijst-views).
+- **Diverse UI** (`1b5fbb3`/`0d7a5cf`/`1faff1c`/`80cfd54`/`b81d8e8`) — blokkade-herkomst, checklist/blokkade-weergave, dashboard-doorklik, multi-select statusfilter, server-side sorteerbare componententabel.
+- **F-4** (`4a1ae36`) — platform-beheerscherm relatie-kenmerk-catalogus (`dispositie`/`relatie_rol` beheerbaar).
+- **F-2** (`77b643b`) — cross-element laagprojectie (read-only architectuuroverzicht, beide typing-bronnen).
+- **F-3 stap 1** (`69ae820`) — betekenis-marker op checklistvraag (`vraagbetekenis_optie`-catalogus + `betekenis`-kolom + cross-tenant datamigratie `0024`).
+- **F-3 stap 2** (`f5bc0ed`) — consistentie-signalering technische plaatsing (`GET /signalen/plaatsing` + signalenlijst-view).
+
+Score blijft de enige lifecycle-driver — engine onaangeroerd, dubbel geborgd (offline import-afwezigheid + read-only bronscan + live geen-mutatie). Skills (db/backend/frontend/tests) bijgewerkt naar V010/V011 met de F-3-patronen (betekenis-marker, cross-tenant datamigratie, signalering-afleiding, werkwijze-lessen).
 
 ---
 
 ## Top-5 prioriteiten volgende sessie
 
-1. **ADR-023 Fase C — technologielaag eersteklas** (node/system_software): database/applicatieserver/
-   middleware/fileshare als volwaardige technology-laag-elementen met juiste mapping/relaties. Start hier.
-2. **ADR-023 Fase D** — contract-element-verfijning + dekkingstests rond de association-relatie.
-3. **ADR-023 Fase E** — migratielaag (plateau/gap/work_package/deliverable) + checklist-consistentiecheck
-   technische plaatsing.
-4. **ADR-023 Fase F** — gelaagde ArchiMate-lees-API + gap/plateau-view + migratie-UI + RBAC nieuwe
-   entiteiten + audit-allowlist; opruim-follow-ups (a/b/c) meenemen. Fase G (export) buiten scope.
-5. **Opruim** — dode `KoppelingConflict`-refs + checklistconfig stray docstring (follow-up c);
-   live-test-teardown-residu structureel (follow-up a).
+1. **ADR-024 — Organisatorische actoren** — starten met het **leverancier-feitenrapport** (read-only VALIDATIE): hoe leverancier vandaag in het datamodel/relatiemodel zit en wat een actor-laag raakt. Daarna gefaseerd bouwen (gates per schema-slice).
+2. **OPVOLGPUNTEN.md tracked/untracked-discrepantie oplossen** — het bestand is feitelijk *tracked* (niet untracked zoals bouwopdrachten aannemen). Besluit: bestand officieel als tracked projectbestand behandelen (en de "untracked"-aanname uit toekomstige opdrachten halen), óf gitignoren. Klein, eerst beslissen.
+3. **Signalering-uitbreidingen (F-3 follow-up, OPVOLGPUNTEN)** — badge op component-detail + dashboard-telling-doorklik "componenten met plaatsingssignaal". Licht/additief (read-side/frontend) → doorloop.
+4. **Latente `applicatie.checklist_dragend`-drift** (OPVOLGPUNTEN) — vóór code de vlag voor `applicatie` gaat vertrouwen: seed ↔ migratie 0009 in lijn brengen.
+5. **checklist-dragend als beheerder-functie** (OPVOLGPUNTEN) — productkeuze + type-specifieke vragen; onboarding/ADR-werk.
 
 ---
 
 ## Bekende risico's en aandachtspunten
 
-- **Na een `down -v`-reset opnieuw inloggen in de UI** — verlopen sessie (Redis/Keycloak-DB leeg),
-  géén bug.
-- **Live-test-teardown-residu**: integratietests laten 11 `element`-supertype-rijen achter (subtype +
-  relatie wél opgeruimd). Productiecode correct (element-cascade). `down -v` wist het.
-
----
-
-## Technische schuld
-
-- (a) Live-test-teardowns ruimen de in ADR-023 nieuwe `element`-supertabel niet op.
-- (b) Migratie-revisie-ID-conventie: ≤32 tekens (`alembic_version` is `varchar(32)`).
-- (c) Dode `KoppelingConflict`-referenties + checklistconfig stray docstring.
-- Pre-existing env-test `test_auth_pkce::…secure…` (cookie `Secure`-vlag in dev/test; DB-onafhankelijk).
-
----
-
-## Uitgestelde punten (achtergrond)
-
-Zie `docs/OPVOLGPUNTEN.md`: OP-3 (refresh-token), OP-13 (platform-tabel-grants), OP-14 (secrets),
-OP-21, OP-23, OP-24, OP-25, OP-26, OP-27, OP-28 (VPS), OP-29 (impact-lens label), OP-30 (auth-cookie env-test).
-
----
-
-## Geleerde patronen deze sessie
-
-- **Big-bang cutover in reviewbare slices** + één verplichte live-stop met DB-reset: elke slice
-  offline-groen, daarna één keer live verifiëren (datamigratie-equivalentie + richting, RLS/composiet-FK,
-  append-only audit).
-- **Verse-DB-verificatie legde twee mechanische defecten bloot** die offline onzichtbaar waren:
-  revisie-ID > `varchar(32)` en een multi-row `pg_insert` met niet-uniforme dict-keys.
+- **Na een `down -v`-reset opnieuw inloggen in de UI** (verlopen sessie) — géén bug.
+- **Pre-existing env-test** `test_auth_pkce` (Secure-cookie, DB-onafhankelijk) — omgevingsgebonden, in deze omgeving groen.
+- **Cross-tenant datamigratie draait als cd_admin (superuser, bypasst FORCE RLS)** — bij een toekomstige backfill: geen tenant-filter nodig; cd_app/cd_platform bypassen RLS NIET.
 
 ---
 
 ## Werkwijze (triggerdiscipline)
 
-Elke opdracht-`.md` begint op **regel 1** met `START: [taaknaam]`. **`AKKOORD: commit`** is exclusief
-de commit-trigger op een groen eindrapport. CC verifieert zélf de groene staat vóór elke commit. Dev:
-`cd-api` draait met `--reload`. Reset-procedure: `docs/LOKAAL-TESTEN.md`. Startpunt volgende sessie:
-`docs/_output/CompliData_Sessiestart_V009.zip` → **ADR-023 Fase C**.
+Elke opdracht-`.md` begint op **regel 1** met `START: [taaknaam]`. **`AKKOORD: commit`** is exclusief de commit-trigger op een groen (gate-)rapport. Schema-rakende slices = **gate** vóór commit; licht/additief = doorloop. CC verifieert zélf de groene staat vóór elke commit. Eén vraag/advies tegelijk. Reset-procedure: `docs/LOKAAL-TESTEN.md`. Startpunt volgende sessie: `docs/_output/CompliData_Sessiestart_V011.zip` → **ADR-024 (leverancier-feitenrapport)**.
 
 
 ---
@@ -121,5 +88,5 @@ de commit-trigger op een groen eindrapport. CC verifieert zélf de groene staat 
 
 1. Lees deze briefing volledig
 2. Lees CLAUDE.md (sessiestart-protocol)
-3. Bevestig: "Sessie-briefing geladen — CompliData V010"
+3. Bevestig: "Sessie-briefing geladen — CompliData V011"
 4. Wacht op START: [naam] van Bert

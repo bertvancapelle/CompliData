@@ -314,3 +314,29 @@ ongedefinieerde methodes → 405.
   `audit_log` (tenant, hash-keten per tenant) resp. `platform_audit_log`; actie `derive` voor
   systeem-afgeleide mutaties (`component_profiel`/`blokkade`). De audit-tabellen zelf staan NIET in de
   capture (via core-INSERT geschreven).
+
+## V010 — Fase F afgerond (F-3 betekenis-marker + signalering, geverifieerd)
+
+- **Consistentie-signalering = read-only afleiding op een markering (F-3 stap 2)**: een afgeleid
+  attentie-overzicht (`plaatsingsignaal_service` → `GET /signalen/plaatsing`) leunt op de **betekenis-
+  markering**, NIET op een vast vraagnummer/componenttype → **generiek** over componenttypen via een
+  INNER join `Component.componenttype == ChecklistVraag.componenttype AND betekenis=<sleutel>` (alleen
+  typen mét de markering komen in scope). Score via LEFT JOIN (ongescoord = NULL); `draait_op` =
+  **`EXISTS(assignment WHERE doel_id == component)`** (host→gehoste = bron→doel; oriëntatie exact als
+  `component_service.structuur_overzicht` — NIET als bron). Twee zachte signalen (positief={ja,deels}):
+  *beoordeeld_niet_vastgelegd* (positief & geen draait_op) en *vastgelegd_niet_beoordeeld* (draait_op &
+  niet-positief/ongescoord). Blokkeert niets. **Hergebruik `ARCHITECTUUR.LEZEN`** (geen nieuwe entiteit
+  voor tenant-breed inzicht). Een begrensd afgeleid rapport mag **bewust niet pagineren** (gemotiveerde
+  afwijking van "alle list-endpoints pagineren" — documenteer het in de route).
+- **Engine-borging-verfijning bij een afleiding die score leest**: een read-only afleiding **mag**
+  `Checklistscore`/`score` **lezen**. De import-afwezigheidstest verbiedt dan alleen
+  `lifecycle_service`/`herbereken_lifecycle`/`bepaal_lifecycle`/`ComponentProfiel`/`Blokkade` (NIET het
+  gelezen `Checklistscore`-model), aangevuld met een **read-only bronscan** (`session.add`/`commit`/
+  `flush`/`delete` mogen niet in de service-bron voorkomen). `zet_*`-classificatie (bv. `zet_betekenis`)
+  doet **geen** fan-out (`herbereken_*` niet aangeroepen — geborgd via `inspect.getsource`).
+- **Platform-catalogus-seed woont in de module-backend**: `seed_*.py` (o.a. `seed_vraagbetekenis`,
+  `seed_relatiekenmerk`) staat in `modules/bwb_ontvlechting/backend/services/`, **niet** in
+  `backend/services/`. `app/platform_init.py` importeert ze via `_MOD_BACKEND` op `sys.path` en ketent
+  ze op één platform-sessie (`bouw_*()` puur/DB-vrij + `seed_*()` idempotent `ON CONFLICT DO NOTHING`).
+- **Validator-helpers (signatuur)**: `_optionele_tekst(waarde, maxlen)` neemt **2** args (géén veldnaam);
+  `_verplichte_tekst(waarde, veld, maxlen)` neemt **3**. Beide uit `schemas/applicatie.py`.
