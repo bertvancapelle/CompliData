@@ -225,6 +225,11 @@ export const api = {
       request(`/architectuur/elementen${_query({ limit, after, laag, aspect, type })}`),
   },
 
+  // ADR-023 Fase F (F-3 stap 2) — consistentie-signalering technische plaatsing (read-only).
+  signalen: {
+    plaatsing: () => request('/signalen/plaatsing'),
+  },
+
   // ADR-023 Fase E/F (F-1) — migratielaag (read-only overzicht). Leunt volledig op de
   // bestaande lees-endpoints; geen nieuwe backend-semantiek.
   plateaus: {
