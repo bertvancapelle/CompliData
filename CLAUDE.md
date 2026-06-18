@@ -66,6 +66,7 @@ Read CONTRIBUTING.md
 Read .claude/skills/complidata/complidata-backend/SKILL.md
 Read .claude/skills/complidata/complidata-db/SKILL.md
 Read .claude/skills/complidata/complidata-frontend/SKILL.md
+Read .claude/skills/complidata/complidata-ux/SKILL.md
 Read .claude/skills/complidata/complidata-security/SKILL.md
 Read .claude/skills/complidata/complidata-tests/SKILL.md
 Read .claude/skills/complidata/complidata-resilience/SKILL.md

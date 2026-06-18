@@ -1,0 +1,80 @@
+---
+name: complidata-ux
+description: Interaction-design-denkmethode voor CompliData. Verplicht te raadplegen bij ELKE frontend-rakende slice (nieuw scherm, nieuwe sectie, nieuwe actie) — door zowel CC als claude.ai. Borgt dat een functie de UI logisch en compleet houdt voor de gebruiker: geen lege lijsten zonder route naar de actie, actie op de plek waar de gebruiker hem verwacht, terminologie vanuit de gebruiker. Dit is GEEN stijl-/visuele skill (dat is complidata-frontend); dit gaat over of het scherm doet wat de gebruiker verwacht.
+bijgewerkt: V013
+---
+
+# CompliData UX / Interaction-Design Skill
+
+## Waarom deze skill bestaat
+
+CompliData wordt gebouwd vanuit één vast uitgangspunt: **continu optimaliseren van de
+gebruikerservaring.** Techniek, schema en proces zijn vangrail, nooit het vertrekpunt.
+Deze skill maakt dat uitgangspunt operationeel voor het scherm: bij elke functie die de
+UI raakt, eerst denken vanuit wat de gebruiker ziet, verwacht en wil doen — pas daarna bouwen.
+
+Twee concrete missers die deze skill voorkomt (DC012):
+1. **Partij-detailscherm met drie leeslijsten en geen enkele toevoeg-knop.** De gebruiker
+   verwachtte afdelingen/personen te kunnen toevoegen op de plek waar ze getoond worden,
+   maar moest naar een ander scherm en daar de relatie handmatig terugleggen.
+2. **Rollen (catalogus) wel beheerbaar in de backend, maar geen beheerscherm.** De functie
+   bestond technisch, maar was voor de gebruiker onvindbaar/onbruikbaar.
+
+In beide gevallen waren de tests groen en het datamodel correct — en tóch was de functie
+voor de gebruiker niet af. Daar is deze skill voor.
+
+---
+
+## De denkmethode (loop dit af vóór je een frontend-slice ontwerpt of bouwt)
+
+### 1. Gebruikersdoel
+Wat wil de gebruiker hier bereiken? Formuleer het als een zin in gebruikerstaal,
+niet in datamodel-/schema-taal. ("Ik wil zien wie verantwoordelijk is voor deze
+applicatie" — niet "ik wil de roltoewijzing-relaties van dit element ophalen".)
+
+### 2. Wat moet de gebruiker hier kunnen
+Som de handelingen op die de gebruiker logischerwijs op dit scherm verwacht: zien,
+toevoegen, wijzigen, verwijderen, doorklikken. **Een lijst die iets toont, roept bijna
+altijd de verwachting op dat je er ook iets aan kunt toevoegen** — tenzij expliciet en
+zichtbaar gemaakt is dat dat ergens anders gebeurt.
+
+### 3. Acties op de juiste plek
+De gebruiker verwacht een actie op de plek waar het onderwerp leeft. Een afdeling
+toevoegen aan een organisatie hoort op de organisatie-pagina, niet op een generiek
+aanmaakscherm waar je de organisatie terug moet kiezen. Voorinvulling van context
+(de organisatie staat al ingevuld) is een teken van goede plaatsing.
+
+### 4. Lege staten
+Elke lege lijst krijgt een lege-staat die óf een route naar de actie biedt ("+ Toevoegen"),
+óf uitlegt waarom hij leeg is en waar de actie dan wél zit ("Rollen wijs je toe vanaf de
+applicatie of het contract."). **Een lege lijst zonder knop en zonder uitleg is een bug,
+geen neutrale toestand.**
+
+### 5. Terminologie
+Labels en koppen volgen hoe de gebruiker denkt, niet de tabelnamen. "Verantwoordelijkheden",
+niet "assignment-relaties". "Wie hoort hierbij", niet "lidmaatschap-FK".
+
+### 6. Consistentie met bestaande schermen
+Een nieuwe sectie hoort qua interactie te lijken op vergelijkbare bestaande secties
+(zelfde knop-plaatsing, zelfde lege-staat-stijl, zelfde manier van toevoegen/verwijderen),
+zodat de gebruiker niet per scherm opnieuw moet leren.
+
+---
+
+## Toepassing in de praktijk
+
+- **Elke frontend-rakende bouwopdracht** opent met een korte "Wat de gebruiker straks kan"-
+  beschrijving (gebruikerstaal, niet schema). Dit is de uitkomst van stap 1–2 hierboven.
+- **Bij elke nieuwe lijst/sectie**: expliciet benoemen wat de lege staat toont en of er een
+  toevoeg-actie hoort.
+- **Bij read-only secties** (zoals "Rollen op objecten" op de partij): de lege-staat-tekst
+  wijst de gebruiker naar waar de actie wél plaatsvindt.
+- **Bij een nieuwe beheerbare catalogus**: controleer of er een beheerscherm bij hoort —
+  een lijst configureerbaar maken in de backend zonder UI laat de functie onvindbaar.
+
+## Verhouding tot andere skills
+
+- `complidata-frontend` = hoe je bouwt (Vue/PrimeVue/Tailwind, tokens, presets). Stijl en techniek.
+- `complidata-ux` (deze) = of het scherm klopt voor de gebruiker. Interaction design.
+- Beide raadplegen bij frontend-werk; deze skill gaat over het ontwerp-denken vooraf,
+  de frontend-skill over de uitvoering.
