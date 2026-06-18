@@ -15,12 +15,14 @@ registratie, geen afdwinging.
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.tenant_context import huidige_actor
 from models.models import (
+    Component,
+    Contract,
     Element,
     ElementType,
     Plateau,
@@ -151,6 +153,29 @@ async def _lid_element_type(session: AsyncSession, tid: uuid.UUID, lid_id) -> st
     return et.value if hasattr(et, "value") else str(et)
 
 
+async def _lid_naam(session: AsyncSession, tid: uuid.UUID, lid_id) -> str | None:
+    """Naam van het lid (component → naam, contract → contractnaam)."""
+    naam = (
+        await session.execute(
+            select(Component.naam).where(Component.id == lid_id, Component.tenant_id == tid)
+        )
+    ).scalar_one_or_none()
+    if naam is not None:
+        return naam
+    return (
+        await session.execute(
+            select(Contract.contractnaam).where(Contract.id == lid_id, Contract.tenant_id == tid)
+        )
+    ).scalar_one_or_none()
+
+
+async def actieve_disposities(session: AsyncSession) -> list[dict]:
+    """Actieve `dispositie`-opties (voor het lid-koppel-dropdown), gesorteerd op volgorde."""
+    return (await catalog.actieve_opties_per_dimensie(session)).get(
+        RelatieKenmerkDimensie.dispositie.value, []
+    )
+
+
 def _bevestiging_kenmerken(contractueel_bevestigd: bool, aantal: int | None) -> dict:
     """Bouw de bevestigingskenmerken; bij `ja` worden wie/wanneer server-side gestempeld
     (registratie, geen afdwinging). Bij `nee` géén stempel (en bestaande wordt gewist)."""
@@ -187,6 +212,7 @@ async def _lees_lid(session: AsyncSession, tid: uuid.UUID, obj: Relatie) -> dict
         "plateau_id": obj.bron_id,
         "lid_id": obj.doel_id,
         "lid_element_type": await _lid_element_type(session, tid, obj.doel_id),
+        "lid_naam": await _lid_naam(session, tid, obj.doel_id),
         "dispositie": dispositie,
         "dispositie_label": catalog.resolveer_een(dispositie, rol_labels),
         "contractueel_bevestigd": bool(k.get("contractueel_bevestigd", False)),
@@ -265,10 +291,13 @@ async def lijst_leden(session: AsyncSession, tenant_id, plateau_id) -> list[dict
     tid = _tenant_uuid(tenant_id)
     await haal_op(session, tenant_id, plateau_id)  # 404 kruis-tenant
     rol_labels = await catalog.labels(session, RelatieKenmerkDimensie.dispositie)
+    lid_naam = func.coalesce(Component.naam, Contract.contractnaam).label("lid_naam")
     rijen = (
         await session.execute(
-            select(Relatie, Element.element_type)
+            select(Relatie, Element.element_type, lid_naam)
             .join(Element, and_(Element.id == Relatie.doel_id, Element.tenant_id == tid))
+            .outerjoin(Component, Component.id == Relatie.doel_id)
+            .outerjoin(Contract, Contract.id == Relatie.doel_id)
             .where(
                 Relatie.tenant_id == tid, Relatie.bron_id == plateau_id,
                 Relatie.relatietype == _AGGREGATION,
@@ -277,12 +306,13 @@ async def lijst_leden(session: AsyncSession, tenant_id, plateau_id) -> list[dict
         )
     ).all()
     uit = []
-    for rel, et in rijen:
+    for rel, et, naam in rijen:
         k = rel.kenmerken or {}
         dispositie = k.get("dispositie")
         uit.append({
             "id": rel.id, "plateau_id": rel.bron_id, "lid_id": rel.doel_id,
             "lid_element_type": et.value if hasattr(et, "value") else str(et),
+            "lid_naam": naam,
             "dispositie": dispositie,
             "dispositie_label": catalog.resolveer_een(dispositie, rol_labels),
             "contractueel_bevestigd": bool(k.get("contractueel_bevestigd", False)),

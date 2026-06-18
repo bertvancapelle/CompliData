@@ -9,6 +9,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
+import ToastService from 'primevue/toastservice'
 
 vi.mock('@/api', () => ({
   api: {
@@ -53,7 +54,7 @@ async function mountView(View, props = {}) {
   await router.isReady()
   const wrapper = mount(View, {
     props,
-    global: { plugins: [createPinia(), [PrimeVue, { unstyled: true }], router] },
+    global: { plugins: [createPinia(), [PrimeVue, { unstyled: true }], ToastService, router] },
   })
   await flushPromises()
   return wrapper

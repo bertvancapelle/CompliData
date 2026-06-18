@@ -1,17 +1,32 @@
 <script setup>
 /**
- * PlateauDetailView — migratielaag (ADR-023 Fase F / F-1): plateau-detail + leden.
- * Read-only; leunt op `GET /plateaus/{id}` + `GET /plateaus/{id}/leden`. Per lid de
- * dispositie (backend-label) en — voor contracten — de contractuele bevestiging.
+ * PlateauDetailView — migratielaag (ADR-023 Fase E/F): plateau-detail + ledenbeheer.
+ * UX-A4-1: wijzigen/verwijderen van het plateau en koppelen/ontkoppelen van leden
+ * (component én contract) met dispositie; bij een contract-lid de contractuele bevestiging.
+ * Leunt op de bestaande plateau-CRUD + leden-endpoints. Registratie/migratielaag — raakt de
+ * engine (lifecycle/score/blokkade) niet.
+ *
+ * Rol-gating (affordance; backend handhaaft): wijzigen/koppelen/dispositie = medewerker/
+ * beheerder (PLATEAU·AANMAKEN/WIJZIGEN); verwijderen plateau + ontkoppelen lid = beheerder
+ * (PLATEAU·VERWIJDEREN).
  */
-import { onMounted, ref } from 'vue'
-import { Column, DataTable, Tag } from '@/primevue'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { Button, Column, DataTable, Dialog, InputText, Tag, Textarea, useToast } from '@/primevue'
+import { useRouter } from '@/composables/router'
+import { useAuthStore } from '@/store/auth'
 import { api } from '@/api'
+import ZoekSelect from '@modules/bwb_ontvlechting/frontend/views/ZoekSelect.vue'
 
 const props = defineProps({ id: { type: String, required: true } })
+const router = useRouter()
+const toast = useToast()
+const auth = useAuthStore()
+const magBeheren = computed(() => auth.hasRole('medewerker', 'beheerder'))
+const magVerwijderen = computed(() => auth.hasRole('beheerder'))
 
 const plateau = ref(null)
 const leden = ref([])
+const dispositieOpties = ref([])
 const laden = ref(true)
 const fout = ref(null)
 
@@ -24,80 +39,357 @@ function formatDatum(iso) {
   return new Intl.DateTimeFormat('nl-NL', { dateStyle: 'medium', timeStyle: 'short' }).format(d)
 }
 
-onMounted(async () => {
+function _toastFout(e) {
+  const detail =
+    { 403: 'Je hebt geen rechten voor deze actie.', 404: 'Niet gevonden.', 409: e?.message || 'Dit lid zit al in dit plateau.' }[
+      e?.status
+    ] ||
+    e?.message ||
+    'Er ging iets mis.'
+  toast.add({ severity: 'error', summary: 'Fout', detail, life: 5000 })
+}
+
+async function laadLeden() {
+  leden.value = await api.plateaus.leden(props.id)
+}
+
+async function laad() {
+  laden.value = true
+  fout.value = null
   try {
     plateau.value = await api.plateaus.haal(props.id)
-    leden.value = await api.plateaus.leden(props.id)
+    await laadLeden()
   } catch (e) {
     fout.value = e?.message || 'Het plateau kon niet worden geladen.'
   } finally {
     laden.value = false
   }
+}
+
+async function _zorgDisposities() {
+  if (dispositieOpties.value.length) return
+  try {
+    dispositieOpties.value = await api.plateaus.disposities()
+  } catch (e) {
+    _toastFout(e)
+  }
+}
+
+// ── Plateau bewerken ─────────────────────────────────────────────────────────
+const editOpen = ref(false)
+const bezig = ref(false)
+const editForm = reactive({ naam: '', toelichting: '' })
+const editFout = ref(null)
+
+function openBewerken() {
+  editForm.naam = plateau.value?.naam || ''
+  editForm.toelichting = plateau.value?.toelichting || ''
+  editFout.value = null
+  editOpen.value = true
+}
+async function bevestigBewerken() {
+  if (!editForm.naam.trim()) {
+    editFout.value = 'Naam is verplicht.'
+    return
+  }
+  bezig.value = true
+  try {
+    plateau.value = await api.plateaus.werkBij(props.id, {
+      naam: editForm.naam.trim(),
+      toelichting: editForm.toelichting.trim() || null,
+    })
+    toast.add({ severity: 'success', summary: 'Opgeslagen', life: 3000 })
+    editOpen.value = false
+  } catch (e) {
+    _toastFout(e)
+  } finally {
+    bezig.value = false
+  }
+}
+
+// ── Plateau verwijderen ──────────────────────────────────────────────────────
+const verwijderOpen = ref(false)
+async function bevestigVerwijderen() {
+  bezig.value = true
+  try {
+    await api.plateaus.verwijder(props.id)
+    toast.add({ severity: 'success', summary: 'Plateau verwijderd', life: 3000 })
+    router.push({ name: 'plateau-lijst' })
+  } catch (e) {
+    verwijderOpen.value = false
+    _toastFout(e)
+  } finally {
+    bezig.value = false
+  }
+}
+
+// ── Lid koppelen ─────────────────────────────────────────────────────────────
+const koppelOpen = ref(false)
+const eersteVeld = ref(null)
+let laatsteTrigger = null
+const lidForm = reactive({
+  lidType: 'component',
+  lid_id: '',
+  dispositie: '',
+  contractueel_bevestigd: false,
+  bevestigd_aantal_gebruikers: '',
+})
+const lidFouten = reactive({})
+const isContractLid = computed(() => lidForm.lidType === 'contract')
+
+const zoekComponenten = (params) => api.componenten.lijst(params)
+const zoekContracten = (params) => api.contracten.lijst(params)
+const zoekFunctie = computed(() => (isContractLid.value ? zoekContracten : zoekComponenten))
+const lidWeergave = (item) =>
+  isContractLid.value ? `${item.contractnaam} — ${item.leverancier_naam}` : item.naam
+
+function onLidTypeChange() {
+  lidForm.lid_id = '' // reset de keuze bij het wisselen van bron (component ↔ contract)
+}
+
+async function openKoppelen(e) {
+  laatsteTrigger = e?.currentTarget ?? null
+  await _zorgDisposities()
+  Object.assign(lidForm, {
+    lidType: 'component', lid_id: '', dispositie: '',
+    contractueel_bevestigd: false, bevestigd_aantal_gebruikers: '',
+  })
+  Object.keys(lidFouten).forEach((k) => delete lidFouten[k])
+  koppelOpen.value = true
+}
+function focusEerste() {
+  setTimeout(() => eersteVeld.value?.focus?.(), 0)
+}
+function onHide() {
+  laatsteTrigger?.focus?.()
+}
+function valideerLid() {
+  Object.keys(lidFouten).forEach((k) => delete lidFouten[k])
+  if (!lidForm.lid_id) lidFouten.lid_id = `Kies een ${isContractLid.value ? 'contract' : 'component'}.`
+  if (!lidForm.dispositie) lidFouten.dispositie = 'Kies een dispositie.'
+  return Object.keys(lidFouten).length === 0
+}
+async function bevestigKoppel() {
+  if (!valideerLid()) return
+  bezig.value = true
+  try {
+    const data = { lid_id: lidForm.lid_id, dispositie: lidForm.dispositie }
+    if (isContractLid.value) {
+      data.contractueel_bevestigd = lidForm.contractueel_bevestigd
+      const n = Number.parseInt(lidForm.bevestigd_aantal_gebruikers, 10)
+      if (!Number.isNaN(n)) data.bevestigd_aantal_gebruikers = n
+    }
+    await api.plateaus.voegLid(props.id, data)
+    toast.add({ severity: 'success', summary: 'Lid gekoppeld', life: 3000 })
+    koppelOpen.value = false
+    await laadLeden()
+  } catch (e) {
+    _toastFout(e)
+  } finally {
+    bezig.value = false
+  }
+}
+
+// ── Lid: dispositie wijzigen (inline) + ontkoppelen ──────────────────────────
+async function wijzigDispositie(lid, event) {
+  const nieuw = event.target.value
+  try {
+    await api.plateaus.werkLid(props.id, lid.id, { dispositie: nieuw })
+    toast.add({ severity: 'success', summary: 'Dispositie gewijzigd', life: 2500 })
+    await laadLeden()
+  } catch (e) {
+    _toastFout(e)
+    await laadLeden() // herstel de getoonde waarde bij fout
+  }
+}
+
+const ontkoppelOpen = ref(false)
+const teOntkoppelen = ref(null)
+function vraagOntkoppel(e, lid) {
+  laatsteTrigger = e?.currentTarget ?? null
+  teOntkoppelen.value = lid
+  ontkoppelOpen.value = true
+}
+async function bevestigOntkoppel() {
+  bezig.value = true
+  try {
+    await api.plateaus.verwijderLid(props.id, teOntkoppelen.value.id)
+    toast.add({ severity: 'success', summary: 'Ontkoppeld', life: 3000 })
+    ontkoppelOpen.value = false
+    await laadLeden()
+  } catch (e) {
+    _toastFout(e)
+  } finally {
+    bezig.value = false
+  }
+}
+
+onMounted(() => {
+  laad()
+  if (auth.hasRole('medewerker', 'beheerder')) _zorgDisposities() // voor de inline dispositie-select
 })
 </script>
 
 <template>
   <section aria-labelledby="plateau-detail-titel">
-    <router-link
-      :to="{ name: 'plateau-lijst' }"
-      class="text-[length:var(--cd-text-sm)] text-[var(--cd-color-primary)] hover:underline"
-    >
+    <router-link :to="{ name: 'plateau-lijst' }" class="text-[length:var(--cd-text-sm)] text-[var(--cd-color-primary)] hover:underline">
       ← Plateaus
     </router-link>
 
-    <p v-if="fout" role="alert" data-testid="plateau-detail-fout" class="my-[var(--cd-space-md)] text-[var(--cd-color-danger)]">
-      {{ fout }}
-    </p>
+    <p v-if="fout" role="alert" data-testid="plateau-detail-fout" class="my-[var(--cd-space-md)] text-[var(--cd-color-danger)]">{{ fout }}</p>
     <p v-else-if="laden" data-testid="plateau-detail-laden" class="my-[var(--cd-space-md)] text-[var(--cd-color-text-muted)]">Laden…</p>
 
     <template v-else-if="plateau">
-      <h1
-        id="plateau-detail-titel"
-        data-testid="plateau-naam"
-        class="mt-[var(--cd-space-sm)] mb-[var(--cd-space-sm)] text-[length:var(--cd-text-2xl)] font-semibold text-[var(--cd-color-primary)]"
-      >
-        {{ plateau.naam }}
-      </h1>
+      <div class="mt-[var(--cd-space-sm)] mb-[var(--cd-space-sm)] flex items-center gap-[var(--cd-space-md)]">
+        <h1 id="plateau-detail-titel" data-testid="plateau-naam" class="text-[length:var(--cd-text-2xl)] font-semibold text-[var(--cd-color-primary)]">
+          {{ plateau.naam }}
+        </h1>
+        <Button v-if="magBeheren" label="Bewerken" size="small" data-testid="plateau-bewerken" class="ml-auto" @click="openBewerken" />
+        <Button v-if="magVerwijderen" label="Verwijderen" size="small" severity="danger" data-testid="plateau-verwijderen" @click="verwijderOpen = true" />
+      </div>
       <p v-if="plateau.toelichting" class="mb-[var(--cd-space-lg)] text-[var(--cd-color-text)]">{{ plateau.toelichting }}</p>
 
-      <h2 class="mb-[var(--cd-space-sm)] text-[length:var(--cd-text-lg)] font-semibold">Leden</h2>
-      <DataTable
-        :value="leden"
-        data-testid="plateau-leden-tabel"
-        class="bg-[var(--cd-color-surface)] rounded-[var(--cd-radius-card)] shadow-[var(--cd-shadow-sm)]"
-      >
-        <Column header="Type">
-          <template #body="{ data }">{{ TYPE_LABEL[data.lid_element_type] || data.lid_element_type }}</template>
-        </Column>
+      <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
+        <h2 class="text-[length:var(--cd-text-lg)] font-semibold">Leden</h2>
+        <Button v-if="magBeheren" label="+ Lid koppelen" size="small" data-testid="lid-koppelen" class="ml-auto" @click="openKoppelen" />
+      </div>
+
+      <DataTable :value="leden" data-testid="plateau-leden-tabel" class="bg-[var(--cd-color-surface)] rounded-[var(--cd-radius-card)] shadow-[var(--cd-shadow-sm)]">
+        <Column header="Naam"><template #body="{ data }">{{ data.lid_naam || '—' }}</template></Column>
+        <Column header="Type"><template #body="{ data }">{{ TYPE_LABEL[data.lid_element_type] || data.lid_element_type }}</template></Column>
         <Column header="Dispositie">
           <template #body="{ data }">
-            <Tag :value="data.dispositie_label || data.dispositie" severity="info" />
+            <select
+              v-if="magBeheren"
+              :value="data.dispositie"
+              :data-testid="`lid-dispositie-${data.id}`"
+              :aria-label="`Dispositie van ${data.lid_naam || data.lid_id}`"
+              class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white"
+              @change="(e) => wijzigDispositie(data, e)"
+            >
+              <option v-for="o in dispositieOpties" :key="o.optie_sleutel" :value="o.optie_sleutel">{{ o.label }}</option>
+              <option v-if="!dispositieOpties.some((o) => o.optie_sleutel === data.dispositie)" :value="data.dispositie">{{ data.dispositie_label || data.dispositie }}</option>
+            </select>
+            <Tag v-else :value="data.dispositie_label || data.dispositie" severity="info" />
           </template>
         </Column>
         <Column header="Contractueel bevestigd">
           <template #body="{ data }">
             <span v-if="data.lid_element_type !== 'contract'" class="text-[var(--cd-color-text-muted)]">n.v.t.</span>
-            <Tag
-              v-else
-              :value="data.contractueel_bevestigd ? 'Bevestigd' : 'Niet bevestigd'"
-              :severity="data.contractueel_bevestigd ? 'success' : 'warning'"
-              data-testid="lid-bevestiging"
-            />
+            <Tag v-else :value="data.contractueel_bevestigd ? 'Bevestigd' : 'Niet bevestigd'" :severity="data.contractueel_bevestigd ? 'success' : 'warning'" data-testid="lid-bevestiging" />
           </template>
         </Column>
-        <Column header="Aantal gebruikers">
-          <template #body="{ data }">{{ data.bevestigd_aantal_gebruikers ?? '—' }}</template>
-        </Column>
-        <Column header="Bevestigd door">
-          <template #body="{ data }">{{ data.bevestigd_door || '—' }}</template>
-        </Column>
-        <Column header="Bevestigd op">
-          <template #body="{ data }">{{ formatDatum(data.bevestigd_op) }}</template>
+        <Column header="Aantal gebruikers"><template #body="{ data }">{{ data.bevestigd_aantal_gebruikers ?? '—' }}</template></Column>
+        <Column header="Bevestigd door"><template #body="{ data }">{{ data.bevestigd_door || '—' }}</template></Column>
+        <Column header="Bevestigd op"><template #body="{ data }">{{ formatDatum(data.bevestigd_op) }}</template></Column>
+        <Column header="">
+          <template #body="{ data }">
+            <Button v-if="magVerwijderen" label="Ontkoppelen" size="small" severity="danger" :data-testid="`lid-ontkoppel-${data.id}`" @click="(e) => vraagOntkoppel(e, data)" />
+          </template>
         </Column>
         <template #empty>
-          <span data-testid="plateau-leden-leeg">Dit plateau heeft nog geen leden.</span>
+          <span data-testid="plateau-leden-leeg">
+            Dit plateau heeft nog geen leden.
+            <template v-if="magBeheren">Koppel een component of contract met “+ Lid koppelen”.</template>
+          </span>
         </template>
       </DataTable>
     </template>
+
+    <!-- Plateau bewerken -->
+    <Dialog v-model:visible="editOpen" modal :closable="false" header="Plateau bewerken" data-testid="plateau-edit-dialog">
+      <form class="flex flex-col gap-[var(--cd-space-md)] min-w-[24rem]" data-testid="plateau-edit-form" @submit.prevent="bevestigBewerken">
+        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+          <label for="pe-naam" class="font-semibold">Naam *</label>
+          <InputText id="pe-naam" v-model="editForm.naam" data-testid="pe-naam" :aria-invalid="!!editFout" />
+          <span v-if="editFout" role="alert" data-testid="pe-fout" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ editFout }}</span>
+        </div>
+        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+          <label for="pe-toelichting" class="font-semibold">Toelichting</label>
+          <Textarea id="pe-toelichting" v-model="editForm.toelichting" rows="3" data-testid="pe-toelichting" />
+        </div>
+        <div class="flex gap-[var(--cd-space-md)]">
+          <Button type="submit" label="Opslaan" data-testid="pe-opslaan" :disabled="bezig" />
+          <Button type="button" label="Annuleren" severity="secondary" @click="editOpen = false" />
+        </div>
+      </form>
+    </Dialog>
+
+    <!-- Plateau verwijderen -->
+    <Dialog v-model:visible="verwijderOpen" modal header="Plateau verwijderen" data-testid="plateau-verwijder-dialog">
+      <p class="mb-[var(--cd-space-md)] max-w-prose">
+        Weet je zeker dat je <strong>{{ plateau?.naam }}</strong> wilt verwijderen? De leden-koppelingen
+        vervallen; de componenten en contracten zelf blijven bestaan.
+      </p>
+      <div class="flex justify-end gap-[var(--cd-space-md)]">
+        <Button label="Annuleren" severity="secondary" @click="verwijderOpen = false" />
+        <Button label="Definitief verwijderen" severity="danger" data-testid="plateau-verwijder-bevestig" :disabled="bezig" @click="bevestigVerwijderen" />
+      </div>
+    </Dialog>
+
+    <!-- Lid koppelen -->
+    <Dialog v-model:visible="koppelOpen" modal :closable="false" header="Lid koppelen" data-testid="lid-koppel-dialog" @show="focusEerste" @hide="onHide">
+      <form class="flex flex-col gap-[var(--cd-space-md)] min-w-[24rem]" data-testid="lid-koppel-form" @submit.prevent="bevestigKoppel">
+        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+          <label for="lk-type" class="font-semibold">Type lid</label>
+          <select id="lk-type" v-model="lidForm.lidType" data-testid="lk-type" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white" @change="onLidTypeChange">
+            <option value="component">Component</option>
+            <option value="contract">Contract</option>
+          </select>
+        </div>
+        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+          <label for="lk-lid" class="font-semibold">{{ isContractLid ? 'Contract' : 'Component' }} *</label>
+          <ZoekSelect
+            id="lk-lid"
+            ref="eersteVeld"
+            :key="lidForm.lidType"
+            testid="lk-veld-lid"
+            v-model="lidForm.lid_id"
+            :zoek-functie="zoekFunctie"
+            :weergave="lidWeergave"
+            :invalid="!!lidFouten.lid_id"
+            :placeholder="isContractLid ? 'Zoek een contract…' : 'Zoek een component…'"
+          />
+          <span v-if="lidFouten.lid_id" role="alert" data-testid="lk-fout-lid" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ lidFouten.lid_id }}</span>
+        </div>
+        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+          <label for="lk-dispositie" class="font-semibold">Dispositie *</label>
+          <select id="lk-dispositie" v-model="lidForm.dispositie" data-testid="lk-dispositie" :aria-invalid="!!lidFouten.dispositie" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white">
+            <option value="" disabled>— kies een dispositie —</option>
+            <option v-for="o in dispositieOpties" :key="o.optie_sleutel" :value="o.optie_sleutel">{{ o.label }}</option>
+          </select>
+          <span v-if="lidFouten.dispositie" role="alert" data-testid="lk-fout-dispositie" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ lidFouten.dispositie }}</span>
+        </div>
+
+        <!-- Contractuele bevestiging — alleen voor een contract-lid -->
+        <fieldset v-if="isContractLid" class="flex flex-col gap-[var(--cd-space-sm)] border border-[var(--cd-color-border)] rounded-[var(--cd-radius-input)] p-[var(--cd-space-md)]" data-testid="lk-bevestiging">
+          <legend class="font-semibold px-[var(--cd-space-xs)]">Contractuele bevestiging</legend>
+          <label class="flex items-center gap-[var(--cd-space-sm)]">
+            <input type="checkbox" v-model="lidForm.contractueel_bevestigd" data-testid="lk-bevestigd" />
+            <span>Contractueel bevestigd (wie/wanneer wordt automatisch vastgelegd)</span>
+          </label>
+          <div class="flex flex-col gap-[var(--cd-space-xs)]">
+            <label for="lk-aantal" class="font-semibold">Aantal gebruikers / licenties</label>
+            <input id="lk-aantal" v-model="lidForm.bevestigd_aantal_gebruikers" type="number" min="0" data-testid="lk-aantal" class="w-40 rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white" />
+          </div>
+        </fieldset>
+
+        <div class="flex gap-[var(--cd-space-md)]">
+          <Button type="submit" label="Koppelen" data-testid="lk-opslaan" :disabled="bezig" />
+          <Button type="button" label="Annuleren" severity="secondary" @click="koppelOpen = false" />
+        </div>
+      </form>
+    </Dialog>
+
+    <!-- Lid ontkoppelen -->
+    <Dialog v-model:visible="ontkoppelOpen" modal header="Lid ontkoppelen" data-testid="lid-ontkoppel-dialog" @hide="onHide">
+      <p class="mb-[var(--cd-space-md)] max-w-prose">
+        <strong>{{ teOntkoppelen?.lid_naam }}</strong> uit dit plateau ontkoppelen? Het component/contract zelf blijft bestaan.
+      </p>
+      <div class="flex justify-end gap-[var(--cd-space-md)]">
+        <Button label="Annuleren" severity="secondary" @click="ontkoppelOpen = false" />
+        <Button label="Ontkoppelen" severity="danger" data-testid="lid-ontkoppel-bevestig" :disabled="bezig" @click="bevestigOntkoppel" />
+      </div>
+    </Dialog>
   </section>
 </template>

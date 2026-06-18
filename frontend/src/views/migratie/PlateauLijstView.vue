@@ -1,11 +1,20 @@
 <script setup>
 /**
- * PlateauLijstView — migratielaag (ADR-023 Fase F / F-1): lijst van plateaus.
- * Read-only; leunt op `GET /plateaus`. Keyset-paginering ("Meer laden").
+ * PlateauLijstView — migratielaag (ADR-023 Fase E/F): lijst + aanmaken van plateaus.
+ * Leunt op `GET /plateaus` (keyset) + `POST /plateaus`. "+ Nieuw plateau" (rol-gegate op
+ * PLATEAU·AANMAKEN) opent een dialog (naam + toelichting) en navigeert na opslaan naar het
+ * nieuwe plateau-detail. UX-A4-1: de migratielaag is binnen CompliData beheerbaar.
  */
-import { onMounted, ref } from 'vue'
-import { Button, Column, DataTable } from '@/primevue'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { Button, Column, DataTable, Dialog, InputText, Textarea, useToast } from '@/primevue'
+import { useRouter } from '@/composables/router'
+import { useAuthStore } from '@/store/auth'
 import { api } from '@/api'
+
+const router = useRouter()
+const toast = useToast()
+const auth = useAuthStore()
+const magAanmaken = computed(() => auth.hasRole('medewerker', 'beheerder'))
 
 const items = ref([])
 const cursor = ref(null)
@@ -28,17 +37,55 @@ async function laad({ reset = false } = {}) {
   }
 }
 
+// ── Nieuw plateau ────────────────────────────────────────────────────────────
+const nieuwOpen = ref(false)
+const bezig = ref(false)
+const form = reactive({ naam: '', toelichting: '' })
+const fouten = reactive({})
+
+function openNieuw() {
+  Object.assign(form, { naam: '', toelichting: '' })
+  Object.keys(fouten).forEach((k) => delete fouten[k])
+  nieuwOpen.value = true
+}
+function valideer() {
+  Object.keys(fouten).forEach((k) => delete fouten[k])
+  if (!form.naam.trim()) fouten.naam = 'Naam is verplicht.'
+  return Object.keys(fouten).length === 0
+}
+async function bevestigNieuw() {
+  if (!valideer()) return
+  bezig.value = true
+  try {
+    const p = await api.plateaus.maak({ naam: form.naam.trim(), toelichting: form.toelichting.trim() || null })
+    toast.add({ severity: 'success', summary: 'Plateau aangemaakt', life: 3000 })
+    nieuwOpen.value = false
+    router.push({ name: 'plateau-detail', params: { id: p.id } })
+  } catch (e) {
+    if (e?.status === 422 && Array.isArray(e.detail)) {
+      for (const d of e.detail) {
+        const veld = Array.isArray(d.loc) ? d.loc[d.loc.length - 1] : null
+        if (veld && veld in form) fouten[veld] = d.msg
+      }
+    } else {
+      toast.add({ severity: 'error', summary: 'Fout', detail: e?.message || 'Er ging iets mis.', life: 5000 })
+    }
+  } finally {
+    bezig.value = false
+  }
+}
+
 onMounted(() => laad({ reset: true }))
 </script>
 
 <template>
   <section aria-labelledby="plateaus-titel">
-    <h1
-      id="plateaus-titel"
-      class="mb-[var(--cd-space-md)] text-[length:var(--cd-text-2xl)] font-semibold text-[var(--cd-color-primary)]"
-    >
-      Plateaus
-    </h1>
+    <div class="mb-[var(--cd-space-md)] flex items-center gap-[var(--cd-space-md)]">
+      <h1 id="plateaus-titel" class="text-[length:var(--cd-text-2xl)] font-semibold text-[var(--cd-color-primary)]">
+        Plateaus
+      </h1>
+      <Button v-if="magAanmaken" label="+ Nieuw plateau" size="small" data-testid="plateau-nieuw" class="ml-auto" @click="openNieuw" />
+    </div>
 
     <p
       v-if="fout"
@@ -74,7 +121,8 @@ onMounted(() => laad({ reset: true }))
       </Column>
       <template #empty>
         <span v-if="eersteGeladen && !laden" data-testid="plateau-lijst-leeg">
-          Nog geen plateaus geregistreerd.
+          Nog geen plateaus.
+          <template v-if="magAanmaken">Maak het eerste plateau aan met “+ Nieuw plateau”.</template>
         </span>
         <span v-else>Laden…</span>
       </template>
@@ -90,5 +138,23 @@ onMounted(() => laad({ reset: true }))
         @click="laad()"
       />
     </div>
+
+    <Dialog v-model:visible="nieuwOpen" modal :closable="false" header="Nieuw plateau" data-testid="plateau-nieuw-dialog">
+      <form class="flex flex-col gap-[var(--cd-space-md)] min-w-[24rem]" data-testid="plateau-nieuw-form" @submit.prevent="bevestigNieuw">
+        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+          <label for="pl-naam" class="font-semibold">Naam *</label>
+          <InputText id="pl-naam" v-model="form.naam" data-testid="pl-naam" :aria-invalid="!!fouten.naam" />
+          <span v-if="fouten.naam" role="alert" data-testid="pl-fout-naam" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.naam }}</span>
+        </div>
+        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+          <label for="pl-toelichting" class="font-semibold">Toelichting</label>
+          <Textarea id="pl-toelichting" v-model="form.toelichting" rows="3" data-testid="pl-toelichting" />
+        </div>
+        <div class="flex gap-[var(--cd-space-md)]">
+          <Button type="submit" label="Aanmaken" data-testid="pl-opslaan" :disabled="bezig" />
+          <Button type="button" label="Annuleren" severity="secondary" @click="nieuwOpen = false" />
+        </div>
+      </form>
+    </Dialog>
   </section>
 </template>

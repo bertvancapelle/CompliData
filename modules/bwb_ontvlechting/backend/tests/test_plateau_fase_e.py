@@ -115,6 +115,30 @@ def test_relatiekenmerk_catalog_valideert_dispositie():
         asyncio.run(rk.valideer_sleutels(session, RelatieKenmerkDimensie.dispositie, ["onbekend"]))
 
 
+def test_actieve_disposities_uit_catalogus():
+    """De UI-dropdown-bron leest de actieve dispositie-opties uit de relatie-kenmerk-catalogus."""
+    from unittest.mock import AsyncMock
+
+    from services import plateau_service as svc
+
+    payload = {"dispositie": [{"optie_sleutel": "migreren", "label": "Migreren", "volgorde": 1}], "relatie_rol": []}
+    session = AsyncMock()
+    orig = svc.catalog.actieve_opties_per_dimensie
+    svc.catalog.actieve_opties_per_dimensie = AsyncMock(return_value=payload)
+    try:
+        uit = asyncio.run(svc.actieve_disposities(session))
+    finally:
+        svc.catalog.actieve_opties_per_dimensie = orig
+    assert uit == [{"optie_sleutel": "migreren", "label": "Migreren", "volgorde": 1}]
+
+
+def test_plateau_lid_read_heeft_lid_naam_veld():
+    """De leden-read draagt `lid_naam` (component.naam / contract.contractnaam) voor de UI."""
+    from schemas.plateau import PlateauLidRead
+
+    assert "lid_naam" in PlateauLidRead.model_fields
+
+
 # ── Offline: audit-allowlist + RBAC ──────────────────────────────────────────────
 
 def test_plateau_in_audit_allowlist():
@@ -302,6 +326,9 @@ def test_plateau_lidmaatschap_component_en_contract_live():
     r = asyncio.run(_run_rls(_TID, "test:bert", _flow))
     assert r["comp"]["dispositie"] == "migreren" and r["comp"]["lid_element_type"] == "component"
     assert r["comp"]["dispositie_label"] == "Migreren"
+    assert r["comp"]["lid_naam"] == "WT-Plateau-comp"      # naam in de read (UI-A4-1)
+    assert r["con"]["lid_naam"] == "WT-Plateau-contract"
+    assert {l["lid_naam"] for l in r["leden"]} == {"WT-Plateau-comp", "WT-Plateau-contract"}
     assert r["con"]["lid_element_type"] == "contract"
     assert r["con"]["contractueel_bevestigd"] is True
     assert r["con"]["bevestigd_aantal_gebruikers"] == 250

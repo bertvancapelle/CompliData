@@ -112,6 +112,7 @@ class PlateauLidRead(BaseModel):
     plateau_id: uuid.UUID
     lid_id: uuid.UUID
     lid_element_type: str         # 'component' | 'contract'
+    lid_naam: str | None          # naam van het lid (component.naam / contract.contractnaam)
     dispositie: str
     dispositie_label: str
     contractueel_bevestigd: bool

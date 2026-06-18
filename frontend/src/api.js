@@ -248,7 +248,16 @@ export const api = {
   plateaus: {
     lijst: ({ limit, after } = {}) => request(`/plateaus${_query({ limit, after })}`),
     haal: (id) => request(`/plateaus/${id}`),
+    maak: (data) => request('/plateaus', { method: 'POST', body: JSON.stringify(data) }),
+    werkBij: (id, data) => request(`/plateaus/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    verwijder: (id) => request(`/plateaus/${id}`, { method: 'DELETE' }),
+    // UX-A4-1 — beheer van leden + dispositie-opties voor het koppel-dropdown.
+    disposities: () => request('/plateaus/disposities'),
     leden: (id) => request(`/plateaus/${id}/leden`),
+    voegLid: (id, data) => request(`/plateaus/${id}/leden`, { method: 'POST', body: JSON.stringify(data) }),
+    werkLid: (id, lidId, data) =>
+      request(`/plateaus/${id}/leden/${lidId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    verwijderLid: (id, lidId) => request(`/plateaus/${id}/leden/${lidId}`, { method: 'DELETE' }),
   },
   gaps: {
     lijst: ({ limit, after } = {}) => request(`/gaps${_query({ limit, after })}`),

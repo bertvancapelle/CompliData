@@ -58,6 +58,15 @@ async def maak_plateau(
     return await svc.maak_aan(session, user.tenant_id, body)
 
 
+@router.get("/disposities")
+async def lijst_disposities(
+    _user: AuthenticatedUser = Depends(vereist_permissie(Entiteit.PLATEAU, Actie.LEZEN)),
+    session: AsyncSession = Depends(get_tenant_session),
+):
+    """Actieve `dispositie`-opties voor het lid-koppel-dropdown (statisch subpad vóór /{id})."""
+    return await svc.actieve_disposities(session)
+
+
 @router.get("/{plateau_id}", response_model=PlateauRead)
 async def haal_plateau(
     plateau_id: uuid.UUID,
