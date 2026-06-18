@@ -39,6 +39,7 @@ for _cand in (
         break
 
 from sqlalchemy import select  # noqa: E402
+from sqlalchemy.exc import IntegrityError  # noqa: E402
 
 from app.core.database import get_worker_session  # noqa: E402
 from models.models import (  # noqa: E402
@@ -60,6 +61,7 @@ from models.models import (  # noqa: E402
     Relatie,
 )
 from schemas.applicatie import ApplicatieCreate  # noqa: E402
+from schemas.component import ComponentCreate  # noqa: E402
 from schemas.component_contract import ComponentContractCreate  # noqa: E402
 from schemas.blokkade import BlokkadeUpdate  # noqa: E402
 from schemas.checklistscore import ChecklistscoreCreate, ChecklistscoreUpdate  # noqa: E402
@@ -68,13 +70,16 @@ from schemas.relatie import RelatieCreate  # noqa: E402
 from schemas.partij import PartijCreate  # noqa: E402
 from services import (  # noqa: E402
     component_contract_service,
+    component_service,
     applicatie_service,
     blokkade_service,
     checklistscore_service,
     contract_service,
     partij_service,
     relatie_service,
+    roltoewijzing_service,
 )
+from services.errors import RegistratieConflict  # noqa: E402
 from services.seed import CHECKLIST_VRAGEN, seed_checklist_vragen  # noqa: E402
 from services.seed_antwoordconfig import seed_antwoordconfig  # noqa: E402
 
@@ -280,7 +285,9 @@ async def _seed_applicatie(session, app: dict, bestaande: dict) -> "uuid_like":
         session, DEV_TENANT,
         ApplicatieCreate(
             naam=naam, beschrijving=app["beschrijving"], hostingmodel=app["host"],
-            eigenaar_organisatie=app["org"], eigenaar_naam=None, leverancier=None,
+            # ADR-024 B6-b: eigenaar-organisatie is nu een optionele partij-verwijzing
+            # (`eigenaar_organisatie_id`); de vrije-tekst-`org` is geen invoerveld meer.
+            eigenaar_naam=None, leverancier=None,
             **APP_DEFAULTS,
         ),
     )
@@ -619,8 +626,9 @@ async def _seed_technische_laag(session, app_ids: dict) -> dict:
         elem = Element(tenant_id=tid, element_type=ElementType.component)
         session.add(elem)
         await session.flush()
-        c = Component(id=elem.id, tenant_id=tid, naam=naam, componenttype=type_,
-                      hostingmodel=host, eigenaar_organisatie=org)
+        # ADR-024 B6-b: `eigenaar_organisatie` (vrije tekst) is vervangen door de optionele
+        # `eigenaar_organisatie_id`-FK; kale componenten laten we hier zonder eigenaar.
+        c = Component(id=elem.id, tenant_id=tid, naam=naam, componenttype=type_, hostingmodel=host)
         session.add(c)
         await session.flush()
         comps[naam] = c.id
@@ -729,7 +737,7 @@ async def _seed_tweede_type(session) -> dict:
             continue
         c = await comp.maak_aan(
             session, DEV_TENANT,
-            ComponentCreate(naam=naam, componenttype=TYPE, hostingmodel=HostingModel.on_premise, eigenaar_organisatie="ICT-beheer"),
+            ComponentCreate(naam=naam, componenttype=TYPE, hostingmodel=HostingModel.on_premise),
         )
         if start:
             srv_gestart = c["id"]
@@ -745,6 +753,197 @@ async def _seed_tweede_type(session) -> dict:
         else:
             print(f"  + {naam}: aangemaakt (concept — demonstreert Start beoordeling)")
     return {"type": TYPE, "vragen": len(code_to_id), "gestart_component": srv_gestart}
+
+
+# === ADR-025 — Landschapskaart-demodata ======================================
+# Gevarieerd, samenhangend mini-landschap zodat de Landschapskaart (ego + impact) in
+# beide modi gevuld is. Lifecycle wordt NOOIT hard gezet — de engine leidt hem af uit
+# de checklistscores (zoals een gebruiker). Idempotent: bestaat-al → overslaan / stil.
+LK_SERVERS = [("App-server Noord", "applicatieserver"), ("Databasecluster Prod", "database")]
+
+# plan: 'alles' → migratieklaar · 'helft'/'drie' → in_inventarisatie · 'blokkade' → geblokkeerd ·
+#       'geen' → concept (lifecycle-vloer). 'Zaaksysteem' bestaat al uit de basisseed (migratieklaar)
+#       → create+score worden dan overgeslagen (idempotent), de relaties hangen we er wél aan.
+LK_APPS = [
+    # 'Klantportaal' i.p.v. 'Zaaksysteem': de basis-seed kent al een 'Zaaksysteem' (met 2 blokkades →
+    # geblokkeerd). Een eigen, niet-botsende naam levert de bedoelde migratieklaar-headline zónder de
+    # engine of de bredere demo te raken.
+    {"naam": "Klantportaal", "host": "saas", "plan": "alles"},
+    {"naam": "Documentbeheer", "host": "saas", "plan": "helft"},
+    {"naam": "HRM-portaal", "host": "on_premise", "plan": "blokkade"},
+    {"naam": "Financieel systeem", "host": "private_cloud", "plan": "drie"},
+    {"naam": "Burgerzaken-suite", "host": "on_premise", "plan": "geen"},
+    {"naam": "Rapportage-tool", "host": "saas", "plan": "geen"},
+]
+LK_CONTRACTEN = [
+    ("Licentiecontract Klantportaal", "SaaS-leverancier NL"),
+    ("Onderhoudscontract Infra", "TechSupplier BV"),
+]
+LK_FLOW = [
+    ("Klantportaal", "Documentbeheer"), ("Klantportaal", "HRM-portaal"),
+    ("Financieel systeem", "Klantportaal"), ("Burgerzaken-suite", "Klantportaal"),
+    ("Burgerzaken-suite", "Financieel systeem"), ("Rapportage-tool", "Financieel systeem"),
+    ("Rapportage-tool", "HRM-portaal"),
+]
+LK_ASSIGNMENT = [
+    ("App-server Noord", "Klantportaal"), ("App-server Noord", "Documentbeheer"),
+    ("Databasecluster Prod", "Klantportaal"), ("Databasecluster Prod", "Financieel systeem"),
+    ("Databasecluster Prod", "HRM-portaal"),
+]
+LK_ASSOCIATION = [
+    ("Klantportaal", "Licentiecontract Klantportaal"), ("Documentbeheer", "Licentiecontract Klantportaal"),
+    ("App-server Noord", "Onderhoudscontract Infra"), ("Databasecluster Prod", "Onderhoudscontract Infra"),
+]
+LK_ROLLEN = [
+    ("Afdeling Informatisering", "functioneel_beheer", "Klantportaal"),
+    ("Afdeling Informatisering", "functioneel_beheer", "Documentbeheer"),
+    ("TechSupplier BV", "technisch_beheer", "Klantportaal"),
+    ("TechSupplier BV", "technisch_beheer", "HRM-portaal"),
+    ("P. van Dijk", "product_owner", "Klantportaal"),
+    ("P. van Dijk", "eigenaar", "Burgerzaken-suite"),
+    ("SaaS-leverancier NL", "technisch_beheer", "Financieel systeem"),
+]
+
+
+def _lk_scores(plan: str, n: int) -> list[str]:
+    """Score-reeks (codevolgorde) per plan; engine leidt de lifecycle eruit af."""
+    if plan == "alles":
+        return ["ja"] * n
+    if plan == "helft":
+        return ["ja"] * -(-n // 2)            # ceil(n/2) scores → rest ongescoord
+    if plan == "drie":
+        return ["ja"] * min(3, n)
+    if plan == "blokkade":
+        return (["nee"] + ["ja"] * (n - 1)) if n else []  # één nee → open blokkade
+    return []                                  # 'geen' → concept
+
+
+async def seed_landschapskaart_demo(session, tenant_id) -> dict:
+    """ADR-025 — demolandschap voor de Landschapskaart. Idempotent + engine-geleid."""
+    naam_naar_id: dict[str, object] = {}
+
+    # --- Servers (kale componenten) + applicaties (engine-geleide lifecycle) ---
+    comps = {c.naam: c.id for c in (await session.execute(select(Component))).scalars().all()}
+    for naam, type_ in LK_SERVERS:
+        if naam in comps:
+            naam_naar_id[naam] = comps[naam]
+            print(f"  = component {naam}: bestaat al — overgeslagen")
+            continue
+        c = await component_service.maak_aan(
+            session, tenant_id, ComponentCreate(naam=naam, componenttype=type_, hostingmodel="on_premise"))
+        naam_naar_id[naam] = c["id"]
+        print(f"  + component {naam} ({type_})")
+
+    bestaande_apps = {r.naam: r.id for r in (await session.execute(select(Applicatie))).scalars().all()}
+    n_vragen = len(CODES)
+    for app in LK_APPS:
+        naam = app["naam"]
+        if naam in bestaande_apps:
+            naam_naar_id[naam] = bestaande_apps[naam]
+            print(f"  = applicatie {naam}: bestaat al — overgeslagen (scores ongewijzigd)")
+            continue
+        obj = await applicatie_service.maak_aan(
+            session, tenant_id,
+            ApplicatieCreate(naam=naam, beschrijving=f"Demo-applicatie {naam}", hostingmodel=app["host"], **APP_DEFAULTS))
+        naam_naar_id[naam] = obj.id
+        scores = _lk_scores(app["plan"], n_vragen)
+        if scores:
+            # Verlaat de concept-vloer via de legitieme start; daarna scoren (engine herberekent).
+            await applicatie_service.start_inventarisatie(session, tenant_id, obj.id)
+            for i, score in enumerate(scores):
+                await checklistscore_service.maak_aan(
+                    session, tenant_id,
+                    ChecklistscoreCreate(component_id=obj.id, checklistvraag_id=_CODE_TO_ID[CODES[i]], score=score))
+        print(f"  + applicatie {naam} (plan={app['plan']}, {len(scores)}/{n_vragen} gescoord)")
+
+    # --- Partijen (organisatie → afdeling → persoon + twee externe partijen) ---
+    partij_ids = {r.naam: r.id for r in (await session.execute(select(Partij))).scalars().all()}
+
+    async def _zorg_partij(aard, naam, **velden):
+        if naam in partij_ids:
+            naam_naar_id[naam] = partij_ids[naam]
+            print(f"  = partij {naam}: bestaat al — overgeslagen")
+            return partij_ids[naam]
+        obj = await partij_service.maak_aan(session, tenant_id, PartijCreate(aard=aard, naam=naam, **velden))
+        partij_ids[naam] = obj.id
+        naam_naar_id[naam] = obj.id
+        print(f"  + partij {naam} ({aard.value})")
+        return obj.id
+
+    org_id = await _zorg_partij(PartijAard.organisatie, "Gemeente BWB", omschrijving="Demo-organisatie")
+    afd_id = await _zorg_partij(PartijAard.organisatie_eenheid, "Afdeling Informatisering", organisatie_id=org_id)
+    await _zorg_partij(PartijAard.persoon, "P. van Dijk", organisatie_id=org_id, afdeling_id=afd_id)
+    await _zorg_partij(PartijAard.externe_partij, "TechSupplier BV")
+    await _zorg_partij(PartijAard.externe_partij, "SaaS-leverancier NL")
+
+    # --- Contracten (leverancier = externe partij) ---
+    con_ids = {r.contractnaam: r.id for r in (await session.execute(select(Contract))).scalars().all()}
+    for contractnaam, leverancier in LK_CONTRACTEN:
+        if contractnaam in con_ids:
+            naam_naar_id[contractnaam] = con_ids[contractnaam]
+            print(f"  = contract {contractnaam}: bestaat al — overgeslagen")
+            continue
+        res = await contract_service.maak_aan(
+            session, tenant_id,
+            ContractCreate(leverancier_id=partij_ids[leverancier], contracttype="los_contract",
+                           contractnaam=contractnaam, dekking=[], kostenmodel=[]))
+        con_ids[contractnaam] = res["id"]
+        naam_naar_id[contractnaam] = res["id"]
+        print(f"  + contract {contractnaam}")
+
+    # --- Relaties: flow + assignment (idempotent op (bron, doel) per type) ---
+    async def _bestaande(relatietype):
+        return {(r.bron_id, r.doel_id) for r in (
+            await session.execute(select(Relatie).where(Relatie.relatietype == relatietype))).scalars().all()}
+
+    flow_set = await _bestaande("flow")
+    for bron, doel in LK_FLOW:
+        b, d = naam_naar_id[bron], naam_naar_id[doel]
+        if (b, d) in flow_set:
+            continue
+        await relatie_service.maak_aan(session, tenant_id, RelatieCreate(
+            bron_id=b, doel_id=d, relatietype="flow",
+            kenmerken={"richting": KOP_DEFAULTS["richting"], "impact_bij_verbreking": KOP_DEFAULTS["impact_bij_verbreking"]},
+            omschrijving="koppeling"))
+        print(f"  + flow {bron}→{doel}")
+
+    assign_set = await _bestaande("assignment")
+    for host, gehoste in LK_ASSIGNMENT:
+        b, d = naam_naar_id[host], naam_naar_id[gehoste]
+        if (b, d) in assign_set:
+            continue
+        await relatie_service.maak_aan(session, tenant_id, RelatieCreate(
+            bron_id=b, doel_id=d, relatietype="assignment", omschrijving="draait op"))
+        print(f"  + assignment {host}→{gehoste}")
+
+    # --- Contract-associaties (component↔contract) idempotent op (component, contract) ---
+    assoc_set = await _bestaande("association")
+    for comp_naam, contractnaam in LK_ASSOCIATION:
+        b, d = naam_naar_id[comp_naam], naam_naar_id[contractnaam]
+        if (b, d) in assoc_set:
+            continue
+        await component_contract_service.maak_aan(session, tenant_id, ComponentContractCreate(
+            component_id=b, contract_id=d, relatie_rol="valt_onder"))
+        print(f"  + association {comp_naam}↔{contractnaam}")
+
+    # --- Roltoewijzingen (beheerorganisatie) — stil bij dubbel (409) ---
+    for partij, rol, object_naam in LK_ROLLEN:
+        try:
+            await roltoewijzing_service.maak_aan(
+                session, tenant_id, naam_naar_id[partij], naam_naar_id[object_naam], rol)
+            print(f"  + roltoewijzing {partij} · {rol} · {object_naam}")
+        except RegistratieConflict:
+            print(f"  = roltoewijzing {partij} · {rol} · {object_naam}: bestaat al — overgeslagen")
+
+    # --- Verificatie: engine-bepaalde lifecycle per demo-applicatie ---
+    print("Seed landschapskaart — lifecycle-statussen:")
+    lifecycles = {}
+    for app in LK_APPS:
+        detail = await component_service.lees_detail(session, tenant_id, naam_naar_id[app["naam"]])
+        status = getattr(detail.get("lifecycle_status"), "value", detail.get("lifecycle_status"))
+        lifecycles[app["naam"]] = status
+        print(f"  {app['naam']+':':<22}{status}")
+    return lifecycles
 
 
 async def main() -> None:
@@ -808,6 +1007,9 @@ async def main() -> None:
         print("ADR-022 Fase E — tweede checklist-dragend type (client_software):")
         e = await _seed_tweede_type(session)
         print(f"  type={e['type']} vragen={e['vragen']}")
+
+        print("ADR-025 — Landschapskaart-demolandschap:")
+        await seed_landschapskaart_demo(session, DEV_TENANT)
     print("dev-seed: klaar")
 
 
