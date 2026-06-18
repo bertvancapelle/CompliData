@@ -10,12 +10,14 @@ de applicatie `migratieklaar`.
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import select
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.models import (
     ACTIEVE_BLOKKADE_STATUSSEN,
     Component,
+    ComponentConfigDimensie,
+    ComponentConfigOptie,
     Blokkade,
     BlokkadeStatus,
     ChecklistVraag,
@@ -243,6 +245,11 @@ async def lijst_overzicht(
             Blokkade.id.label("id"),
             Blokkade.component_id.label("component_id"),
             Component.naam.label("applicatie_naam"),
+            # ADR-024-vervolg: het componenttype (sleutel) voor de type-tag + type-afhankelijke
+            # doorklik (applicatie → applicatie-detail; overige typen → component-detail), plus
+            # het leesbare type-label via een LEFT JOIN op de platform-catalogus (één query).
+            Component.componenttype.label("componenttype"),
+            ComponentConfigOptie.label.label("componenttype_label"),
             ChecklistVraag.code.label("vraag_code"),
             Blokkade.status.label("status"),
             Blokkade.toelichting.label("toelichting"),
@@ -254,6 +261,16 @@ async def lijst_overzicht(
         .join(Component, Component.id == Blokkade.component_id)
         .join(Checklistscore, Checklistscore.id == Blokkade.checklistscore_id)
         .join(ChecklistVraag, ChecklistVraag.id == Checklistscore.checklistvraag_id)
+        # Platform-brede typecatalogus (geen RLS) voor het leesbare label; LEFT zodat een
+        # (onverwacht) onbekend type de rij niet laat verdwijnen.
+        .join(
+            ComponentConfigOptie,
+            and_(
+                ComponentConfigOptie.optie_sleutel == Component.componenttype,
+                ComponentConfigOptie.dimensie == ComponentConfigDimensie.componenttype,
+            ),
+            isouter=True,
+        )
         .where(Blokkade.tenant_id == tid)
     )
     stmt = _pas_statusfilter_toe(stmt, status_filter)
@@ -279,6 +296,9 @@ async def lijst_overzicht(
             "id": r.id,
             "component_id": r.component_id,
             "applicatie_naam": r.applicatie_naam,
+            "componenttype": r.componenttype,
+            # Fallback naar de sleutel als de catalogus (onverwacht) geen label heeft.
+            "componenttype_label": r.componenttype_label or r.componenttype,
             "vraag_code": r.vraag_code,
             "status": r.status,
             "toelichting": r.toelichting,

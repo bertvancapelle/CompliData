@@ -132,14 +132,18 @@ class BlokkadeLijstPagina(BaseModel):
 
 
 class BlokkadeOverzichtItem(BaseModel):
-    """Eén blokkade in het tenant-brede overzicht — verrijkt met applicatie-naam
-    (join op component) en de veroorzakende `vraag_code` (join op ChecklistVraag)."""
+    """Eén blokkade in het tenant-brede overzicht — verrijkt met component-naam + -type
+    (join op component) en de veroorzakende `vraag_code` (join op ChecklistVraag). ADR-024-
+    vervolg: het type voedt de type-tag + de type-afhankelijke doorklik (applicatie vs.
+    generiek component-detail). `applicatie_naam` is het interne veld voor de component-naam."""
 
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
     component_id: uuid.UUID
-    applicatie_naam: str
+    applicatie_naam: str  # component-naam (intern veld; user-facing kop = "Component")
+    componenttype: str
+    componenttype_label: str
     vraag_code: str
     status: BlokkadeStatus
     toelichting: str | None

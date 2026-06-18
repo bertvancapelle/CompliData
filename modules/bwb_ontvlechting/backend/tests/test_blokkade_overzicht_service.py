@@ -58,6 +58,20 @@ def test_allowlist_enum_kolommen_parsers_synchroon():
 
 # ── Join + default sortering ────────────────────────────────────────────────
 
+def test_overzicht_levert_vraag_doorklik_verwijzing():
+    """ADR-024-vervolg: de databron draagt `component_id` + `componenttype` (+ leesbaar
+    label via LEFT JOIN op de catalogus) + `vraag_code`, zodat de tenant-brede blokkadelijst
+    type-afhankelijk naar het juiste detailscherm + de checklistvraag kan doorklikken.
+    Read-only navigatie-verwijzing; geen mutatie."""
+    sess, _, _ = _run()
+    sql = _sql(sess)
+    assert "AS component_id" in sql
+    assert "AS vraag_code" in sql
+    assert "AS componenttype" in sql              # type-sleutel (applicatie vs. overig)
+    assert "AS componenttype_label" in sql        # leesbaar type-label
+    assert "componentconfig_optie" in sql         # LEFT JOIN op de platform-typecatalogus
+
+
 def test_join_en_default_sortering():
     sess, _, _ = _run()
     sql = _sql(sess)
@@ -126,6 +140,8 @@ def _rij(naam, eigenaar):
         id=uuid.uuid4(),
         component_id=uuid.uuid4(),
         applicatie_naam=naam,
+        componenttype="applicatie",
+        componenttype_label="Applicatie",
         vraag_code="A1",
         status="open",
         toelichting=None,
@@ -140,7 +156,7 @@ def test_vorm_en_vervolgcursor():
     sess, items, cursor = _run(rows=rows, limit=25)
     assert len(items) == 25
     assert set(items[0]) == {
-        "id", "component_id", "applicatie_naam", "vraag_code",
-        "status", "toelichting", "eigenaar", "opgelost_op", "gewijzigd_op",
+        "id", "component_id", "applicatie_naam", "componenttype", "componenttype_label",
+        "vraag_code", "status", "toelichting", "eigenaar", "opgelost_op", "gewijzigd_op",
     }
     assert cursor is not None  # vervolgcursor want er was meer

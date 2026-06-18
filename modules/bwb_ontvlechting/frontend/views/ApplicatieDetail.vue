@@ -170,6 +170,12 @@ function _initVanafQuery() {
   const t = String(route.query.tab ?? '')
   if (TOP_KEYS.includes(t)) activeTop.value = t
   if (route.query.cat != null) activeCat.value = String(route.query.cat)
+  // ADR-024-vervolg: deep-link vanuit de tenant-brede blokkadelijst markeert een vraag.
+  // Hergebruikt hetzelfde markeerpad als de in-page `naar-vraag` (geen tweede mechaniek).
+  if (route.query.markeer != null) {
+    activeTop.value = 'checklist'
+    markeerVraagCode.value = String(route.query.markeer)
+  }
 }
 
 // Zodra de categorieën geladen zijn: zorg dat activeCat geldig is (default = eerste).

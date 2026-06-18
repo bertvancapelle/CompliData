@@ -10,7 +10,7 @@
  */
 import { computed, onMounted, ref } from 'vue'
 import { Button, Dialog, Tag, useToast } from '@/primevue'
-import { useRouter } from '@/composables/router'
+import { useRoute, useRouter } from '@/composables/router'
 import { useAuthStore } from '@/store/auth'
 import { api } from '@/api'
 import { HOSTINGMODEL, LIFECYCLE, LIFECYCLE_SEVERITY, REGISTER_FOUT, label } from '../labels'
@@ -24,6 +24,7 @@ import BlokkadeSectie from './BlokkadeSectie.vue'
 
 const props = defineProps({ id: { type: String, required: true } })
 const router = useRouter()
+const route = useRoute()
 const toast = useToast()
 const auth = useAuthStore()
 
@@ -127,7 +128,13 @@ async function bevestigVerwijderen() {
   }
 }
 
-onMounted(laad)
+onMounted(() => {
+  // ADR-024-vervolg: deep-link vanuit de blokkadelijst markeert een checklistvraag.
+  // Hergebruikt hetzelfde markeerpad als de in-page `naar-vraag` (component-detail is
+  // tabloos → alleen de code, geen tab/categorie).
+  if (route.query.markeer != null) markeerVraagCode.value = String(route.query.markeer)
+  laad()
+})
 </script>
 
 <template>

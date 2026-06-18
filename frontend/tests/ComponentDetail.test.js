@@ -31,6 +31,7 @@ vi.mock('@/api', () => ({
 
 import { api } from '@/api'
 import ComponentDetail from '@modules/bwb_ontvlechting/frontend/views/ComponentDetail.vue'
+import ChecklistscoreSectie from '@modules/bwb_ontvlechting/frontend/views/ChecklistscoreSectie.vue'
 import { useAuthStore } from '@/store/auth'
 
 const ID = 'db-1'
@@ -48,9 +49,9 @@ function maakRouter() {
   })
 }
 
-async function mountDetail({ rollen = ['beheerder'] } = {}) {
+async function mountDetail({ rollen = ['beheerder'], query = '' } = {}) {
   const router = maakRouter()
-  await router.push('/componenten/db-1')
+  await router.push(`/componenten/db-1${query}`)
   await router.isReady()
   const pinia = createPinia()
   const auth = useAuthStore(pinia)
@@ -174,6 +175,16 @@ describe('ComponentDetail', () => {
     const { w } = await mountDetail() // default checklist_dragend: false
     expect(w.find('[data-testid="cs-voortgang"]').exists()).toBe(false)
     expect(api.checklistvragen.lijst).not.toHaveBeenCalled()
+  })
+
+  it('markeert de vraag uit de deep-link-query (blokkadelijst-doorklik, ADR-024-vervolg)', async () => {
+    api.componenten.haal.mockResolvedValue(_component({ checklist_dragend: true }))
+    api.checklistvragen.lijst.mockResolvedValue([
+      { id: 1, code: '3.2', categorie_nr: 3, categorie_naam: 'Data', vraag: 'a', prioriteit: 'hoog' },
+    ])
+    const { w } = await mountDetail({ query: '?markeer=3.2' })
+    // route.query.markeer → markeerVraagCode → :markeer-code op de sectie (zelfde markeerpad).
+    expect(w.findComponent(ChecklistscoreSectie).props('markeerCode')).toBe('3.2')
   })
 
   // ── F-1-vervolg: blokkades + herkomst-doorklik op ComponentDetail ──────────

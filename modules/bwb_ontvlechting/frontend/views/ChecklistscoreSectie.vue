@@ -166,6 +166,8 @@ async function laad() {
     ])
     vragen.value = vragenResp
     _vulScoreMap(scoresPagina.items)
+    // Deep-link-markering: de rij `cs-rij-<code>` bestaat pas ná dit punt → nu (her)toepassen.
+    if (props.markeerCode) _pasMarkeringToe(props.markeerCode)
   } catch (e) {
     fout.value = e?.message || 'Laden van de checklist mislukt.'
   } finally {
@@ -308,21 +310,21 @@ async function opslaanVelden(code) {
 // `scrollIntoView` defensief (niet alle test-DOM's implementeren het).
 const gemarkeerd = ref(null)
 let _markeerTimer = null
-watch(
-  () => props.markeerCode,
-  async (code) => {
-    if (!code) return
-    await nextTick()
-    const el = document.getElementById(`cs-rij-${code}`)
-    el?.scrollIntoView?.({ behavior: 'smooth', block: 'center' })
-    gemarkeerd.value = code
-    if (_markeerTimer) clearTimeout(_markeerTimer)
-    _markeerTimer = setTimeout(() => {
-      if (gemarkeerd.value === code) gemarkeerd.value = null
-    }, 2500)
-  },
-  { immediate: true },
-)
+async function _pasMarkeringToe(code) {
+  if (!code) return
+  await nextTick()
+  const el = document.getElementById(`cs-rij-${code}`)
+  el?.scrollIntoView?.({ behavior: 'smooth', block: 'center' })
+  gemarkeerd.value = code
+  if (_markeerTimer) clearTimeout(_markeerTimer)
+  _markeerTimer = setTimeout(() => {
+    if (gemarkeerd.value === code) gemarkeerd.value = null
+  }, 2500)
+}
+// In-page doorklik (BlokkadeSectie `naar-vraag`): markeerCode wijzigt terwijl de rijen al
+// bestaan. Deep-link (route-query, ADR-024-vervolg): markeerCode staat al gezet vóór de
+// vragen geladen zijn — daarom hertoepassen ná `laad()` (zie daar). Eén markeerpad.
+watch(() => props.markeerCode, (code) => _pasMarkeringToe(code), { immediate: true })
 
 defineExpose({ aantalVragen, aantalGescoord, categorieen, herlaad: () => laad() })
 

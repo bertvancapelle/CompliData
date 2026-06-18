@@ -20,6 +20,8 @@ _ITEM = {
     "id": uuid.uuid4(),
     "component_id": uuid.uuid4(),
     "applicatie_naam": "Zaaksysteem",
+    "componenttype": "applicatie",
+    "componenttype_label": "Applicatie",
     "vraag_code": "A1",
     "status": "open",
     "toelichting": None,

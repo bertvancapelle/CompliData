@@ -257,6 +257,19 @@ describe('ApplicatieDetail — categorie-tabs (CD022, #11)', () => {
     expect(wrapper.find('[data-testid="cs-rij-2.1"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="cs-rij-1.1"]').exists()).toBe(false)
   })
+
+  it('markeert de vraag uit de deep-link-query (blokkadelijst-doorklik, ADR-024-vervolg)', async () => {
+    api.applicaties.haal.mockResolvedValue(_app())
+    api.checklistvragen.lijst.mockResolvedValue([
+      { id: 1, code: '1.1', categorie_nr: 1, categorie_naam: 'Identiteit', vraag: 'a', prioriteit: 'hoog' },
+      { id: 2, code: '2.1', categorie_nr: 2, categorie_naam: 'Data', vraag: 'b', prioriteit: 'hoog' },
+    ])
+    const { wrapper } = await mountDetail({ query: '?tab=checklist&cat=2&markeer=2.1' })
+    // Checklist-tab + categorie 2 actief; de markeer-code is doorgegeven aan de sectie
+    // (hergebruikt hetzelfde markeerpad als de in-page `naar-vraag`).
+    expect(wrapper.find('[data-testid="cs-rij-2.1"]').exists()).toBe(true)
+    expect(wrapper.findComponent(ChecklistscoreSectie).props('markeerCode')).toBe('2.1')
+  })
 })
 
 describe('ApplicatieDetail — context-paneel categorie 8 (CD044 §5)', () => {

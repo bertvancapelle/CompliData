@@ -73,6 +73,33 @@ function onFilterWijziging() {
   laad({ reset: true })
 }
 
+// ADR-024-vervolg: categorie-nr uit de vraag-code (bv. "2.7" → 2) voor de deep-link naar
+// het juiste checklist-categorie-tabblad; analoog aan BlokkadeSectie.categorieVan.
+function categorieVan(code) {
+  const nr = Number.parseInt(String(code ?? '').split('.')[0], 10)
+  return Number.isInteger(nr) ? nr : undefined
+}
+
+// ADR-024-vervolg: type-onafhankelijke doorklik. Applicatie → de rijke applicatie-detail
+// (met checklist-tab/categorie); elk ander checklist-dragend type → het generieke
+// component-detail (tabloos). `markeer` markeert de veroorzakende checklistvraag.
+function detailDoel(data, { markeer = false } = {}) {
+  const isApplicatie = data.componenttype === 'applicatie'
+  const query = {}
+  if (markeer) {
+    query.markeer = data.vraag_code
+    if (isApplicatie) {
+      query.tab = 'checklist'
+      query.cat = categorieVan(data.vraag_code)
+    }
+  }
+  return {
+    name: isApplicatie ? 'applicatie-detail' : 'component-detail',
+    params: { id: data.component_id },
+    query,
+  }
+}
+
 const statusLabel = (c) => label(BLOKKADE_STATUS, c)
 const statusSeverity = (c) => BLOKKADE_STATUS_SEVERITY[c] || 'info'
 
@@ -127,18 +154,31 @@ onMounted(() => laad({ reset: true }))
       class="bg-[var(--cd-color-surface)] rounded-[var(--cd-radius-card)] shadow-[var(--cd-shadow-sm)]"
       @sort="onSort"
     >
-      <Column field="applicatie_naam" header="Applicatie" sortable>
+      <Column field="applicatie_naam" header="Component" sortable>
         <template #body="{ data }">
           <router-link
-            :to="{ name: 'applicatie-detail', params: { id: data.component_id } }"
+            :to="detailDoel(data)"
             data-testid="blokkade-app-link"
             class="text-[var(--cd-color-primary)] font-medium hover:underline focus:outline-2 focus:outline-offset-2 focus:outline-[var(--cd-color-primary)]"
           >
             {{ data.applicatie_naam }}
           </router-link>
+          <span data-testid="blokkade-type" class="ml-[var(--cd-space-sm)] text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]">
+            {{ data.componenttype_label }}
+          </span>
         </template>
       </Column>
-      <Column field="vraag_code" header="Vraag" sortable />
+      <Column field="vraag_code" header="Vraag" sortable>
+        <template #body="{ data }">
+          <router-link
+            :to="detailDoel(data, { markeer: true })"
+            data-testid="blokkade-vraag-link"
+            class="text-[var(--cd-color-primary)] font-medium hover:underline focus:outline-2 focus:outline-offset-2 focus:outline-[var(--cd-color-primary)]"
+          >
+            {{ data.vraag_code }}
+          </router-link>
+        </template>
+      </Column>
       <Column header="Status" sort-field="status" sortable>
         <template #body="{ data }">
           <Tag :value="statusLabel(data.status)" :severity="statusSeverity(data.status)" />
