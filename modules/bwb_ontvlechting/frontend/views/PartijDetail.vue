@@ -27,6 +27,22 @@ const verwijderDialog = ref(false)
 
 const magBewerken = computed(() => auth.hasRole('medewerker', 'beheerder'))
 const magVerwijderen = computed(() => auth.hasRole('beheerder'))
+// PARTIJ·AANMAKEN — medewerker + beheerder (inhoud-patroon). Affordance voor "lid toevoegen".
+const magAanmaken = computed(() => auth.hasRole('medewerker', 'beheerder'))
+
+// UX-A2/A3 — lid toevoegen vanaf de plek waar het lid leeft, met voorgevulde context.
+// Vanaf een organisatie(-achtige): organisatie = deze partij. Vanaf een afdeling: organisatie
+// = de organisatie van de afdeling, afdeling = deze partij (aard altijd persoon).
+function nieuwLid(aard) {
+  const query = { aard }
+  if (isAfdeling.value) {
+    query.organisatie_id = partij.value.organisatie_id
+    query.afdeling_id = partij.value.id
+  } else {
+    query.organisatie_id = partij.value.id
+  }
+  router.push({ name: 'partij-nieuw', query })
+}
 const isExternePartij = computed(() => partij.value?.aard === 'externe_partij')
 const aardLabel = (a) => label(PARTIJ_AARD, a)
 
@@ -209,9 +225,28 @@ const RIJEN = [
 
       <!-- Onderdelen/personen ("hoort bij", andere kant) — organisatie/externe partij of afdeling -->
       <section v-if="heeftLeden" class="card mt-[var(--cd-space-lg)]" data-testid="partij-leden-sectie" aria-labelledby="sectie-partij-leden">
-        <h2 id="sectie-partij-leden" class="text-[length:var(--cd-text-lg)] font-semibold mb-[var(--cd-space-sm)]">
-          {{ isAfdeling ? 'Personen in deze afdeling' : 'Afdelingen en personen' }}
-        </h2>
+        <div class="flex items-center gap-[var(--cd-space-sm)] mb-[var(--cd-space-sm)]">
+          <h2 id="sectie-partij-leden" class="text-[length:var(--cd-text-lg)] font-semibold">
+            {{ isAfdeling ? 'Personen in deze afdeling' : 'Afdelingen en personen' }}
+          </h2>
+          <template v-if="magAanmaken">
+            <Button
+              v-if="!isAfdeling"
+              label="+ Afdeling"
+              size="small"
+              data-testid="lid-afdeling"
+              class="ml-auto"
+              @click="nieuwLid('organisatie_eenheid')"
+            />
+            <Button
+              label="+ Persoon"
+              size="small"
+              data-testid="lid-persoon"
+              :class="isAfdeling ? 'ml-auto' : ''"
+              @click="nieuwLid('persoon')"
+            />
+          </template>
+        </div>
         <!-- Server-side sortering (ADR-017): lazy + @sort → sort/order + cursor-reset + refetch. -->
         <DataTable
           :value="leden"

@@ -9,12 +9,13 @@
  */
 import { computed, onMounted, reactive, ref } from 'vue'
 import { Button, InputText, Textarea, useToast } from '@/primevue'
-import { useRouter } from '@/composables/router'
+import { useRouter, useRoute } from '@/composables/router'
 import { api } from '@/api'
 import { PARTIJ_AARD, label } from '@modules/bwb_ontvlechting/frontend/labels'
 
 const props = defineProps({ id: { type: String, default: null } })
 const router = useRouter()
+const route = useRoute()
 const toast = useToast()
 
 const bewerken = computed(() => !!props.id)
@@ -81,7 +82,19 @@ async function init() {
   } catch {
     // soort niet kritisch; dropdown blijft leeg
   }
-  if (!bewerken.value) return
+  if (!bewerken.value) {
+    // Aanmaken vanaf een organisatie/afdeling (UX-A2/A3): aard + ouder-context voorgevuld
+    // uit de route-query (bv. ?aard=persoon&organisatie_id=…&afdeling_id=…). De velden blijven
+    // zichtbaar/wijzigbaar — geen verborgen dwang; de gebruiker hoeft niets terug te zoeken.
+    const q = route.query || {}
+    if (q.aard && AARD_OPTIES.includes(String(q.aard))) aard.value = String(q.aard)
+    if (q.organisatie_id) {
+      organisatieId.value = String(q.organisatie_id)
+      await _laadAfdelingen()              // ná het zetten van de organisatie (geen watch-reset)
+      if (q.afdeling_id) afdelingId.value = String(q.afdeling_id)
+    }
+    return
+  }
   try {
     const p = await api.partijen.haal(props.id)
     for (const v of VELDEN) form[v] = p[v] || ''
@@ -149,7 +162,15 @@ async function opslaan() {
       ? await api.partijen.werkBij(props.id, data)
       : await api.partijen.maak(data)
     toast.add({ severity: 'success', summary: bewerken.value ? 'Wijzigingen opgeslagen' : 'Partij aangemaakt', life: 3000 })
-    router.push({ name: 'partij-detail', params: { id: res.id } })
+    // UX-A2/A3 — kwam de gebruiker via "+ Afdeling/Persoon" met ouder-context binnen, keer dan
+    // terug naar de ouder (afdeling vóór organisatie) zodat de nieuwe regel meteen in de leden-
+    // lijst staat en het volgende lid direct toegevoegd kan worden. Anders: naar de nieuwe partij.
+    let doelId = res.id
+    if (!bewerken.value) {
+      const q = route.query || {}
+      doelId = q.afdeling_id ? String(q.afdeling_id) : q.organisatie_id ? String(q.organisatie_id) : res.id
+    }
+    router.push({ name: 'partij-detail', params: { id: doelId } })
   } catch (e) {
     if (!_serverveldfouten(e)) _toastFout(e)
   } finally {

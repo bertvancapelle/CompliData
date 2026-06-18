@@ -27,9 +27,14 @@ function maakRouter() {
   return r
 }
 
-async function mountForm({ id = null } = {}) {
+function _querystring(query) {
+  const q = new URLSearchParams(query).toString()
+  return q ? `?${q}` : ''
+}
+
+async function mountForm({ id = null, query = null } = {}) {
   const router = maakRouter()
-  await router.push(id ? `/partijen/${id}/bewerken` : '/partijen/nieuw')
+  await router.push(id ? `/partijen/${id}/bewerken` : `/partijen/nieuw${_querystring(query)}`)
   await router.isReady()
   const w = mount(PartijFormulier, {
     props: { id },
@@ -104,6 +109,78 @@ describe('PartijFormulier — aanmaken', () => {
     await w.find('[data-testid="partij-form"]').trigger('submit')
     await flushPromises()
     expect(w.find('[data-testid="fout-naam"]').text()).toContain('Te lang.')
+  })
+})
+
+describe('PartijFormulier — prefill vanaf organisatie/afdeling (UX-A2/A3)', () => {
+  it('?aard=organisatie_eenheid&organisatie_id=org1 vult aard + organisatie voor', async () => {
+    const { w } = await mountForm({ query: { aard: 'organisatie_eenheid', organisatie_id: 'org1' } })
+    expect(w.find('[data-testid="veld-aard"]').element.value).toBe('organisatie_eenheid')
+    // organisatie-veld zichtbaar (heeftOrgOuder) en voorgevuld
+    expect(w.find('[data-testid="veld-organisatie"]').element.value).toBe('org1')
+  })
+
+  it('?aard=persoon&organisatie_id=org1&afdeling_id=afd1 vult aard + organisatie + afdeling voor', async () => {
+    // afdeling-kandidaten binnen org1 leveren afd1.
+    api.partijen.lijst.mockImplementation(({ aard } = {}) =>
+      Promise.resolve(
+        aard === 'organisatie_eenheid'
+          ? { items: [{ id: 'afd1', naam: 'Afdeling I&A', aard: 'organisatie_eenheid' }], volgende_cursor: null }
+          : { items: [{ id: 'org1', naam: 'Gemeente X', aard: 'organisatie' }], volgende_cursor: null },
+      ),
+    )
+    const { w } = await mountForm({ query: { aard: 'persoon', organisatie_id: 'org1', afdeling_id: 'afd1' } })
+    expect(w.find('[data-testid="veld-aard"]').element.value).toBe('persoon')
+    expect(w.find('[data-testid="veld-organisatie"]').element.value).toBe('org1')
+    expect(w.find('[data-testid="veld-afdeling"]').element.value).toBe('afd1')
+  })
+
+  it('voorgevulde persoon is direct opslaanbaar (organisatie al ingevuld, geen validatiefout)', async () => {
+    api.partijen.maak.mockResolvedValueOnce({ id: 'p9' })
+    const { w } = await mountForm({ query: { aard: 'persoon', organisatie_id: 'org1' } })
+    await w.find('[data-testid="veld-naam"]').setValue('J. de Vries')
+    await w.find('[data-testid="partij-form"]').trigger('submit')
+    await flushPromises()
+    expect(w.find('[data-testid="fout-organisatie_id"]').exists()).toBe(false)
+    expect(api.partijen.maak).toHaveBeenCalledWith(
+      expect.objectContaining({ aard: 'persoon', naam: 'J. de Vries', organisatie_id: 'org1' }),
+    )
+  })
+
+  it('na opslaan met organisatie-context → terug naar de organisatie (niet de nieuwe partij)', async () => {
+    api.partijen.maak.mockResolvedValueOnce({ id: 'p9' })
+    const { w, router } = await mountForm({ query: { aard: 'persoon', organisatie_id: 'org1' } })
+    await w.find('[data-testid="veld-naam"]').setValue('J. de Vries')
+    await w.find('[data-testid="partij-form"]').trigger('submit')
+    await flushPromises()
+    expect(router.currentRoute.value.name).toBe('partij-detail')
+    expect(router.currentRoute.value.params.id).toBe('org1')  // terug naar de ouder
+  })
+
+  it('na opslaan met afdeling-context → terug naar de afdeling (afdeling vóór organisatie)', async () => {
+    api.partijen.maak.mockResolvedValueOnce({ id: 'p9' })
+    api.partijen.lijst.mockImplementation(({ aard } = {}) =>
+      Promise.resolve(
+        aard === 'organisatie_eenheid'
+          ? { items: [{ id: 'afd1', naam: 'Afdeling I&A', aard: 'organisatie_eenheid' }], volgende_cursor: null }
+          : { items: [{ id: 'org1', naam: 'Gemeente X', aard: 'organisatie' }], volgende_cursor: null },
+      ),
+    )
+    const { w, router } = await mountForm({ query: { aard: 'persoon', organisatie_id: 'org1', afdeling_id: 'afd1' } })
+    await w.find('[data-testid="veld-naam"]').setValue('J. de Vries')
+    await w.find('[data-testid="partij-form"]').trigger('submit')
+    await flushPromises()
+    expect(router.currentRoute.value.params.id).toBe('afd1')  // afdeling wint van organisatie
+  })
+
+  it('gewone aanmaak zonder ouder-context → naar de nieuwe partij (ongewijzigd gedrag)', async () => {
+    api.partijen.maak.mockResolvedValueOnce({ id: 'p9' })
+    const { w, router } = await mountForm()
+    await w.find('[data-testid="veld-aard"]').setValue('organisatie')
+    await w.find('[data-testid="veld-naam"]').setValue('Gemeente Y')
+    await w.find('[data-testid="partij-form"]').trigger('submit')
+    await flushPromises()
+    expect(router.currentRoute.value.params.id).toBe('p9')  // de nieuwe partij
   })
 })
 

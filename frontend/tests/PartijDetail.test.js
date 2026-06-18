@@ -26,6 +26,7 @@ function maakRouter() {
     history: createMemoryHistory(),
     routes: [
       { path: '/partijen', name: 'partij-lijst', component: { template: '<div/>' } },
+      { path: '/partijen/nieuw', name: 'partij-nieuw', component: { template: '<div/>' } },
       { path: '/partijen/:id', name: 'partij-detail', component: PartijDetail, props: true },
       { path: '/partijen/:id/bewerken', name: 'partij-bewerken', component: { template: '<div/>' } },
       { path: '/contracten/:id', name: 'contract-detail', component: { template: '<div/>' } },
@@ -107,6 +108,51 @@ describe('PartijDetail', () => {
     expect(api.partijen.lijst).toHaveBeenCalledWith(expect.objectContaining({ organisatie_id: 'p1' }))
     expect(w.text()).toContain('Afdeling I&A')
     expect(w.text()).toContain('J. Jansen')
+  })
+
+  it('UX-A2/A3: organisatie toont "+ Afdeling" en "+ Persoon"; klik prefilt de organisatie', async () => {
+    api.partijen.haal.mockResolvedValue(_partij({ aard: 'organisatie', naam: 'Gemeente X', soort: null }))
+    api.partijen.lijst.mockResolvedValue({ items: [], volgende_cursor: null })
+    const { w, router } = await mountDetail()
+    expect(w.find('[data-testid="lid-afdeling"]').exists()).toBe(true)
+    expect(w.find('[data-testid="lid-persoon"]').exists()).toBe(true)
+    await w.find('[data-testid="lid-afdeling"]').trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.name).toBe('partij-nieuw')
+    expect(router.currentRoute.value.query).toMatchObject({ aard: 'organisatie_eenheid', organisatie_id: 'p1' })
+  })
+
+  it('UX-A2/A3: "+ Persoon" op organisatie prefilt aard persoon + organisatie', async () => {
+    api.partijen.haal.mockResolvedValue(_partij({ aard: 'organisatie', naam: 'Gemeente X', soort: null }))
+    api.partijen.lijst.mockResolvedValue({ items: [], volgende_cursor: null })
+    const { w, router } = await mountDetail()
+    await w.find('[data-testid="lid-persoon"]').trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.query).toMatchObject({ aard: 'persoon', organisatie_id: 'p1' })
+    expect(router.currentRoute.value.query.afdeling_id).toBeUndefined()
+  })
+
+  it('UX-A2/A3: afdeling toont alleen "+ Persoon" en prefilt afdeling + organisatie', async () => {
+    api.partijen.haal.mockResolvedValue(
+      _partij({ aard: 'organisatie_eenheid', naam: 'Afdeling I&A', soort: null, organisatie_id: 'org-parent' }),
+    )
+    api.partijen.lijst.mockResolvedValue({ items: [], volgende_cursor: null })
+    const { w, router } = await mountDetail()
+    expect(w.find('[data-testid="lid-afdeling"]').exists()).toBe(false)  // geen sub-afdelingen
+    expect(w.find('[data-testid="lid-persoon"]').exists()).toBe(true)
+    await w.find('[data-testid="lid-persoon"]').trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.query).toMatchObject({
+      aard: 'persoon', organisatie_id: 'org-parent', afdeling_id: 'p1',
+    })
+  })
+
+  it('UX-A2/A3: viewer ziet geen lid-toevoeg-knoppen (rol-gating)', async () => {
+    api.partijen.haal.mockResolvedValue(_partij({ aard: 'organisatie', naam: 'Gemeente X', soort: null }))
+    api.partijen.lijst.mockResolvedValue({ items: [], volgende_cursor: null })
+    const { w } = await mountDetail({ rollen: ['viewer'] })
+    expect(w.find('[data-testid="lid-afdeling"]').exists()).toBe(false)
+    expect(w.find('[data-testid="lid-persoon"]').exists()).toBe(false)
   })
 
   it('leden-blok sorteert server-side (Aard) met cursor-reset', async () => {
