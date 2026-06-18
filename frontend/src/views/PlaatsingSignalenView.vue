@@ -51,8 +51,8 @@ onMounted(laad)
       Plaatsingssignalen
     </h1>
     <p class="mb-[var(--cd-space-md)] text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]">
-      Attentiepunten waar het antwoord over technische plaatsing niet overeenkomt met de
-      vastgelegde draait_op-relatie. Een zacht signaal — geen fout, blokkeert niets.
+      Attentiepunten waar het antwoord over technische plaatsing niet overeenkomt met of het
+      component daadwerkelijk ergens op draait. Een zacht signaal — geen fout, blokkeert niets.
     </p>
 
     <p v-if="fout" role="alert" data-testid="signalen-fout" class="mb-[var(--cd-space-md)] rounded-[var(--cd-radius-badge)] border border-[var(--cd-color-danger)] bg-[var(--cd-color-danger)]/10 px-[var(--cd-space-md)] py-[var(--cd-space-sm)] text-[var(--cd-color-danger)]">
@@ -88,7 +88,15 @@ onMounted(laad)
           :data-testid="`signaal-${s.component_id}`"
           class="border-t border-[var(--cd-color-border)]"
         >
-          <td class="px-[var(--cd-space-md)] py-[var(--cd-space-sm)] font-medium">{{ s.naam }}</td>
+          <td class="px-[var(--cd-space-md)] py-[var(--cd-space-sm)] font-medium">
+            <router-link
+              :to="{ name: 'component-detail', params: { id: s.component_id } }"
+              :data-testid="`signaal-link-${s.component_id}`"
+              class="text-[var(--cd-color-primary)] hover:underline focus:outline-2 focus:outline-offset-2 focus:outline-[var(--cd-color-primary)]"
+            >
+              {{ s.naam }}
+            </router-link>
+          </td>
           <td class="px-[var(--cd-space-md)] py-[var(--cd-space-sm)]">{{ typeLabel(s.componenttype) }}</td>
           <td class="px-[var(--cd-space-md)] py-[var(--cd-space-sm)]">
             <span

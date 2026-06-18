@@ -4,8 +4,21 @@ Read-only projectie: per element de afgeleide ArchiMate-typing (laag/aspect/elem
 een per-subtype afgeleide weergavenaam. Geen schema-/modelwijziging.
 """
 import uuid
+from enum import Enum
 
 from pydantic import BaseModel
+
+
+class ArchitectuurSorteerveld(str, Enum):
+    """Allowlist van sorteerbare kolommen (ADR-017). Naam/laag/aspect/soort zijn server-side
+    afgeleid in SQL; `type` = element_type. Synchroon met `architectuur_service._SORTEERVELDEN`."""
+
+    created_at = "created_at"
+    naam = "naam"
+    type = "type"
+    laag = "laag"
+    aspect = "aspect"
+    soort = "soort"
 
 
 class ArchitectuurElementRead(BaseModel):

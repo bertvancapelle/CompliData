@@ -62,6 +62,13 @@ describe('GapLijstView', () => {
     expect(w.find('[data-testid="gap-nieuw"]').exists()).toBe(true)
   })
 
+  it('B5: kolomkop is "Toelichting" (consistent met de andere migratielijsten)', async () => {
+    const { w } = await mountLijst()
+    const tabel = w.find('[data-testid="gaps-tabel"]').text()
+    expect(tabel).toContain('Toelichting')
+    expect(tabel).not.toContain('Omschrijving')
+  })
+
   it('viewer ziet geen "+ Nieuwe gap" (rol-gating)', async () => {
     const { w } = await mountLijst({ rollen: ['viewer'] })
     expect(w.find('[data-testid="gap-nieuw"]').exists()).toBe(false)

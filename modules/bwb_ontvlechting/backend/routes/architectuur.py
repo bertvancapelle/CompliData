@@ -13,8 +13,9 @@ from app.middleware.auth import AuthenticatedUser
 from app.middleware.authz import vereist_permissie
 from app.middleware.tenant import get_tenant_session
 from models.models import ElementType
-from schemas.architectuur import ArchitectuurPagina
+from schemas.architectuur import ArchitectuurPagina, ArchitectuurSorteerveld
 from services import architectuur_service as svc
+from services.pagination import Sorteerrichting
 
 router = APIRouter(prefix="/architectuur", tags=["bwb:architectuur"])
 
@@ -33,15 +34,19 @@ async def lijst_elementen(
     laag: str | None = Query(None, max_length=40),
     aspect: str | None = Query(None, max_length=40),
     type: ElementType | None = Query(None),
+    sort: ArchitectuurSorteerveld = Query(ArchitectuurSorteerveld.created_at),
+    order: Sorteerrichting = Query(Sorteerrichting.asc),
     user: AuthenticatedUser = Depends(vereist_permissie(Entiteit.ARCHITECTUUR, Actie.LEZEN)),
     session: AsyncSession = Depends(get_tenant_session),
 ):
-    """Gelaagde projectie over alle elementen (incl. de migratielaag). Onbekend `type` ⇒ 422
-    (FastAPI-enum); cursor-mismatch ⇒ 400 `ONGELDIGE_CURSOR`."""
+    """Gelaagde projectie over alle elementen (incl. de migratielaag), sorteerbaar op
+    naam/type/laag/aspect/soort. Onbekend `type`/`sort`/`order` ⇒ 422 (FastAPI-enum);
+    cursor-mismatch ⇒ 400 `ONGELDIGE_CURSOR`."""
     try:
         items, volgende = await svc.lijst(
             session, user.tenant_id, limit=limit, after=after,
             laag=laag, aspect=aspect, type=type.value if type else None,
+            sort=sort.value, order=order.value,
         )
     except ValueError:
         return _fout(400, "ONGELDIGE_CURSOR", "De opgegeven paginacursor is ongeldig.")

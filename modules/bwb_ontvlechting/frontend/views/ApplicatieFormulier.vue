@@ -38,6 +38,8 @@ const enumLabel = { hostingmodel: HOSTINGMODEL, migratiepad: MIGRATIEPAD, comple
 function optieLabel(veld, code) {
   return label(enumLabel[veld], code)
 }
+// B4 — gecureerde veldlabels (geen uit-veldnaam-afgeleide tekst via {{ veld }}).
+const VELD_LABEL = { hostingmodel: 'Hostingmodel', migratiepad: 'Migratiepad', complexiteit: 'Complexiteit', prioriteit: 'Prioriteit' }
 
 async function init() {
   laden.value = true
@@ -196,7 +198,7 @@ onMounted(init)
         :key="veld"
         class="flex flex-col gap-[var(--cd-space-xs)]"
       >
-        <label :for="`f-${veld}`" class="font-semibold capitalize">{{ veld }} *</label>
+        <label :for="`f-${veld}`" class="font-semibold">{{ VELD_LABEL[veld] }} *</label>
         <select
           :id="`f-${veld}`"
           v-model="form[veld]"

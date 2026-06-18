@@ -71,6 +71,15 @@ describe('ApplicatieFormulier', () => {
     expect(teksten).toContain('On-premise')
   })
 
+  it('B4: enum-velden tonen gecureerde veldlabels', async () => {
+    const { wrapper } = await mountForm()
+    const tekst = wrapper.text()
+    expect(tekst).toContain('Hostingmodel')
+    expect(tekst).toContain('Migratiepad')
+    expect(tekst).toContain('Complexiteit')
+    expect(tekst).toContain('Prioriteit')
+  })
+
   it('verduidelijkt het leverancier-veld als inventarisatie-notitie (a11y-gekoppeld; ADR-023 Fase D)', async () => {
     const { wrapper } = await mountForm()
     const help = wrapper.find('[data-testid="leverancier-help"]')

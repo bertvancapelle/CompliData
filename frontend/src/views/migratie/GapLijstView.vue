@@ -121,7 +121,7 @@ onMounted(() => laad({ reset: true }))
           </router-link>
         </template>
       </Column>
-      <Column header="Omschrijving">
+      <Column header="Toelichting">
         <template #body="{ data }">
           <span class="block max-w-[40ch] truncate" :title="data.toelichting || ''">{{ data.toelichting || '—' }}</span>
         </template>

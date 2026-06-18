@@ -95,7 +95,7 @@ onMounted(laad)
           id="dashboard-readiness-titel"
           class="text-[length:var(--cd-text-lg)] font-semibold mb-[var(--cd-space-sm)]"
         >
-          Readiness per componenttype
+          Gereedheid per componenttype
         </h2>
 
         <div

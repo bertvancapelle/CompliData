@@ -111,6 +111,12 @@ describe('DashboardView — data', () => {
     expect(rollup.text()).toContain('4 van 10 migratieklaar')
   })
 
+  it('B3: kop is "Gereedheid per componenttype" (geen "Readiness")', async () => {
+    const w = await mountDashboard()
+    expect(w.find('#dashboard-readiness-titel').text()).toBe('Gereedheid per componenttype')
+    expect(w.text()).not.toContain('Readiness')
+  })
+
   it('statustegel is een doorklik-link naar de componentenlijst met status + type', async () => {
     const w = await mountDashboard()
     const tegel = w.find('[data-testid="telling-applicatie-geblokkeerd"]')

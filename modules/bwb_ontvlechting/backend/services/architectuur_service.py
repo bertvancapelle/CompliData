@@ -17,11 +17,14 @@ op de tenant. Spiegelt het `relatie_service.lijst`-keysetpatroon.
 import uuid
 from datetime import datetime
 
-from sqlalchemy import and_, false, or_, select
+from sqlalchemy import String, and_, case, cast, false, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 
 from models.models import (
     Component,
+    ComponentConfigDimensie,
+    ComponentConfigOptie,
     Contract,
     Datatype,
     Deliverable,
@@ -34,10 +37,35 @@ from models.models import (
 )
 from services import componentconfig_catalog as catalog
 from services.archimate_typing import ELEMENT_ARCHIMATE_TYPING, typing_voor
-from services.pagination import decode_sort_cursor, encode_sort_cursor
+from services.pagination import (
+    decode_sort_cursor_nullable,
+    encode_sort_cursor_nullable,
+    keyset_order_by_nulls_last,
+    keyset_seek_nulls_last,
+)
 
 _STANDAARD_LIMIT = 25
 _MAX_LIMIT = 100
+_STANDAARD_SORT = "created_at"
+_STANDAARD_ORDER = "asc"
+
+# ADR-017 — allowlist van sorteervelden (single source náást de route-enum; een test borgt
+# de synchroniteit). De SQL-expressies zelf worden per-call gebouwd (ze refereren aan de
+# join-alias + subtype-tabellen) in `_sorteer_expressies`. `naam`/`laag`/`aspect`/`soort`
+# zijn read-only afgeleid in SQL — geen opgeslagen tweede bron.
+_SORTEERVELDEN = frozenset({"created_at", "naam", "type", "laag", "aspect", "soort"})
+_WAARDE_PARSERS = {
+    "created_at": datetime.fromisoformat,
+    "naam": str, "type": str, "laag": str, "aspect": str, "soort": str,
+}
+
+
+def _static_typing_case(veld: str):
+    """SQL-CASE voor de VASTE element-typing, dynamisch uit `ELEMENT_ARCHIMATE_TYPING`
+    gebouwd (single source — geen hand-gekopieerde mapping). `component` zit er niet in →
+    NULL → de coalesce valt terug op de catalogus-typing (per componenttype)."""
+    whens = [(Element.element_type == et, typing[veld]) for et, typing in ELEMENT_ARCHIMATE_TYPING.items()]
+    return case(*whens, else_=None)
 
 
 def _tenant_uuid(tenant_id) -> uuid.UUID:
@@ -122,13 +150,36 @@ async def lijst(
     laag: str | None = None,
     aspect: str | None = None,
     type: str | None = None,
+    sort: str = _STANDAARD_SORT,
+    order: str = _STANDAARD_ORDER,
 ) -> tuple[list[dict], str | None]:
-    """Cross-element laagprojectie (keyset op `created_at`/`id`). Filters `laag`/`aspect`
-    (afgeleid uit beide typing-bronnen) + `type` (element_type). Cursor-mismatch ⇒
-    `ValueError` (route ⇒ 400)."""
+    """Cross-element laagprojectie, server-side sorteerbaar (ADR-017 v2n-keyset) op
+    `naam`/`type`/`laag`/`aspect`/`soort` (+ default `created_at`). Naam/laag/aspect/soort
+    worden in SQL afgeleid (coalesce over subtype-naamkolommen resp. de vaste typing-CASE +
+    de componenttype-catalogus) — read-only, geen opgeslagen tweede bron. Filters `laag`/
+    `aspect`/`type` ongewijzigd. Onbekend sort/order of cursor-mismatch ⇒ `ValueError`."""
     limit = max(1, min(limit, _MAX_LIMIT))
     tid = _tenant_uuid(tenant_id)
+    if sort not in _SORTEERVELDEN:
+        raise ValueError(f"onbekend sorteerveld: {sort}")
+    if order not in (_STANDAARD_ORDER, "desc"):
+        raise ValueError(f"onbekende sorteerrichting: {order}")
     catalog_typing = await catalog.archimate_typing(session)
+
+    # Catalogus-typing per componenttype via een join (component-tak van de coalesce).
+    cc = aliased(ComponentConfigOptie)
+    naam_expr = func.coalesce(
+        Component.naam, Contract.contractnaam, cast(Datatype.categorie, String),
+        Gebruikersgroep.organisatie, Plateau.naam, Gap.naam, WorkPackage.naam, Deliverable.naam,
+    )
+    laag_expr = func.coalesce(_static_typing_case("laag"), cc.laag)
+    aspect_expr = func.coalesce(_static_typing_case("aspect"), cc.aspect)
+    soort_expr = func.coalesce(_static_typing_case("archimate_element"), cc.archimate_element)
+    sorteer = {
+        "created_at": Element.created_at, "naam": naam_expr, "type": cast(Element.element_type, String),
+        "laag": laag_expr, "aspect": aspect_expr, "soort": soort_expr,
+    }
+    kolom = sorteer[sort]
 
     stmt = (
         select(
@@ -146,6 +197,7 @@ async def lijst(
             Gap.naam.label("gap_naam"),
             WorkPackage.naam.label("wp_naam"),
             Deliverable.naam.label("deliverable_naam"),
+            kolom.label("sorteerwaarde"),
         )
         .outerjoin(Component, and_(Component.id == Element.id, Component.tenant_id == tid))
         .outerjoin(Contract, and_(Contract.id == Element.id, Contract.tenant_id == tid))
@@ -155,6 +207,7 @@ async def lijst(
         .outerjoin(Gap, and_(Gap.id == Element.id, Gap.tenant_id == tid))
         .outerjoin(WorkPackage, and_(WorkPackage.id == Element.id, WorkPackage.tenant_id == tid))
         .outerjoin(Deliverable, and_(Deliverable.id == Element.id, Deliverable.tenant_id == tid))
+        .outerjoin(cc, and_(cc.dimensie == ComponentConfigDimensie.componenttype, cc.optie_sleutel == Component.componenttype))
         .where(Element.tenant_id == tid)
     )
 
@@ -165,21 +218,20 @@ async def lijst(
     if aspect:
         stmt = stmt.where(_laag_aspect_cond("aspect", aspect, catalog_typing))
     if after:
-        _s, _o, waarde_str, c_id = decode_sort_cursor(after)
-        c_waarde = datetime.fromisoformat(waarde_str)
+        c_sort, c_order, c_is_null, c_waarde_str, c_id = decode_sort_cursor_nullable(after)
+        if c_sort != sort or c_order != order:
+            raise ValueError("cursor past niet bij de actieve sortering")
+        c_waarde = None if c_is_null else _WAARDE_PARSERS[sort](c_waarde_str)
         stmt = stmt.where(
-            or_(
-                Element.created_at > c_waarde,
-                and_(Element.created_at == c_waarde, Element.id > c_id),
-            )
+            keyset_seek_nulls_last(kolom, Element.id, order=order, is_null=c_is_null, waarde=c_waarde, cursor_id=c_id)
         )
-    stmt = stmt.order_by(Element.created_at.asc(), Element.id.asc()).limit(limit + 1)
+    stmt = stmt.order_by(*keyset_order_by_nulls_last(kolom, Element.id, order)).limit(limit + 1)
 
     rijen = (await session.execute(stmt)).all()
     heeft_meer = len(rijen) > limit
     items = rijen[:limit]
     volgende = (
-        encode_sort_cursor(sort="created_at", order="asc", waarde=items[-1].created_at, id=items[-1].id)
+        encode_sort_cursor_nullable(sort=sort, order=order, waarde=items[-1].sorteerwaarde, id=items[-1].id)
         if heeft_meer else None
     )
     return [_lees(r, catalog_typing) for r in items], volgende

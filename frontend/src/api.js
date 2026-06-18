@@ -234,8 +234,9 @@ export const api = {
 
   // ADR-023 Fase F (F-2) — cross-element laagprojectie (read-only architectuuroverzicht).
   architectuur: {
-    elementen: ({ limit, after, laag, aspect, type } = {}) =>
-      request(`/architectuur/elementen${_query({ limit, after, laag, aspect, type })}`),
+    // sort/order optioneel (ADR-017) — weglaten = server-default (created_at asc).
+    elementen: ({ limit, after, laag, aspect, type, sort, order } = {}) =>
+      request(`/architectuur/elementen${_query({ limit, after, laag, aspect, type, sort, order })}`),
   },
 
   // ADR-023 Fase F (F-3 stap 2) — consistentie-signalering technische plaatsing (read-only).

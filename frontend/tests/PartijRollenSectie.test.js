@@ -62,9 +62,11 @@ describe('PartijRollenSectie', () => {
     expect(hrefs.some((h) => h.includes('/contracten/k1'))).toBe(true)
   })
 
-  it('lege staat zonder rollen', async () => {
+  it('lege staat zonder rollen wijst naar waar je toewijst (B1)', async () => {
     api.roltoewijzingen.lijst.mockResolvedValueOnce([])
     const w = await mountSectie()
-    expect(w.find('[data-testid="pr-leeg"]').exists()).toBe(true)
+    const leeg = w.find('[data-testid="pr-leeg"]')
+    expect(leeg.exists()).toBe(true)
+    expect(leeg.text()).toContain('Rollen wijs je toe vanaf een applicatie/component of een contract')
   })
 })

@@ -4,6 +4,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
+import { createRouter, createMemoryHistory } from 'vue-router'
 import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 
@@ -13,6 +14,16 @@ vi.mock('@/api', () => ({
 
 import { api } from '@/api'
 import PlaatsingSignalenView from '@/views/PlaatsingSignalenView.vue'
+
+function maakRouter() {
+  return createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      { path: '/', name: 'home', component: { template: '<div/>' } },
+      { path: '/componenten/:id', name: 'component-detail', component: { template: '<div/>' } },
+    ],
+  })
+}
 
 const _items = () => [
   {
@@ -28,8 +39,11 @@ const _items = () => [
 ]
 
 async function mountView() {
+  const router = maakRouter()
+  await router.push('/')
+  await router.isReady()
   const w = mount(PlaatsingSignalenView, {
-    global: { plugins: [createPinia(), [PrimeVue, { unstyled: true }]] },
+    global: { plugins: [createPinia(), [PrimeVue, { unstyled: true }], router] },
   })
   await flushPromises()
   return w
@@ -49,6 +63,19 @@ describe('PlaatsingSignalenView', () => {
     expect(w.find('[data-testid="signaal-type-a1"]').text()).toBe('Plaatsing beoordeeld maar niet vastgelegd')
     expect(w.find('[data-testid="signaal-type-a2"]').text()).toBe('Plaatsing vastgelegd maar niet beoordeeld')
     expect(tekst).not.toContain('beoordeeld_niet_vastgelegd') // sleutel niet zichtbaar
+  })
+
+  it('B2: component-naam linkt door naar het component-detail', async () => {
+    api.signalen.plaatsing.mockResolvedValue(_items())
+    const w = await mountView()
+    expect(w.find('[data-testid="signaal-link-a1"]').attributes('href')).toContain('/componenten/a1')
+    expect(w.find('[data-testid="signaal-link-a2"]').attributes('href')).toContain('/componenten/a2')
+  })
+
+  it('B3: de intro toont geen datamodel-term "draait_op-relatie"', async () => {
+    api.signalen.plaatsing.mockResolvedValue([])
+    const w = await mountView()
+    expect(w.text()).not.toContain('draait_op-relatie')
   })
 
   it('toont de lege staat als er geen signalen zijn', async () => {

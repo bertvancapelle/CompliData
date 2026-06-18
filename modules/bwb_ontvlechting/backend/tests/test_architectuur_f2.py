@@ -89,6 +89,15 @@ def test_architectuur_rbac_alleen_lezen():
 
 # ── Live (skip-if-no-DB) ─────────────────────────────────────────────────────────
 
+def test_sorteerveld_allowlist_synchroon_met_enum():
+    """De route-enum, de service-allowlist en de waardeparsers blijven 1-op-1 (geen rauwe
+    kolomnaam in ORDER BY; geen half toegevoegd sorteerveld)."""
+    from schemas.architectuur import ArchitectuurSorteerveld
+    from services.architectuur_service import _SORTEERVELDEN, _WAARDE_PARSERS
+
+    assert {e.value for e in ArchitectuurSorteerveld} == set(_SORTEERVELDEN) == set(_WAARDE_PARSERS)
+
+
 def _db_bereikbaar() -> bool:
     from sqlalchemy import text
     from sqlalchemy.ext.asyncio import create_async_engine
@@ -211,3 +220,42 @@ def test_cross_element_projectie_en_filters_live():
     assert con in biz_ids and comp not in biz_ids
     # Type-filter (element_type):
     assert mig_ids and pl in mig_ids and comp not in mig_ids and con not in mig_ids
+
+
+@integratie
+def test_architectuur_sortering_en_keyset_live():
+    """Server-side sorteren op naam (over paginagrenzen, limit=1) + op laag (afgeleid uit
+    BEIDE typing-bronnen: contract via de vaste CASE, component via de catalogus)."""
+    from services import architectuur_service as svc
+
+    tid = uuid.UUID(_TID)
+
+    async def _collect(s, **kw):
+        out, cursor = [], None
+        while True:  # limit=1 dwingt de keyset over paginagrenzen heen
+            items, cursor = await svc.lijst(s, _TID, limit=1, after=cursor, **kw)
+            out += items
+            if not cursor:
+                return out
+
+    async def _flow(s):
+        ids = []
+        try:
+            a = await _maak_contract(s, tid, "WT-F2s-Alpha")     # business
+            b = await _maak_plateau(s, tid, "WT-F2s-Bravo")      # implementation_migration
+            c = await _maak_component(s, tid, "WT-F2s-Charlie")  # technology
+            await s.commit()
+            ids += [a, b, c]
+            mijn = lambda lijst: [i for i in lijst if i["naam"].startswith("WT-F2s-")]
+            asc = [i["naam"] for i in mijn(await _collect(s, sort="naam", order="asc"))]
+            desc = [i["naam"] for i in mijn(await _collect(s, sort="naam", order="desc"))]
+            laag = [i["laag"] for i in mijn(await _collect(s, sort="laag", order="asc"))]
+            return asc, desc, laag
+        finally:
+            await _ruim(s, ids)
+
+    asc, desc, laag = asyncio.run(_run_rls(_flow))
+    assert asc == ["WT-F2s-Alpha", "WT-F2s-Bravo", "WT-F2s-Charlie"]
+    assert desc == ["WT-F2s-Charlie", "WT-F2s-Bravo", "WT-F2s-Alpha"]
+    # laag oplopend, afgeleid uit beide bronnen: business < implementation_migration < technology.
+    assert laag == ["business", "implementation_migration", "technology"]

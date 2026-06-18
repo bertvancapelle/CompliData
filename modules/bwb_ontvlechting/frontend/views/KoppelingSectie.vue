@@ -21,6 +21,10 @@ const toast = useToast()
 
 const mag = computed(() => auth.hasRole('medewerker', 'beheerder'))
 
+// B4 — gecureerde labels (gelijk aan de tabel ernaast), geen uit-veldnaam-afgeleide tekst.
+const VELD_LABEL = { richting: 'Richting', protocol: 'Protocol', impact_bij_verbreking: 'Impact bij verbreking' }
+const OPTIE_MAP = { richting: KOPPELRICHTING, protocol: KOPPELPROTOCOL, impact_bij_verbreking: IMPACT_VERBREKING }
+
 // Elke richting heeft een eigen keyset-cursor én eigen sortering (CD020).
 const uitgaand = reactive({ items: [], cursor: null, laden: false, sort: null, order: null })
 const inkomend = reactive({ items: [], cursor: null, laden: false, sort: null, order: null })
@@ -336,10 +340,10 @@ laadBeide()
           <span v-if="fouten.doel_applicatie_id" id="kp-fout-doel" role="alert" data-testid="kp-fout-doel" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.doel_applicatie_id }}</span>
         </div>
         <div v-for="veld in ['richting', 'protocol', 'impact_bij_verbreking']" :key="veld" class="flex flex-col gap-[var(--cd-space-xs)]">
-          <label :for="`kp-${veld}`" class="font-semibold capitalize">{{ veld.replace(/_/g, ' ') }} *</label>
+          <label :for="`kp-${veld}`" class="font-semibold">{{ VELD_LABEL[veld] }} *</label>
           <select :id="`kp-${veld}`" v-model="form[veld]" :data-testid="`kp-veld-${veld}`" :aria-invalid="!!fouten[veld]" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white">
             <option value="" disabled>— maak een keuze —</option>
-            <option v-for="c in opties[veld]" :key="c" :value="c">{{ c.replace(/_/g, ' ') }}</option>
+            <option v-for="c in opties[veld]" :key="c" :value="c">{{ label(OPTIE_MAP[veld], c) }}</option>
           </select>
           <span v-if="fouten[veld]" role="alert" :data-testid="`kp-fout-${veld}`" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten[veld] }}</span>
         </div>

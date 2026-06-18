@@ -72,6 +72,23 @@ async function kiesZoek(w, prefix, id) {
 }
 afterEach(() => vi.restoreAllMocks())
 
+describe('KoppelingSectie — B4 gecureerde labels', () => {
+  it('het formulier toont gecureerde veld-/optielabels (niet uit de veldnaam afgeleid)', async () => {
+    const w = await mountSectie()
+    await w.find('[data-testid="kp-toevoegen"]').trigger('click')
+    await flushPromises()
+    const form = w.find('[data-testid="kp-form"]').text()
+    expect(form).toContain('Impact bij verbreking') // gecureerd veldlabel
+    expect(form).not.toContain('impact bij verbreking') // niet de lowercase veldnaam-afleiding
+    // optielabel gecureerd: 'hoog' → 'Hoog', 'eenrichting' → 'Eenrichting'
+    const impactOpties = w.find('[data-testid="kp-veld-impact_bij_verbreking"]').findAll('option').map((o) => o.text())
+    expect(impactOpties).toContain('Hoog')
+    expect(impactOpties).not.toContain('hoog')
+    const richtingOpties = w.find('[data-testid="kp-veld-richting"]').findAll('option').map((o) => o.text())
+    expect(richtingOpties).toContain('Eenrichting')
+  })
+})
+
 describe('KoppelingSectie', () => {
   it('doet twee calls (uitgaand bron + inkomend doel) en toont beide sets', async () => {
     api.koppelingen.lijst.mockImplementation(({ bronApplicatieId }) =>

@@ -7,7 +7,7 @@
  * `GET /architectuur/elementen` (server-side filters + keyset-paginering). Labels via
  * de bestaande ArchiMate-maps; geen client-side typing-logica.
  */
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { Button, Column, DataTable, Tag } from '@/primevue'
 import { api } from '@/api'
 import { ARCHIMATE_ASPECT, ARCHIMATE_ELEMENT, ARCHIMATE_LAAG, humaniseer, label } from '@modules/bwb_ontvlechting/frontend/labels'
@@ -30,10 +30,28 @@ const filterLaag = ref('')
 const filterAspect = ref('')
 const filterType = ref('')
 
+// Server-side sortering (ADR-017): sort/order → param + cursor-reset + refetch (B2).
+const sortVeld = ref(null)
+const sortRichting = ref('asc')
+const primeSortOrder = computed(() => (sortVeld.value ? (sortRichting.value === 'asc' ? 1 : -1) : 0))
+
 const laagLabel = (c) => (c ? label(ARCHIMATE_LAAG, c) : '—')
 const aspectLabel = (c) => (c ? label(ARCHIMATE_ASPECT, c) : '—')
 const elementLabel = (c) => (c ? label(ARCHIMATE_ELEMENT, c) : '—')
 const typeLabel = (c) => humaniseer(c)
+
+// Rij-doorklik naar het detail per element-type (B2). Typen zonder eigen detailpagina
+// (datatype/gebruikersgroep — die leven als sectie onder een applicatie) krijgen geen link.
+const ROUTE_PER_TYPE = {
+  component: 'component-detail',
+  contract: 'contract-detail',
+  plateau: 'plateau-detail',
+  gap: 'gap-detail',
+  work_package: 'work-package-detail',
+  deliverable: 'deliverable-detail',
+}
+const elementRoute = (rij) =>
+  ROUTE_PER_TYPE[rij.element_type] ? { name: ROUTE_PER_TYPE[rij.element_type], params: { id: rij.id } } : null
 
 async function laad({ reset = false } = {}) {
   laden.value = true
@@ -43,6 +61,10 @@ async function laad({ reset = false } = {}) {
     if (filterLaag.value) params.laag = filterLaag.value
     if (filterAspect.value) params.aspect = filterAspect.value
     if (filterType.value) params.type = filterType.value
+    if (sortVeld.value) {
+      params.sort = sortVeld.value
+      params.order = sortRichting.value
+    }
     const pagina = await api.architectuur.elementen(params)
     items.value = reset ? pagina.items : items.value.concat(pagina.items)
     cursor.value = pagina.volgende_cursor
@@ -55,6 +77,14 @@ async function laad({ reset = false } = {}) {
 }
 
 function herfilter() {
+  cursor.value = null
+  laad({ reset: true })
+}
+
+// Sorteerklik (server-side): zet sort/order, reset de cursor en herlaad vanaf pagina 1.
+function onSort(event) {
+  sortVeld.value = event.sortField
+  sortRichting.value = event.sortOrder === 1 ? 'asc' : 'desc'
   cursor.value = null
   laad({ reset: true })
 }
@@ -105,26 +135,38 @@ onMounted(() => laad({ reset: true }))
     <DataTable
       :value="items"
       data-testid="arch-tabel"
+      lazy
+      :sort-field="sortVeld"
+      :sort-order="primeSortOrder"
       class="bg-[var(--cd-color-surface)] rounded-[var(--cd-radius-card)] shadow-[var(--cd-shadow-sm)]"
+      @sort="onSort"
     >
-      <Column header="Naam">
+      <Column header="Naam" sort-field="naam" sortable>
         <template #body="{ data }">
-          <span class="font-medium">{{ data.naam }}</span>
+          <router-link
+            v-if="elementRoute(data)"
+            :to="elementRoute(data)"
+            :data-testid="`arch-link-${data.id}`"
+            class="font-medium text-[var(--cd-color-primary)] hover:underline focus:outline-2 focus:outline-offset-2 focus:outline-[var(--cd-color-primary)]"
+          >
+            {{ data.naam }}
+          </router-link>
+          <span v-else class="font-medium">{{ data.naam }}</span>
           <span v-if="data.naam_secundair" class="block text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">
             {{ data.naam_secundair }}
           </span>
         </template>
       </Column>
-      <Column header="Type">
+      <Column header="Type" sort-field="type" sortable>
         <template #body="{ data }">{{ typeLabel(data.element_type) }}</template>
       </Column>
-      <Column header="Laag">
+      <Column header="Laag" sort-field="laag" sortable>
         <template #body="{ data }"><Tag :value="laagLabel(data.laag)" severity="info" /></template>
       </Column>
-      <Column header="Aspect">
+      <Column header="Aspect" sort-field="aspect" sortable>
         <template #body="{ data }">{{ aspectLabel(data.aspect) }}</template>
       </Column>
-      <Column header="ArchiMate-element">
+      <Column header="Soort" sort-field="soort" sortable>
         <template #body="{ data }">{{ elementLabel(data.archimate_element) }}</template>
       </Column>
       <template #empty>

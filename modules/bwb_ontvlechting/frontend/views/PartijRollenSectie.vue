@@ -52,7 +52,7 @@ defineExpose({ items, laad })
       </Column>
       <Column header="Type"><template #body="{ data }"><Tag :value="typeLabel(data.object_type)" severity="secondary" /></template></Column>
       <Column header="Rol"><template #body="{ data }">{{ data.rol_label }}</template></Column>
-      <template #empty><span data-testid="pr-leeg">Deze partij heeft nog geen rollen op objecten.</span></template>
+      <template #empty><span data-testid="pr-leeg">Deze partij heeft nog geen rollen op objecten. Rollen wijs je toe vanaf een applicatie/component of een contract.</span></template>
     </DataTable>
   </section>
 </template>
