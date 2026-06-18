@@ -1,13 +1,17 @@
 <script setup>
 /**
  * GebruikersgroepSectie — gebruikersgroepen van één applicatie (in ApplicatieDetail).
- * Dialog-in-sectie (zie DatatypeSectie voor de motivatie). `organisatie` is vrije
- * tekst (A1-bevinding) → geen dropdown/opties-endpoint.
+ * Dialog-in-sectie (zie DatatypeSectie voor de motivatie). UX-B6-a: `organisatie` is een
+ * optionele, zoekbare verwijzing naar een organisatie-partij (geen vrije tekst meer).
  */
 import { computed, nextTick, reactive, ref } from 'vue'
 import { Button, Column, DataTable, Dialog, InputText, useToast } from '@/primevue'
 import { useAuthStore } from '@/store/auth'
 import { api } from '@/api'
+import ZoekSelect from './ZoekSelect.vue'
+
+// Organisatie-keuze: server-side zoeken, beperkt tot partijen met aard=organisatie.
+const zoekOrganisaties = (params) => api.partijen.lijst({ ...params, aard: 'organisatie' })
 
 const props = defineProps({ applicatieId: { type: String, required: true } })
 const auth = useAuthStore()
@@ -30,7 +34,7 @@ const primeSortOrder = computed(() =>
 const dialogOpen = ref(false)
 const bewerkenId = ref(null)
 const bezig = ref(false)
-const form = reactive({ organisatie: '', afdeling: '', aantal_gebruikers: '' })
+const form = reactive({ organisatie_id: null, afdeling: '', aantal_gebruikers: '' })
 const fouten = reactive({})
 const eersteVeld = ref(null)
 let laatsteTrigger = null
@@ -67,7 +71,7 @@ function onSort(event) {
 }
 
 function _reset() {
-  Object.assign(form, { organisatie: '', afdeling: '', aantal_gebruikers: '' })
+  Object.assign(form, { organisatie_id: null, afdeling: '', aantal_gebruikers: '' })
   Object.keys(fouten).forEach((k) => delete fouten[k])
 }
 
@@ -83,7 +87,7 @@ function openBewerken(e, rij) {
   bewerkenId.value = rij.id
   _reset()
   Object.assign(form, {
-    organisatie: rij.organisatie,
+    organisatie_id: rij.organisatie_id ?? null,
     afdeling: rij.afdeling || '',
     aantal_gebruikers: rij.aantal_gebruikers ?? '',
   })
@@ -91,10 +95,12 @@ function openBewerken(e, rij) {
 }
 
 function focusEerste() {
-  // Ná de focustrap van PrimeVue Dialog (die anders de sluitknop focust).
+  // Ná de focustrap van PrimeVue Dialog (die anders de sluitknop focust). ZoekSelect
+  // exposeert een focus()-methode; val anders terug op het root-element.
   setTimeout(() => {
-    const el = eersteVeld.value?.$el ?? eersteVeld.value
-    el?.focus?.()
+    const c = eersteVeld.value
+    if (c?.focus) c.focus()
+    else (c?.$el ?? c)?.focus?.()
   }, 0)
 }
 function onHide() {
@@ -103,8 +109,7 @@ function onHide() {
 
 function valideer() {
   Object.keys(fouten).forEach((k) => delete fouten[k])
-  if (!form.organisatie.trim()) fouten.organisatie = 'Organisatie is verplicht.'
-  else if (form.organisatie.trim().length > 120) fouten.organisatie = 'Maximaal 120 tekens.'
+  // UX-B6-a — organisatie is optioneel (verwijzing); geen verplicht-/lengtecheck meer.
   if (form.afdeling && form.afdeling.trim().length > 255) fouten.afdeling = 'Maximaal 255 tekens.'
   if (form.aantal_gebruikers !== '' && form.aantal_gebruikers !== null) {
     const n = Number(form.aantal_gebruikers)
@@ -133,7 +138,7 @@ async function opslaan() {
   bezig.value = true
   try {
     const data = {
-      organisatie: form.organisatie.trim(),
+      organisatie_id: form.organisatie_id || null,
       afdeling: form.afdeling.trim() || null,
       aantal_gebruikers: form.aantal_gebruikers === '' ? null : Number(form.aantal_gebruikers),
     }
@@ -190,7 +195,19 @@ laad({ reset: true })
       data-testid="gg-tabel"
       @sort="onSort"
     >
-      <Column field="organisatie" header="Organisatie" sortable />
+      <Column field="organisatie" header="Organisatie" sortable>
+        <template #body="{ data }">
+          <router-link
+            v-if="data.organisatie_id"
+            :to="{ name: 'partij-detail', params: { id: data.organisatie_id } }"
+            :data-testid="`gg-org-link-${data.id}`"
+            class="text-[var(--cd-color-primary)] hover:underline"
+          >
+            {{ data.organisatie_naam }}
+          </router-link>
+          <span v-else class="text-[var(--cd-color-text-muted)]">—</span>
+        </template>
+      </Column>
       <Column field="afdeling" header="Afdeling" sortable />
       <Column field="aantal_gebruikers" header="Aantal gebruikers" sortable />
       <Column header="">
@@ -209,9 +226,17 @@ laad({ reset: true })
     <Dialog v-model:visible="dialogOpen" modal :closable="false" :header="bewerkenId ? 'Gebruikersgroep bewerken' : 'Gebruikersgroep toevoegen'" data-testid="gg-dialog" @show="focusEerste" @hide="onHide">
       <form class="flex flex-col gap-[var(--cd-space-md)] min-w-[20rem]" data-testid="gg-form" @submit.prevent="opslaan">
         <div class="flex flex-col gap-[var(--cd-space-xs)]">
-          <label for="gg-organisatie" class="font-semibold">Organisatie *</label>
-          <InputText id="gg-organisatie" ref="eersteVeld" autofocus v-model="form.organisatie" data-testid="gg-veld-organisatie" :aria-invalid="!!fouten.organisatie" aria-describedby="gg-fout-organisatie" />
-          <span v-if="fouten.organisatie" id="gg-fout-organisatie" role="alert" data-testid="gg-fout-organisatie" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.organisatie }}</span>
+          <label for="gg-organisatie" class="font-semibold">Organisatie</label>
+          <ZoekSelect
+            id="gg-organisatie"
+            ref="eersteVeld"
+            testid="gg-veld-organisatie"
+            v-model="form.organisatie_id"
+            :zoek-functie="zoekOrganisaties"
+            :invalid="!!fouten.organisatie_id"
+            placeholder="Zoek een organisatie (optioneel)…"
+          />
+          <span v-if="fouten.organisatie_id" id="gg-fout-organisatie" role="alert" data-testid="gg-fout-organisatie" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.organisatie_id }}</span>
         </div>
         <div class="flex flex-col gap-[var(--cd-space-xs)]">
           <label for="gg-afdeling" class="font-semibold">Afdeling</label>

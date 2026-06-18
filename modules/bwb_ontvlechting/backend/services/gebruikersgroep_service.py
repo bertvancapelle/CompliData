@@ -11,8 +11,9 @@ from datetime import datetime
 
 from sqlalchemy import and_, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 
-from models.models import Element, ElementType, Gebruikersgroep, Relatie
+from models.models import Element, ElementType, Gebruikersgroep, Partij, Relatie
 from schemas.gebruikersgroep import GebruikersgroepCreate, GebruikersgroepUpdate
 from services import applicatie_service
 from services.errors import NietGevonden
@@ -30,9 +31,11 @@ _MAX_LIMIT = 100
 _STANDAARD_SORT = "created_at"
 _STANDAARD_ORDER = "asc"
 
+# UX-B6-a — `organisatie` sorteert op de naam van de gekoppelde organisatie-partij (per-call
+# alias in `lijst`); de dict-waarde hier is een placeholder voor de allowlist-synctest.
 _SORTEERBARE_KOLOMMEN = {
     "created_at": Gebruikersgroep.created_at,
-    "organisatie": Gebruikersgroep.organisatie,
+    "organisatie": Gebruikersgroep.organisatie_id,
     "afdeling": Gebruikersgroep.afdeling,
     "aantal_gebruikers": Gebruikersgroep.aantal_gebruikers,
 }
@@ -48,13 +51,26 @@ def _tenant_uuid(tenant_id) -> uuid.UUID:
     return tenant_id if isinstance(tenant_id, uuid.UUID) else uuid.UUID(str(tenant_id))
 
 
-def _lees(obj: Gebruikersgroep, applicatie_id) -> dict:
-    """API-vorm (applicatie_id afgeleid uit de serving-relatie; None = wees)."""
+def _lees(obj: Gebruikersgroep, applicatie_id, organisatie_naam=None) -> dict:
+    """API-vorm (applicatie_id afgeleid uit de serving-relatie; None = wees). UX-B6-a:
+    organisatie als verwijzing + geresolveerde naam."""
     return {
-        "id": obj.id, "applicatie_id": applicatie_id, "organisatie": obj.organisatie,
+        "id": obj.id, "applicatie_id": applicatie_id,
+        "organisatie_id": obj.organisatie_id, "organisatie_naam": organisatie_naam,
         "afdeling": obj.afdeling, "aantal_gebruikers": obj.aantal_gebruikers,
         "created_at": obj.created_at, "updated_at": obj.updated_at,
     }
+
+
+async def _org_naam(session: AsyncSession, tid: uuid.UUID, organisatie_id) -> str | None:
+    """Naam van de gekoppelde organisatie-partij (None als niet gezet)."""
+    if organisatie_id is None:
+        return None
+    return (
+        await session.execute(
+            select(Partij.naam).where(Partij.id == organisatie_id, Partij.tenant_id == tid)
+        )
+    ).scalar_one_or_none()
 
 
 async def _applicaties_van(session: AsyncSession, tid: uuid.UUID, ids: list) -> dict:
@@ -80,9 +96,15 @@ async def lijst(
         raise ValueError(f"onbekend sorteerveld: {sort}")
     if order not in (_STANDAARD_ORDER, "desc"):
         raise ValueError(f"onbekende sorteerrichting: {order}")
-    kolom = _SORTEERBARE_KOLOMMEN[sort]
+    # UX-B6-a — LEFT JOIN de organisatie-partij voor naam-in-read + sortering op de org-naam.
+    org = aliased(Partij)
+    kolom = org.naam if sort == "organisatie" else _SORTEERBARE_KOLOMMEN[sort]
 
-    stmt = select(Gebruikersgroep).where(Gebruikersgroep.tenant_id == tid)
+    stmt = (
+        select(Gebruikersgroep, org.naam.label("organisatie_naam"))
+        .outerjoin(org, and_(org.id == Gebruikersgroep.organisatie_id, org.tenant_id == tid))
+        .where(Gebruikersgroep.tenant_id == tid)
+    )
     if applicatie_id is not None:
         stmt = stmt.join(
             Relatie,
@@ -101,15 +123,17 @@ async def lijst(
         )
     stmt = stmt.order_by(*keyset_order_by_nulls_last(kolom, Gebruikersgroep.id, order)).limit(limit + 1)
 
-    rijen = list((await session.execute(stmt)).scalars().all())
+    rijen = list((await session.execute(stmt)).all())  # (Gebruikersgroep, organisatie_naam|None)
     heeft_meer = len(rijen) > limit
     items = rijen[:limit]
-    app_map = await _applicaties_van(session, tid, [g.id for g in items])
-    out = [_lees(g, app_map.get(g.id)) for g in items]
-    volgende = (
-        encode_sort_cursor_nullable(sort=sort, order=order, waarde=getattr(items[-1], kolom.key), id=items[-1].id)
-        if heeft_meer else None
-    )
+    app_map = await _applicaties_van(session, tid, [g.id for (g, _n) in items])
+    out = [_lees(g, app_map.get(g.id), org_naam) for (g, org_naam) in items]
+    if heeft_meer:
+        laatste_g, laatste_org = items[-1]
+        waarde = laatste_org if sort == "organisatie" else getattr(laatste_g, kolom.key)
+        volgende = encode_sort_cursor_nullable(sort=sort, order=order, waarde=waarde, id=laatste_g.id)
+    else:
+        volgende = None
     return out, volgende
 
 
@@ -131,12 +155,16 @@ async def lees_detail(session: AsyncSession, tenant_id, gebruikersgroep_id) -> d
     tid = _tenant_uuid(tenant_id)
     obj = await haal_op(session, tenant_id, gebruikersgroep_id)
     app_map = await _applicaties_van(session, tid, [obj.id])
-    return _lees(obj, app_map.get(obj.id))
+    return _lees(obj, app_map.get(obj.id), await _org_naam(session, tid, obj.organisatie_id))
 
 
 async def maak_aan(session: AsyncSession, tenant_id, data: GebruikersgroepCreate) -> dict:
     tid = _tenant_uuid(tenant_id)
     await applicatie_service.haal_op(session, tenant_id, data.applicatie_id)  # ouder 404 buiten tenant
+    # UX-B6-a — valideer dat een opgegeven organisatie een organisatie-partij is (optioneel).
+    if data.organisatie_id is not None:
+        from services import partij_service
+        await partij_service.valideer_organisatie(session, tid, data.organisatie_id)
     velden = data.model_dump(exclude={"applicatie_id"})
     elem = Element(tenant_id=tid, element_type=ElementType.gebruikersgroep)
     session.add(elem)
@@ -146,18 +174,23 @@ async def maak_aan(session: AsyncSession, tenant_id, data: GebruikersgroepCreate
     session.add(Relatie(tenant_id=tid, bron_id=data.applicatie_id, doel_id=elem.id, relatietype=_SERVING))
     await session.commit()
     await session.refresh(obj)
-    return _lees(obj, data.applicatie_id)
+    return _lees(obj, data.applicatie_id, await _org_naam(session, tid, obj.organisatie_id))
 
 
 async def werk_bij(session: AsyncSession, tenant_id, gebruikersgroep_id, data: GebruikersgroepUpdate) -> dict:
     tid = _tenant_uuid(tenant_id)
     obj = await haal_op(session, tenant_id, gebruikersgroep_id)
-    for veld, waarde in data.model_dump(exclude_unset=True).items():
+    velden = data.model_dump(exclude_unset=True)
+    # UX-B6-a — organisatie wijzigen: valideer aard=organisatie als een id wordt gezet.
+    if "organisatie_id" in velden and velden["organisatie_id"] is not None:
+        from services import partij_service
+        await partij_service.valideer_organisatie(session, tid, velden["organisatie_id"])
+    for veld, waarde in velden.items():
         setattr(obj, veld, waarde)
     await session.commit()
     await session.refresh(obj)
     app_map = await _applicaties_van(session, tid, [obj.id])
-    return _lees(obj, app_map.get(obj.id))
+    return _lees(obj, app_map.get(obj.id), await _org_naam(session, tid, obj.organisatie_id))
 
 
 async def verwijder(session: AsyncSession, tenant_id, gebruikersgroep_id) -> None:

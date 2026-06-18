@@ -6,14 +6,16 @@ from pydantic import ValidationError
 
 
 def _basis() -> dict:
-    return {"applicatie_id": str(uuid.uuid4()), "organisatie": "Gemeente Veldendam"}
+    # UX-B6-a — organisatie is een optionele verwijzing (organisatie_id); leeg laten mag.
+    return {"applicatie_id": str(uuid.uuid4())}
 
 
 def test_create_happy_path():
     from schemas.gebruikersgroep import GebruikersgroepCreate
 
-    m = GebruikersgroepCreate(**_basis(), afdeling="Burgerzaken", aantal_gebruikers=12)
-    assert m.organisatie == "Gemeente Veldendam"
+    org_id = uuid.uuid4()
+    m = GebruikersgroepCreate(**_basis(), organisatie_id=org_id, afdeling="Burgerzaken", aantal_gebruikers=12)
+    assert m.organisatie_id == org_id
     assert m.aantal_gebruikers == 12
 
 
@@ -24,28 +26,18 @@ def test_create_extra_forbid():
         GebruikersgroepCreate(**_basis(), onbekend="x")
 
 
-def test_create_organisatie_vrije_tekst():
+def test_create_organisatie_optioneel():
+    # UX-B6-a — zonder organisatie is geldig (optioneel veld).
+    from schemas.gebruikersgroep import GebruikersgroepCreate
+
+    assert GebruikersgroepCreate(**_basis()).organisatie_id is None
+
+
+def test_create_organisatie_geen_uuid_geweigerd():
     from schemas.gebruikersgroep import GebruikersgroepCreate
 
     d = _basis()
-    d["organisatie"] = "Willekeurige Dienst BV"
-    assert GebruikersgroepCreate(**d).organisatie == "Willekeurige Dienst BV"
-
-
-def test_create_organisatie_leeg_geweigerd():
-    from schemas.gebruikersgroep import GebruikersgroepCreate
-
-    d = _basis()
-    d["organisatie"] = "   "
-    with pytest.raises(ValidationError):
-        GebruikersgroepCreate(**d)
-
-
-def test_create_organisatie_te_lang():
-    from schemas.gebruikersgroep import GebruikersgroepCreate
-
-    d = _basis()
-    d["organisatie"] = "x" * 121
+    d["organisatie_id"] = "geen-uuid"
     with pytest.raises(ValidationError):
         GebruikersgroepCreate(**d)
 
@@ -76,11 +68,12 @@ def test_update_geen_applicatie_id():
     assert "applicatie_id" not in GebruikersgroepUpdate.model_fields  # immutabel
 
 
-def test_update_null_op_organisatie_geweigerd():
+def test_update_organisatie_wissen_toegestaan():
+    # UX-B6-a — organisatie op null zetten mag (optioneel; "onbekend").
     from schemas.gebruikersgroep import GebruikersgroepUpdate
 
-    with pytest.raises(ValidationError):
-        GebruikersgroepUpdate(organisatie=None)
+    m = GebruikersgroepUpdate(organisatie_id=None)
+    assert "organisatie_id" in m.model_fields_set and m.organisatie_id is None
 
 
 def test_update_aantal_negatief_geweigerd():

@@ -430,12 +430,19 @@ class Gebruikersgroep(Base, TenantMixin, TimestampMixin):
             ["tenant_id", "id"], ["element.tenant_id", "element.id"],
             name="fk_gebruikersgroep_element", ondelete="CASCADE",
         ),
+        # ADR-024 UX-B6-a — organisatie verwijst naar een partij-element (aard=organisatie,
+        # app-side geborgd). Optioneel; ON DELETE SET NULL → organisatie wordt 'onbekend'
+        # als de partij verdwijnt (geen verplichte koppeling).
+        ForeignKeyConstraint(
+            ["tenant_id", "organisatie_id"], ["element.tenant_id", "element.id"],
+            name="fk_gebruikersgroep_organisatie", ondelete="SET NULL",
+        ),
     )
 
     # ADR-023 B-mig-2 slice 4: de band met de applicatie is een `serving`-relatie geworden.
     id: Mapped[uuid.UUID] = _pk()
-    # Configureerbaar per tenant — geen hardcoded enum
-    organisatie: Mapped[str] = mapped_column(String(120), nullable=False)
+    # ADR-024 UX-B6-a — optionele verwijzing naar de organisatie (partij, aard=organisatie).
+    organisatie_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     afdeling: Mapped[str | None] = mapped_column(String(255), nullable=True)
     aantal_gebruikers: Mapped[int | None] = mapped_column(Integer, nullable=True)
 

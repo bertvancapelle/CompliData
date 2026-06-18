@@ -1,27 +1,24 @@
 """Pydantic v2-schemas voor de entiteit Gebruikersgroep (P5-vervolg, ADR-009).
 
-Zelfde patroon als `schemas/applicatie.py`, zónder lifecycle. `organisatie` is
-vrije tekst (≤120, niet-leeg) — geen enum, net als `eigenaar_organisatie`.
-`aantal_gebruikers` is optioneel en niet-negatief (`ge=0`). `applicatie_id`
-zit in Create maar niet in Update (immutabel).
+ADR-024 UX-B6-a: `organisatie` is een **optionele verwijzing** naar een organisatie-partij
+(`organisatie_id`), niet langer vrije tekst. `aantal_gebruikers` is optioneel en niet-negatief
+(`ge=0`). `applicatie_id` zit in Create maar niet in Update (immutabel).
 """
 import uuid
 from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from schemas.applicatie import _optionele_tekst, _verplichte_tekst
-
-_VERPLICHTE_VELDEN = frozenset({"organisatie"})
+from schemas.applicatie import _optionele_tekst
 
 
 class GebruikersgroepSorteerveld(str, Enum):
     """Allowlist van sorteerbare lijst-velden (ADR-017 B2, retrofit CD020).
 
-    Dekt de getoonde kolommen. NOT NULL: `organisatie`, `created_at`. Nullable
-    (NULLS LAST, ADR-017 B5): `afdeling`, `aantal_gebruikers`. De service mapt
-    deze namen 1-op-1 op een kolom; een test borgt de synchroniteit.
+    Dekt de getoonde kolommen. `organisatie` sorteert op de naam van de gekoppelde
+    organisatie-partij (nullable → NULLS LAST). `afdeling`/`aantal_gebruikers` nullable
+    eveneens. De service mapt deze namen 1-op-1; een test borgt de synchroniteit.
     """
 
     created_at = "created_at"
@@ -34,15 +31,10 @@ class GebruikersgroepCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     applicatie_id: uuid.UUID
-    organisatie: str
+    # ADR-024 UX-B6-a — optionele verwijzing naar de organisatie (partij, aard=organisatie).
+    organisatie_id: uuid.UUID | None = None
     afdeling: str | None = None
     aantal_gebruikers: int | None = Field(default=None, ge=0)
-
-    @field_validator("organisatie")
-    @classmethod
-    def _v_organisatie(cls, v: str) -> str:
-        # Vrije tekst (configureerbaar per tenant) — geen enum.
-        return _verplichte_tekst(v, "organisatie", 120)
 
     @field_validator("afdeling")
     @classmethod
@@ -55,26 +47,14 @@ class GebruikersgroepUpdate(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    organisatie: str | None = None
+    organisatie_id: uuid.UUID | None = None
     afdeling: str | None = None
     aantal_gebruikers: int | None = Field(default=None, ge=0)
-
-    @field_validator("organisatie")
-    @classmethod
-    def _v_organisatie(cls, v: str | None) -> str | None:
-        return v if v is None else _verplichte_tekst(v, "organisatie", 120)
 
     @field_validator("afdeling")
     @classmethod
     def _v_afdeling(cls, v: str | None) -> str | None:
         return _optionele_tekst(v, 255)
-
-    @model_validator(mode="after")
-    def _verbied_null_op_verplicht(self) -> "GebruikersgroepUpdate":
-        for veld in _VERPLICHTE_VELDEN:
-            if veld in self.model_fields_set and getattr(self, veld) is None:
-                raise ValueError(f"{veld} mag niet op null worden gezet")
-        return self
 
 
 class GebruikersgroepRead(BaseModel):
@@ -83,7 +63,9 @@ class GebruikersgroepRead(BaseModel):
     id: uuid.UUID
     # ADR-023: afgeleid uit de serving-relatie; None = wees (Besluit 13).
     applicatie_id: uuid.UUID | None
-    organisatie: str
+    # ADR-024 UX-B6-a — organisatie als verwijzing + geresolveerde naam (read).
+    organisatie_id: uuid.UUID | None = None
+    organisatie_naam: str | None = None
     afdeling: str | None
     aantal_gebruikers: int | None
     created_at: datetime

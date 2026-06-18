@@ -32,6 +32,7 @@ from models.models import (
     ElementType,
     Gap,
     Gebruikersgroep,
+    Partij,
     Plateau,
     WorkPackage,
 )
@@ -102,8 +103,8 @@ def _naam(r) -> str:
     elif et == "datatype":
         naam = _et_value(r.datatype_categorie) if r.datatype_categorie is not None else None
     elif et == "gebruikersgroep":
-        if r.gg_organisatie:
-            naam = f"{r.gg_organisatie} — {r.gg_afdeling}" if r.gg_afdeling else r.gg_organisatie
+        if r.gg_org_naam:
+            naam = f"{r.gg_org_naam} — {r.gg_afdeling}" if r.gg_afdeling else r.gg_org_naam
     elif et == "plateau":
         naam = r.plateau_naam
     elif et == "gap":
@@ -168,9 +169,11 @@ async def lijst(
 
     # Catalogus-typing per componenttype via een join (component-tak van de coalesce).
     cc = aliased(ComponentConfigOptie)
+    # UX-B6-a — gebruikersgroep-organisatie is nu een partij-verwijzing; join voor de display-naam.
+    gg_org = aliased(Partij)
     naam_expr = func.coalesce(
         Component.naam, Contract.contractnaam, cast(Datatype.categorie, String),
-        Gebruikersgroep.organisatie, Plateau.naam, Gap.naam, WorkPackage.naam, Deliverable.naam,
+        gg_org.naam, Plateau.naam, Gap.naam, WorkPackage.naam, Deliverable.naam,
     )
     laag_expr = func.coalesce(_static_typing_case("laag"), cc.laag)
     aspect_expr = func.coalesce(_static_typing_case("aspect"), cc.aspect)
@@ -191,7 +194,7 @@ async def lijst(
             Contract.contractnaam.label("contract_naam"),
             Datatype.categorie.label("datatype_categorie"),
             Datatype.omschrijving.label("datatype_omschrijving"),
-            Gebruikersgroep.organisatie.label("gg_organisatie"),
+            gg_org.naam.label("gg_org_naam"),
             Gebruikersgroep.afdeling.label("gg_afdeling"),
             Plateau.naam.label("plateau_naam"),
             Gap.naam.label("gap_naam"),
@@ -203,6 +206,7 @@ async def lijst(
         .outerjoin(Contract, and_(Contract.id == Element.id, Contract.tenant_id == tid))
         .outerjoin(Datatype, and_(Datatype.id == Element.id, Datatype.tenant_id == tid))
         .outerjoin(Gebruikersgroep, and_(Gebruikersgroep.id == Element.id, Gebruikersgroep.tenant_id == tid))
+        .outerjoin(gg_org, and_(gg_org.id == Gebruikersgroep.organisatie_id, gg_org.tenant_id == tid))
         .outerjoin(Plateau, and_(Plateau.id == Element.id, Plateau.tenant_id == tid))
         .outerjoin(Gap, and_(Gap.id == Element.id, Gap.tenant_id == tid))
         .outerjoin(WorkPackage, and_(WorkPackage.id == Element.id, WorkPackage.tenant_id == tid))

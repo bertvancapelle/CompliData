@@ -13,9 +13,8 @@ import pytest
 def _create_data(applicatie_id):
     from schemas.gebruikersgroep import GebruikersgroepCreate
 
-    return GebruikersgroepCreate(
-        applicatie_id=applicatie_id, organisatie="Gemeente Veldendam", aantal_gebruikers=5
-    )
+    # UX-B6-a — organisatie optioneel (verwijzing); hier zonder organisatie.
+    return GebruikersgroepCreate(applicatie_id=applicatie_id, aantal_gebruikers=5)
 
 
 def test_maak_aan_ouder_ontbreekt_geeft_nietgevonden(monkeypatch):
@@ -51,7 +50,7 @@ def test_maak_aan_ouder_bestaat(monkeypatch):
     out = asyncio.run(svc.maak_aan(session, tid, _create_data(app_id)))
 
     assert str(out["applicatie_id"]) == str(app_id)
-    assert out["organisatie"] == "Gemeente Veldendam"
+    assert out["organisatie_id"] is None and out["organisatie_naam"] is None
     assert out["aantal_gebruikers"] == 5
     assert any(isinstance(o, Element) for o in toegevoegd)
     rel = next(o for o in toegevoegd if isinstance(o, Relatie))

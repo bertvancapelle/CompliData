@@ -26,7 +26,7 @@ def _rij(element_type, **kw):
         id=uuid.uuid4(), element_type=ElementType(element_type), created_at=None,
         component_naam=None, componenttype=None, contract_naam=None,
         datatype_categorie=None, datatype_omschrijving=None,
-        gg_organisatie=None, gg_afdeling=None,
+        gg_org_naam=None, gg_afdeling=None,
         plateau_naam=None, gap_naam=None, wp_naam=None, deliverable_naam=None,
     )
     base.update(kw)
@@ -45,9 +45,9 @@ def test_naam_resolutie_per_subtype():
     dt = _rij("datatype", datatype_categorie=DatatypeCategorie.gestructureerd_db, datatype_omschrijving="Klantgegevens")
     assert _naam(dt) == "gestructureerd_db"
     assert _naam_secundair(dt) == "Klantgegevens"
-    # gebruikersgroep → organisatie (+ afdeling).
-    assert _naam(_rij("gebruikersgroep", gg_organisatie="Publiekszaken", gg_afdeling="Burgerzaken")) == "Publiekszaken — Burgerzaken"
-    assert _naam(_rij("gebruikersgroep", gg_organisatie="ICT", gg_afdeling=None)) == "ICT"
+    # gebruikersgroep → organisatie-naam (uit de partij-join, UX-B6-a) (+ afdeling).
+    assert _naam(_rij("gebruikersgroep", gg_org_naam="Publiekszaken", gg_afdeling="Burgerzaken")) == "Publiekszaken — Burgerzaken"
+    assert _naam(_rij("gebruikersgroep", gg_org_naam="ICT", gg_afdeling=None)) == "ICT"
     # fallback: nooit leeg.
     leeg = _rij("contract", contract_naam=None)
     assert _naam(leeg).startswith("contract ")

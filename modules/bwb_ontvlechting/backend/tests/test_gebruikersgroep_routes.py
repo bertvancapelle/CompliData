@@ -13,14 +13,15 @@ TENANT_A = "11111111-1111-1111-1111-111111111111"
 _ID = "22222222-2222-2222-2222-222222222222"
 _APP_ID = "33333333-3333-3333-3333-333333333333"
 
-_CREATE_BODY = {"applicatie_id": _APP_ID, "organisatie": "Gemeente Veldendam"}
+_CREATE_BODY = {"applicatie_id": _APP_ID}  # UX-B6-a — organisatie optioneel (organisatie_id)
 
 
 def _fake_groep():
     return SimpleNamespace(
         id=uuid.UUID(_ID),
         applicatie_id=uuid.UUID(_APP_ID),
-        organisatie="Gemeente Veldendam",
+        organisatie_id=None,
+        organisatie_naam=None,
         afdeling=None,
         aantal_gebruikers=None,
         created_at=datetime(2026, 6, 6, tzinfo=timezone.utc),
