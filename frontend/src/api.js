@@ -265,8 +265,12 @@ export const api = {
     leden: (id) => request(`/gaps/${id}/leden`),
   },
   workPackages: {
-    lijst: ({ limit, after } = {}) => request(`/work-packages${_query({ limit, after })}`),
+    // `zoek` (CD017 ILIKE op naam) bedient het "bovenliggend werkpakket"-keuzeveld (UX-A4-2).
+    lijst: ({ limit, after, zoek } = {}) => request(`/work-packages${_query({ limit, after, zoek })}`),
     haal: (id) => request(`/work-packages/${id}`),
+    maak: (data) => request('/work-packages', { method: 'POST', body: JSON.stringify(data) }),
+    werkBij: (id, data) => request(`/work-packages/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    verwijder: (id) => request(`/work-packages/${id}`, { method: 'DELETE' }),
     subboom: (id) => request(`/work-packages/${id}/subboom`),
   },
   deliverables: {

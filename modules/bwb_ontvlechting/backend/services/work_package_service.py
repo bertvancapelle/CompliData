@@ -28,6 +28,11 @@ from services.pagination import decode_sort_cursor, encode_sort_cursor
 _ENTITEIT = "work_package"
 _STANDAARD_LIMIT = 25
 _MAX_LIMIT = 100
+_LIKE_ESCAPE = "\\"
+
+
+def _escape_like(term: str) -> str:
+    return term.replace(_LIKE_ESCAPE, _LIKE_ESCAPE * 2).replace("%", r"\%").replace("_", r"\_")
 
 
 def _tenant_uuid(tenant_id) -> uuid.UUID:
@@ -159,12 +164,16 @@ async def verwijder(session: AsyncSession, tenant_id, work_package_id) -> None:
 
 
 async def lijst(
-    session: AsyncSession, tenant_id, *, limit: int = _STANDAARD_LIMIT, after: str | None = None
+    session: AsyncSession, tenant_id, *, limit: int = _STANDAARD_LIMIT, after: str | None = None,
+    zoek: str | None = None,
 ) -> tuple[list[dict], str | None]:
-    """Vlakke keyset-lijst binnen de tenant (created_at oplopend). Cursor-mismatch ⇒ ValueError (400)."""
+    """Vlakke keyset-lijst binnen de tenant (created_at oplopend). `zoek` = ge-escapete
+    ILIKE op `naam` (voor het "bovenliggend werkpakket"-keuzeveld). Cursor-mismatch ⇒ ValueError (400)."""
     limit = max(1, min(limit, _MAX_LIMIT))
     tid = _tenant_uuid(tenant_id)
     stmt = select(WorkPackage).where(WorkPackage.tenant_id == tid)
+    if zoek:
+        stmt = stmt.where(WorkPackage.naam.ilike(f"%{_escape_like(zoek)}%", escape=_LIKE_ESCAPE))
     if after:
         _s, _o, waarde_str, c_id = decode_sort_cursor(after)
         c_waarde = datetime.fromisoformat(waarde_str)

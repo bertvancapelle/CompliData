@@ -1,60 +1,175 @@
 <script setup>
 /**
- * WorkPackageDetailView — migratielaag (ADR-023 Fase F / F-1): werkpakket-detail.
- * Read-only; leunt op `GET /work-packages/{id}` + `/subboom` (afstammelingen met niveau +
- * pad) + `GET /work-packages/{ouder}` voor de naam van het bovenliggende pakket.
+ * WorkPackageDetailView — migratielaag (ADR-023 Fase E/F): werkpakket-detail + beheer.
+ * UX-A4-2: wijzigen (naam/toelichting/bovenliggend), verwijderen, en sub-werkpakketten.
+ * Een sub-werkpakket toevoegen gebeurt via "+ Sub-werkpakket" — een dialog op dit detail dat
+ * dit werkpakket als bovenliggend voorvult (A2/A3-prefill-lijn) en op de pagina blijft, zodat
+ * de nieuwe regel meteen in de subboom verschijnt. Registratie/migratielaag — engine onaangeroerd.
+ *
+ * De backend handhaaft cycluspreventie (422 CYCLISCHE_HIERARCHIE) en weigert verwijderen bij
+ * subpakketten (409 HEEFT_SUBPAKKETTEN); die worden hier als begrijpelijke melding getoond.
  */
-import { computed, onMounted, ref } from 'vue'
-import { Column, DataTable } from '@/primevue'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { Button, Column, DataTable, Dialog, InputText, Textarea, useToast } from '@/primevue'
+import { useRouter } from '@/composables/router'
+import { useAuthStore } from '@/store/auth'
 import { api } from '@/api'
+import ZoekSelect from '@modules/bwb_ontvlechting/frontend/views/ZoekSelect.vue'
 
 const props = defineProps({ id: { type: String, required: true } })
+const router = useRouter()
+const toast = useToast()
+const auth = useAuthStore()
+const magBeheren = computed(() => auth.hasRole('medewerker', 'beheerder'))
+const magVerwijderen = computed(() => auth.hasRole('beheerder'))
 
 const wp = ref(null)
 const ouder = ref(null)
 const subboom = ref([])
 const laden = ref(true)
 const fout = ref(null)
+const bezig = ref(false)
 
 const directeSubpakketten = computed(() => subboom.value.filter((i) => i.niveau === 1))
+const zoekWerkpakketten = (params) => api.workPackages.lijst(params)
 
-onMounted(async () => {
+function _foutMelding(e) {
+  if (e?.code === 'CYCLISCHE_HIERARCHIE')
+    return 'Een werkpakket kan niet onder zichzelf of een onderliggend werkpakket vallen.'
+  if (e?.code === 'HEEFT_SUBPAKKETTEN')
+    return 'Dit werkpakket heeft onderliggende werkpakketten; ontkoppel of verwijder die eerst.'
+  return (
+    { 403: 'Je hebt geen rechten voor deze actie.', 404: 'Niet gevonden.' }[e?.status] ||
+    e?.message ||
+    'Er ging iets mis.'
+  )
+}
+function _toastFout(e) {
+  toast.add({ severity: 'error', summary: 'Fout', detail: _foutMelding(e), life: 6000 })
+}
+
+async function laad() {
+  laden.value = true
+  fout.value = null
   try {
     wp.value = await api.workPackages.haal(props.id)
     subboom.value = await api.workPackages.subboom(props.id)
-    if (wp.value.bovenliggend_id) {
-      ouder.value = await api.workPackages.haal(wp.value.bovenliggend_id).catch(() => null)
-    }
+    ouder.value = wp.value.bovenliggend_id
+      ? await api.workPackages.haal(wp.value.bovenliggend_id).catch(() => null)
+      : null
   } catch (e) {
     fout.value = e?.message || 'Het werkpakket kon niet worden geladen.'
   } finally {
     laden.value = false
   }
-})
+}
+async function herlaadSubboom() {
+  subboom.value = await api.workPackages.subboom(props.id)
+}
+
+// ── Bewerken (naam/toelichting/bovenliggend) ─────────────────────────────────
+const editOpen = ref(false)
+const editForm = reactive({ naam: '', toelichting: '', bovenliggend_id: '' })
+const editFout = ref(null)
+
+function openBewerken() {
+  editForm.naam = wp.value?.naam || ''
+  editForm.toelichting = wp.value?.toelichting || ''
+  editForm.bovenliggend_id = wp.value?.bovenliggend_id || ''
+  editFout.value = null
+  editOpen.value = true
+}
+async function bevestigBewerken() {
+  if (!editForm.naam.trim()) {
+    editFout.value = 'Naam is verplicht.'
+    return
+  }
+  bezig.value = true
+  try {
+    await api.workPackages.werkBij(props.id, {
+      naam: editForm.naam.trim(),
+      toelichting: editForm.toelichting.trim() || null,
+      bovenliggend_id: editForm.bovenliggend_id || null,
+    })
+    toast.add({ severity: 'success', summary: 'Opgeslagen', life: 3000 })
+    editOpen.value = false
+    await laad()
+  } catch (e) {
+    _toastFout(e) // incl. cyclus-melding; blijf op het scherm
+  } finally {
+    bezig.value = false
+  }
+}
+
+// ── Verwijderen ──────────────────────────────────────────────────────────────
+const verwijderOpen = ref(false)
+async function bevestigVerwijderen() {
+  bezig.value = true
+  try {
+    await api.workPackages.verwijder(props.id)
+    toast.add({ severity: 'success', summary: 'Werkpakket verwijderd', life: 3000 })
+    router.push({ name: 'work-package-lijst' })
+  } catch (e) {
+    verwijderOpen.value = false
+    _toastFout(e) // incl. "heeft subpakketten"-melding; blijf op het scherm
+  } finally {
+    bezig.value = false
+  }
+}
+
+// ── Sub-werkpakket toevoegen (dit werkpakket als bovenliggend) ───────────────
+const subOpen = ref(false)
+const subForm = reactive({ naam: '', toelichting: '' })
+const subFout = ref(null)
+
+function openSub() {
+  subForm.naam = ''
+  subForm.toelichting = ''
+  subFout.value = null
+  subOpen.value = true
+}
+async function bevestigSub() {
+  if (!subForm.naam.trim()) {
+    subFout.value = 'Naam is verplicht.'
+    return
+  }
+  bezig.value = true
+  try {
+    await api.workPackages.maak({
+      naam: subForm.naam.trim(),
+      toelichting: subForm.toelichting.trim() || null,
+      bovenliggend_id: props.id,
+    })
+    toast.add({ severity: 'success', summary: 'Sub-werkpakket toegevoegd', life: 3000 })
+    subOpen.value = false
+    await herlaadSubboom()
+  } catch (e) {
+    _toastFout(e)
+  } finally {
+    bezig.value = false
+  }
+}
+
+onMounted(laad)
 </script>
 
 <template>
   <section aria-labelledby="wp-detail-titel">
-    <router-link
-      :to="{ name: 'work-package-lijst' }"
-      class="text-[length:var(--cd-text-sm)] text-[var(--cd-color-primary)] hover:underline"
-    >
+    <router-link :to="{ name: 'work-package-lijst' }" class="text-[length:var(--cd-text-sm)] text-[var(--cd-color-primary)] hover:underline">
       ← Werkpakketten
     </router-link>
 
-    <p v-if="fout" role="alert" data-testid="wp-detail-fout" class="my-[var(--cd-space-md)] text-[var(--cd-color-danger)]">
-      {{ fout }}
-    </p>
+    <p v-if="fout" role="alert" data-testid="wp-detail-fout" class="my-[var(--cd-space-md)] text-[var(--cd-color-danger)]">{{ fout }}</p>
     <p v-else-if="laden" data-testid="wp-detail-laden" class="my-[var(--cd-space-md)] text-[var(--cd-color-text-muted)]">Laden…</p>
 
     <template v-else-if="wp">
-      <h1
-        id="wp-detail-titel"
-        data-testid="wp-naam"
-        class="mt-[var(--cd-space-sm)] mb-[var(--cd-space-sm)] text-[length:var(--cd-text-2xl)] font-semibold text-[var(--cd-color-primary)]"
-      >
-        {{ wp.naam }}
-      </h1>
+      <div class="mt-[var(--cd-space-sm)] mb-[var(--cd-space-sm)] flex items-center gap-[var(--cd-space-md)]">
+        <h1 id="wp-detail-titel" data-testid="wp-naam" class="text-[length:var(--cd-text-2xl)] font-semibold text-[var(--cd-color-primary)]">
+          {{ wp.naam }}
+        </h1>
+        <Button v-if="magBeheren" label="Bewerken" size="small" data-testid="wp-bewerken" class="ml-auto" @click="openBewerken" />
+        <Button v-if="magVerwijderen" label="Verwijderen" size="small" severity="danger" data-testid="wp-verwijderen" @click="verwijderOpen = true" />
+      </div>
       <p v-if="wp.toelichting" class="mb-[var(--cd-space-md)] text-[var(--cd-color-text)]">{{ wp.toelichting }}</p>
 
       <p data-testid="wp-ouder" class="mb-[var(--cd-space-lg)] text-[var(--cd-color-text)]">
@@ -70,32 +185,91 @@ onMounted(async () => {
         <span v-else> top-niveau (geen bovenliggend pakket)</span>
       </p>
 
-      <h2 class="mb-[var(--cd-space-sm)] text-[length:var(--cd-text-lg)] font-semibold">
-        Subpakketten ({{ directeSubpakketten.length }} direct)
-      </h2>
-      <DataTable
-        :value="subboom"
-        data-testid="wp-subboom-tabel"
-        class="bg-[var(--cd-color-surface)] rounded-[var(--cd-radius-card)] shadow-[var(--cd-shadow-sm)]"
-      >
+      <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
+        <h2 class="text-[length:var(--cd-text-lg)] font-semibold">Subpakketten ({{ directeSubpakketten.length }} direct)</h2>
+        <Button v-if="magBeheren" label="+ Sub-werkpakket" size="small" data-testid="wp-sub-toevoegen" class="ml-auto" @click="openSub" />
+      </div>
+      <DataTable :value="subboom" data-testid="wp-subboom-tabel" class="bg-[var(--cd-color-surface)] rounded-[var(--cd-radius-card)] shadow-[var(--cd-shadow-sm)]">
         <Column field="naam" header="Naam">
           <template #body="{ data }">
-            <router-link
-              :to="{ name: 'work-package-detail', params: { id: data.id } }"
-              class="text-[var(--cd-color-primary)] hover:underline"
-            >
+            <router-link :to="{ name: 'work-package-detail', params: { id: data.id } }" class="text-[var(--cd-color-primary)] hover:underline">
               {{ data.naam }}
             </router-link>
           </template>
         </Column>
         <Column field="niveau" header="Niveau" />
-        <Column header="Pad">
-          <template #body="{ data }">{{ data.pad.join(' › ') }}</template>
-        </Column>
+        <Column header="Pad"><template #body="{ data }">{{ data.pad.join(' › ') }}</template></Column>
         <template #empty>
-          <span data-testid="wp-subboom-leeg">Dit werkpakket heeft geen subpakketten.</span>
+          <span data-testid="wp-subboom-leeg">
+            Dit werkpakket heeft nog geen subpakketten.
+            <template v-if="magBeheren">Voeg er een toe met “+ Sub-werkpakket”.</template>
+          </span>
         </template>
       </DataTable>
     </template>
+
+    <!-- Bewerken -->
+    <Dialog v-model:visible="editOpen" modal :closable="false" header="Werkpakket bewerken" data-testid="wp-edit-dialog">
+      <form class="flex flex-col gap-[var(--cd-space-md)] min-w-[24rem]" data-testid="wp-edit-form" @submit.prevent="bevestigBewerken">
+        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+          <label for="we-naam" class="font-semibold">Naam *</label>
+          <InputText id="we-naam" v-model="editForm.naam" data-testid="we-naam" :aria-invalid="!!editFout" />
+          <span v-if="editFout" role="alert" data-testid="we-fout" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ editFout }}</span>
+        </div>
+        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+          <label for="we-toelichting" class="font-semibold">Toelichting</label>
+          <Textarea id="we-toelichting" v-model="editForm.toelichting" rows="3" data-testid="we-toelichting" />
+        </div>
+        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+          <label for="we-bovenliggend" class="font-semibold">Bovenliggend werkpakket (leeg = top-niveau)</label>
+          <ZoekSelect
+            id="we-bovenliggend"
+            testid="we-veld-bovenliggend"
+            v-model="editForm.bovenliggend_id"
+            :zoek-functie="zoekWerkpakketten"
+            :initieel-weergave="ouder?.naam || ''"
+            placeholder="Zoek een bovenliggend werkpakket…"
+          />
+        </div>
+        <div class="flex gap-[var(--cd-space-md)]">
+          <Button type="submit" label="Opslaan" data-testid="we-opslaan" :disabled="bezig" />
+          <Button type="button" label="Annuleren" severity="secondary" @click="editOpen = false" />
+        </div>
+      </form>
+    </Dialog>
+
+    <!-- Verwijderen -->
+    <Dialog v-model:visible="verwijderOpen" modal header="Werkpakket verwijderen" data-testid="wp-verwijder-dialog">
+      <p class="mb-[var(--cd-space-md)] max-w-prose">
+        Weet je zeker dat je <strong>{{ wp?.naam }}</strong> wilt verwijderen? Een werkpakket met
+        onderliggende werkpakketten kan niet worden verwijderd.
+      </p>
+      <div class="flex justify-end gap-[var(--cd-space-md)]">
+        <Button label="Annuleren" severity="secondary" @click="verwijderOpen = false" />
+        <Button label="Definitief verwijderen" severity="danger" data-testid="wp-verwijder-bevestig" :disabled="bezig" @click="bevestigVerwijderen" />
+      </div>
+    </Dialog>
+
+    <!-- Sub-werkpakket toevoegen -->
+    <Dialog v-model:visible="subOpen" modal :closable="false" header="Sub-werkpakket toevoegen" data-testid="wp-sub-dialog">
+      <form class="flex flex-col gap-[var(--cd-space-md)] min-w-[24rem]" data-testid="wp-sub-form" @submit.prevent="bevestigSub">
+        <p class="text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]">
+          Onder: <strong>{{ wp?.naam }}</strong>
+        </p>
+        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+          <label for="ws-naam" class="font-semibold">Naam *</label>
+          <InputText id="ws-naam" v-model="subForm.naam" data-testid="ws-naam" :aria-invalid="!!subFout" />
+          <span v-if="subFout" role="alert" data-testid="ws-fout" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ subFout }}</span>
+        </div>
+        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+          <label for="ws-toelichting" class="font-semibold">Toelichting</label>
+          <Textarea id="ws-toelichting" v-model="subForm.toelichting" rows="3" data-testid="ws-toelichting" />
+        </div>
+        <div class="flex gap-[var(--cd-space-md)]">
+          <Button type="submit" label="Toevoegen" data-testid="ws-opslaan" :disabled="bezig" />
+          <Button type="button" label="Annuleren" severity="secondary" @click="subOpen = false" />
+        </div>
+      </form>
+    </Dialog>
   </section>
 </template>

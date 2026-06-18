@@ -248,6 +248,29 @@ def test_work_package_verwijdergedrag_live():
 
 
 @integratie
+def test_work_package_zoekfilter_live():
+    """De `zoek`-filter (ILIKE op naam) bedient het 'bovenliggend werkpakket'-keuzeveld."""
+    from schemas.work_package import WorkPackageCreate
+    from services import work_package_service as svc
+
+    async def _flow(s):
+        ids = []
+        try:
+            a = await svc.maak_aan(s, _TID, WorkPackageCreate(naam="WP-Zoek Alpha uniek"))
+            ids.append(a["id"])
+            b = await svc.maak_aan(s, _TID, WorkPackageCreate(naam="WP-Zoek Beta uniek"))
+            ids.append(b["id"])
+            items, _ = await svc.lijst(s, _TID, zoek="alpha uniek")
+            return [i["naam"] for i in items]
+        finally:
+            await _ruim(s, ids)
+
+    namen = asyncio.run(_run_rls(_TID, "test:bert", _flow))
+    assert "WP-Zoek Alpha uniek" in namen
+    assert "WP-Zoek Beta uniek" not in namen  # ILIKE filtert op naam
+
+
+@integratie
 def test_work_package_rls_isolatie_live():
     from sqlalchemy import text as _text
     from schemas.work_package import WorkPackageCreate
