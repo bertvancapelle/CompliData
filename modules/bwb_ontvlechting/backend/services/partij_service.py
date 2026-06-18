@@ -106,7 +106,7 @@ async def _valideer_lidmaatschap(session, tid, aard, organisatie_id, afdeling_id
 async def valideer_organisatie(session: AsyncSession, tenant_id, partij_id) -> None:
     """UX-B6 — een organisatie-verwijzing (bv. gebruikersgroep-/eigenaar-organisatie) moet een
     bestaande partij met aard=organisatie zijn (anders 422 `ONGELDIGE_ORGANISATIE`). `None` =
-    optioneel, handelt de caller zelf af. Spiegelt `contract_service._valideer_externe_partij`."""
+    optioneel, handelt de caller zelf af. Spiegelt `contract_service._valideer_contractpartij`."""
     tid = _tenant_uuid(tenant_id)
     aard = (
         await session.execute(

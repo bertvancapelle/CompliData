@@ -151,9 +151,20 @@ async def _valideer_consistentie(
         )
 
 
-async def _valideer_externe_partij(session: AsyncSession, tid: uuid.UUID, partij_id) -> None:
-    """ADR-024 slice 1 (optie A) — de contract-"leverancier" verwijst naar een **partij**
-    met aard `externe_partij`. Onbekend binnen de tenant ⇒ 404; verkeerde aard ⇒ 422."""
+# ADR-024 — de contract-"leverancier" (contractpartij) mag elke partij-aard zijn behalve
+# `persoon`: een organisatie, organisatie-eenheid (afdeling) of externe partij. Een natuurlijk
+# persoon is nooit een contractpartij in dit model.
+TOEGESTANE_LEVERANCIER_AARDEN = {
+    PartijAard.organisatie,
+    PartijAard.organisatie_eenheid,
+    PartijAard.externe_partij,
+}
+
+
+async def _valideer_contractpartij(session: AsyncSession, tid: uuid.UUID, partij_id) -> None:
+    """De contract-"leverancier" verwijst naar een **partij** met een toegestane aard
+    (organisatie / organisatie_eenheid / externe_partij — alles behalve `persoon`).
+    Onbekend binnen de tenant ⇒ 404; verkeerde aard ⇒ 422 `ONGELDIGE_PARTIJ`."""
     aard = (
         await session.execute(
             select(Partij.aard).where(Partij.id == partij_id, Partij.tenant_id == tid)
@@ -161,9 +172,9 @@ async def _valideer_externe_partij(session: AsyncSession, tid: uuid.UUID, partij
     ).scalar_one_or_none()
     if aard is None:
         raise NietGevonden("partij", partij_id)
-    if aard != PartijAard.externe_partij:
+    if aard not in TOEGESTANE_LEVERANCIER_AARDEN:
         raise OngeldigeRegistratie(
-            "ONGELDIGE_PARTIJ", "De leverancier van een contract moet een externe partij zijn."
+            "ONGELDIGE_PARTIJ", "De contractpartij mag geen persoon zijn."
         )
 
 
@@ -335,7 +346,7 @@ async def lijst(
 
 async def maak_aan(session: AsyncSession, tenant_id, data: ContractCreate) -> dict:
     tid = _tenant_uuid(tenant_id)
-    await _valideer_externe_partij(session, tid, data.leverancier_id)  # 404/422
+    await _valideer_contractpartij(session, tid, data.leverancier_id)  # 404/422
     await _valideer_consistentie(
         session, tenant_id,
         contracttype=data.contracttype,
@@ -382,7 +393,7 @@ async def werk_bij(session: AsyncSession, tenant_id, contract_id, data: Contract
             )
 
     if "leverancier_id" in velden and nieuw_lev != obj.leverancier_id:
-        await _valideer_externe_partij(session, tid, nieuw_lev)  # 404/422
+        await _valideer_contractpartij(session, tid, nieuw_lev)  # 404/422
 
     if {"contracttype", "mantelcontract_id", "leverancier_id"} & velden.keys():
         if nieuw_mantel is not None and nieuw_mantel == contract_id:

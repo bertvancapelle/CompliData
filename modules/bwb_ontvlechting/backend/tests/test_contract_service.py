@@ -9,6 +9,35 @@ import pytest
 TID = "11111111-1111-1111-1111-111111111111"
 
 
+def _sessie_met_aard(aard):
+    """AsyncMock-sessie waarvan execute().scalar_one_or_none() de gegeven partij-aard teruggeeft."""
+    session = AsyncMock()
+    res = MagicMock()
+    res.scalar_one_or_none.return_value = aard
+    session.execute.return_value = res
+    return session
+
+
+def test_valideer_contractpartij_aard_matrix():
+    """ADR-024 — contractpartij mag elke aard behalve `persoon`; onbekend ⇒ 404."""
+    from models.models import PartijAard
+    from services import contract_service as svc
+    from services.errors import NietGevonden, OngeldigeRegistratie
+
+    # Toegestaan (geen exception):
+    for aard in (PartijAard.organisatie, PartijAard.organisatie_eenheid, PartijAard.externe_partij):
+        asyncio.run(svc._valideer_contractpartij(_sessie_met_aard(aard), uuid.uuid4(), uuid.uuid4()))
+
+    # Persoon ⇒ 422 ONGELDIGE_PARTIJ:
+    with pytest.raises(OngeldigeRegistratie) as exc:
+        asyncio.run(svc._valideer_contractpartij(_sessie_met_aard(PartijAard.persoon), uuid.uuid4(), uuid.uuid4()))
+    assert exc.value.code == "ONGELDIGE_PARTIJ"
+
+    # Onbekend/buiten tenant ⇒ 404:
+    with pytest.raises(NietGevonden):
+        asyncio.run(svc._valideer_contractpartij(_sessie_met_aard(None), uuid.uuid4(), uuid.uuid4()))
+
+
 def _mantel(contracttype, leverancier_id):
     m = MagicMock()
     m.contracttype = contracttype
@@ -202,7 +231,7 @@ def test_maak_aan_roept_validaties_en_commit(monkeypatch):
 
     sporen = []
 
-    # ADR-024 slice 1: de leverancier-verwijzing wordt nu als externe partij gevalideerd.
+    # ADR-024: de leverancier-verwijzing wordt als contractpartij gevalideerd (aard ≠ persoon).
     async def _lev(session, tid, pid):
         sporen.append("lev")
 
@@ -218,7 +247,7 @@ def test_maak_aan_roept_validaties_en_commit(monkeypatch):
     async def _detail(session, tenant_id, cid):
         return {"id": cid, "ok": True}
 
-    monkeypatch.setattr(svc, "_valideer_externe_partij", _lev)
+    monkeypatch.setattr(svc, "_valideer_contractpartij", _lev)
     monkeypatch.setattr(svc, "_valideer_consistentie", _cons)
     monkeypatch.setattr(catalog, "valideer_sleutels", _val)
     monkeypatch.setattr(svc, "_zet_tags", _zet)
