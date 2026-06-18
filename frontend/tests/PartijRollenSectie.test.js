@@ -1,13 +1,21 @@
-/** Tests — PartijRollenSectie (rollen van één partij op objecten; ADR-024 slice 2b, alleen-lezen). */
+/** Tests — PartijRollenSectie (rollen van één partij op objecten; ADR-024 slice 2b + DC013 toevoegen). */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
+import ToastService from 'primevue/toastservice'
 
-vi.mock('@/api', () => ({ api: { roltoewijzingen: { lijst: vi.fn() } } }))
+vi.mock('@/api', () => ({
+  api: {
+    roltoewijzingen: { lijst: vi.fn(), rollen: vi.fn(), maak: vi.fn() },
+    componenten: { lijst: vi.fn() },
+    contracten: { lijst: vi.fn() },
+  },
+}))
 
 import { api } from '@/api'
+import { useAuthStore } from '@/store/auth'
 import PartijRollenSectie from '@modules/bwb_ontvlechting/frontend/views/PartijRollenSectie.vue'
 
 const PARTIJ = 'p1'
@@ -22,14 +30,17 @@ function maakRouter() {
   })
 }
 
-async function mountSectie() {
+async function mountSectie({ rollen = ['beheerder'] } = {}) {
   const router = maakRouter()
   await router.push('/componenten/c1')
   await router.isReady()
   const pinia = createPinia()
+  const auth = useAuthStore(pinia)
+  auth.user = { sub: 's', tenant_id: 't', email: 'a@b.nl', roles: rollen }
   const w = mount(PartijRollenSectie, {
     props: { partijId: PARTIJ },
-    global: { plugins: [pinia, [PrimeVue, { unstyled: true }], router] },
+    attachTo: document.body,
+    global: { plugins: [pinia, [PrimeVue, { unstyled: true }], ToastService, router], stubs: { teleport: true } },
   })
   await flushPromises()
   return w
@@ -41,6 +52,12 @@ beforeEach(() => {
     { toewijzing_id: 't1', rol: 'eigenaar', rol_label: 'Eigenaar', object_id: 'c1', object_naam: 'Zaaksysteem', object_type: 'component' },
     { toewijzing_id: 't2', rol: 'contractbeheer', rol_label: 'Contractbeheer', object_id: 'k1', object_naam: 'Mantel X', object_type: 'contract' },
   ])
+  api.roltoewijzingen.rollen.mockResolvedValue([
+    { optie_sleutel: 'eigenaar', label: 'Eigenaar' },
+    { optie_sleutel: 'contractbeheer', label: 'Contractbeheer' },
+  ])
+  api.componenten.lijst.mockResolvedValue({ items: [{ id: 'c9', naam: 'Nieuw component', componenttype_label: 'Database' }], volgende_cursor: null })
+  api.contracten.lijst.mockResolvedValue({ items: [{ id: 'k9', contractnaam: 'Nieuw contract' }], volgende_cursor: null })
 })
 afterEach(() => vi.restoreAllMocks())
 
@@ -62,11 +79,33 @@ describe('PartijRollenSectie', () => {
     expect(hrefs.some((h) => h.includes('/contracten/k1'))).toBe(true)
   })
 
-  it('lege staat zonder rollen wijst naar waar je toewijst (B1)', async () => {
+  it('lege staat zonder rollen wijst naar de toevoeg-actie en de objecten', async () => {
     api.roltoewijzingen.lijst.mockResolvedValueOnce([])
     const w = await mountSectie()
     const leeg = w.find('[data-testid="pr-leeg"]')
     expect(leeg.exists()).toBe(true)
-    expect(leeg.text()).toContain('Rollen wijs je toe vanaf een applicatie/component of een contract')
+    expect(leeg.text()).toContain('Rol toevoegen')
+  })
+
+  it('rol-gating: viewer geen toevoeg-knop, beheerder wel', async () => {
+    expect((await mountSectie({ rollen: ['viewer'] })).find('[data-testid="pr-toevoegen"]').exists()).toBe(false)
+    expect((await mountSectie({ rollen: ['beheerder'] })).find('[data-testid="pr-toevoegen"]').exists()).toBe(true)
+  })
+
+  it('DC013: voegt vanuit de partij een rol toe op een gekozen object', async () => {
+    api.roltoewijzingen.maak.mockResolvedValueOnce({ toewijzing_id: 'nieuw' })
+    const w = await mountSectie()
+    await w.find('[data-testid="pr-toevoegen"]').trigger('click')
+    await flushPromises()
+    // Object kiezen via de zoek-combobox (component + contract gemerged).
+    await w.find('[data-testid="pr-veld-object-input"]').trigger('focus')
+    await flushPromises()
+    expect(api.componenten.lijst).toHaveBeenCalled()
+    expect(api.contracten.lijst).toHaveBeenCalled()
+    await w.find('[data-testid="pr-veld-object-optie-c9"]').trigger('mousedown')
+    await w.find('[data-testid="pr-veld-rol"]').setValue('eigenaar')
+    await w.find('[data-testid="pr-form"]').trigger('submit')
+    await flushPromises()
+    expect(api.roltoewijzingen.maak).toHaveBeenCalledWith({ partij_id: PARTIJ, object_id: 'c9', rol: 'eigenaar' })
   })
 })
