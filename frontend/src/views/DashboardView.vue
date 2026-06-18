@@ -143,13 +143,13 @@ onMounted(laad)
         </p>
       </div>
 
-      <!-- (b) Open blokkades -->
+      <!-- (b) Actieve blokkades (open + in behandeling — ADR-013-definitie) -->
       <div aria-labelledby="dashboard-blokkades-titel">
         <h2
           id="dashboard-blokkades-titel"
           class="text-[length:var(--cd-text-lg)] font-semibold mb-[var(--cd-space-sm)]"
         >
-          Open blokkades
+          Actieve blokkades
         </h2>
         <router-link
           :to="{ name: 'blokkades', query: { status: 'actief' } }"
@@ -163,7 +163,7 @@ onMounted(laad)
             {{ data.open_blokkades }}
           </span>
           <span class="text-[var(--cd-color-text-muted)]">
-            {{ data.open_blokkades === 1 ? 'open blokkade' : 'open blokkades' }}
+            {{ data.open_blokkades === 1 ? 'actieve blokkade' : 'actieve blokkades' }}
           </span>
         </router-link>
       </div>

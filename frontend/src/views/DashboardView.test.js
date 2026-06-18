@@ -147,7 +147,7 @@ describe('DashboardView — data', () => {
     const teller = w.find('[data-testid="open-blokkades"]')
     expect(teller.exists()).toBe(true)
     expect(teller.text()).toContain('5')
-    expect(teller.text()).toContain('open blokkades')
+    expect(teller.text()).toContain('actieve blokkades')
     // doorklik naar de blokkades-route met het actieve-statusfilter voorgeselecteerd
     expect(teller.attributes('href')).toContain('/blokkades')
     expect(teller.attributes('href')).toContain('status=actief')
