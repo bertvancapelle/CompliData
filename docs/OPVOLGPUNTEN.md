@@ -7,6 +7,59 @@ Bron: sessie 2–3 (P1–P5, OP-9 t/m OP-12). Status per punt expliciet vermeld.
 
 ## OPEN
 
+### Stand V014 (sessie-afsluiting DC013, 2026-06-19)
+
+Build **V014**, migratie head **`0034`**.
+Tests: **810** backend + **440** frontend groen (52 files).
+
+**AF deze sessie (DC013)**:
+- complidata-domeinmodel skill aangemaakt (CC + claude.ai)
+- ADR-024 volledig geland: contract-leverancier verbreed
+  (organisatie/afdeling/externe_partij; persoon geblokkeerd);
+  roltoewijzing toevoegbaar vanuit partij-detail;
+  ADR-024-document bijgewerkt naar werkelijke stand;
+  functietitel (persoon-only, migratie 0033);
+  eigenaar_naam/leverancier vrije tekst verwijderd (migratie 0034);
+  9 beheerrollen (Account Manager + Service Delivery Manager)
+- ADR-025 volledig geland (Landschapskaart v4, Cytoscape.js):
+  Ego/Impact/Geheel model; zoeken + 4 filters; actieve set;
+  node-detail + "Open applicatie →"; blokkade-icoon;
+  lifecycle-kleuren; koppelingsdetails (protocol/richting) op edges;
+  migratieplaatsing (plateau/dispositie) in detail-paneel;
+  diepte-toggle; Koppelingenkaart vervangen; ADR-025-document bijgewerkt
+- ZoekSelect-standaard vastgelegd in complidata-frontend skill
+- PartijFormulier organisatie-/afdelingskiezer naar ZoekSelect
+- KILARA productnaam besloten (Kaart ICT Landschap Afhankelijkheden Relaties Analyse)
+- ADR-028 voorstel geland (componentrol + BIV-classificatie, geparkeerd na ADR-027)
+- complidata-domeinmodel/-frontend/-ux skills bijgewerkt (DC013-patronen)
+
+**Volgende prioriteiten (DC013 → DC014)**:
+
+1. **ADR-027 — Categorie-klaarverklaring** (EERSTE PRIORITEIT). Ontworpen in DC011,
+   niet gebouwd. Vier onderdelen: expliciete menselijke aftekening per checklistcategorie +
+   rationale; voortgang per categorie op component; tenant-brede rapportage; werkverdeling ×
+   verantwoordelijke partij. Zie docs/adr/ADR-027_Categorie_klaarverklaring_voorstel.md.
+
+2. **ADR-023 Fase F**: checklist-consistentiecheck technische plaatsing (E-8, deferred),
+   platform-beheer relatie-kenmerk-catalogus, RBAC/audit nieuwe entiteiten.
+
+3. **Landschapskaart server-side ego-subgraaf** (aparte slice): `?center=<id>&diepte=1|2`
+   voor een gereduceerde graaf i.p.v. de volledige tenant-graaf. Vereist nieuw endpoint-contract.
+
+4. **ADR-025 overige roadmap**: vervangingsrelatie, export PNG/PDF, pad-inzicht (kortste route
+   A→B), clustering op domein.
+
+**Nog open uit eerdere sessies (doorgeschoven, ongewijzigd geldig)**:
+- **Signalerings-ADR / registratiegaten ("bolletjes")** — (1) object zonder toegewezen rol;
+  (2) lege eigenaar-organisatie/gebruikersgroep-organisatie (geparkeerd); (3) contract zonder
+  leverancier (indicator + statusfilter + dashboard-ratio); (4) lege 'Eigenaar'-kolom blokkadelijst.
+  Generalisatie-discipline n≥2; read-only, geen engine-poort.
+- **Architectuuroverzicht-sortering volgt codewaarde, niet NL-label** — geaccepteerd randgeval (B2/B6-a).
+- Tenant-eigen partijsoort (geparkeerd); per-tenant zichtbaarheid catalogus-opties; OP-29 label-rename;
+  `SUBTYPE_HEEFT_DATA` 422↔409-heroverweging.
+
+---
+
 ### Stand V013 (sessie-afsluiting DC012, 2026-06-18) — ADR-024-vervolg + UX-doorlichting
 
 Build **V013**, migratie head **`0032`**. Tests: **799** backend + **429** frontend groen
@@ -20,35 +73,9 @@ het partijenregister.
 architectuuroverzicht server-side sorteerbaar; B6 organisatie-uit-partijenregister (gebruikersgroep +
 applicatie/component).
 
-**Volgende prioriteiten (DC012 → DC013)**:
-
-1. **ADR-024-document bijwerken — EERSTE PRIORITEIT.** Het ADR-024-document staat nog op
-   "slice 1 (externe partij)", terwijl deze sessie **rol-toewijzing**, **partij-lidmaatschap-beheer**
-   (persoon/afdeling → organisatie) en **organisatie-koppeling** (gebruikersgroep-organisatie +
-   eigenaar-organisatie als partij-verwijzing) zijn gebouwd. Het document **loopt achter op de bouw**
-   → bijwerken zodat het de werkelijke stand weerspiegelt.
-
-2. **Signalerings-ADR / registratiegaten ("bolletjes")** — verzameld, **geen actie tot opgepakt**.
-   Verzamelde gevallen:
-   - (1) **object zonder toegewezen rol** (applicatie/component/contract zonder verantwoordelijke);
-   - (2) **lege eigenaar-organisatie** op applicatie/component én **lege organisatie** op gebruikersgroep
-     (B6 DC012: het veld is nu een optionele keuze uit het partijenregister; signaleren-als-gat geparkeerd);
-   - (3) **contract zonder leverancier** (groen/amber-indicator + statusfilter + dashboard-ratio met
-     drill-down — apart contract-spoor, pas ná leverancier-optioneel-maken);
-   - (4) **lege 'Eigenaar'-kolom op de blokkadelijst.**
-   **Patroon (generalisatie-discipline n≥2)**: bouw de tweede concrete instance naast de eerste vóór je
-   abstraheert. **Score blijft de enige lifecycle-driver**; signalering is puur **read-only**, geen
-   engine-poort.
-
-3. **Architectuuroverzicht-sortering volgt codewaarde, niet het NL-label** — geaccepteerd randgeval
-   (B2/B6-a): Laag/Aspect/Soort sorteren server-breed op de opgeslagen **snake_case-codewaarde**; de UI
-   toont het NL-label. Sorteren-op-label zou een verbouwing vergen voor klein effect → pas oppakken bij
-   een concrete wens.
-
-**Blijvend open (ongewijzigd geldig)**: tenant-eigen partijsoort (geparkeerd); per-tenant zichtbaarheid
-van catalogus-opties; **ADR-025** (praatplaat) en **ADR-027** (categorie-klaarverklaring) als geplande
-ADR's na het ADR-024-vervolg; eventuele resterende ADR-022-follow-ups (o.a. OP-29 label-rename,
-`SUBTYPE_HEEFT_DATA` 422↔409-heroverweging).
+*(De DC012→DC013-prioriteiten zijn afgehandeld of doorgeschoven naar het V014-blok hierboven —
+ADR-024-document is bijgewerkt; signalerings-ADR + sorteer-randgeval staan nu onder "Nog open uit
+eerdere sessies" bij V014; ADR-025 is geland.)*
 
 ### Stand V008 (sessie-afsluiting 2026-06-13) — ADR-022 volledig afgerond
 

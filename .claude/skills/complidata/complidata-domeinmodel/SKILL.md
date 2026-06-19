@@ -8,8 +8,8 @@ description: >
   catalogus-families (scope platform vs. tenant), engine-invariant, RBAC/audit-
   ankerpunten, en harde architectuurregels. De HOE (implementatiepatronen) staat
   in complidata-db en complidata-backend; dit bestand beschrijft het WAT.
-stack: PostgreSQL 16, SQLAlchemy asyncio, FastAPI — ADR-021/023/024/026
-bijgewerkt: V013
+stack: PostgreSQL 16, SQLAlchemy asyncio, FastAPI — ADR-021/023/024/025/026
+bijgewerkt: V014
 ---
 
 # CompliData Domeinmodel — Kaart
@@ -134,6 +134,21 @@ gevalideerd tegen de `relatiekenmerk_optie`-catalogus (routing via dimensie).
 Schema-integriteit (FK, UNIQUE, CHECK) blijft volledig schema-afgedwongen;
 de kenmerken zijn additioneel beschrijvend, geen structurele borging.
 
+### Lichtgewicht read-only engine-naburig patroon (DC013)
+Voor read-only afleidingen naast de engine (bv. `blokkades_open` tellen,
+lifecycle lezen in de Landschapskaart): gebruik een `table()`/`column()`-construct
+i.p.v. een ORM-klasse-import, om engine-symbolen buiten scope te houden:
+
+```python
+from sqlalchemy import table, column, func, select
+blokkade_t = table("blokkade", column("component_id"), column("opgelost_op"))
+telling = select(func.count()).where(blokkade_t.c.component_id == id,
+                                     blokkade_t.c.opgelost_op.is_(None))
+```
+
+Vermijdt het importeren van `Blokkade`/`ComponentProfiel` (engine-symbolen);
+de import-afwezigheidstest blijft groen.
+
 ---
 
 ## 3. Migratielaag
@@ -212,18 +227,25 @@ Alle aarden: `business_actor` / `business` / `active`. Eén entry in
 | `rol` | FK → `beheerrol`-catalogus |
 | `UNIQUE(tenant_id, partij_id, object_id, rol)` | Eén roltoewijzing per (vervuller, object, rol)-tripel |
 
-Startset 7 rollen (beheerbaar door platformbeheerder):
+Startset 9 rollen (beheerbaar door platformbeheerder), DC013:
 Functioneel beheer · Technisch beheer · Applicatiebeheer · Contractbeheer ·
-Product owner · Eigenaar · Proceseigenaar.
+Product owner · Eigenaar · Proceseigenaar · **Account Manager** · **Service Delivery Manager**.
 
 Meerdere rollen van dezelfde partij op hetzelfde object = meerdere losse rijen.
 Meerdere partijen per rol op hetzelfde object = meerdere losse rijen.
 Niets geforceerd (geen "één eigenaar per object").
 
-### Contract → leverancier (huidig, slice 1)
+### Contactvelden op partij (DC013, migratie 0033)
+- `email` (255), `telefoon` (40), `mobiel` (40), `contactpersoon` (255):
+  platform-breed, gedeeld over alle aarden.
+- `functietitel` (150): NIEUW, nullable — uitsluitend voor aard=persoon.
+  Service dwingt af: andere aarden → 422 FUNCTIETITEL_ALLEEN_PERSOON.
+
+### Contract → leverancier (huidig na DC013)
 - FK-target: `(tenant_id, leverancier_id) → element(tenant_id, id)`, ON DELETE RESTRICT.
-- Service borgt `aard = externe_partij` (slice 1-besluit; open punt: ook interne
-  organisaties toestaan — DC011-nuance, nog niet aangepast in de code).
+- Toegestane aarden: organisatie / organisatie_eenheid / externe_partij
+- Persoon als contractpartij: geweigerd (422 ONGELDIGE_PARTIJ)
+- Implementatie: TOEGESTANE_LEVERANCIER_AARDEN constante in contract_service
 - Term "leverancier" blijft in het contract-domein (optie A, blast-radius-minimalisatie).
 
 ### Organisatie als verwijzing elders (B6, migraties 0031/0032)
@@ -373,9 +395,48 @@ hebben. Ze raken de engine nooit.
 10. **Migratie-ID ≤ 32 tekens** (`alembic_version` = `varchar(32)`) — harde
     conventie; korte, sprekende namen (`0032_adr024_eigenaar_org`).
 
+11. **Full-graph endpoint** — de Landschapskaart levert de volledige tenant-graaf
+    in één call. Geen ego-center server-side, geen paginering — de client filtert.
+    Een server-side ego-subgraaf (`?center=&diepte=`) is een aparte, toekomstige slice.
+
 ---
 
-## 10. Snelreferentie: welke slice, welke skills lezen?
+## 10. Landschapskaart (ADR-025 — geland DC013, V013/V014)
+
+### Endpoint
+`GET /landschapskaart?diepte=1|2`
+- Geeft de volledige tenant-graaf terug in één call (geen paginering — bewust
+  afwijkend van het lijst-patroon; gedocumenteerd in de route).
+- `diepte`-parameter is forward-compatibel, server-side no-op (client-side diepte
+  op de ego-view).
+- RBAC: `ARCHITECTUUR.LEZEN` (hergebruik, geen nieuwe entiteit).
+
+### LandschapsNode
+`id, naam, element_type, laag, archimate_element, lifecycle_status, soort, domein,
+leverancier_naam, hosting_model, blokkades_open, plateau_naam, plateau_dispositie`
+
+### LandschapsEdge
+`bron_id, doel_id, relatietype, label, ring, richting, protocol`
+
+### Vier ringen
+- applicaties: flow-relaties comp↔comp, label="koppeling"
+- infrastructuur: assignment-relaties (host→comp), label="draait op"
+- contracten: association-relaties (comp→contract), label="valt onder"
+- beheerorganisatie: roltoewijzing-records, label=rol-naam
+
+### Drie modi (frontend, Cytoscape.js)
+- Ego-view: concentric layout, centrum + ringen, klik=hercentreren
+- Impact-view: cose layout, blauw=in-set/oranje=raakvlak, grensoverschrijdende koppelingen geteld
+- Geheel model: alle applicaties auto-geladen, opbouw/afpel-modus
+
+### Engine-onaangeroerd borging (extra patroon)
+`blokkades_open` via `table()`-construct (geen `Blokkade`-ORM-import); `lifecycle_status`
+via lichtgewicht profiel-handle (geen `ComponentProfiel`-import). Beide geborgd via de
+hasattr-test + bronscan-test.
+
+---
+
+## 11. Snelreferentie: welke slice, welke skills lezen?
 
 | Soort slice | Primair | Aanvullend |
 |---|---|---|

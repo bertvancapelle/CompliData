@@ -146,6 +146,74 @@ implementeren; server-side `zoek-functie`, debounce, ~10 resultaten + "verfijn"-
 
 Bij twijfel: kies ZoekSelect.
 
+## Cytoscape.js Vue 3 integratiepatroon (DC013, niet-onderhandelbaar)
+
+Cytoscape.js in een Vue 3 flex-container vereist vier dingen voor een correcte render.
+Mis je één ervan → lege canvas.
+
+### 1. Import via composable-wrapper
+Importeer Cytoscape nooit direct in een module-view (module-path-problemen buiten `frontend/`).
+Gebruik de wrapper:
+```javascript
+// frontend/src/composables/cytoscape.js
+import cytoscape from 'cytoscape'
+export default cytoscape
+
+// In de view:
+import cytoscape from '@/composables/cytoscape'
+```
+
+### 2. Container-hoogte (KRITIEK: min-h-0 op elk flex-niveau)
+```html
+<div class="flex flex-col h-screen">              <!-- outer -->
+  <div class="flex flex-1 min-h-0">               <!-- rij -->
+    <div class="flex-1 min-h-0 min-w-0 relative"> <!-- canvas-kolom -->
+      <div id="cy" class="w-full h-full" style="min-height: 500px;"></div> <!-- vangrail -->
+    </div>
+  </div>
+</div>
+```
+Zonder `min-h-0` negeert een flex-child de `height:100%` van zijn parent → Cytoscape
+initialiseert op hoogte 0 → lege canvas. `min-height: 500px` op `#cy` is de harde vangrail.
+
+### 3. Initialisatie: nextTick×2 + offsetHeight-check + delayed resize/fit
+```javascript
+async function tekenGraaf() {
+  await nextTick(); await nextTick()  // tweede tick voor Vite HMR edge-cases
+  const el = containerRef.value
+  if (!el) return
+  if (el.offsetHeight === 0) { el.style.minHeight = '500px'; await nextTick() }
+  cy.elements().remove(); cy.add(elementen); cy.layout(layout).run()
+  setTimeout(() => { cy?.resize(); cy?.fit(undefined, 50) }, 100)  // browser layout-flush
+}
+```
+
+### 4. ResizeObserver voor dynamische containers (guarded; disconnect bij unmount)
+```javascript
+let resizeObserver = null
+onMounted(async () => {
+  cy = cytoscape({ container: containerRef.value, elements: [], style })
+  if (typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(() => { cy?.resize(); cy?.fit(undefined, 50) })
+    resizeObserver.observe(containerRef.value)
+  }
+  await tekenGraaf()
+})
+onBeforeUnmount(() => { resizeObserver?.disconnect(); cy?.destroy(); cy = null })
+```
+
+### 5. Testpatroon (Cytoscape mocken — test de panelen/logica, niet de render)
+```javascript
+vi.mock('@/composables/cytoscape', () => ({
+  default: vi.fn(() => ({
+    add: vi.fn(), layout: () => ({ run: vi.fn() }), fit: vi.fn(), resize: vi.fn(),
+    destroy: vi.fn(), on: vi.fn(), zoom: () => 1, animate: vi.fn(),
+    elements: () => ({ remove: vi.fn(), unselect: vi.fn() }),
+    getElementById: () => ({ length: 0, select: vi.fn() }),
+  })),
+}))
+```
+
 ## Rol-gating = affordance (backend handhaaft)
 
 ```javascript

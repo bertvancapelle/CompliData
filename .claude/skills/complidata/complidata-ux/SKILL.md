@@ -101,6 +101,44 @@ scherm een lijst van X'en die daar thuishoren, dan hoort de gebruiker X daar ook
 toevoegen/wijzigen — tenzij zichtbaar gemaakt is dat het elders gebeurt (dan de lege-staat-route,
 stap 4). Een leeslijst zonder die route is bijna altijd een A-gat.
 
+## Landschapskaart UX-patronen (ADR-025, DC013)
+
+### Drie-modus graaf
+Één view, drie perspectieven via toggle:
+- Ego-view: één centrum, directe buren, klik=hercentreren
+- Impact-view: migratieset multi-select, raakvlak-detectie
+- Geheel model: full-graph, opbouw (leeg→vol) of afpel (vol→leeg)
+
+### Actieve set
+De migratieset is een `Set<uuid>` in Vue-state. Toevoegen via zoekresultaten,
+verwijderen via rechterpaneel ×-knop. "Voeg alle gefilterde toe" vult de set met het
+gefilterde resultaat.
+
+### Resultatenlijst: alleen applicaties
+De zoeklijst/filters tonen ALLEEN applicaties (element_type='applicatie'). Partijen/
+contracten/infra verschijnen automatisch als ring-nodes rond de geselecteerde applicaties —
+nooit als kiesbare entiteiten.
+
+### Selectie highlight
+Klik actieve-set-item → `selecteerNode(id)`: `cy.elements().unselect()` →
+`cy.getElementById(id).select()` → `cy.animate({ center:{eles:node}, zoom:max(zoom,1.2), 400ms })`.
+
+### Node-detail start leeg
+Het detail-paneel toont "Klik een node voor detail" bij mount; vult pas na node-klik of
+set-item-klik. Toont o.a. plateau/dispositie (migratieplaatsing) indien gevuld.
+
+### "Open applicatie →" doorklik
+`router.push({ name: 'applicatie-detail', params: { id: node.id } })` — knop in het
+detail-paneel (alleen voor applicatie-nodes); conditioneel "+ Voeg toe / × Verwijder uit set".
+
+### Deep-link vanuit applicatie-detail
+`<router-link :to="{ name: 'landschapskaart', query: { center: id, modus: 'ego' } }">`
+"🗺 Open in Landschapskaart →". LandschapskaartView leest `?center` + `?modus` bij onMounted.
+
+### Diepte-toggle
+"1 stap (direct)" / "2 stappen" (ego + geheel). Diepte 2 voegt de indirecte applicatie-buren
+toe (partijen/contracten/infra blijven op diepte 1); client-side op de geladen graaf.
+
 ## Verhouding tot andere skills
 
 - `complidata-frontend` = hoe je bouwt (Vue/PrimeVue/Tailwind, tokens, presets). Stijl en techniek.
