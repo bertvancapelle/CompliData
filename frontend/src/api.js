@@ -144,6 +144,16 @@ export const api = {
     verwijder: (id) => request(`/roltoewijzingen/${id}`, { method: 'DELETE' }),
   },
 
+  // ADR-027 — component-klaarverklaring (niet-scorend; per component één levende verklaring).
+  klaarverklaringen: {
+    // component_id MOET zowel in de destructuring als in de query (V012-les: anders dropt
+    // de client de filter stil).
+    lijst: ({ componentId } = {}) => request(`/klaarverklaringen${_query({ component_id: componentId })}`),
+    maak: (data) => request('/klaarverklaringen', { method: 'POST', body: JSON.stringify(data) }),
+    wijzigStatus: (id, data) =>
+      request(`/klaarverklaringen/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  },
+
   // ADR-020 contractregister — contract (tenant-CRUD) + sub-overzichten.
   contracten: {
     lijst: ({ limit, after, sort, order, leverancierId, contracttype, dekking, kostenmodel, zoek } = {}) =>

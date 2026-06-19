@@ -164,6 +164,17 @@ export const BLOKKADE_STATUS_SEVERITY = {
   opgelost: 'success',
 }
 
+// ── ADR-027 migratiegereedheid (component-klaarverklaring) — niet-scorend, los van lifecycle ──
+export const KLAARVERKLARING_STATUS = {
+  klaar: 'Klaar verklaard',
+  open: 'Nog niet klaar verklaard',
+}
+
+export const KLAARVERKLARING_SEVERITY = {
+  klaar: 'success',
+  open: 'secondary',
+}
+
 // ── ADR-020 contractregister ─────────────────────────────────────────────────
 
 export const CONTRACTTYPE = {

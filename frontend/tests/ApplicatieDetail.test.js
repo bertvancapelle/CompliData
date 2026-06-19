@@ -41,6 +41,12 @@ vi.mock('@/api', () => {
         verwijder: vi.fn(),
       },
       partijen: { lijst: vi.fn(leeg) },
+      // ADR-027 — MigratiegereedheidSectie laadt bij mount de klaarverklaring (default: geen).
+      klaarverklaringen: {
+        lijst: vi.fn(() => Promise.resolve([])),
+        maak: vi.fn(),
+        wijzigStatus: vi.fn(),
+      },
     },
   }
 })
@@ -130,6 +136,25 @@ describe('ApplicatieDetail', () => {
     expect(wrapper.find('[data-testid="bewerken-knop"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="verwijder-knop"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="start-knop"]').exists()).toBe(false)
+  })
+
+  it('ADR-027: klaarverklaar-knop verborgen voor viewer, zichtbaar voor medewerker', async () => {
+    api.applicaties.haal.mockResolvedValue(_app())
+    let { wrapper } = await mountDetail({ rollen: ['viewer'] })
+    expect(wrapper.find('[data-testid="klaarverklaar-knop"]').exists()).toBe(false)
+    ;({ wrapper } = await mountDetail({ rollen: ['medewerker'] }))
+    expect(wrapper.find('[data-testid="klaarverklaar-knop"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="klaarverklaar-knop"]').text()).toContain('Klaar verklaren')
+  })
+
+  it('ADR-027: knoplabel wisselt naar "Heropenen" bij een klaar-verklaring', async () => {
+    api.applicaties.haal.mockResolvedValueOnce(_app())
+    api.klaarverklaringen.lijst.mockResolvedValueOnce([
+      { id: 'kv-1', component_id: 'a1', status: 'klaar', reden: 'akkoord', verklaard_door: 'p', verklaard_op: '2026-06-19T10:00:00+00:00' },
+    ])
+    const { wrapper } = await mountDetail({ rollen: ['beheerder'] })
+    expect(wrapper.find('[data-testid="klaarverklaar-knop"]').text()).toContain('Heropenen')
+    expect(wrapper.find('[data-testid="mg-status"]').text()).toContain('Klaar verklaard')
   })
 
   it('gate: Medewerker ziet geen verwijderen; start verdwijnt buiten concept', async () => {

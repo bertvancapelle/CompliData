@@ -36,6 +36,7 @@ import StructuurSectie from './StructuurSectie.vue'
 import ImpactSectie from './ImpactSectie.vue'
 import ChecklistscoreSectie from './ChecklistscoreSectie.vue'
 import BlokkadeSectie from './BlokkadeSectie.vue'
+import MigratiegereedheidSectie from './MigratiegereedheidSectie.vue'
 
 const props = defineProps({ id: { type: String, required: true } })
 const route = useRoute()
@@ -71,6 +72,10 @@ const magVerwijderen = computed(() => auth.hasRole('beheerder'))
 const magStarten = computed(
   () => magBewerken.value && applicatie.value?.lifecycle_status === 'concept',
 )
+// ADR-027 — migratiegereedheid (component-klaarverklaring). Knop verbergen zonder rol (backend handhaaft).
+const gereedheidSectie = ref(null)
+const magKlaarverklaren = computed(() => auth.hasRole('medewerker', 'beheerder'))
+const gereedheidLabel = computed(() => (gereedheidSectie.value?.status === 'klaar' ? 'Heropenen' : 'Klaar verklaren'))
 
 function _toastFout(e) {
   const perStatus = {
@@ -278,7 +283,8 @@ onMounted(async () => {
         aria-labelledby="detailtabs-tab-overzicht"
         data-testid="panel-overzicht"
       >
-        <dl class="card grid grid-cols-[max-content_1fr] gap-x-[var(--cd-space-lg)] gap-y-[var(--cd-space-sm)]">
+        <div class="flex flex-col gap-[var(--cd-space-lg)] md:flex-row md:items-start">
+        <dl class="card grid grid-cols-[max-content_1fr] gap-x-[var(--cd-space-lg)] gap-y-[var(--cd-space-sm)] md:flex-1">
           <dt class="font-semibold">Eigenaar-organisatie</dt>
           <dd>
             <router-link
@@ -305,6 +311,15 @@ onMounted(async () => {
           <dd class="whitespace-pre-wrap">{{ applicatie.beschrijving || '—' }}</dd>
         </dl>
 
+        <MigratiegereedheidSectie
+          ref="gereedheidSectie"
+          class="md:w-80 md:shrink-0"
+          :component-id="applicatie.id"
+          :aantal-gescoord="scoreSectie?.aantalGescoord ?? 0"
+          :aantal-vragen="scoreSectie?.aantalVragen ?? 0"
+        />
+        </div>
+
         <div class="mt-[var(--cd-space-lg)] flex flex-wrap gap-[var(--cd-space-md)]">
           <Button
             label="🗺 Open in Landschapskaart →"
@@ -312,6 +327,13 @@ onMounted(async () => {
             outlined
             data-testid="open-landschapskaart-knop"
             @click="openInLandschapskaart"
+          />
+          <Button
+            v-if="magKlaarverklaren"
+            :label="gereedheidLabel"
+            severity="secondary"
+            data-testid="klaarverklaar-knop"
+            @click="(e) => gereedheidSectie?.openDialog(e)"
           />
           <Button v-if="magBewerken" label="Bewerken" data-testid="bewerken-knop" @click="naarBewerken" />
           <Button
