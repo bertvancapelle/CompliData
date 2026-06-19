@@ -40,6 +40,38 @@ export const AUDIT_ENTITEIT = {
   checklistscore: 'Checklistscore',
   component_klaarverklaring: 'Klaarverklaring',
   relatie: 'Relatie',
+  plateau: 'Plateau',
+  work_package: 'Werkpakket',
+  deliverable: 'Deliverable',
+  gap: 'Gap',
+}
+
+// ADR-029 objecthistorie — NL-labels voor de veldnamen die in de `wijziging`-diff voorkomen.
+// Pragmatisch (de gangbare gelogde kolommen); een onbekend veld valt terug op `humaniseer`.
+// `*_id`-verwijzingen tonen een leesbaar label; de WAARDE blijft de gelogde id (geen id→naam-
+// resolutie in deze slice — dat vergt een lookup per veld; bewuste afbakening).
+export const VELD_LABELS = {
+  naam: 'Naam',
+  omschrijving: 'Omschrijving',
+  beschrijving: 'Beschrijving',
+  lifecycle_status: 'Levensfase',
+  status: 'Status',
+  reden: 'Reden',
+  hostingmodel: 'Hostingmodel',
+  migratiepad: 'Migratiepad',
+  complexiteit: 'Complexiteit',
+  prioriteit: 'Prioriteit',
+  rol: 'Rol',
+  aard: 'Aard',
+  functietitel: 'Functietitel',
+  verklaard_door: 'Verklaard door',
+  verklaard_door_sub: 'Verklaard door (sleutel)',
+  contractueel_bevestigd: 'Contractueel bevestigd',
+  eigenaar_organisatie_id: 'Eigenaar organisatie',
+  organisatie_id: 'Organisatie',
+  afdeling_id: 'Afdeling',
+  mantelcontract_id: 'Mantelcontract',
+  leverancier_id: 'Leverancier',
 }
 
 // `checklist_compleet` is transient (ADR-013 B4) en wordt nooit als ruststatus

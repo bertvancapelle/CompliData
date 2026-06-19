@@ -14,6 +14,7 @@ import { useRoute, useRouter } from '@/composables/router'
 import { useAuthStore } from '@/store/auth'
 import { api } from '@/api'
 import { HOSTINGMODEL, LIFECYCLE, LIFECYCLE_SEVERITY, REGISTER_FOUT, label } from '../labels'
+import ObjectHistoriePaneel from './ObjectHistoriePaneel.vue'
 import StructuurSectie from './StructuurSectie.vue'
 import ContractSectie from './ContractSectie.vue'
 import VerantwoordelijkheidSectie from './VerantwoordelijkheidSectie.vue'
@@ -216,6 +217,7 @@ onMounted(() => {
           data-testid="klaarverklaar-knop"
           @click="(e) => gereedheidSectie?.openDialog(e)"
         />
+        <ObjectHistoriePaneel entiteit-type="component" :entiteit-id="props.id" />
         <Button v-if="magBewerken" label="Bewerken" data-testid="bewerken-knop" @click="naarBewerken" />
         <Button
           v-if="magStarten"

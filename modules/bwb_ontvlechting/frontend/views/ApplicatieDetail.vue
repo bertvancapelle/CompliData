@@ -23,6 +23,7 @@ import {
 } from '../labels'
 // Herbruikbare toegankelijke tablist (CD022, #11 — 2-laags IA).
 import AppTabs from './AppTabs.vue'
+import ObjectHistoriePaneel from './ObjectHistoriePaneel.vue'
 // Child-secties (subordinate aan de ouder, blijven in de detail-context).
 import DatatypeSectie from './DatatypeSectie.vue'
 import GebruikersgroepSectie from './GebruikersgroepSectie.vue'
@@ -331,6 +332,7 @@ onMounted(async () => {
             data-testid="klaarverklaar-knop"
             @click="(e) => gereedheidSectie?.openDialog(e)"
           />
+          <ObjectHistoriePaneel entiteit-type="applicatie" :entiteit-id="props.id" />
           <Button v-if="magBewerken" label="Bewerken" data-testid="bewerken-knop" @click="naarBewerken" />
           <Button
             v-if="magStarten"

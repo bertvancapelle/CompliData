@@ -45,7 +45,7 @@ def _decode_cursor(cursor: str) -> tuple[datetime, uuid.UUID]:
         raise ValueError("ongeldige cursor") from exc
 
 
-def _record_filters(tid: uuid.UUID, *, actor, entiteit_type, component_id, van, tot, actie, subs):
+def _record_filters(tid: uuid.UUID, *, actor, entiteit_type, entiteit_id, component_id, van, tot, actie, subs):
     """Record-niveau filterclausules (een groep kwalificeert als ≥1 record matcht)."""
     clauses = [AuditLog.tenant_id == tid]
     if actor:
@@ -56,6 +56,8 @@ def _record_filters(tid: uuid.UUID, *, actor, entiteit_type, component_id, van, 
         clauses.append(AuditLog.actie == actie)
     if entiteit_type:
         clauses.append(AuditLog.entiteit_type == entiteit_type)
+    if entiteit_id is not None:  # ADR-029 objecthistorie — generiek filter op één object (niet-component)
+        clauses.append(cast(AuditLog.entiteit_id, Text) == str(entiteit_id))
     if van is not None:
         clauses.append(AuditLog.tijdstip >= van)
     if tot is not None:
@@ -84,6 +86,7 @@ async def lijst(
     actor: str | None = None,
     actor_naam: str | None = None,
     entiteit_type: str | None = None,
+    entiteit_id: uuid.UUID | None = None,
     component_id: uuid.UUID | None = None,
     van: datetime | None = None,
     tot: datetime | None = None,
@@ -103,8 +106,8 @@ async def lijst(
             return [], None
 
     filters = _record_filters(
-        tid, actor=actor, entiteit_type=entiteit_type, component_id=component_id,
-        van=van, tot=tot, actie=actie, subs=subs,
+        tid, actor=actor, entiteit_type=entiteit_type, entiteit_id=entiteit_id,
+        component_id=component_id, van=van, tot=tot, actie=actie, subs=subs,
     )
 
     # (1) Pagineer de groepen: per correlatie_id het anker (vroegste tijdstip = driver),

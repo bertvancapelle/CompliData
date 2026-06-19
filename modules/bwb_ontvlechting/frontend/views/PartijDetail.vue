@@ -14,6 +14,7 @@ import { useAuthStore } from '@/store/auth'
 import { api } from '@/api'
 import { CONTRACTTYPE, CONTRACTTYPE_SEVERITY, PARTIJ_AARD, REGISTER_FOUT, label } from '../labels'
 import PartijRollenSectie from './PartijRollenSectie.vue'
+import ObjectHistoriePaneel from './ObjectHistoriePaneel.vue'
 
 const props = defineProps({ id: { type: String, required: true } })
 const router = useRouter()
@@ -219,6 +220,7 @@ const RIJEN = [
       </p>
 
       <div class="mt-[var(--cd-space-lg)] flex flex-wrap gap-[var(--cd-space-md)]">
+        <ObjectHistoriePaneel entiteit-type="partij" :entiteit-id="props.id" />
         <Button
           v-if="magBewerken"
           label="Bewerken"

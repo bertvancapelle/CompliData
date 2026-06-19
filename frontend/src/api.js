@@ -89,6 +89,13 @@ export const api = {
       request(`/auditlog${_query({ limit, after, actor_naam, component_id, actie, van, tot })}`),
   },
 
+  // ADR-029 — objecthistorie ('i'-knop). Toegang volgt het object; backend handhaaft de
+  // object-leespermissie + tenant-resolutie. Levert {items, volgende_cursor}.
+  objecthistorie: {
+    lijst: ({ entiteitType, entiteitId, limit, after } = {}) =>
+      request(`/objecthistorie/${entiteitType}/${entiteitId}${_query({ limit, after })}`),
+  },
+
   applicaties: {
     // sort/order/filters optioneel — alles weggelaten → server-default
     // (created_at asc, geen filters), exact backwards-compatible (ADR-017/CD017).

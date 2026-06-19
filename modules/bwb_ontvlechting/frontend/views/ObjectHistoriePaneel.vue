@@ -1,0 +1,117 @@
+<script setup>
+/**
+ * ObjectHistoriePaneel — 'i'-knop + dialog met de geschiedenis van één object (ADR-029).
+ *
+ * Toont per gebeurtenis wie (naam, e-mail-fallback) · wanneer · handeling, en — anders dan de
+ * centrale auditview — de **detail-diff per record** ("veld: oud → nieuw"). Voor iedereen die het
+ * scherm ziet (geen rol-gating op de knop); de backend handhaaft de objecttoegang. `--cd-`-tokens.
+ */
+import { ref } from 'vue'
+import { Button, Dialog } from '@/primevue'
+import { api } from '@/api'
+import { AUDIT_ACTIE, AUDIT_ENTITEIT, VELD_LABELS, humaniseer, label } from '@modules/bwb_ontvlechting/frontend/labels'
+
+const props = defineProps({
+  entiteitType: { type: String, required: true },
+  entiteitId: { type: [String, Number], required: true },
+})
+
+const open = ref(false)
+const laden = ref(false)
+const fout = ref(null)
+const gebeurtenissen = ref([])
+const cursor = ref(null)
+let geladenVoor = null
+
+const _datum = (iso) =>
+  iso ? new Date(iso).toLocaleString('nl-NL', { dateStyle: 'medium', timeStyle: 'short' }) : ''
+
+const _wie = (g) => g.actor_naam || g.actor_email || '—'
+const _veldLabel = (naam) => VELD_LABELS[naam] ?? humaniseer(naam)
+
+function _diffRegels(record) {
+  // wijziging = { veld: { oud, nieuw } } → leesbare regels; lege diff → geen regels.
+  return Object.entries(record.wijziging || {}).map(([veld, w]) => ({
+    veld: _veldLabel(veld),
+    oud: w?.oud ?? '—',
+    nieuw: w?.nieuw ?? '—',
+  }))
+}
+
+async function laad({ meer = false } = {}) {
+  laden.value = true
+  fout.value = null
+  try {
+    const pagina = await api.objecthistorie.lijst({
+      entiteitType: props.entiteitType, entiteitId: props.entiteitId, limit: 50,
+      ...(meer && cursor.value ? { after: cursor.value } : {}),
+    })
+    const items = pagina.items || []
+    gebeurtenissen.value = meer ? [...gebeurtenissen.value, ...items] : items
+    cursor.value = pagina.volgende_cursor || null
+    geladenVoor = props.entiteitId
+  } catch (e) {
+    fout.value = e?.message || 'Laden van de geschiedenis mislukt.'
+  } finally {
+    laden.value = false
+  }
+}
+
+function toon() {
+  open.value = true
+  if (geladenVoor !== props.entiteitId) {
+    cursor.value = null
+    laad()
+  }
+}
+</script>
+
+<template>
+  <span>
+    <Button
+      icon="pi pi-info-circle"
+      label="Geschiedenis"
+      severity="secondary"
+      size="small"
+      aria-label="Toon geschiedenis"
+      data-testid="oh-knop"
+      @click="toon"
+    />
+    <Dialog
+      v-model:visible="open"
+      modal
+      :header="`Geschiedenis`"
+      data-testid="oh-dialog"
+      class="min-w-[28rem]"
+    >
+      <!-- Statusregels: volledige laad-/lege-status alleen als er nog niets staat; bij naladen
+           blijft de lijst zichtbaar en toont de "Meer laden"-knop de bezig-staat. -->
+      <p v-if="laden && !gebeurtenissen.length" data-testid="oh-laden" class="text-[var(--cd-color-text-muted)]">Laden…</p>
+      <p v-else-if="fout && !gebeurtenissen.length" role="alert" data-testid="oh-fout" class="text-[var(--cd-color-danger)]">{{ fout }}</p>
+      <p v-else-if="!laden && !gebeurtenissen.length" data-testid="oh-leeg" class="text-[var(--cd-color-text-muted)]">Nog geen geschiedenis voor dit object.</p>
+
+      <template v-else>
+        <p v-if="fout" role="alert" data-testid="oh-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ fout }}</p>
+        <ol class="flex flex-col gap-[var(--cd-space-md)]">
+          <li v-for="g in gebeurtenissen" :key="g.correlatie_id" data-testid="oh-gebeurtenis" class="border-b border-[var(--cd-color-border)] pb-[var(--cd-space-sm)]">
+            <p class="text-[length:var(--cd-text-sm)]">
+              <strong data-testid="oh-wie">{{ _wie(g) }}</strong> · {{ _datum(g.tijdstip) }}
+            </p>
+            <ul class="mt-[var(--cd-space-xs)] flex flex-col gap-[var(--cd-space-xs)]">
+              <li v-for="r in g.records" :key="r.id" class="text-[length:var(--cd-text-sm)]">
+                <span class="font-semibold">{{ label(AUDIT_ENTITEIT, r.entiteit_type) }} — {{ label(AUDIT_ACTIE, r.actie) }}</span>
+                <ul v-if="_diffRegels(r).length" class="ml-[var(--cd-space-md)] text-[var(--cd-color-text-muted)]">
+                  <li v-for="d in _diffRegels(r)" :key="d.veld" data-testid="oh-diff">{{ d.veld }}: {{ d.oud }} → {{ d.nieuw }}</li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ol>
+
+        <div v-if="cursor" class="mt-[var(--cd-space-md)] flex justify-center">
+          <Button :label="laden ? 'Laden…' : 'Meer laden'" severity="secondary" size="small" :disabled="laden" data-testid="oh-meer" @click="laad({ meer: true })" />
+        </div>
+      </template>
+    </Dialog>
+  </span>
+</template>

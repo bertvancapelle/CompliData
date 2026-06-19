@@ -16,6 +16,7 @@ import { useRouter } from '@/composables/router'
 import { useAuthStore } from '@/store/auth'
 import { api } from '@/api'
 import ZoekSelect from '@modules/bwb_ontvlechting/frontend/views/ZoekSelect.vue'
+import ObjectHistoriePaneel from '@modules/bwb_ontvlechting/frontend/views/ObjectHistoriePaneel.vue'
 
 const props = defineProps({ id: { type: String, required: true } })
 const router = useRouter()
@@ -244,7 +245,8 @@ onMounted(() => {
         <h1 id="plateau-detail-titel" data-testid="plateau-naam" class="text-[length:var(--cd-text-2xl)] font-semibold text-[var(--cd-color-primary)]">
           {{ plateau.naam }}
         </h1>
-        <Button v-if="magBeheren" label="Bewerken" size="small" data-testid="plateau-bewerken" class="ml-auto" @click="openBewerken" />
+        <ObjectHistoriePaneel entiteit-type="plateau" :entiteit-id="props.id" class="ml-auto" />
+        <Button v-if="magBeheren" label="Bewerken" size="small" data-testid="plateau-bewerken" @click="openBewerken" />
         <Button v-if="magVerwijderen" label="Verwijderen" size="small" severity="danger" data-testid="plateau-verwijderen" @click="verwijderOpen = true" />
       </div>
       <p v-if="plateau.toelichting" class="mb-[var(--cd-space-lg)] text-[var(--cd-color-text)]">{{ plateau.toelichting }}</p>

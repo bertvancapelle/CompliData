@@ -21,6 +21,7 @@ import {
   label,
 } from '../labels'
 import VerantwoordelijkheidSectie from './VerantwoordelijkheidSectie.vue'
+import ObjectHistoriePaneel from './ObjectHistoriePaneel.vue'
 
 const props = defineProps({ id: { type: String, required: true } })
 const router = useRouter()
@@ -144,6 +145,7 @@ const typeLabel = (c) => label(CONTRACTTYPE, c)
       </dl>
 
       <div class="mt-[var(--cd-space-lg)] flex flex-wrap gap-[var(--cd-space-md)]">
+        <ObjectHistoriePaneel entiteit-type="contract" :entiteit-id="props.id" />
         <Button v-if="magBewerken" label="Bewerken" data-testid="bewerken-knop" @click="router.push({ name: 'contract-bewerken', params: { id: props.id } })" />
         <Button v-if="magVerwijderen" label="Verwijderen" severity="danger" data-testid="verwijder-knop" @click="verwijderDialog = true" />
       </div>

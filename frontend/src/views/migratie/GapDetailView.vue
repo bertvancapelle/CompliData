@@ -15,6 +15,7 @@ import { useRouter } from '@/composables/router'
 import { useAuthStore } from '@/store/auth'
 import { api } from '@/api'
 import ZoekSelect from '@modules/bwb_ontvlechting/frontend/views/ZoekSelect.vue'
+import ObjectHistoriePaneel from '@modules/bwb_ontvlechting/frontend/views/ObjectHistoriePaneel.vue'
 
 const props = defineProps({ id: { type: String, required: true } })
 const router = useRouter()
@@ -207,7 +208,8 @@ onMounted(laad)
         <h1 id="gap-detail-titel" data-testid="gap-naam" class="text-[length:var(--cd-text-2xl)] font-semibold text-[var(--cd-color-primary)]">
           {{ gap.naam }}
         </h1>
-        <Button v-if="magBeheren" label="Bewerken" size="small" data-testid="gap-bewerken" class="ml-auto" @click="openBewerken" />
+        <ObjectHistoriePaneel entiteit-type="gap" :entiteit-id="props.id" class="ml-auto" />
+        <Button v-if="magBeheren" label="Bewerken" size="small" data-testid="gap-bewerken" @click="openBewerken" />
         <Button v-if="magVerwijderen" label="Verwijderen" size="small" severity="danger" data-testid="gap-verwijderen" @click="verwijderOpen = true" />
       </div>
       <p v-if="gap.toelichting" class="mb-[var(--cd-space-md)] text-[var(--cd-color-text)]">{{ gap.toelichting }}</p>
