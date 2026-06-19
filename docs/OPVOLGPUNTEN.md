@@ -248,6 +248,32 @@ Zie complidata-db "V007-patronen" en `docs/LOKAAL-TESTEN.md` (named volume + res
 
 ---
 
+### ADR-028 — Componentclassificatie (geparkeerd, na ADR-027)
+
+Voorstel geland (DC013). Twee uitbreidingen op het componentmodel:
+(1) **Componentrol** (platform-breed): interne_applicatie /
+interne_dataprovider / externe_dataprovider / koppelvlak —
+bepaalt of koppelingen zelfstandig omgehangen kunnen worden of
+afhankelijk zijn van externe ketenafspraken; zichtbaar in
+Landschapskaart als visueel onderscheid.
+(2) **BIV-classificatie** (tenant-scoped schaal): Beschikbaarheid,
+Integriteit, Vertrouwelijkheid — drie velden op component met
+tenant-eigen 3- of 5-punts schaal; filterbaar in Landschapskaart,
+basis voor migratieset-risicobeoordeling.
+Zie docs/adr/ADR-028_componentclassificatie_voorstel.md.
+
+---
+
+### KILARA — naamswijziging codebase (geparkeerd, DC013)
+
+Besloten productnaam: KILARA (Kaart ICT Landschap Afhankelijkheden
+Relaties Analyse). Vervangt CompliData/CompliMan overal in de
+codebase: bestandsnamen, variabelen, README, CLAUDE.md,
+seed-namen, Keycloak-realm, Docker-images. Uitvoeren als
+gecontroleerde zoek-vervang-slice in een aparte sessie.
+
+---
+
 ## AFGEROND (sessie 2–3)
 
 - **O2** — 7.5 BIO2-classificatie → BBN (CD035): de default-optieset van vraag 7.5 is
