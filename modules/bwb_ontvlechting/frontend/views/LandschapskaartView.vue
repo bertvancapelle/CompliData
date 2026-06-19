@@ -8,7 +8,7 @@
  * álle panelen (zoek/resultaten/set/detail/legenda/samenvatting) zijn pure Vue-state, zodat de
  * UI testbaar is met een gemockte cytoscape. Read-only; geen engine-aanraking.
  */
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from '@/composables/router'
 import cytoscape from '@/composables/cytoscape'
 import { api } from '@/api'
@@ -238,6 +238,10 @@ function tekenGraaf() {
   cy.elements().remove()
   cy.add(_elementen())
   cy.layout(_layout()).run()
+  // Cytoscape meet zijn container soms op 0 (flex-hoogte nog niet gezet) → her-meten + passend
+  // maken zodra de elementen erin staan, zodat de graaf zichtbaar wordt i.p.v. leeg te blijven.
+  cy.resize?.()
+  cy.fit?.(undefined, 50)
 }
 
 const CY_STYLE = [
@@ -258,15 +262,29 @@ const CY_STYLE = [
   },
 ]
 
+let resizeObserver = null
+
 onMounted(async () => {
   await laad()
+  await nextTick() // wacht tot de canvas-div in de DOM staat (en de flex-hoogte gezet is)
   if (containerRef.value) {
     cy = cytoscape({ container: containerRef.value, elements: [], style: CY_STYLE })
     cy.on('tap', 'node', (evt) => selecteerNode(evt.target.id()))
     tekenGraaf()
+    // Her-meten + passend maken bij containerwijzigingen (modus-wissel, sidebar, venster-resize).
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => {
+        cy?.resize?.()
+        cy?.fit?.(undefined, 50)
+      })
+      resizeObserver.observe(containerRef.value)
+    }
   }
 })
-onBeforeUnmount(() => cy?.destroy?.())
+onBeforeUnmount(() => {
+  resizeObserver?.disconnect()
+  cy?.destroy?.()
+})
 
 // Hertekenen bij elke state die de graaf raakt.
 watch(
@@ -345,8 +363,9 @@ const typeLabel = (t) => humaniseer(t)
         <button type="button" data-testid="lk-voeg-alle" class="mt-1 rounded-[var(--cd-radius-btn)] bg-[var(--cd-color-primary)] px-[var(--cd-space-sm)] py-1 text-[length:var(--cd-text-sm)] text-white" @click="voegAlleGefilterdeToe">+ Voeg alle gefilterde toe</button>
       </aside>
 
-      <!-- Canvas -->
-      <div class="relative min-w-0 flex-1 bg-[var(--cd-color-surface)]">
+      <!-- Canvas — min-h-0 is kritiek: zonder negeert een flex-child de height:100% van de parent,
+           waardoor Cytoscape op hoogte 0 initialiseert en de graaf leeg/onzichtbaar blijft. -->
+      <div class="relative min-h-0 min-w-0 flex-1 bg-[var(--cd-color-surface)]">
         <div ref="containerRef" data-testid="lk-canvas" class="h-full w-full"></div>
 
         <!-- Tools (rechtsboven) -->

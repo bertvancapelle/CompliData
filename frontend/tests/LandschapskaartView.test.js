@@ -11,6 +11,7 @@ vi.mock('@/composables/cytoscape', () => ({
     elements: () => ({ remove: vi.fn() }),
     add: vi.fn(),
     layout: () => ({ run: vi.fn() }),
+    resize: vi.fn(),
     fit: vi.fn(),
     destroy: vi.fn(),
   })),
