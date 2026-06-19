@@ -22,6 +22,8 @@ import ImpactSectie from './ImpactSectie.vue'
 import ChecklistscoreSectie from './ChecklistscoreSectie.vue'
 // F-1-vervolg — blokkades + herkomst-doorklik, ook voor checklist-dragende niet-applicaties.
 import BlokkadeSectie from './BlokkadeSectie.vue'
+// ADR-027 — migratiegereedheid (component-klaarverklaring); component-generiek, ook hier.
+import MigratiegereedheidSectie from './MigratiegereedheidSectie.vue'
 
 const props = defineProps({ id: { type: String, required: true } })
 const router = useRouter()
@@ -59,6 +61,15 @@ const magVerwijderen = computed(() => auth.hasRole('beheerder') && !isSubtype.va
 // + bewerk-rechten; verdwijnt zodra de lifecycle-status niet meer 'concept' is.
 const magStarten = computed(
   () => magBewerken.value && component.value?.checklist_dragend === true && component.value?.lifecycle_status === 'concept',
+)
+// ADR-027 — migratiegereedheid tonen voor checklist-dragende óf reeds beoordeelde componenten
+// (zelfde conditie als de checklist-/blokkadesectie). Knop verbergen zonder rol; backend handhaaft.
+const scoreSectie = ref(null)
+const gereedheidSectie = ref(null)
+const magKlaarverklaren = computed(() => auth.hasRole('medewerker', 'beheerder'))
+const gereedheidLabel = computed(() => (gereedheidSectie.value?.status === 'klaar' ? 'Heropenen' : 'Klaar verklaren'))
+const toonGereedheid = computed(
+  () => component.value?.checklist_dragend === true || !!component.value?.lifecycle_status,
 )
 
 function _toastFout(e) {
@@ -166,7 +177,8 @@ onMounted(() => {
         <router-link :to="{ name: 'applicatie-detail', params: { id: component.id } }" class="text-[var(--cd-color-primary)] hover:underline">de applicatie zelf</router-link>.
       </p>
 
-      <dl class="card grid grid-cols-[max-content_1fr] gap-x-[var(--cd-space-lg)] gap-y-[var(--cd-space-sm)]">
+      <div class="flex flex-col gap-[var(--cd-space-lg)] md:flex-row md:items-start">
+      <dl class="card grid grid-cols-[max-content_1fr] gap-x-[var(--cd-space-lg)] gap-y-[var(--cd-space-sm)] md:flex-1">
         <dt class="font-semibold">Type</dt>
         <dd>{{ component.componenttype_label }}</dd>
         <dt class="font-semibold">Hostingmodel</dt>
@@ -181,15 +193,29 @@ onMounted(() => {
           >{{ component.eigenaar_organisatie_naam }}</router-link>
           <span v-else>—</span>
         </dd>
-        <dt class="font-semibold">Eigenaar (naam)</dt>
-        <dd>{{ component.eigenaar_naam || '—' }}</dd>
-        <dt class="font-semibold">Leverancier</dt>
-        <dd>{{ component.leverancier || '—' }}</dd>
         <dt class="font-semibold">Beschrijving</dt>
         <dd class="whitespace-pre-wrap">{{ component.beschrijving || '—' }}</dd>
       </dl>
 
+        <!-- ADR-027 — migratiegereedheid (component-klaarverklaring), zelfde blok als ApplicatieDetail. -->
+        <MigratiegereedheidSectie
+          v-if="toonGereedheid"
+          ref="gereedheidSectie"
+          class="md:w-80 md:shrink-0"
+          :component-id="component.id"
+          :aantal-gescoord="scoreSectie?.aantalGescoord ?? 0"
+          :aantal-vragen="scoreSectie?.aantalVragen ?? 0"
+        />
+      </div>
+
       <div class="mt-[var(--cd-space-lg)] flex flex-wrap gap-[var(--cd-space-md)]">
+        <Button
+          v-if="magKlaarverklaren && toonGereedheid"
+          :label="gereedheidLabel"
+          severity="secondary"
+          data-testid="klaarverklaar-knop"
+          @click="(e) => gereedheidSectie?.openDialog(e)"
+        />
         <Button v-if="magBewerken" label="Bewerken" data-testid="bewerken-knop" @click="naarBewerken" />
         <Button
           v-if="magStarten"
@@ -211,6 +237,7 @@ onMounted(() => {
              tonen voor een gesloten type dat al een profiel/scores heeft (lifecycle_status gezet). -->
         <ChecklistscoreSectie
           v-if="component.checklist_dragend === true || component.lifecycle_status"
+          ref="scoreSectie"
           :applicatie-id="component.id"
           :componenttype="component.componenttype"
           :markeer-code="markeerVraagCode"

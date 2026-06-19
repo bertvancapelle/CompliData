@@ -34,6 +34,12 @@ vi.mock('@/api', () => ({
       verwijder: vi.fn(),
     },
     partijen: { lijst: vi.fn(() => Promise.resolve({ items: [] })) },
+    // ADR-027 — MigratiegereedheidSectie haalt bij mount de klaarverklaring op.
+    klaarverklaringen: {
+      lijst: vi.fn(() => Promise.resolve([])),
+      maak: vi.fn(),
+      wijzigStatus: vi.fn(),
+    },
   },
 }))
 
@@ -201,6 +207,28 @@ describe('ComponentDetail', () => {
     expect(w.find('[data-testid="cs-voortgang"]').exists()).toBe(true)
     expect(w.findComponent(ChecklistscoreSectie).props('bewerkbaar')).toBe(false)
     expect(w.find('[data-testid="cs-gesloten"]').exists()).toBe(true)
+  })
+
+  // ── ADR-027 (DC015): migratiegereedheid-blok op ComponentDetail ────────────
+  it('toont het migratiegereedheid-blok + klaarverklaar-knop bij checklist_dragend (medewerker)', async () => {
+    api.componenten.haal.mockResolvedValue(_component({ checklist_dragend: true }))
+    const { w } = await mountDetail({ rollen: ['medewerker'] })
+    expect(w.find('[data-testid="mg-leesblok"]').exists()).toBe(true)
+    expect(w.find('[data-testid="klaarverklaar-knop"]').exists()).toBe(true)
+    expect(api.klaarverklaringen.lijst).toHaveBeenCalledWith({ componentId: ID })
+  })
+
+  it('toont het migratiegereedheid-blok NIET voor een kaal type zonder profiel', async () => {
+    const { w } = await mountDetail() // checklist_dragend: false, lifecycle_status: null
+    expect(w.find('[data-testid="mg-leesblok"]').exists()).toBe(false)
+    expect(w.find('[data-testid="klaarverklaar-knop"]').exists()).toBe(false)
+  })
+
+  it('verbergt de klaarverklaar-knop voor een viewer (blok blijft read-only zichtbaar)', async () => {
+    api.componenten.haal.mockResolvedValue(_component({ checklist_dragend: true }))
+    const { w } = await mountDetail({ rollen: ['viewer'] })
+    expect(w.find('[data-testid="mg-leesblok"]').exists()).toBe(true)
+    expect(w.find('[data-testid="klaarverklaar-knop"]').exists()).toBe(false)
   })
 
   it('markeert de vraag uit de deep-link-query (blokkadelijst-doorklik, ADR-024-vervolg)', async () => {

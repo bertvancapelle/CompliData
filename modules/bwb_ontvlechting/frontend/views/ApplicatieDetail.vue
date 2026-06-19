@@ -295,10 +295,6 @@ onMounted(async () => {
             >{{ applicatie.eigenaar_organisatie_naam }}</router-link>
             <span v-else>—</span>
           </dd>
-          <dt class="font-semibold">Eigenaar (naam)</dt>
-          <dd>{{ applicatie.eigenaar_naam || '—' }}</dd>
-          <dt class="font-semibold">Leverancier</dt>
-          <dd>{{ applicatie.leverancier || '—' }}</dd>
           <dt class="font-semibold">Hostingmodel</dt>
           <dd>{{ label(HOSTINGMODEL, applicatie.hostingmodel) }}</dd>
           <dt class="font-semibold">Migratiepad</dt>

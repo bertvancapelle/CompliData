@@ -380,16 +380,9 @@ Bert expliciet anders aangeeft.
 
 ---
 
-## Werkwijze CC + claude.ai (ALTIJD volgen)
+## CC-opdrachtwerkwijze
 
-### Samenwerking
-- claude.ai werkt CC-instructies uit met skill-context uit `.claude/skills/`
-- Bert plakt de instructie in CC
-- CC voert uit in de repo (code, tests, commits, push)
-- Bert plakt het CC-resultaat terug in claude.ai ter beoordeling
-- Nooit ZIPs van applicatiecode vragen — altijd CC voor repo-werk
-- Vragen/adviezen één voor één, opdrachten als `.md` met `START:`-trigger —
-  zie het Werkprotocol bovenaan (gezaghebbende bron, niet hier herhaald).
+> Interactieregels (één-voor-één, UX-first, opdrachtformaat) staan in het Werkprotocol bovenaan.
 
 ### Gate-werkwijze (twee fasen + checkpoints)
 - **Twee fasen**: CC voert Fase A uit (analyse/implementatie/tests/TST),
