@@ -1,120 +1,148 @@
-# ADR-029 — Gebruiker-partij-koppeling + per-type gereedmeld-autorisatie
+# ADR-029 — Gebruikersbeheer en identiteitsresolutie
 
-**Status:** Voorstel (geparkeerd — fundament voor eerste implementatie)
-**Datum:** 2026-06-19
-**Relatie:** Bouwt op ADR-010/012 (Keycloak-rollen, tweelaags rollenmodel), ADR-024 (partijenregister
-+ persoon-partij) en ADR-027 (component-klaarverklaring — het grove gereedmeld-recht). Verfijnt het
-ADR-027-recht; ADR-027 hangt NIET op ADR-029.
+**Status:** Geaccepteerd (herzien DC015)
+**Datum:** 2026-06-19 (voorstel) · herzien 2026-06-20 (DC015)
+**Relatie:** Bouwt op ADR-010/012 (Keycloak, tweelaags rollenmodel), ADR-024
+(partijenregister + persoon-partij), ADR-027 (component-klaarverklaring).
 **Invariant (ongewijzigd):** score blijft de enige lifecycle-driver — de engine wordt niet geraakt.
 
 ---
 
 ## Context / aanleiding
 
-Vandaag kent KILARA inloggers alleen als **Keycloak-token met een grove rol**
-(viewer/medewerker/beheerder/auditor). Er is **geen blijvende "gebruiker" in de app** en **geen brug**
-tussen de login en de **persoon in het partijenregister** (ADR-024): die twee werelden staan los
-(bevestigd in het RBAC-feitenrapport DC014). De rechtenmatrix is een vaste platform-brede tabel
-zonder per-tenant of per-persoon granulariteit; rol-toekenning loopt volledig via Keycloak; er is
-geen tenant-gebruikersbeheer in de app.
+KILARA kent inloggers nu alleen als email-adres. Er is geen brug tussen de login en de persoon
+in het partijenregister. Daardoor toont de audit-trail een email in plaats van een naam; is
+niet per naam herleidbaar wie een checklist-antwoord heeft aangepast of een component gereed
+heeft verklaard; en heeft het systeem geen fundament voor gerichte autorisatie per persoon.
 
-Daardoor kan het systeem niet uitdrukken: *"déze persoon mag dít gereedmelden."* ADR-027 levert nu
-het **grove** recht (de rol `KLAARVERKLARING` bepaalt wie mag aftekenen, ja/nee) plus volledige
-**herleidbaarheid** (`verklaard_door`/`verklaard_op` + audit). Voor een eerste echte implementatie
-is een fijner fundament nodig: **gebruikersbeheer van de eigen organisatie** + **gerichte
-gereedmeld-autorisatie per componenttype**.
+De kern van dit ADR is één vraag: **weet KILARA wie jij bent?** Zodra de koppeling er is,
+werken attributie (naam in registraties), verantwoording (wie deed wat) en autorisatie (wie
+mag wat) allemaal tegelijk — dat zijn drie uitingen van hetzelfde fundament, niet drie losse
+features.
 
 ---
 
 ## Besluit (kern)
 
-1. **Brug login ↔ persoon.** Een Keycloak-identiteit wordt gekoppeld aan een **persoon-partij** in
-   de eigen organisatie (ADR-024). Selectief en optioneel: niet elke login is een persoon, en niet
-   elke persoon logt in. De koppeling maakt "wie ben ik als ingelogde gebruiker, en welke persoon
-   ben ik in het register" expliciet.
-2. **Per-type gereedmeld-recht aan de persoon.** Een persoon krijgt het recht een component
-   **gereed te melden** per **componenttype** (de platform-vaste, korte typelijst — geen explosie).
-   Voorbeeld: "Piet mag type *Applicatie* gereedmelden." Het systeem **oordeelt niet over expertise**;
-   de beheerder kent het recht toe op basis van zijn eigen oordeel.
-3. **Beheerd door de beheerder, via een eigen recht.** Het uitdelen van gereedmeld-bevoegdheden is
-   gevoeliger dan gewoon partijbeheer — je deelt **bevoegdheden** uit, geen gegevens. Daarom een
-   **apart autorisatiebeheer-recht**, exclusief voor de beheerder, **gescheiden van het gewone
-   `PARTIJ`-recht** (gegevensbeheer ≠ bevoegdheidsbeheer).
-4. **Verantwoordingsketen.** *Wie-gaf-het-recht* én *wie-meldde-gereed* blijven **gescheiden
-   herleidbaar** in de audit-trail: "beheerder X gaf Piet recht op type Applicatie op datum" naast
-   "Piet meldde component Y gereed met reden op datum".
+1. **KILARA is de primaire ingang voor gebruikersbeheer.** Nieuwe gebruikers (medewerker /
+   viewer) worden aangemaakt via KILARA — niet via Keycloak. KILARA maakt tegelijk het
+   persoon-record in het partijenregister én het Keycloak-account aan via de Keycloak Admin
+   REST API. De koppeling login ↔ persoon ontstaat bij aanmaak, niet als aparte handmatige
+   stap achteraf.
 
-### Relatie tot ADR-027
-ADR-027 = het **grove** recht (rol `KLAARVERKLARING`: mag aftekenen ja/nee) + volledige
-herleidbaarheid via `verklaard_door`. ADR-029 **verfijnt** dat later naar **per-type per-persoon** —
-**preventief** (geen gereedmeld-knop voor een type dat niet van jou is), bovenop de bestaande
-herleidbaarheid. ADR-027 blijft zelfstandig werken zonder ADR-029.
+2. **Keycloak is een provisioning-detail van KILARA.** De beheerder opent nooit Keycloak.
+   Keycloak blijft de technische IAM-laag; KILARA is de beheersinterface. Rol-toewijzing
+   in Keycloak (medewerker / viewer) loopt via KILARA.
+
+3. **Beheerders zijn buiten het register.** Bootstrap-accounts met de beheerder-rol worden
+   direct in Keycloak aangemaakt — buiten KILARA. Beheerders hebben geen persoon-record in
+   het partijenregister. De audit-trail toont hun email als fallback. Dit is bewust: een
+   beheerder is een technisch account, geen organisatorische actor.
+
+4. **Naam-attributie als primair doel.** Overal waar KILARA nu email toont (audit-trail,
+   checklist-wijzigingen, gereedmeldingen, roltoewijzingen) toont het straks de naam — via
+   de koppeling sub → persoon.naam. Email blijft fallback voor accounts zonder koppeling
+   (beheerders, historische accounts).
+
+5. **Per-type gereedmeld-recht als uitbreiding op hetzelfde fundament.** Een persoon krijgt
+   het recht een component gereed te melden per componenttype. Dit bouwt op de koppeling;
+   de grove KLAARVERKLARING-rol blijft de toegangspoort.
+
+6. **Autorisatiebeheer via de bestaande GEBRUIKERSBEHEER-entiteit** (placeholder in de
+   RBAC-matrix, Beheerder LAWV) — geen nieuwe entiteit nodig.
 
 ---
 
 ## Model in detail
 
-- **Login ↔ persoon:** een koppeling tussen de Keycloak-identiteit (`sub`/e-mail) en een
-  `persoon`-partij (ADR-024) binnen de tenant. Eén persoon ↔ ten hoogste één login; een login zonder
-  persoon-koppeling blijft mogelijk (grove rol blijft gelden).
-- **Per-type gereedmeld-recht:** een **tenant-scoped toewijzing** *persoon × componenttype* — een
-  registratie-feit, in lijn met `roltoewijzing` (ADR-024): eigen tabel, composiet-FK's naar het
-  element/de persoon, FORCE RLS, audit op de allowlist. Componenttype is de platform-vaste sleutel
-  (geen vrije tekst, geen tenant-eigen typeset).
-- **Beheerrecht:** een nieuwe permissie-entiteit voor **autorisatiebeheer** (alleen beheerder),
-  los van `PARTIJ`. Het uitdelen/intrekken van per-type-rechten loopt via die entiteit.
-- **Handhaving bij gereedmelden:** de gereedmeld-actie (ADR-027 `maak_aan`/`wijzig_status`) checkt
-  naast de grove rol óók het per-type-recht van de gekoppelde persoon voor het componenttype van het
-  component. Backend handhaaft; frontend verbergt de knop preventief (affordance).
+### Gebruiker-aanmaak flow (beheerder via KILARA)
+
+1. Beheerder opent "Gebruikersbeheer" in KILARA.
+2. Vult in: naam, afdeling, functie, email, rol (standaard: medewerker).
+3. KILARA maakt in één reeks:
+   - Persoon-record in het partijenregister (aard=persoon, naam/afdeling/functie — ADR-024)
+   - Keycloak-account (email, tijdelijk wachtwoord, rol) via de Keycloak Admin REST API
+   - Koppelrij `keycloak_sub ↔ persoon_id` in de nieuwe koppeltabel
+4. Gebruiker logt in met het tijdelijk wachtwoord en wijzigt dit bij de eerste login
+   (Keycloak-standaard).
+
+### Koppeltabel `gebruiker_persoon`
+- Tenant-scoped, FORCE RLS, audit op de allowlist
+- Velden: `tenant_id`, `keycloak_sub` (UNIQUE per tenant), `persoon_id` (UNIQUE per tenant)
+  → composiet-FK naar `element(tenant_id, id)` ON DELETE CASCADE
+- `sub` komt uit de Keycloak Admin API response bij account-aanmaak — geen extra stap
+- Geen handmatige koppelingsstap nodig (koppeling = registratiefeit bij aanmaak)
+
+### Naam-resolutie
+- Bij elke UI-weergave van een actor: `actor_sub` (al in audit_log) → koppeltabel →
+  `persoon.naam`
+- Geen koppeling gevonden (beheerder, historisch account): toon email als fallback —
+  nooit leeg
+- Implementatiepatroon: join als transient attribuut op bestaande responses (conform
+  `eigenaar_organisatie_naam` — ADR-023/ADR-013 patroon)
+
+### Per-type gereedmeld-recht
+- Eigen tabel `gereedmeld_recht` (tenant_id, persoon_id, componenttype)
+- `UNIQUE(tenant_id, persoon_id, componenttype)`; composiet-FK persoon_id → element
+  ON DELETE CASCADE; componenttype = platform-vaste sleutel (geen FK naar tabel)
+- Handhaving: `component_klaarverklaring_service` checkt sub → persoon_id → recht op
+  het componenttype van het component
+- Fallback: geen koppeling (beheerder) → grove KLAARVERKLARING-rol is voldoende
 
 ---
 
 ## Invarianten
 
-- **Engine onaangeroerd** — autorisatie en koppeling voeden de score-engine niet.
-- **Backend blijft enige handhaver** — de frontend is affordance (knop tonen/verbergen); een
-  frontend-gatingbug mag nooit tot een autorisatie-omzeiling leiden.
-- **Structureel boven conventioneel** — schema dwingt de toewijzings-/koppeling-invarianten af
-  (FK/UNIQUE/RLS), niet alleen app-side.
-- **NCSC-kader** (Nederlandse overheid), niet NIST.
-- **Strikte scheiding gegevensbeheer ↔ bevoegdheidsbeheer** — partijgegevens beheren (`PARTIJ`) is
-  iets anders dan bevoegdheden uitdelen (nieuw beheerrecht).
+- **Engine onaangeroerd** — koppeling, provisioning en attributie voeden de score-engine
+  niet. Dubbele borging per slice (import-afwezigheid + live geen-mutatie).
+- **Backend blijft enige handhaver** — frontend verbergt affordances (`v-if`), backend
+  handhaaft altijd.
+- **Keycloak als IAM-bron** — KILARA beheert gebruikers, Keycloak authenticeert; nooit
+  omgekeerd.
+- **Beheerder buiten het register** — geen persoon-record, geen per-type rechten,
+  email-fallback in de audit-trail.
+- **Structureel boven conventioneel** — schema dwingt koppeling-/toewijzingsinvarianten
+  af (FK/UNIQUE/RLS), niet alleen app-side.
 
 ---
 
 ## Gevolgen
 
-- Nieuw fundament: een **gebruiker-begrip in de app** (via de login↔persoon-koppeling) waar nu alleen
-  een token bestaat — ontworpen zodat het kan groeien naar breder gebruikersbeheer.
-- Nieuwe tenant-scoped tabel(len) (koppeling + per-type-toewijzing) + een nieuwe RBAC-entiteit voor
-  autorisatiebeheer; RBAC-matrix-teltest beweegt mee.
-- Audit: koppeling + toewijzing op de tenant-allowlist → uitdelen/intrekken append-only herleidbaar.
-- ADR-027 slice 2/3 (UI/rapportage) kan vóór ADR-029 landen; de gereedmeld-knop gate't dan nog op de
-  grove rol en wordt later verfijnd.
+- Nieuw: gebruikersbeheer-scherm (beheerder-only, GEBRUIKERSBEHEER-entiteit)
+- Nieuw: Keycloak Admin API-client in de backend
+- Nieuw: tabel `gebruiker_persoon` (schema, RLS, audit)
+- Nieuw: tabel `gereedmeld_recht` (schema, RLS, audit)
+- Naam-resolutie: bestaande API's die een actor tonen krijgen een naam-join (transient
+  attribuut, geen schema-wijziging op die tabellen)
+- ADR-027 klaarverklaring-service uitgebreid met per-type check (na slice 3)
+- RBAC-teltest beweegt mee bij elke nieuwe entiteit/actie
 
 ---
 
-## Open subknopen (met voorlopige default)
+## Open subknopen (te beslissen vóór of tijdens de bouw)
 
-1. **Koppeling login ↔ persoon: handmatig vs. e-mail-match.** *Default: handmatig aanwijzen door de
-   beheerder (expliciet, controleerbaar); automatische e-mail-match uit Keycloak als latere hulp.*
-2. **Waar leeft het per-type-recht:** nieuwe tenant-scoped tabel *persoon × componenttype* vs.
-   uitbreiding op de persoon-partij. *Default: aparte toewijzingstabel (registratie-feit, net als
-   `roltoewijzing`).*
-3. **Verhouding tot de bestaande `KLAARVERKLARING`-rol:** vervangt of verfijnt. *Default: verfijnt —
-   de grove rol blijft de poort "mag aftekenen", het per-type-recht beperkt binnen wie die rol heeft.*
-4. **Reikwijdte gebruikersbeheer:** alleen gereedmeld-autorisatie, of breder fundament (algemeen
-   gebruikersbeheer eigen organisatie). *Default: start bij gereedmeld; ontworpen zodat het kan
-   groeien.*
+1. **Keycloak Admin API-credentials.** Aparte service-account of bestaande admin-credentials?
+   *Default: aparte, minimaal-geprivilegieerde service-account voor user-provisioning.*
+2. **Tijdelijk wachtwoord vs. e-mailverificatieflow.** Keycloak-standaard (tijdelijk wachtwoord
+   + verplicht wijzigen bij eerste login) of een e-maillink-flow?
+   *Default: Keycloak-standaard — eenvoudig, geen extra e-mailinfrastructuur.*
+3. **Naam-resolutie: join in response of aparte lookup-endpoint?**
+   *Default: transient attribuut via join op bestaande responses — geen nieuw endpoint.*
+4. **Historische accounts (vóór ADR-029).** Email-fallback accepteren, of eenmalige handmatige
+   koppeling aanbieden?
+   *Default: email-fallback accepteren; optionele handmatige koppeling als beheer-tool later.*
 
 ---
 
-## Bouw-fasering (indicatief, ná besluit)
+## Bouwfasering (indicatief, ná besluitvorming)
 
-1. **Feitenrapport auth/identiteit** — exacte stand login/token/persoon (read-only).
-2. **Brug login ↔ persoon** — koppeling + beheer (handmatig aanwijzen). Gate.
-3. **Per-type toewijzing + beheerscherm** — tabel persoon × componenttype + nieuw beheerder-recht. Gate.
-4. **Handhaving bij gereedmelden** — de ADR-027-actie checkt het per-type-recht. Gate.
-5. **Frontend** — gereedmeld-knop preventief verbergen per type (affordance). Doorloop.
+1. **Keycloak Admin API-feitenrapport** (read-only) — beschikbare endpoints, credentials,
+   user-provisioning flow bevestigen.
+2. **Koppeltabel `gebruiker_persoon` + gebruiker-aanmaak** (gate — schema + Keycloak
+   provisioning): tabel, RLS, audit, service, endpoint, beheer-UI basis.
+3. **Naam-resolutie in audit-trail en bestaande UI** (doorloop — join op bestaande responses).
+4. **Gebruikersbeheer-scherm compleet** (doorloop — frontend lijst/aanmaken/deactiveren).
+5. **`gereedmeld_recht`-tabel + per-type check in klaarverklaring-service** (gate — schema).
+6. **Frontend gereedmeld-affordance per type** (doorloop — `v-if` op knop).
 
 Elke slice met engine-onaangeroerd-borging en de gangbare gate-discipline.
