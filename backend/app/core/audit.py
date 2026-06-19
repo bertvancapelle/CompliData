@@ -64,6 +64,8 @@ AUDIT_TENANT_ENTITEITEN: frozenset[str] = frozenset({
     # ADR-027 — niet-scorende component-klaarverklaring (klaar→open→klaar mét reden,
     # per-veld-diffs in de append-only audit-trail; geen aparte historie-tabel).
     "component_klaarverklaring",
+    # ADR-029 — koppeling Keycloak-login ↔ persoon-partij (registratiefeit bij gebruiker-aanmaak).
+    "gebruiker_persoon",
 })
 AUDIT_PLATFORM_ENTITEITEN: frozenset[str] = frozenset({
     "tenant", "componentconfig_optie", "contractconfig_optie",

@@ -127,6 +127,142 @@ async def get_admin_token() -> str:
         return resp.json()["access_token"]
 
 
+# ── ADR-029 — user-provisioning via dedicated service-account ────────────────────
+
+class KeycloakProvisioningFout(Exception):
+    """Een Keycloak Admin API-call voor user-provisioning is mislukt."""
+
+    def __init__(self, bericht: str, status_code: int | None = None):
+        super().__init__(bericht)
+        self.bericht = bericht
+        self.status_code = status_code
+
+
+async def get_provisioning_token() -> str:
+    """Admin-token via client-credentials voor de `kilara-user-provisioning`
+    service-account (ADR-029). Structureel minimaal-geprivilegieerd (manage-users +
+    view-users) — géén brede master-admin-creds."""
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            TOKEN_URL,
+            data={
+                "grant_type": "client_credentials",
+                "client_id": "kilara-user-provisioning",
+                "client_secret": settings.kilara_provisioning_secret,
+            },
+        )
+        if resp.status_code != 200:
+            raise KeycloakProvisioningFout(
+                "Kon geen provisioning-token verkrijgen.", resp.status_code
+            )
+        return resp.json()["access_token"]
+
+
+def genereer_tijdelijk_wachtwoord(lengte: int = 20) -> str:
+    """Sterk willekeurig tijdelijk wachtwoord (`secrets`, >=16 tekens, mix van
+    letters/cijfers/symbolen). Wordt eenmalig teruggegeven, NOOIT gelogd."""
+    import secrets
+
+    alfabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%^&*-_=+"
+    lengte = max(lengte, 16)
+    # Garandeer minstens één teken uit elke klasse, vul de rest willekeurig aan.
+    kern = [
+        secrets.choice("ABCDEFGHJKLMNPQRSTUVWXYZ"),
+        secrets.choice("abcdefghijkmnpqrstuvwxyz"),
+        secrets.choice("23456789"),
+        secrets.choice("!@#$%^&*-_=+"),
+    ]
+    kern += [secrets.choice(alfabet) for _ in range(lengte - len(kern))]
+    for i in range(len(kern) - 1, 0, -1):  # Fisher-Yates met secrets
+        j = secrets.randbelow(i + 1)
+        kern[i], kern[j] = kern[j], kern[i]
+    return "".join(kern)
+
+
+def _splits_naam(naam: str) -> tuple[str, str]:
+    """Splits een volledige naam in (firstName, lastName) — best-effort."""
+    delen = (naam or "").strip().split()
+    if not delen:
+        return "", ""
+    if len(delen) == 1:
+        return delen[0], ""
+    return delen[0], " ".join(delen[1:])
+
+
+async def maak_keycloak_gebruiker(email: str, naam: str, tijdelijk_wachtwoord: str, rol: str) -> str:
+    """Maak een Keycloak-gebruiker aan en retourneer de `keycloak_sub` (UUID-string).
+
+    Flow (provisioning-token via `get_provisioning_token`): create-user (201 + Location ->
+    sub) -> reset-password (temporary=true) -> realm-rol toewijzen. `UPDATE_PASSWORD` als
+    required action -> de gebruiker wijzigt het wachtwoord bij de eerste login.
+    NB: het wachtwoord wordt NOOIT gelogd (ook niet bij debug)."""
+    token = await get_provisioning_token()
+    headers = {"Authorization": f"Bearer {token}"}
+    voornaam, achternaam = _splits_naam(naam)
+    async with httpx.AsyncClient() as client:
+        # 1. Gebruiker aanmaken.
+        resp = await client.post(
+            f"{ADMIN_BASE}/users",
+            headers=headers,
+            json={
+                "username": email,
+                "email": email,
+                "firstName": voornaam,
+                "lastName": achternaam,
+                "enabled": True,
+                "emailVerified": True,
+                "requiredActions": ["UPDATE_PASSWORD"],
+            },
+        )
+        if resp.status_code != 201:
+            raise KeycloakProvisioningFout("Aanmaken Keycloak-gebruiker mislukt.", resp.status_code)
+        locatie = resp.headers.get("Location")
+        if not locatie:
+            raise KeycloakProvisioningFout("Keycloak gaf geen Location-header terug.")
+        sub = locatie.rstrip("/").rsplit("/", 1)[-1]
+
+        # 2. Tijdelijk wachtwoord zetten.
+        pw = await client.put(
+            f"{ADMIN_BASE}/users/{sub}/reset-password",
+            headers=headers,
+            json={"type": "password", "value": tijdelijk_wachtwoord, "temporary": True},
+        )
+        if pw.status_code not in (200, 204):
+            raise KeycloakProvisioningFout("Zetten tijdelijk wachtwoord mislukt.", pw.status_code)
+
+        # 3. Realm-rol toewijzen.
+        rol_resp = await client.get(f"{ADMIN_BASE}/roles/{rol}", headers=headers)
+        if rol_resp.status_code != 200:
+            raise KeycloakProvisioningFout(f"Realm-rol '{rol}' niet gevonden.", rol_resp.status_code)
+        rol_repr = rol_resp.json()
+        toewijs = await client.post(
+            f"{ADMIN_BASE}/users/{sub}/role-mappings/realm",
+            headers=headers,
+            json=[{"id": rol_repr["id"], "name": rol_repr["name"]}],
+        )
+        if toewijs.status_code not in (200, 204):
+            raise KeycloakProvisioningFout("Rol-toewijzing mislukt.", toewijs.status_code)
+
+    return sub
+
+
+async def deactiveer_keycloak_gebruiker(keycloak_sub: str) -> None:
+    """Zet `enabled=false` op het Keycloak-account (verwijdert niet). Best-effort:
+    fouten worden gelogd maar niet doorgegooid (cleanup-pad bij een mislukte commit)."""
+    try:
+        token = await get_provisioning_token()
+        async with httpx.AsyncClient() as client:
+            resp = await client.put(
+                f"{ADMIN_BASE}/users/{keycloak_sub}",
+                headers={"Authorization": f"Bearer {token}"},
+                json={"enabled": False},
+            )
+            if resp.status_code not in (200, 204):
+                logger.warning("KC-cleanup: deactiveren %s gaf status %s", keycloak_sub, resp.status_code)
+    except Exception:  # noqa: BLE001 — cleanup mag de oorspronkelijke fout nooit maskeren
+        logger.warning("KC-cleanup: deactiveren van %s mislukt", keycloak_sub)
+
+
 async def refresh_access_token(refresh_token: str) -> dict:
     """Use refresh token to obtain a new access token."""
     async with httpx.AsyncClient() as client:

@@ -221,3 +221,22 @@ async def registratie_conflict_handler(
         status_code=409,
         content={"fout": {"code": exc.code, "http_status": 409, "bericht": exc.bericht}},
     )
+
+
+class KeycloakNietBeschikbaar(Exception):
+    """ADR-029 — user-provisioning kon niet voltooien door een Keycloak-fout (Admin API
+    onbereikbaar of mislukt). Mapt op HTTP 503 — de DB-transactie is teruggerold (geen
+    half-aangemaakte gebruiker)."""
+
+    def __init__(self, bericht: str = "De gebruikersdienst is tijdelijk niet beschikbaar."):
+        super().__init__(bericht)
+        self.bericht = bericht
+
+
+async def keycloak_niet_beschikbaar_handler(
+    request: Request, exc: KeycloakNietBeschikbaar
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=503,
+        content={"fout": {"code": "KEYCLOAK_NIET_BESCHIKBAAR", "http_status": 503, "bericht": exc.bericht}},
+    )

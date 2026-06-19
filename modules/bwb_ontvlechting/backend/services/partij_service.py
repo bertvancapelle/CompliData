@@ -212,6 +212,42 @@ async def maak_aan(session: AsyncSession, tenant_id, data: PartijCreate) -> Part
     return obj
 
 
+async def maak_persoon_flush(
+    session: AsyncSession, tid: uuid.UUID, *, naam: str, email: str | None,
+    afdeling_id: uuid.UUID | None, functietitel: str | None,
+) -> Partij:
+    """ADR-029 — maak een persoon-partij aan binnen een GROtere transactie (flush, GEEN commit),
+    zodat de caller (gebruiker_service) bij een latere fout kan terugrollen. Hergebruikt dezelfde
+    lidmaatschap-/functietitel-validatie als `maak_aan`. De caller commit zelf.
+    `organisatie_id` wordt afgeleid: een afdeling impliceert een organisatie (de afdeling hoort
+    daarbij); zonder afdeling is `organisatie_id` verplicht — daarom valideert deze helper dat
+    `afdeling_id` gezet is (gebruiker-aanmaak hangt een persoon onder een afdeling)."""
+    if afdeling_id is None:
+        raise OngeldigeRegistratie(
+            "AFDELING_VERPLICHT", "Een gebruiker (persoon) hoort verplicht bij een afdeling."
+        )
+    # Leid de organisatie van de afdeling af (een persoon hoort bij dezelfde organisatie).
+    afdeling = (
+        await session.execute(select(Partij).where(Partij.id == afdeling_id, Partij.tenant_id == tid))
+    ).scalar_one_or_none()
+    if afdeling is None or afdeling.aard != PartijAard.organisatie_eenheid:
+        raise OngeldigeRegistratie("ONGELDIGE_AFDELING", "De afdeling moet een bestaande afdeling zijn.")
+    organisatie_id = afdeling.organisatie_id
+
+    await _valideer_lidmaatschap(session, tid, PartijAard.persoon, organisatie_id, afdeling_id)
+    _valideer_functietitel(PartijAard.persoon, functietitel)
+    elem = Element(tenant_id=tid, element_type=ElementType.partij)
+    session.add(elem)
+    await session.flush()
+    persoon = Partij(
+        id=elem.id, tenant_id=tid, aard=PartijAard.persoon, naam=naam, email=email,
+        functietitel=functietitel, organisatie_id=organisatie_id, afdeling_id=afdeling_id,
+    )
+    session.add(persoon)
+    await session.flush()
+    return persoon
+
+
 async def werk_bij(session: AsyncSession, tenant_id, partij_id, data: PartijUpdate) -> Partij:
     """Wijzig contactvelden/soort. `aard` is niet wijzigbaar (ontbreekt in PartijUpdate)."""
     obj = await haal_op(session, tenant_id, partij_id)

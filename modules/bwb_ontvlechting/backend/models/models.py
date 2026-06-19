@@ -853,6 +853,33 @@ class Roltoewijzing(Base, TenantMixin, TimestampMixin):
     rol: Mapped[str] = mapped_column(String(60), nullable=False)
 
 
+class GebruikerPersoon(Base, TenantMixin):
+    """ADR-029 — brug tussen de Keycloak-login (`keycloak_sub`) en de persoon-partij (ADR-024).
+
+    Tenant-scoped registratie-feit (FORCE RLS), géén ArchiMate-element. Eén login ↔ ten hoogste
+    één persoon per tenant en omgekeerd (twee UNIQUE-constraints). `persoon_id` is een composiet-FK
+    naar `element(tenant_id, id)` (CASCADE: de koppeling verdwijnt met de persoon). De koppeling
+    ontstaat bij gebruiker-aanmaak via KILARA (sub uit de Keycloak Admin API). Puur registratief —
+    geen engine-koppeling. Eigen `aangemaakt_op` (geen TimestampMixin: deze rij wordt niet gemuteerd)."""
+
+    __tablename__ = "gebruiker_persoon"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "keycloak_sub", name="uq_gebruiker_persoon_sub"),
+        UniqueConstraint("tenant_id", "persoon_id", name="uq_gebruiker_persoon_persoon"),
+        ForeignKeyConstraint(
+            ["tenant_id", "persoon_id"], ["element.tenant_id", "element.id"],
+            name="fk_gebruiker_persoon_element", ondelete="CASCADE",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = _pk()
+    keycloak_sub: Mapped[str] = mapped_column(String(255), nullable=False)
+    persoon_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    aangemaakt_op: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), nullable=False, server_default=text("now()")
+    )
+
+
 class KlaarverklaringStatus(str, Enum):
     klaar = "klaar"
     open = "open"

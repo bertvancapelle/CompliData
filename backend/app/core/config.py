@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     # Keycloak Admin API
     keycloak_admin_user: str = Field("admin", description="Keycloak admin gebruiker")
     keycloak_admin_password: str = Field("changeme_dev", description="Keycloak admin wachtwoord")
+    # ADR-029 — dedicated service-account voor user-provisioning (client-credentials, least-privilege)
+    kilara_provisioning_secret: str = Field("changeme_dev", description="Secret van de kilara-user-provisioning service-account")
 
     # RBAC (ADR-010) — optioneel voorvoegsel op Keycloak-rolnamen.
     # Leeg = canonieke namen (viewer/medewerker/beheerder/auditor) 1-op-1.

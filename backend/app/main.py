@@ -62,6 +62,7 @@ from routes.roltoewijzing import router as roltoewijzing_router  # noqa: E402
 from routes.architectuur import router as architectuur_router  # noqa: E402
 from routes.landschapskaart import router as landschapskaart_router  # noqa: E402
 from routes.component_klaarverklaring import router as klaarverklaring_router  # noqa: E402
+from routes.gebruikers import router as gebruikers_router  # noqa: E402
 from routes.plaatsingsignaal import router as plaatsingsignaal_router  # noqa: E402
 from routes.plateau import router as plateau_router  # noqa: E402
 from routes.work_package import router as work_package_router  # noqa: E402
@@ -70,6 +71,7 @@ from routes.gap import router as gap_router  # noqa: E402
 from services.errors import (  # noqa: E402
     ChecklistscoreConflict,
     ConfiguratieConflict,
+    KeycloakNietBeschikbaar,
     KoppelingConflict,
     NietGevonden,
     OngeldigAntwoord,
@@ -78,6 +80,7 @@ from services.errors import (  # noqa: E402
     RegistratieConflict,
     checklistscore_conflict_handler,
     configuratie_conflict_handler,
+    keycloak_niet_beschikbaar_handler,
     koppeling_conflict_handler,
     niet_gevonden_handler,
     ongeldig_antwoord_handler,
@@ -128,6 +131,7 @@ app.add_exception_handler(ConfiguratieConflict, configuratie_conflict_handler)
 # ADR-020 contractregister (fase B) — 422-/409-envelope met code op de raise-site
 app.add_exception_handler(OngeldigeRegistratie, ongeldige_registratie_handler)
 app.add_exception_handler(RegistratieConflict, registratie_conflict_handler)
+app.add_exception_handler(KeycloakNietBeschikbaar, keycloak_niet_beschikbaar_handler)
 
 # Routers
 app.include_router(health.router, prefix="/api/v1")
@@ -148,6 +152,7 @@ app.include_router(relatie_router, prefix="/api/v1")
 app.include_router(architectuur_router, prefix="/api/v1")
 app.include_router(landschapskaart_router, prefix="/api/v1")
 app.include_router(klaarverklaring_router, prefix="/api/v1")
+app.include_router(gebruikers_router, prefix="/api/v1")
 app.include_router(plaatsingsignaal_router, prefix="/api/v1")
 app.include_router(plateau_router, prefix="/api/v1")
 app.include_router(work_package_router, prefix="/api/v1")
