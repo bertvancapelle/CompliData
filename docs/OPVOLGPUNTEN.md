@@ -35,18 +35,28 @@ Tests: **810** backend + **440** frontend groen (52 files).
 
 **Volgende prioriteiten (DC013 → DC014)**:
 
-1. **ADR-027 — Categorie-klaarverklaring** (EERSTE PRIORITEIT). Ontworpen in DC011,
-   niet gebouwd. Vier onderdelen: expliciete menselijke aftekening per checklistcategorie +
-   rationale; voortgang per categorie op component; tenant-brede rapportage; werkverdeling ×
-   verantwoordelijke partij. Zie docs/adr/ADR-027_Categorie_klaarverklaring_voorstel.md.
+1. **ADR-027 — Component-klaarverklaring.** **Slice 1 GELAND op componentniveau** (DC014,
+   migratie 0036, commits d3353b5 → 4a66c17): niet-scorende klaarverklaring per component
+   (`component_klaarverklaring`, UNIQUE `(tenant_id, component_id)`), status klaar/open + verplichte
+   reden + server-gestempeld wie/wanneer, herroepbaar via audit, engine machinaal gescheiden.
+   **Per-categorie verlaten; onderdeel 4 (werkverdeling) vervallen.** Volgende: **slice 2 (UI** —
+   klaar verklaren/heropenen met reden + verloop tonen; `v-if` rol-computed), daarna slice 3
+   (tenant-brede voortgang + afwijkingssignaal "klaar verklaard terwijl nog open vragen").
+   Zie docs/adr/ADR-027_Categorie_klaarverklaring_voorstel.md (bijgewerkt naar componentniveau).
 
-2. **ADR-023 Fase F**: checklist-consistentiecheck technische plaatsing (E-8, deferred),
+2. **ADR-029 — Gebruiker-partij-koppeling + per-type gereedmeld-autorisatie** (geparkeerd voorstel,
+   fundament voor eerste implementatie). Brug Keycloak-login ↔ persoon-partij (ADR-024) + per-type
+   gereedmeld-recht aan de persoon + apart beheerder-autorisatierecht (gescheiden van PARTIJ) +
+   gescheiden verantwoordingsketen. Verfijnt het grove ADR-027-recht (per-persoon/per-type,
+   preventief); ADR-027 hangt er niet op. Zie docs/adr/ADR-029_Gebruiker_partij_autorisatie_voorstel.md.
+
+3. **ADR-023 Fase F**: checklist-consistentiecheck technische plaatsing (E-8, deferred),
    platform-beheer relatie-kenmerk-catalogus, RBAC/audit nieuwe entiteiten.
 
-3. **Landschapskaart server-side ego-subgraaf** (aparte slice): `?center=<id>&diepte=1|2`
+4. **Landschapskaart server-side ego-subgraaf** (aparte slice): `?center=<id>&diepte=1|2`
    voor een gereduceerde graaf i.p.v. de volledige tenant-graaf. Vereist nieuw endpoint-contract.
 
-4. **ADR-025 overige roadmap**: vervangingsrelatie, export PNG/PDF, pad-inzicht (kortste route
+5. **ADR-025 overige roadmap**: vervangingsrelatie, export PNG/PDF, pad-inzicht (kortste route
    A→B), clustering op domein.
 
 **Nog open uit eerdere sessies (doorgeschoven, ongewijzigd geldig)**:
