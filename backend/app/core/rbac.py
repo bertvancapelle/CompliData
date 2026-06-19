@@ -47,6 +47,8 @@ class Entiteit(str, Enum):
     GAP = "gap"
     # ADR-023 Fase F / F-2 — read-only cross-element laagprojectie (architectuuroverzicht).
     ARCHITECTUUR = "architectuur"
+    # ADR-027 — niet-scorende categorie-klaarverklaring (tenant-zijde, inhoud-entiteit).
+    KLAARVERKLARING = "klaarverklaring"
     AUDITLOG = "auditlog"
     GEBRUIKERSBEHEER = "gebruikersbeheer"
     TENANT_INSTELLINGEN = "tenant_instellingen"
@@ -111,6 +113,8 @@ PERMISSIES: dict[Entiteit, dict[Rol, frozenset[Actie]]] = {
     # ADR-023 Fase F / F-2: cross-element laagprojectie — read-only overzicht; élke
     # tenant-rol mag lezen (consistent met het feit dat alle rollen al elk element-type lezen).
     Entiteit.ARCHITECTUUR: dict(_ALLEEN_LEZEN),
+    # ADR-027 — categorie-klaarverklaring: inhoud-patroon (zelfde als PLATEAU/applicatie).
+    Entiteit.KLAARVERKLARING: dict(_INHOUD),
     # ADR-022 W1: de vragenset is tenant-eigendom — vraagbeheer is een tenant-
     # bevoegdheid (eigen entiteit, los van scoren via CHECKLISTSCORE). Inhoud-patroon:
     # Viewer L · Medewerker LAW · Beheerder LAWV · Auditor L. ("Verwijderen" =

@@ -59,6 +59,7 @@ from routes.relatie import router as relatie_router  # noqa: E402
 from routes.roltoewijzing import router as roltoewijzing_router  # noqa: E402
 from routes.architectuur import router as architectuur_router  # noqa: E402
 from routes.landschapskaart import router as landschapskaart_router  # noqa: E402
+from routes.categorie_klaarverklaring import router as klaarverklaring_router  # noqa: E402
 from routes.plaatsingsignaal import router as plaatsingsignaal_router  # noqa: E402
 from routes.plateau import router as plateau_router  # noqa: E402
 from routes.work_package import router as work_package_router  # noqa: E402
@@ -144,6 +145,7 @@ app.include_router(auditlog_router, prefix="/api/v1")
 app.include_router(relatie_router, prefix="/api/v1")
 app.include_router(architectuur_router, prefix="/api/v1")
 app.include_router(landschapskaart_router, prefix="/api/v1")
+app.include_router(klaarverklaring_router, prefix="/api/v1")
 app.include_router(plaatsingsignaal_router, prefix="/api/v1")
 app.include_router(plateau_router, prefix="/api/v1")
 app.include_router(work_package_router, prefix="/api/v1")
