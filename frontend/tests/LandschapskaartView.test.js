@@ -28,11 +28,11 @@ import LandschapskaartView from '@modules/bwb_ontvlechting/frontend/views/Landsc
 const GRAF = () => ({
   nodes: [
     { id: 'a1', naam: 'Zaaksysteem', element_type: 'applicatie', laag: 'application', lifecycle_status: 'migratieklaar', domein: 'applicatie', hosting_model: 'saas', leverancier_naam: 'SaaS BV', blokkades_open: 0 },
-    { id: 'a2', naam: 'Documentbeheer', element_type: 'applicatie', laag: 'application', lifecycle_status: 'geblokkeerd', domein: 'applicatie', hosting_model: 'on_premise', leverancier_naam: null, blokkades_open: 1 },
+    { id: 'a2', naam: 'Documentbeheer', element_type: 'applicatie', laag: 'application', lifecycle_status: 'geblokkeerd', domein: 'applicatie', hosting_model: 'on_premise', leverancier_naam: null, blokkades_open: 1, plateau_naam: 'Plateau 2026', plateau_dispositie: 'Migreren' },
     { id: 'p1', naam: 'Org', element_type: 'partij', laag: 'business', soort: 'organisatie', blokkades_open: 0 },
     { id: 'k1', naam: 'Contract X', element_type: 'contract', laag: 'business', blokkades_open: 0 },
   ],
-  edges: [{ bron_id: 'a1', doel_id: 'a2', relatietype: 'flow', label: 'koppeling', ring: 'applicaties' }],
+  edges: [{ bron_id: 'a1', doel_id: 'a2', relatietype: 'flow', label: 'koppeling', ring: 'applicaties', richting: 'eenrichting', protocol: 'rest' }],
 })
 
 async function mountView({ query = '' } = {}) {
@@ -138,6 +138,36 @@ describe('LandschapskaartView v3', () => {
     // de center-applicatie staat in de actieve set en is het detail.
     expect(w.find('[data-testid="lk-rechts"]').text()).toContain('Actieve set (1)')
     expect(w.find('[data-testid="lk-detail-naam"]').text()).toBe('Zaaksysteem')
+  })
+
+  it('v4: de diepte-toggle staat in het filterpaneel (ego) en is default 1 stap', async () => {
+    const { w } = await mountView()
+    expect(w.find('[data-testid="lk-diepte"]').exists()).toBe(true)
+    expect(w.find('[data-testid="lk-diepte-1"]').attributes('aria-pressed')).toBe('true')
+    expect(w.find('[data-testid="lk-diepte-2"]').attributes('aria-pressed')).toBe('false')
+  })
+
+  it('v4: 2 stappen herlaadt de grafdata met ?diepte=2', async () => {
+    const { w } = await mountView()
+    expect(api.landschapskaart.haalGrafdata).toHaveBeenLastCalledWith({ diepte: 1 }) // mount
+    await w.find('[data-testid="lk-diepte-2"]').trigger('click')
+    await flushPromises()
+    expect(api.landschapskaart.haalGrafdata).toHaveBeenLastCalledWith({ diepte: 2 })
+    expect(w.find('[data-testid="lk-diepte-2"]').attributes('aria-pressed')).toBe('true')
+  })
+
+  it('v4: het detail-paneel toont de migratieplaatsing (plateau + dispositie) indien gevuld', async () => {
+    const { w } = await mountView()
+    await w.find('[data-testid="lk-res-naam-a2"]').trigger('click') // a2 zit op een plateau
+    await flushPromises()
+    const plateau = w.find('[data-testid="lk-detail-plateau"]')
+    expect(plateau.exists()).toBe(true)
+    expect(plateau.text()).toContain('Plateau 2026')
+    expect(plateau.text()).toContain('Migreren')
+    // a1 zit niet op een plateau → geen migratieplaatsing-regel.
+    await w.find('[data-testid="lk-res-naam-a1"]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-testid="lk-detail-plateau"]').exists()).toBe(false)
   })
 
   it('toont het blokkade-icoon op een node met open blokkades', async () => {

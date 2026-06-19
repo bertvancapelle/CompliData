@@ -22,6 +22,9 @@ class LandschapsNode(BaseModel):
     leverancier_naam: str | None = None     # externe partij via roltoewijzing (technisch/contractbeheer)
     hosting_model: str | None = None        # hostingmodel van de component (enum-waarde)
     blokkades_open: int = 0                 # aantal niet-opgeloste blokkades (read-only telling)
+    # ADR-025 v4 — migratieplaatsing (eerste plateau via aggregation-lidmaatschap, met dispositie).
+    plateau_naam: str | None = None
+    plateau_dispositie: str | None = None
 
 
 class LandschapsEdge(BaseModel):
@@ -30,6 +33,9 @@ class LandschapsEdge(BaseModel):
     relatietype: str                        # flow / assignment / association / roltoewijzing
     label: str                              # leesbaar: koppeling / draait op / valt onder / <rol-naam>
     ring: str                               # applicaties / beheerorganisatie / contracten / infrastructuur
+    # ADR-025 v4 — koppelingsdetails op flow-edges (uit relatie.kenmerken).
+    richting: str | None = None             # eenrichting / tweerichting
+    protocol: str | None = None             # bv. rest / soap / bestand / database
 
 
 class LandschapskaartResponse(BaseModel):

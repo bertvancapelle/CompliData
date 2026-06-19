@@ -219,7 +219,7 @@ export const api = {
 
   // ADR-025 — Landschapskaart: volledige graaf (nodes + edges) in één read-only call.
   landschapskaart: {
-    haalGrafdata: () => request('/landschapskaart'),
+    haalGrafdata: ({ diepte } = {}) => request(`/landschapskaart${_query({ diepte })}`),
   },
 
   // ADR-023 Fase F (F-3 stap 2) — consistentie-signalering technische plaatsing (read-only).

@@ -52,6 +52,7 @@ const detailId = ref(null)
 const opbouwModus = ref(true) // geheel-model: true=insluiten (begint leeg), false=afpellen (begint vol)
 const kleurOpDomein = ref(false)
 const verbergOnverbonden = ref(false)
+const diepte = ref(1) // 1 = directe buren (ego); 2 = ook indirecte applicatie-buren (één hop dieper)
 
 const containerRef = ref(null)
 let cy = null
@@ -65,7 +66,7 @@ async function laad() {
   laden.value = true
   fout.value = null
   try {
-    const data = await api.landschapskaart.haalGrafdata()
+    const data = await api.landschapskaart.haalGrafdata({ diepte: diepte.value })
     nodes.value = data.nodes || []
     edges.value = data.edges || []
     const eersteApp = nodes.value.find(isApplicatie)
@@ -75,6 +76,13 @@ async function laad() {
   } finally {
     laden.value = false
   }
+}
+
+// Diepte-toggle: herlaad de grafdata (?diepte=…) én pas de stap-diepte client-side toe (ego-view).
+async function zetDiepte(d) {
+  if (diepte.value === d) return
+  diepte.value = d
+  await laad()
 }
 
 // Alleen applicaties zijn selecteerbaar via de zoeklijst/filters/actieve set; partijen,
@@ -105,22 +113,38 @@ function _matcht(n) {
 const gefilterdeNodes = computed(() => appNodes.value.filter(_matcht))
 
 // ── Zichtbare nodes/edges per modus ──────────────────────────────────────────────
-const egoBuren = computed(() => {
+// Directe buren van één node (via de actieve ringen).
+function _burenVan(id) {
+  const ids = new Set()
+  for (const e of edges.value) {
+    if (!ringAan.value.has(e.ring)) continue
+    if (e.bron_id === id) ids.add(e.doel_id)
+    else if (e.doel_id === id) ids.add(e.bron_id)
+  }
+  return ids
+}
+// Ego-zichtbare ids: centrum + 1e hop (alle ringen). Bij diepte 2 óók de 2e hop, maar uitsluitend
+// applicatie-nodes (partijen/contracten/infra blijven op diepte 1) — "indirecte applicatie-buren".
+const egoZichtbaarIds = computed(() => {
   const sp = egoStartId.value
   const ids = new Set()
-  if (sp) {
-    for (const e of edges.value) {
-      if (!ringAan.value.has(e.ring)) continue
-      if (e.bron_id === sp) ids.add(e.doel_id)
-      else if (e.doel_id === sp) ids.add(e.bron_id)
-    }
+  if (!sp) return ids
+  ids.add(sp)
+  const hop1 = _burenVan(sp)
+  hop1.forEach((id) => ids.add(id))
+  if (diepte.value >= 2) {
+    hop1.forEach((id) => {
+      if (!isApplicatie(nodePerId.value[id])) return
+      _burenVan(id).forEach((n2) => {
+        if (isApplicatie(nodePerId.value[n2])) ids.add(n2)
+      })
+    })
   }
   return ids
 })
 const zichtbareNodes = computed(() => {
   if (modus.value === 'ego') {
-    const sp = egoStartId.value
-    return nodes.value.filter((n) => n.id === sp || egoBuren.value.has(n.id))
+    return nodes.value.filter((n) => egoZichtbaarIds.value.has(n.id))
   }
   if (modus.value === 'impact') return nodes.value.filter(isApplicatie)
   // Geheel model toont standaard het VOLLEDIGE landschap (Fix 1: gebruiker verwacht alles te zien).
@@ -212,7 +236,13 @@ function _edgeData(e, i) {
     lc = grens ? '#ea580c' : beide ? '#2563eb' : '#cbd5e1'
     w = grens ? 3 : 2
   }
-  return { id: `e${i}-${e.bron_id}-${e.doel_id}-${e.relatietype}`, source: e.bron_id, target: e.doel_id, lc, w, ls }
+  // Koppelingsdetails op flow-edges: "koppeling · REST · →" (→ eenrichting, ↔ tweerichting).
+  let label = ''
+  if (e.ring === 'applicaties') {
+    const pijl = e.richting === 'tweerichting' ? '↔' : '→'
+    label = ['koppeling', e.protocol ? String(e.protocol).toUpperCase() : null, pijl].filter(Boolean).join(' · ')
+  }
+  return { id: `e${i}-${e.bron_id}-${e.doel_id}-${e.relatietype}`, source: e.bron_id, target: e.doel_id, lc, w, ls, label }
 }
 function _elementen() {
   let zn = zichtbareNodes.value
@@ -289,6 +319,9 @@ const CY_STYLE = [
     style: {
       width: 'data(w)', 'line-color': 'data(lc)', 'line-style': 'data(ls)',
       'target-arrow-shape': 'triangle', 'target-arrow-color': 'data(lc)', 'curve-style': 'bezier',
+      // Koppelingsdetail-label (flow-edges): protocol + richting.
+      label: 'data(label)', 'font-size': 7, color: 'var(--cd-color-text-muted)',
+      'text-rotation': 'autorotate', 'text-background-color': '#fff', 'text-background-opacity': 0.8,
     },
   },
   // Fix 3: visuele markering van de geselecteerde node (klik op set-item / node).
@@ -391,6 +424,15 @@ const typeLabel = (t) => humaniseer(t)
           <input type="checkbox" :checked="!opbouwModus" data-testid="lk-afpel-toggle" @change="opbouwModus = !opbouwModus" />Afpel-modus (begint vol)
         </label>
 
+        <!-- Diepte-toggle (ego + geheel): 1 stap = directe buren, 2 stappen = ook indirecte. -->
+        <div v-if="modus === 'ego' || modus === 'geheel'" class="flex flex-col gap-1" data-testid="lk-diepte">
+          <p class="font-semibold text-[length:var(--cd-text-sm)]">Diepte</p>
+          <div class="flex gap-1">
+            <button type="button" data-testid="lk-diepte-1" :aria-pressed="diepte === 1" :class="['rounded-[var(--cd-radius-btn)] px-[var(--cd-space-sm)] py-0.5 text-[length:var(--cd-text-xs)]', diepte === 1 ? 'bg-[var(--cd-color-primary)] text-white' : 'bg-[var(--cd-color-accent)]']" @click="zetDiepte(1)">1 stap (direct)</button>
+            <button type="button" data-testid="lk-diepte-2" :aria-pressed="diepte === 2" :class="['rounded-[var(--cd-radius-btn)] px-[var(--cd-space-sm)] py-0.5 text-[length:var(--cd-text-xs)]', diepte === 2 ? 'bg-[var(--cd-color-primary)] text-white' : 'bg-[var(--cd-color-accent)]']" @click="zetDiepte(2)">2 stappen</button>
+          </div>
+        </div>
+
         <template v-if="modus === 'ego'">
           <p class="font-semibold text-[length:var(--cd-text-sm)]">Ringen</p>
           <label v-for="r in RINGEN" :key="r" class="flex items-center gap-2 text-[length:var(--cd-text-sm)]">
@@ -459,6 +501,10 @@ const typeLabel = (t) => humaniseer(t)
             <p><span class="text-[var(--cd-color-text-muted)]">Lifecycle:</span> <span class="inline-block rounded px-1" :style="{ background: lcStyle(detailNode.lifecycle_status).bg }">{{ detailNode.lifecycle_status ? typeLabel(detailNode.lifecycle_status) : '—' }}</span></p>
             <p><span class="text-[var(--cd-color-text-muted)]">Blokkades:</span> {{ detailNode.blokkades_open }}</p>
             <p><span class="text-[var(--cd-color-text-muted)]">Koppelingen:</span> {{ detailKoppelingen }}</p>
+            <!-- ADR-025 v4 — migratieplaatsing (alleen tonen indien gevuld). -->
+            <p v-if="detailNode.plateau_naam" data-testid="lk-detail-plateau">
+              <span class="text-[var(--cd-color-text-muted)]">Plateau:</span> {{ detailNode.plateau_naam }}<template v-if="detailNode.plateau_dispositie"> · Dispositie: {{ detailNode.plateau_dispositie }}</template>
+            </p>
             <button v-if="isApplicatie(detailNode)" type="button" data-testid="lk-detail-open" class="mt-1 rounded-[var(--cd-radius-btn)] bg-[var(--cd-color-primary)] px-[var(--cd-space-sm)] py-1 text-white" @click="openApplicatie">Open applicatie →</button>
             <button type="button" :data-testid="`lk-detail-set`" class="rounded-[var(--cd-radius-btn)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-1" @click="toggleSet(detailNode.id)">{{ inSet(detailNode.id) ? '× Verwijder uit set' : '+ Voeg toe aan set' }}</button>
           </div>

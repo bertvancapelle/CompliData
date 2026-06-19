@@ -22,6 +22,7 @@ from models.models import (
     Contract,
     Partij,
     PartijAard,
+    Plateau,
     Relatie,
     RelatieKenmerkDimensie,
     Roltoewijzing,
@@ -49,7 +50,14 @@ def _val(x):
     return getattr(x, "value", x)
 
 
-async def haal_grafdata_op(session: AsyncSession, tenant_id) -> LandschapskaartResponse:
+async def haal_grafdata_op(session: AsyncSession, tenant_id, diepte: int = 1) -> LandschapskaartResponse:
+    """Volledige landschapsgraaf (nodes + edges) voor de tenant.
+
+    `diepte` is voorbereid voor een ego-gecentreerde sub-graaf (ADR-025 roadmap). Dit endpoint
+    levert bewust de **volledige** graaf (zie de route-docstring), dus `diepte` heeft hier nog géén
+    server-effect; de Landschapskaart past de stap-diepte client-side toe op de geladen graaf (de
+    ego-view kent al alle nodes/edges). De parameter is forward-compatibel meegenomen.
+    """
     tid = _tenant_uuid(tenant_id)
     typing = await comp_catalog.archimate_typing(session)  # {componenttype: {archimate_element, laag, aspect}}
     type_labels = await comp_catalog.labels(session, ComponentConfigDimensie.componenttype)
@@ -81,6 +89,23 @@ async def haal_grafdata_op(session: AsyncSession, tenant_id) -> LandschapskaartR
     ).all():
         lev_map.setdefault(r.object_id, r.naam)  # eerste gevonden externe partij
 
+    # Migratieplaatsing: eerste plateau per component via aggregation-lidmaatschap (bron=plateau →
+    # doel=component); dispositie uit de relatie-kenmerken. Read-only.
+    dispositie_labels = await rk_catalog.labels(session, RelatieKenmerkDimensie.dispositie)
+    plateau_map: dict[uuid.UUID, dict] = {}
+    for r in (
+        await session.execute(
+            select(Relatie.doel_id, Plateau.naam, Relatie.kenmerken)
+            .join(Plateau, Plateau.id == Relatie.bron_id)
+            .where(Relatie.tenant_id == tid, Relatie.relatietype == "aggregation")
+        )
+    ).all():
+        disp = (r.kenmerken or {}).get("dispositie")
+        plateau_map.setdefault(r.doel_id, {
+            "naam": r.naam,
+            "dispositie": rk_catalog.resolveer_een(disp, dispositie_labels) if disp else None,
+        })
+
     nodes: list[LandschapsNode] = []
     component_ids: set[uuid.UUID] = set()
     contract_ids: set[uuid.UUID] = set()
@@ -99,6 +124,7 @@ async def haal_grafdata_op(session: AsyncSession, tenant_id) -> LandschapskaartR
     for r in comp_rijen:
         component_ids.add(r.id)
         t = typing.get(r.componenttype, {})
+        plaatsing = plateau_map.get(r.id, {})
         nodes.append(LandschapsNode(
             id=r.id, naam=r.naam, element_type=r.componenttype,
             laag=t.get("laag"), archimate_element=t.get("archimate_element"),
@@ -107,6 +133,8 @@ async def haal_grafdata_op(session: AsyncSession, tenant_id) -> LandschapskaartR
             leverancier_naam=lev_map.get(r.id),
             hosting_model=_val(r.hostingmodel),
             blokkades_open=blok_map.get(r.id, 0),
+            plateau_naam=plaatsing.get("naam"),
+            plateau_dispositie=plaatsing.get("dispositie"),
         ))
 
     # ── Partij-nodes — business-laag, aard als `soort` ──
@@ -139,14 +167,18 @@ async def haal_grafdata_op(session: AsyncSession, tenant_id) -> LandschapskaartR
     # ── Ringen 1–3 — uit het relatiemodel (membership-classificatie op de id-sets) ──
     rel_rijen = (
         await session.execute(
-            select(Relatie.bron_id, Relatie.doel_id, Relatie.relatietype).where(Relatie.tenant_id == tid)
+            select(Relatie.bron_id, Relatie.doel_id, Relatie.relatietype, Relatie.kenmerken).where(
+                Relatie.tenant_id == tid
+            )
         )
     ).all()
     for r in rel_rijen:
         rt = _val(r.relatietype)
         if rt == "flow" and r.bron_id in component_ids and r.doel_id in component_ids:
+            k = r.kenmerken or {}
             edges.append(LandschapsEdge(bron_id=r.bron_id, doel_id=r.doel_id,
-                                        relatietype="flow", label="koppeling", ring="applicaties"))
+                                        relatietype="flow", label="koppeling", ring="applicaties",
+                                        richting=k.get("richting"), protocol=k.get("protocol")))
         elif rt == "assignment" and r.doel_id in component_ids:
             # assignment = host → gehoste component (oriëntatie bron=host, doel=component).
             edges.append(LandschapsEdge(bron_id=r.bron_id, doel_id=r.doel_id,

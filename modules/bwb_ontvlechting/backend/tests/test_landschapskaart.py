@@ -40,6 +40,14 @@ def test_landschapsnode_heeft_v3_velden():
     assert n.blokkades_open == 0 and n.hosting_model is None
 
 
+def test_landschaps_v4_velden_in_schema():
+    """ADR-025 v4 — edge-koppelingsdetails + node-migratieplaatsing in het schema."""
+    from schemas.landschapskaart import LandschapsEdge, LandschapsNode
+
+    assert {"richting", "protocol"} <= set(LandschapsEdge.model_fields)
+    assert {"plateau_naam", "plateau_dispositie"} <= set(LandschapsNode.model_fields)
+
+
 def test_landschapskaart_geen_schrijfpad_in_bron():
     """Read-only: de servicebron bevat geen schrijf-operaties op de sessie."""
     import inspect
@@ -107,7 +115,7 @@ def test_landschapskaart_graf_vier_ringen_en_lifecycle_live():
 
     from models.models import (
         Contract, ContractType, Element, ElementType, HostingModel, Migratiepad,
-        NiveauEnum, Partij, PartijAard, Relatie, RelatieKenmerkDimensie, Roltoewijzing,
+        NiveauEnum, Partij, PartijAard, Plateau, Relatie, RelatieKenmerkDimensie, Roltoewijzing,
     )
     from schemas.applicatie import ApplicatieCreate
     from schemas.component import ComponentCreate
@@ -136,17 +144,28 @@ def test_landschapskaart_graf_vier_ringen_en_lifecycle_live():
                            contracttype=ContractType.los_contract, contractnaam="WT-LK-Contract"))
             await s.flush()
 
-            # Vier ringen: flow (app→db), assignment (db host→app), association (app→contract),
-            # roltoewijzing (org→app).
-            s.add(Relatie(tenant_id=tid, bron_id=app_id, doel_id=comp_id, relatietype="flow"))
+            # Plateau + aggregation-lidmaatschap (bron=plateau → doel=app) met dispositie.
+            pe = Element(tenant_id=tid, element_type=ElementType.plateau); s.add(pe); await s.flush()
+            s.add(Plateau(id=pe.id, tenant_id=tid, naam="WT-LK-Plateau")); await s.flush()
+
+            # Vier ringen: flow (app→db, met kenmerken), assignment (db host→app), association
+            # (app→contract), roltoewijzing (org→app) + aggregation (plateau→app).
+            s.add(Relatie(tenant_id=tid, bron_id=app_id, doel_id=comp_id, relatietype="flow",
+                          kenmerken={"richting": "eenrichting", "protocol": "rest"}))
             s.add(Relatie(tenant_id=tid, bron_id=comp_id, doel_id=app_id, relatietype="assignment"))
             s.add(Relatie(tenant_id=tid, bron_id=app_id, doel_id=ce.id, relatietype="association"))
+            s.add(Relatie(tenant_id=tid, bron_id=pe.id, doel_id=app_id, relatietype="aggregation",
+                          kenmerken={"dispositie": "migreren"}))
             rol = sorted(await rk.actieve_sleutels(s, RelatieKenmerkDimensie.beheerrol))[0]
             s.add(Roltoewijzing(tenant_id=tid, partij_id=oe.id, object_id=app_id, rol=rol))
             await s.commit()
-            ids += [ce.id, oe.id]
+            ids += [ce.id, oe.id, pe.id]
 
             graf = await svc.haal_grafdata_op(s, _TID)
+            # `diepte` is server-side een no-op (volledige graaf; stap-diepte is client-side) —
+            # diepte=2 levert dezelfde nodes als diepte=1.
+            graf2 = await svc.haal_grafdata_op(s, _TID, diepte=2)
+            assert len(graf2.nodes) == len(graf.nodes)
             return graf, app_id, comp_id, oe.id, ce.id
         finally:
             # Contract eerst (leverancier-RESTRICT), dan de rest.
@@ -164,6 +183,12 @@ def test_landschapskaart_graf_vier_ringen_en_lifecycle_live():
     assert node_per_id[app_id].hosting_model == "saas"
     assert node_per_id[app_id].domein  # componenttype-label gevuld
     assert node_per_id[app_id].blokkades_open == 0
+    # v4 — migratieplaatsing op de applicatie-node (eerste plateau via aggregation + dispositie-label).
+    assert node_per_id[app_id].plateau_naam == "WT-LK-Plateau"
+    assert node_per_id[app_id].plateau_dispositie == "Migreren"
+    # v4 — koppelingsdetails op de flow-edge (uit kenmerken).
+    flow = [e for e in graf.edges if e.ring == "applicaties" and e.bron_id == app_id and e.doel_id == comp_id]
+    assert flow and flow[0].richting == "eenrichting" and flow[0].protocol == "rest"
     assert node_per_id[org_id].element_type == "partij" and node_per_id[org_id].soort == "organisatie"
     assert node_per_id[org_id].laag == "business"
     assert node_per_id[contract_id].element_type == "contract"

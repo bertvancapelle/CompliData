@@ -7,7 +7,7 @@ Levert de volledige landschapsgraaf (nodes + edges) in één call, geguard op
 één respons (een graaf is pas betekenisvol als geheel; deelpagina's leveren geen zinvolle
 sub-graaf). Read-only; geen schema/migratie; engine onaangeroerd.
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.rbac import Actie, Entiteit
@@ -22,8 +22,10 @@ router = APIRouter(prefix="/landschapskaart", tags=["bwb:landschapskaart"])
 
 @router.get("", response_model=LandschapskaartResponse)
 async def haal_landschapskaart(
+    diepte: int = Query(1, ge=1, le=2, description="Stap-diepte (1=direct, 2=indirect). Voorbereid; "
+                        "de stap-diepte wordt nu client-side op de volledige graaf toegepast."),
     user: AuthenticatedUser = Depends(vereist_permissie(Entiteit.ARCHITECTUUR, Actie.LEZEN)),
     session: AsyncSession = Depends(get_tenant_session),
 ):
     """Volledige landschapsgraaf (nodes + edges) voor de tenant. Geen paginering (bewust)."""
-    return await svc.haal_grafdata_op(session, user.tenant_id)
+    return await svc.haal_grafdata_op(session, user.tenant_id, diepte=diepte)
