@@ -2,7 +2,7 @@
 name: complidata-security
 description: Security-patronen voor CompliData (Zero Trust, httpOnly cookies, NCSC, RLS). Beschrijft de werkelijke V001-staat.
 stack: Keycloak 24.x, FastAPI middleware, Redis, PostgreSQL RLS
-bijgewerkt: V004
+bijgewerkt: V016
 ---
 
 # CompliData Security Skill
@@ -228,3 +228,33 @@ is onjuist — openstaand vervolgpunt.)
   `platformoperator-test`, géén `tenant_id`, wachtwoord `changeme_dev`). [CD032/CD033]
 - **401 al canoniek (OP-7, CD005)**: alle 401 → `{"fout":{"code":"NIET_GEAUTHENTICEERD",…}}` (handler +
   `_fout`); de frontend keyt op de **statuscode** en leest `body.fout.code`. 422 blijft native. [CD037]
+
+## V016-patronen (DC015 — ADR-029 gebruikersbeheer + identiteit)
+
+- **Keycloak Admin API-provisioning via dedicated service-account (least-privilege).**
+  Gebruikersaanmaak loopt via een eigen Keycloak-client `kilara-user-provisioning`
+  (`serviceAccountsEnabled`, client-credentials-grant), met **uitsluitend** de
+  `realm-management`-rollen `manage-users` + `view-users` — niet de brede master-admin-creds.
+  Structureel consistent met de cd_app/cd_platform/cd_admin-least-privilege-driedeling.
+  Realm-export-patroon (Keycloak 24): client + synthetische `users`-entry
+  `{username:"service-account-<client>", serviceAccountClientId, clientRoles:{"realm-management":
+  ["manage-users","view-users"]}}`. **Verplichte live-verificatie** na `down -v && up -d`:
+  client-credentials-token ophalen + `GET /admin/realms/<realm>/users` → 200 (niet 403) bewijst
+  dat de rolmapping correct is geïmporteerd (een stille mismatch geeft pas bij provisioning een
+  403). `get_provisioning_token()` in `app/core/keycloak.py`; secret is dev-default `changeme_dev`
+  (productie-hardening + MFA hoort bij realm-hardening/OP-28).
+- **Server-gegenereerd tijdelijk wachtwoord.** Bij gebruikersaanmaak genereert de backend een
+  sterk wachtwoord (`secrets`, ≥16, mix), zet `UPDATE_PASSWORD` als Keycloak required action, en
+  geeft het **eenmalig** terug in de 201-respons. Nooit loggen, nergens persisteren; geen
+  wachtwoordveld in de request- of read-schema's.
+- **Niet-transactionele Keycloak-orphan-cleanup.** Bij de flow persoon-flush → KC-create →
+  koppelrij → commit: faalt KC-create → DB-rollback (geen orphan). Faalt de commit ná KC-create →
+  best-effort `deactiveer_keycloak_gebruiker(sub)` in de `except`, fout terug als 503
+  (`KEYCLOAK_NIET_BESCHIKBAAR`). KC en DB zijn niet transactioneel; deactiveer is de compensatie.
+- **Toegang-volgt-object (RBAC-patroon, naast de centrale entiteit-gate).** De objecthistorie
+  (`GET /objecthistorie/{type}/{id}`) is géén `AUDITLOG`-gegate scherm (dat blijft beheerder/
+  auditor-only). In plaats daarvan: de toegang volgt het object — resolveer het object eerst via
+  `<type>_service.haal_op` (404 no-leak buiten tenant), check dán de **leespermissie van dát
+  objecttype** (`COMPONENT.LEZEN`, `CONTRACT.LEZEN`, …). Mag je het object zien, dan zie je z'n
+  geschiedenis. Sub-/schermloze entiteiten krijgen geen eigen ingang (verschijnen via hun ouder);
+  nooit een type opnemen met een gegokte permissie — bij twijfel STOP.

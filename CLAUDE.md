@@ -479,11 +479,11 @@ Pas dan: klaar.
 
 | Veld | Waarde |
 |------|--------|
-| Build | V015 |
+| Build | V016 |
 | Datum | June 2026 |
-| Commit | 6ffd7e6 |
-| Tests | 833 backend + 474 frontend groen (52→54 files) |
-| TST-rapport | TST-V015-Validatierapport.md |
-| Kritieke bevindingen | 0 |
+| Commit | a4fd048 |
+| Tests | 856 backend + 500 frontend groen |
+| TST-rapport | TST-V016-Validatierapport.md |
+| Kritieke bevindingen | 0 kritiek |
 
 <!-- BOUWSTATUS_END -->

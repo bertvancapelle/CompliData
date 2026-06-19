@@ -2,7 +2,7 @@
 name: complidata-frontend
 description: Frontend-patronen voor CompliData (Vue 3, PrimeVue Unstyled, Tailwind v4). Beschrijft de werkelijke V003-staat (login + app-shell + module-views).
 stack: Vue 3, Vite, PrimeVue Unstyled, Tailwind CSS v4, Pinia, vue-router, vitest
-bijgewerkt: V015
+bijgewerkt: V016
 ---
 
 # CompliData Frontend Skill
@@ -413,3 +413,23 @@ Vang een toch-403 netjes af (Toast). Nooit tokens in `localStorage` (httpOnly).
   chip** (zien + wissen) i.p.v. een dropdown wanneer de filter puur van een doorklik komt.
   Bewijs het end-to-end met een component-test (route-query → de filter belandt in de api-call;
   wissen → de filter verdwijnt uit de volgende call) — een SQL-/service-test bewijst dit niet.
+
+## V016-patronen (DC015 — gebruikersbeheer + objecthistorie)
+
+- **Eenmalig-geheim-weergavepatroon.** Na een aanmaak die een eenmalig geheim teruggeeft
+  (server-gegenereerd wachtwoord): toon het in een **tweede dialog-staat** met kopieerknop
+  (`navigator.clipboard`) + begeleidende tekst ("eenmalig; bij eerste login wijzigen"); leeft
+  alleen in component-state, gewist bij sluiten, nooit in store/localStorage. "Klaar" sluit +
+  herlaadt de lijst.
+- **Herbruikbaar objecthistorie-paneel (`ObjectHistoriePaneel.vue`).** Props
+  `entiteitType`/`entiteitId`; 'i'-knop (`aria-label="Toon geschiedenis"`) opent een Dialog,
+  lazy-laad bij openen, keyset "Meer laden", per-record diff "veld: oud → nieuw" met NL-veldlabels
+  (`VELD_LABELS` in labels.js + humanize-fallback). **Geen rol-gating op de knop** — toegang volgt
+  het object (backend handhaaft). Geplaatst op alle detailschermen met een object-read +
+  leespermissie (component/applicatie/contract/partij/plateau/work_package/deliverable/gap).
+  `*_id`-velden tonen een leesbaar label; de waarde blijft de gelogde id (id→naam-resolutie per
+  veld bewust buiten scope).
+- **Beheer-scherm gegate op rol-affordance.** Gebruikersbeheer-nav + -knoppen via
+  `hasRole('beheerder')`; audit-view-nav via `hasRole('beheerder','auditor')`. Affordance —
+  backend blijft de handhaver. Nieuwe gegate named-route → registreer 'm in BEIDE
+  AppLayout-testrouters (`AppLayout.test.js` + `AppLayout.gating.test.js`), anders faalt de mount.

@@ -2,7 +2,7 @@
 name: complidata-backend
 description: Backend-patronen voor CompliData (FastAPI + SQLAlchemy + Alembic). Beschrijft de werkelijke V001-staat.
 stack: Python 3.12, FastAPI, Pydantic v2, SQLAlchemy asyncio, Alembic, PostgreSQL 16
-bijgewerkt: V015
+bijgewerkt: V016
 ---
 
 # CompliData Backend Skill
@@ -366,3 +366,31 @@ ongedefinieerde methodes → 405.
   `dashboard_service.haal_dashboard` + `DashboardRead` (RLS-scoped `func.count()` + join, zoals de
   readiness/blokkade-tellingen). Een nieuwe lijst-filterparam staat in de route-allowlist
   (`Query(..., pattern=...)`) én wordt doorgegeven aan `svc.lijst`; engine ongemoeid.
+
+## V016-patronen (DC015 — actor-identiteit & resolutie)
+
+- **Sub als stabiele actor-sleutel, email als fallback-waarde (beide bewaard).** Waar eerder
+  `actor_email or actor_sub` werd gedenormaliseerd: stempel voortaan de stabiele Keycloak-`sub`
+  als sleutel **plus** de email als fallback-waarde. Klaarverklaring: aparte kolom
+  `verklaard_door_sub` (sleutel) naast `verklaard_door` (= email-fallback, achterwaarts
+  compatibel). Plateau-bevestiging (jsonb-kenmerk): `{"sub":…, "email":…}` i.p.v. kale string;
+  historische kale strings blijven leesbaar (vorm-detectie). De audit-trail droeg de pure `sub` al.
+- **Gedeelde naam-resolutie-helper (`services/actor_resolutie.py`).** `resolveer_naam(session,
+  tid, sub, email)` + batch `resolveer_namen(session, tid, {subs})` (N+1-vrij: één query per
+  pagina/lijst) + `pak_sub_email(waarde)` (normaliseert dict-vorm vs. historische string). Drie
+  gevallen: gekoppelde sub → `persoon.naam` (join `gebruiker_persoon` → Partij); ongekoppelde sub
+  (beheerder) → email; historische rij (geen sub) → email. Nooit leeg. Naam wordt read-side als
+  **transient attribuut** gezet (`verklaard_door_naam`/`bevestigd_door_naam`/`actor_naam`),
+  conform het `eigenaar_organisatie_naam`-patroon. **Engine-import-afwezigheid** geborgd.
+- **Naam-filter = naam→sub vóór de query.** Een audit-filter op naam: zoek `Partij`(persoon)
+  `naam ILIKE %frag%` (ge-escapet, tenant-scoped) → join `gebruiker_persoon` → `actor_sub IN
+  (subs)`. Geen match → lege lijst (geen fout). AND-combineerbaar met het exacte actor(sub)-filter.
+  Search-semantiek (fragment), dus UI = vrije tekst, niet ZoekSelect-pick.
+- **gebruiker_persoon-koppeltabel (Fase 2).** Tenant-scoped, FORCE RLS, `keycloak_sub` UNIQUE +
+  `persoon_id` UNIQUE per tenant, composiet-FK `(tenant_id, persoon_id) → element` ON DELETE
+  CASCADE, index op `(tenant_id, keycloak_sub)`. De brug login↔persoon; ontstaat bij aanmaak
+  (geen handmatige koppelstap). In `AUDIT_TENANT_ENTITEITEN`.
+- **Objecthistorie hergebruikt de audit-leeslogica.** `GET /objecthistorie/{type}/{id}` voegt
+  geen tweede audit-mechanisme toe: het roept `auditlog_service.lijst` met `component_id` (rijk
+  pad incl. afgeleide records via jsonb-diff) voor component/applicatie, of het generieke
+  `entiteit_id`-filter voor de overige types (plateau/work_package/deliverable/gap/contract/partij).

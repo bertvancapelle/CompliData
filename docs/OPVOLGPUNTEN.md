@@ -7,6 +7,51 @@ Bron: sessie 2–3 (P1–P5, OP-9 t/m OP-12). Status per punt expliciet vermeld.
 
 ## OPEN
 
+### Stand V016 (sessie-afsluiting DC015, 2026-06-20)
+
+Build **V016**, migratie head **`0038`**. Tests: **856** backend + **500** frontend groen
+(1 pre-existing env-auth-test, OP-30). Deze sessie: ADR-029 (gebruikersbeheer als primaire ingang)
+grotendeels gerealiseerd + objecthistorie ('i'-knop).
+
+**AF deze sessie (DC015)**:
+- Drie kleine opvolgpunten (DC014): dode `<dl>`-rijen op ApplicatieDetail + ComponentDetail
+  opgeruimd; `MigratiegereedheidSectie` ook op ComponentDetail; CLAUDE.md interactie-secties
+  geconsolideerd.
+- **ADR-029 herschreven** (gebruikersbeheer als primaire ingang; KILARA als bron van waarheid).
+- **ADR-029 Fase 2** — backend gebruikersaanmaak: `gebruiker_persoon`-koppeltabel (migratie 0037),
+  Keycloak Admin API-provisioning via dedicated service-account `kilara-user-provisioning`
+  (least-privilege manage-users/view-users), server-gegenereerd eenmalig wachtwoord,
+  orphan-cleanup. Live-geverifieerd na realm-herimport.
+- **ADR-029 Fase 4** — gebruikersbeheer-scherm (beheerder-only nav + lijst + aanmaak-dialog +
+  eenmalig-wachtwoord-weergave).
+- **ADR-029 Fase 3b** — sub-stempeling: `verklaard_door_sub` (klaarverklaring, migratie 0038) +
+  plateau `bevestigd_door` {sub,email}; gedeelde `actor_resolutie`-helper (sub→naam, e-mail-fallback);
+  read-side `verklaard_door_naam`/`bevestigd_door_naam`. ADR-027 wijzigingshistorie bijgewerkt.
+- **ADR-029 Fase 3a** — audit-view + `actor_naam`-batchverrijking + actie-filter + naam-filter
+  (naam→sub).
+- **Objecthistorie** — `GET /objecthistorie/{type}/{id}` (toegang-volgt-object, geen AUDITLOG-gate)
+  + herbruikbaar `ObjectHistoriePaneel` ('i'-knop) op 8 detailschermen, per-record diff met
+  NL-veldlabels, "Meer laden".
+- **Dev-seed-fix**: `dev_seed_testdata.py` crashte bij reseed op de met migratie 0034 verwijderde
+  `eigenaar_naam`/`leverancier`-kwargs (pre-existing DC015-vondst).
+
+**Volgende prioriteiten (DC015 → DC016)**:
+1. **ADR-029 Fase 5** — `gereedmeld_recht` (per-type persoon × componenttype) + per-type check in
+   de klaarverklaring-service. **Laatste open ADR-029-fase.**
+2. **ADR-023 Fase F-rest** — checklist-consistentiecheck technische plaatsing (E-8) + resterende
+   RBAC/audit nieuwe entiteiten.
+3. **Landschapskaart server-side ego-subgraaf** (`?center=<id>&diepte=1|2`).
+4. **KILARA codebase-rename** (geparkeerd, DC013).
+
+**Nieuwe opvolgpunten (DC015)**:
+- **Dode backend-proxy-properties** `Applicatie.eigenaar_naam` / `.leverancier` (`models.py:382/386`)
+  lezen een sinds migratie 0034 niet-bestaande kolom — inert (niet in Read-schema's), opruimbaar in
+  een aparte backend-taak.
+- **Naam-filter audit-view** eventueel als ZoekSelect-op-personen (nu vrije-tekst; bewuste
+  search-semantiek — alleen als de praktijk een pick verkiest).
+- **id→naam-resolutie in objecthistorie-diff** (`*_id`-velden tonen nu de gelogde id-waarde;
+  per-veld id→naam zou een lookup per type vergen).
+
 ### Stand V014 (sessie-afsluiting DC013, 2026-06-19)
 
 Build **V014**, migratie head **`0034`**.
