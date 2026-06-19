@@ -1,54 +1,36 @@
 <script setup>
 /**
- * LandschapskaartView — interactieve, read-only grafische landschapsweergave (ADR-025).
+ * LandschapskaartView v3 — interactieve landschapskaart op Cytoscape.js (ADR-025).
  *
- * Hybride layout per modus:
- *  - Ego-view: SVG full-bleed; filters zweven als inklapbaar overlay-paneel (Google-Maps-stijl),
- *    modus-toggle als overlay bovenaan-gecentreerd.
- *  - Impact-view: SVG vult de resterende breedte (flex-1); een VASTE rechterzijbalk (altijd
- *    zichtbaar) draagt de modus-toggle, migratieset-selectie, laagfilters en de lifecycle-legenda.
- *
- * De viewBox volgt de werkelijke canvasbreedte (ResizeObserver op de canvas-div, niet de wrapper),
- * zodat de graaf in beide modi correct full-bleed rendert. Lifecycle-statuskleur = node-achtergrond;
- * ringkleur = rand. Leunt op GET /landschapskaart. Geen engine-aanraking (read-only).
+ * Drie modi (Ego / Impact / Geheel model), zoeken + vier filters (domein/leverancier/hosting/
+ * lifecycle), actieve migratieset, node-detail met doorklik naar het applicatie-detail, en een
+ * lifecycle-legenda. De Cytoscape-graaf is een afgeleide van de reactieve state (tekenGraaf());
+ * álle panelen (zoek/resultaten/set/detail/legenda/samenvatting) zijn pure Vue-state, zodat de
+ * UI testbaar is met een gemockte cytoscape. Read-only; geen engine-aanraking.
  */
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRouter } from '@/composables/router'
+import cytoscape from '@/composables/cytoscape'
 import { api } from '@/api'
 import { humaniseer } from '../labels'
 
-// Lifecycle → node-achtergrond (spec ADR-025).
-const LIFECYCLE_KLEUR = {
-  concept: '#f1f5f9',
-  in_inventarisatie: '#dbeafe',
-  geblokkeerd: '#fee2e2',
-  migratieklaar: '#dcfce7',
-}
-const NEUTRAAL = '#f8fafc'
-function lifecycleKleur(status) {
-  return LIFECYCLE_KLEUR[status] || NEUTRAAL
-}
+const router = useRouter()
 
-// Ring → randkleur.
-const RING_KLEUR = {
-  applicaties: '#2563eb',
-  beheerorganisatie: '#7c3aed',
-  contracten: '#d97706',
-  infrastructuur: '#0891b2',
+// Lifecycle → kleur (node-achtergrond + rand).
+const LC_STYLE = {
+  migratieklaar: { bg: '#dcfce7', border: '#22c55e' },
+  geblokkeerd: { bg: '#fee2e2', border: '#ef4444' },
+  in_inventarisatie: { bg: '#dbeafe', border: '#3b82f6' },
+  concept: { bg: '#f1f5f9', border: '#94a3b8' },
+  null: { bg: '#f8fafc', border: '#cbd5e1' },
 }
+const lcStyle = (s) => LC_STYLE[s] || LC_STYLE.null
+const LIFECYCLE_OPTIES = ['migratieklaar', 'in_inventarisatie', 'geblokkeerd', 'concept']
 const RINGEN = ['applicaties', 'beheerorganisatie', 'contracten', 'infrastructuur']
-const LAGEN = ['business', 'application', 'technology']
-
-// Impact-kleuren (in-set / raakvlak) — gedeeld door de canvas-nodes én de legenda.
-const INSET_KLEUR = '#1e3a8a'
-const RAAKVLAK_KLEUR = '#fed7aa'
-// Lifecycle-legenda (rechterzijbalk, impact-view).
-const LEGENDA = [
-  { label: 'migratieklaar', kleur: LIFECYCLE_KLEUR.migratieklaar },
-  { label: 'geblokkeerd', kleur: LIFECYCLE_KLEUR.geblokkeerd },
-  { label: 'in_inventarisatie', kleur: LIFECYCLE_KLEUR.in_inventarisatie },
-  { label: 'concept', kleur: LIFECYCLE_KLEUR.concept },
-  { label: 'geen profiel', kleur: NEUTRAAL },
-]
+const INSET = { bg: '#1e3a8a', border: '#1e3a8a' }
+const RAAKVLAK = { bg: '#fed7aa', border: '#ea580c' }
+// Deterministische domeinkleuren (border in "kleur op domein"-modus).
+const DOMEIN_PALET = ['#2563eb', '#d97706', '#0891b2', '#7c3aed', '#16a34a', '#db2777', '#65a30d', '#dc2626']
 
 // ── State ───────────────────────────────────────────────────────────────────────
 const nodes = ref([])
@@ -56,35 +38,26 @@ const edges = ref([])
 const laden = ref(true)
 const fout = ref(null)
 
-const modus = ref('ego') // 'ego' | 'impact'
-const filtersOpen = ref(false) // ego-overlay: standaard ingeklapt
+const modus = ref('ego') // 'ego' | 'impact' | 'geheel'
+const zoekterm = ref('')
+const filterDomein = ref('')
+const filterLeverancier = ref('')
+const filterHosting = ref('')
+const filterLifecycle = ref('')
 const ringAan = ref(new Set(RINGEN))
-const laagAan = ref(new Set(LAGEN))
-const startpuntId = ref(null)
-const migratieSet = ref(new Set())
-const hover = ref(null) // { naam, type, lifecycle, x, y }
+const actieveSet = ref(new Set())
+const egoStartId = ref(null)
+const detailId = ref(null)
+const opbouwModus = ref(true) // geheel-model: true=insluiten (begint leeg), false=afpellen (begint vol)
+const kleurOpDomein = ref(false)
+const verbergOnverbonden = ref(false)
 
-// ── Canvas-afmeting via ResizeObserver op de CANVAS-div (flex-1) ─────────────────
-const canvasRef = ref(null)
-const canvasW = ref(800)
-const canvasH = ref(600)
-const CX = computed(() => canvasW.value / 2)
-const CY = computed(() => canvasH.value / 2)
-let resizeObserver = null
+const containerRef = ref(null)
+let cy = null
 
-onMounted(() => {
-  laad()
-  if (typeof ResizeObserver !== 'undefined') {
-    resizeObserver = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        if (entry.contentRect.width > 0) canvasW.value = entry.contentRect.width
-        if (entry.contentRect.height > 0) canvasH.value = entry.contentRect.height
-      }
-    })
-    if (canvasRef.value) resizeObserver.observe(canvasRef.value)
-  }
-})
-onUnmounted(() => resizeObserver?.disconnect())
+const nodePerId = computed(() => Object.fromEntries(nodes.value.map((n) => [n.id, n])))
+const heeftData = computed(() => nodes.value.length > 0)
+const isApplicatie = (n) => n?.element_type === 'applicatie'
 
 // ── Data laden ────────────────────────────────────────────────────────────────
 async function laad() {
@@ -94,8 +67,8 @@ async function laad() {
     const data = await api.landschapskaart.haalGrafdata()
     nodes.value = data.nodes || []
     edges.value = data.edges || []
-    const eersteApp = nodes.value.find((n) => n.element_type === 'applicatie')
-    startpuntId.value = eersteApp ? eersteApp.id : null
+    const eersteApp = nodes.value.find(isApplicatie)
+    egoStartId.value = eersteApp ? eersteApp.id : null
   } catch (e) {
     fout.value = e?.message || 'Laden van de landschapskaart mislukt.'
   } finally {
@@ -103,293 +76,336 @@ async function laad() {
   }
 }
 
-const nodePerId = computed(() => Object.fromEntries(nodes.value.map((n) => [n.id, n])))
-const applicaties = computed(() => nodes.value.filter((n) => n.element_type === 'applicatie'))
-const heeftData = computed(() => nodes.value.length > 0)
+// ── Filter-opties (datagedreven) ────────────────────────────────────────────────
+const _uniek = (sel) => [...new Set(nodes.value.map(sel).filter(Boolean))].sort()
+const domeinOpties = computed(() => _uniek((n) => n.domein))
+const leverancierOpties = computed(() => _uniek((n) => n.leverancier_naam))
+const hostingOpties = computed(() => _uniek((n) => n.hosting_model))
+const domeinKleur = computed(() => Object.fromEntries(domeinOpties.value.map((d, i) => [d, DOMEIN_PALET[i % DOMEIN_PALET.length]])))
 
-// ── Filters ───────────────────────────────────────────────────────────────────
+// ── Zoeken + filteren ─────────────────────────────────────────────────────────
+const filterActief = computed(
+  () => !!(zoekterm.value.trim() || filterDomein.value || filterLeverancier.value || filterHosting.value || filterLifecycle.value),
+)
+function _matcht(n) {
+  const q = zoekterm.value.trim().toLowerCase()
+  if (q && !`${n.naam || ''} ${n.domein || ''} ${n.leverancier_naam || ''}`.toLowerCase().includes(q)) return false
+  if (filterDomein.value && n.domein !== filterDomein.value) return false
+  if (filterLeverancier.value && n.leverancier_naam !== filterLeverancier.value) return false
+  if (filterHosting.value && n.hosting_model !== filterHosting.value) return false
+  if (filterLifecycle.value && n.lifecycle_status !== filterLifecycle.value) return false
+  return true
+}
+const gefilterdeNodes = computed(() => nodes.value.filter(_matcht))
+
+// ── Zichtbare nodes/edges per modus ──────────────────────────────────────────────
+const egoBuren = computed(() => {
+  const sp = egoStartId.value
+  const ids = new Set()
+  if (sp) {
+    for (const e of edges.value) {
+      if (!ringAan.value.has(e.ring)) continue
+      if (e.bron_id === sp) ids.add(e.doel_id)
+      else if (e.doel_id === sp) ids.add(e.bron_id)
+    }
+  }
+  return ids
+})
+const zichtbareNodes = computed(() => {
+  if (modus.value === 'ego') {
+    const sp = egoStartId.value
+    return nodes.value.filter((n) => n.id === sp || egoBuren.value.has(n.id))
+  }
+  if (modus.value === 'impact') return nodes.value.filter(isApplicatie)
+  // geheel model: opbouw = alleen de match (begint leeg); afpel = alles behalve de match (begint vol)
+  if (!filterActief.value) return opbouwModus.value ? [] : nodes.value
+  const match = new Set(gefilterdeNodes.value.map((n) => n.id))
+  return nodes.value.filter((n) => (opbouwModus.value ? match.has(n.id) : !match.has(n.id)))
+})
+const zichtbareNodeIds = computed(() => new Set(zichtbareNodes.value.map((n) => n.id)))
+const zichtbareEdges = computed(() =>
+  edges.value.filter(
+    (e) => zichtbareNodeIds.value.has(e.bron_id) && zichtbareNodeIds.value.has(e.doel_id) && (modus.value !== 'ego' && modus.value !== 'geheel' ? true : ringAan.value.has(e.ring)),
+  ),
+)
+
+// ── Impact-berekening ───────────────────────────────────────────────────────────
+const flowEdges = computed(() => edges.value.filter((e) => e.ring === 'applicaties'))
+const grensEdges = computed(() => flowEdges.value.filter((e) => actieveSet.value.has(e.bron_id) !== actieveSet.value.has(e.doel_id)))
+const raakvlakken = computed(() => {
+  const s = new Set()
+  for (const e of grensEdges.value) {
+    if (!actieveSet.value.has(e.bron_id)) s.add(e.bron_id)
+    if (!actieveSet.value.has(e.doel_id)) s.add(e.doel_id)
+  }
+  return s
+})
+const impactSamenvatting = computed(
+  () => `${actieveSet.value.size} in set · ${raakvlakken.value.size} raakvlakken · ${grensEdges.value.length} grensoverschrijdende koppelingen`,
+)
+
+// ── Actieve set ─────────────────────────────────────────────────────────────────
+function inSet(id) {
+  return actieveSet.value.has(id)
+}
+function toggleSet(id) {
+  const s = new Set(actieveSet.value)
+  s.has(id) ? s.delete(id) : s.add(id)
+  actieveSet.value = s
+}
+function voegAlleGefilterdeToe() {
+  const s = new Set(actieveSet.value)
+  for (const n of gefilterdeNodes.value) s.add(n.id)
+  actieveSet.value = s
+}
+const actieveSetNodes = computed(() => [...actieveSet.value].map((id) => nodePerId.value[id]).filter(Boolean))
+
+// ── Detail ────────────────────────────────────────────────────────────────────
+const detailNode = computed(() => (detailId.value ? nodePerId.value[detailId.value] : null))
+const detailKoppelingen = computed(() => {
+  const id = detailId.value
+  if (!id) return 0
+  return edges.value.filter((e) => e.bron_id === id || e.doel_id === id).length
+})
+function selecteerNode(id) {
+  detailId.value = id
+  // In ego-modus hercentreert een applicatie-klik.
+  if (modus.value === 'ego' && isApplicatie(nodePerId.value[id])) egoStartId.value = id
+}
+function openApplicatie() {
+  if (detailNode.value) router.push({ name: 'applicatie-detail', params: { id: detailNode.value.id } })
+}
+
+// ── Cytoscape-graaf (afgeleide van de state) ─────────────────────────────────────
+const hostingIcoon = (h) => (h === 'saas' ? '☁' : '🏢')
+
+function _nodeData(n) {
+  let bg = lcStyle(n.lifecycle_status).bg
+  let border = kleurOpDomein.value && n.domein ? domeinKleur.value[n.domein] : lcStyle(n.lifecycle_status).border
+  if (modus.value === 'impact') {
+    if (inSet(n.id)) ({ bg, border } = INSET)
+    else if (raakvlakken.value.has(n.id)) ({ bg, border } = RAAKVLAK)
+  }
+  return { id: n.id, label: (n.naam || '') + (n.blokkades_open > 0 ? ' ⚠' : ''), bg, border }
+}
+function _edgeData(e, i) {
+  let lc = '#cbd5e1'
+  let w = 1.5
+  let ls = 'solid'
+  if (modus.value === 'impact' && e.ring === 'applicaties') {
+    const grens = actieveSet.value.has(e.bron_id) !== actieveSet.value.has(e.doel_id)
+    const beide = actieveSet.value.has(e.bron_id) && actieveSet.value.has(e.doel_id)
+    lc = grens ? '#ea580c' : beide ? '#2563eb' : '#cbd5e1'
+    w = grens ? 3 : 2
+  }
+  return { id: `e${i}-${e.bron_id}-${e.doel_id}-${e.relatietype}`, source: e.bron_id, target: e.doel_id, lc, w, ls }
+}
+function _elementen() {
+  let zn = zichtbareNodes.value
+  let ze = zichtbareEdges.value
+  if (verbergOnverbonden.value) {
+    const verbonden = new Set()
+    ze.forEach((e) => {
+      verbonden.add(e.bron_id)
+      verbonden.add(e.doel_id)
+    })
+    zn = zn.filter((n) => verbonden.has(n.id))
+  }
+  const znIds = new Set(zn.map((n) => n.id))
+  ze = ze.filter((e) => znIds.has(e.bron_id) && znIds.has(e.doel_id))
+  return [
+    ...zn.map((n) => ({ data: _nodeData(n) })),
+    ...ze.map((e, i) => ({ data: _edgeData(e, i) })),
+  ]
+}
+const zichtbaarAantal = computed(() => {
+  // Telling die het canvas toont (na evt. verberg-onverbonden) — testbaar zonder cy.
+  if (!verbergOnverbonden.value) return zichtbareNodes.value.length
+  const verbonden = new Set()
+  zichtbareEdges.value.forEach((e) => {
+    verbonden.add(e.bron_id)
+    verbonden.add(e.doel_id)
+  })
+  return zichtbareNodes.value.filter((n) => verbonden.has(n.id)).length
+})
+
+function _layout() {
+  if (modus.value === 'ego') return { name: 'concentric', concentric: (n) => (n.id() === egoStartId.value ? 10 : 5), levelWidth: () => 1, minNodeSpacing: 40 }
+  return { name: 'cose', animate: false, padding: 30, nodeRepulsion: modus.value === 'geheel' ? 12000 : 6000 }
+}
+function tekenGraaf() {
+  if (!cy) return
+  cy.elements().remove()
+  cy.add(_elementen())
+  cy.layout(_layout()).run()
+}
+
+const CY_STYLE = [
+  {
+    selector: 'node',
+    style: {
+      'background-color': 'data(bg)', 'border-color': 'data(border)', 'border-width': 2,
+      label: 'data(label)', 'font-size': 9, 'text-valign': 'center', 'text-halign': 'center',
+      width: 78, height: 28, shape: 'round-rectangle', 'text-wrap': 'ellipsis', 'text-max-width': 70,
+    },
+  },
+  {
+    selector: 'edge',
+    style: {
+      width: 'data(w)', 'line-color': 'data(lc)', 'line-style': 'data(ls)',
+      'target-arrow-shape': 'triangle', 'target-arrow-color': 'data(lc)', 'curve-style': 'bezier',
+    },
+  },
+]
+
+onMounted(async () => {
+  await laad()
+  if (containerRef.value) {
+    cy = cytoscape({ container: containerRef.value, elements: [], style: CY_STYLE })
+    cy.on('tap', 'node', (evt) => selecteerNode(evt.target.id()))
+    tekenGraaf()
+  }
+})
+onBeforeUnmount(() => cy?.destroy?.())
+
+// Hertekenen bij elke state die de graaf raakt.
+watch(
+  [modus, zichtbareNodes, zichtbareEdges, actieveSet, kleurOpDomein, verbergOnverbonden],
+  () => tekenGraaf(),
+  { deep: false },
+)
+
+function centreer() {
+  cy?.fit?.()
+}
 function toggleRing(r) {
   const s = new Set(ringAan.value)
   s.has(r) ? s.delete(r) : s.add(r)
   ringAan.value = s
 }
-function toggleLaag(l) {
-  const s = new Set(laagAan.value)
-  s.has(l) ? s.delete(l) : s.add(l)
-  laagAan.value = s
-}
-const ringActief = (r) => ringAan.value.has(r)
-const laagActief = (l) => laagAan.value.has(l)
-
-// ── Hover-tooltip ───────────────────────────────────────────────────────────────
-function toonHover(node, x, y) {
-  hover.value = { naam: node.naam, type: node.element_type, lifecycle: node.lifecycle_status, x, y }
-}
-function verbergHover() {
-  hover.value = null
-}
-
-// ── Ego-view ────────────────────────────────────────────────────────────────────
-const egoBuren = computed(() => {
-  const sp = startpuntId.value
-  if (!sp) return []
-  const gevonden = new Map() // buur_id → ring
-  for (const e of edges.value) {
-    if (!ringAan.value.has(e.ring)) continue
-    let buur = null
-    if (e.bron_id === sp) buur = e.doel_id
-    else if (e.doel_id === sp) buur = e.bron_id
-    if (!buur) continue
-    const node = nodePerId.value[buur]
-    if (!node) continue
-    if (node.laag && LAGEN.includes(node.laag) && !laagAan.value.has(node.laag)) continue
-    if (!gevonden.has(buur)) gevonden.set(buur, e.ring)
-  }
-  return [...gevonden.entries()].map(([id, ring]) => ({ node: nodePerId.value[id], ring }))
-})
-
-const egoWeergave = computed(() => {
-  const sp = nodePerId.value[startpuntId.value]
-  if (!sp) return { center: null, buren: [], lijnen: [] }
-  const buren = egoBuren.value
-  const R = Math.max(120, Math.min(canvasW.value, canvasH.value) / 2 - 90)
-  const posBuren = buren.map((b, i) => {
-    const hoek = (2 * Math.PI * i) / Math.max(buren.length, 1) - Math.PI / 2
-    return { ...b, x: CX.value + R * Math.cos(hoek), y: CY.value + R * Math.sin(hoek) }
-  })
-  const posPerId = Object.fromEntries(posBuren.map((b) => [b.node.id, b]))
-  const lijnen = []
-  for (const b of posBuren) {
-    lijnen.push({ x1: CX.value, y1: CY.value, x2: b.x, y2: b.y, kleur: RING_KLEUR[b.ring], gestippeld: false, key: `c-${b.node.id}` })
-  }
-  for (const e of edges.value) {
-    const a = posPerId[e.bron_id]
-    const c = posPerId[e.doel_id]
-    if (a && c) lijnen.push({ x1: a.x, y1: a.y, x2: c.x, y2: c.y, kleur: '#94a3b8', gestippeld: true, key: `r-${e.bron_id}-${e.doel_id}-${e.relatietype}` })
-  }
-  return { center: { ...sp, x: CX.value, y: CY.value }, buren: posBuren, lijnen }
-})
-
-// ── Impact-view ───────────────────────────────────────────────────────────────
-function toggleMigratie(id) {
-  const s = new Set(migratieSet.value)
-  s.has(id) ? s.delete(id) : s.add(id)
-  migratieSet.value = s
-}
-const allesGeselecteerd = computed(
-  () => applicaties.value.length > 0 && applicaties.value.every((a) => migratieSet.value.has(a.id)),
-)
-function toggleAlles() {
-  migratieSet.value = allesGeselecteerd.value ? new Set() : new Set(applicaties.value.map((a) => a.id))
-}
-const appKoppelingen = computed(() =>
-  edges.value.filter(
-    (e) => e.ring === 'applicaties' && nodePerId.value[e.bron_id]?.element_type === 'applicatie' && nodePerId.value[e.doel_id]?.element_type === 'applicatie',
-  ),
-)
-const grensKoppelingen = computed(() =>
-  appKoppelingen.value.filter((e) => migratieSet.value.has(e.bron_id) !== migratieSet.value.has(e.doel_id)),
-)
-const raakvlakken = computed(() => {
-  const s = new Set()
-  for (const e of grensKoppelingen.value) {
-    if (!migratieSet.value.has(e.bron_id)) s.add(e.bron_id)
-    if (!migratieSet.value.has(e.doel_id)) s.add(e.doel_id)
-  }
-  return s
-})
-const impactSamenvatting = computed(
-  () => `${migratieSet.value.size} in set · ${raakvlakken.value.size} raakvlakken · ${grensKoppelingen.value.length} grensoverschrijdende koppelingen`,
-)
-
-const impactWeergave = computed(() => {
-  const apps = applicaties.value
-  const kolommen = Math.max(1, Math.ceil(Math.sqrt(apps.length)))
-  const dx = canvasW.value / (kolommen + 1)
-  const rijen = Math.max(1, Math.ceil(apps.length / kolommen))
-  const dy = canvasH.value / (rijen + 1)
-  const pos = apps.map((n, i) => ({
-    node: n,
-    x: dx * ((i % kolommen) + 1),
-    y: dy * (Math.floor(i / kolommen) + 1),
-    inSet: migratieSet.value.has(n.id),
-    raakvlak: raakvlakken.value.has(n.id),
-  }))
-  const posPerId = Object.fromEntries(pos.map((p) => [p.node.id, p]))
-  const lijnen = appKoppelingen.value
-    .map((e) => {
-      const a = posPerId[e.bron_id]
-      const b = posPerId[e.doel_id]
-      if (!a || !b) return null
-      const grens = migratieSet.value.has(e.bron_id) !== migratieSet.value.has(e.doel_id)
-      const beide = migratieSet.value.has(e.bron_id) && migratieSet.value.has(e.doel_id)
-      return { x1: a.x, y1: a.y, x2: b.x, y2: b.y, kleur: grens ? '#ea580c' : beide ? '#2563eb' : '#cbd5e1', key: `${e.bron_id}-${e.doel_id}` }
-    })
-    .filter(Boolean)
-  return { pos, lijnen }
-})
-
 const typeLabel = (t) => humaniseer(t)
 </script>
 
 <template>
-  <div class="relative flex w-full" data-testid="lk-wrapper" style="height: calc(100vh - 9rem)">
-    <!-- Canvas: vult de resterende breedte (flex-1); ResizeObserver meet hier de viewBox -->
-    <div ref="canvasRef" data-testid="lk-canvas" class="relative flex-1 overflow-hidden rounded-[var(--cd-radius-card)] bg-[var(--cd-color-surface)]">
-      <svg
-        v-if="heeftData"
-        :viewBox="`0 0 ${canvasW} ${canvasH}`"
-        preserveAspectRatio="xMidYMid meet"
-        data-testid="lk-svg"
-        class="h-full w-full"
-      >
-        <!-- Ego-view -->
-        <template v-if="modus === 'ego' && egoWeergave.center">
-          <line v-for="l in egoWeergave.lijnen" :key="l.key" :x1="l.x1" :y1="l.y1" :x2="l.x2" :y2="l.y2" :stroke="l.kleur" :stroke-dasharray="l.gestippeld ? '4 4' : '0'" stroke-width="1.5" />
-          <g v-for="b in egoWeergave.buren" :key="b.node.id" :data-testid="`lk-node-${b.node.id}`" class="cursor-pointer" @click="startpuntId = b.node.id" @mouseenter="toonHover(b.node, b.x, b.y)" @mouseleave="verbergHover">
-            <rect :x="b.x - 60" :y="b.y - 18" width="120" height="36" rx="6" :fill="lifecycleKleur(b.node.lifecycle_status)" :stroke="RING_KLEUR[b.ring]" stroke-width="2" :data-fill="lifecycleKleur(b.node.lifecycle_status)" />
-            <text :x="b.x" :y="b.y + 4" text-anchor="middle" class="text-[length:11px]">{{ b.node.naam }}</text>
-          </g>
-          <g :data-testid="`lk-node-${egoWeergave.center.id}`" @mouseenter="toonHover(egoWeergave.center, CX, CY)" @mouseleave="verbergHover">
-            <rect :x="CX - 70" :y="CY - 20" width="140" height="40" rx="8" :fill="lifecycleKleur(egoWeergave.center.lifecycle_status)" stroke="#0f172a" stroke-width="3" :data-fill="lifecycleKleur(egoWeergave.center.lifecycle_status)" />
-            <text :x="CX" :y="CY + 4" text-anchor="middle" class="text-[length:12px] font-semibold">{{ egoWeergave.center.naam }}</text>
-          </g>
-        </template>
-
-        <!-- Impact-view -->
-        <template v-else-if="modus === 'impact'">
-          <line v-for="l in impactWeergave.lijnen" :key="l.key" :x1="l.x1" :y1="l.y1" :x2="l.x2" :y2="l.y2" :stroke="l.kleur" stroke-width="2" />
-          <g v-for="p in impactWeergave.pos" :key="p.node.id" :data-testid="`lk-node-${p.node.id}`" class="cursor-pointer" @click="toggleMigratie(p.node.id)" @mouseenter="toonHover(p.node, p.x, p.y)" @mouseleave="verbergHover">
-            <rect
-              :x="p.x - 60" :y="p.y - 18" width="120" height="36" rx="6"
-              :fill="p.inSet ? INSET_KLEUR : p.raakvlak ? RAAKVLAK_KLEUR : lifecycleKleur(p.node.lifecycle_status)"
-              :stroke="p.inSet ? INSET_KLEUR : p.raakvlak ? '#ea580c' : '#cbd5e1'"
-              stroke-width="2"
-              :data-inset="p.inSet" :data-raakvlak="p.raakvlak"
-            />
-            <text :x="p.x" :y="p.y + 4" text-anchor="middle" :class="['text-[length:11px]', p.inSet ? 'fill-white' : '']">{{ p.node.naam }}</text>
-          </g>
-        </template>
-      </svg>
-
-      <!-- Ego-view overlays (modus-toggle + filterknop + inklapbaar paneel) -->
-      <template v-if="modus === 'ego'">
-        <div class="absolute top-3 left-1/2 z-10 flex -translate-x-1/2 gap-[var(--cd-space-sm)] rounded-[var(--cd-radius-btn)] bg-white/90 p-1 shadow-[var(--cd-shadow-md)]">
-          <button type="button" data-testid="lk-modus-ego" aria-pressed="true" class="rounded-[var(--cd-radius-btn)] bg-[var(--cd-color-primary)] px-[var(--cd-space-md)] py-1 text-white">Ego-view</button>
-          <button type="button" data-testid="lk-modus-impact" aria-pressed="false" class="rounded-[var(--cd-radius-btn)] px-[var(--cd-space-md)] py-1" @click="modus = 'impact'">Impact-view</button>
-        </div>
-
-        <button
-          type="button"
-          data-testid="lk-filter-toggle"
-          :aria-expanded="filtersOpen.toString()"
-          class="absolute left-3 top-3 z-10 rounded-[var(--cd-radius-btn)] bg-white/90 px-[var(--cd-space-md)] py-1 shadow-[var(--cd-shadow-md)] hover:bg-white"
-          @click="filtersOpen = !filtersOpen"
-        >
-          {{ filtersOpen ? '✕ Filters' : '⚙ Filters' }}
+  <div class="flex w-full flex-col" data-testid="lk-wrapper" style="height: calc(100vh - 9rem)">
+    <!-- Topbar: modus-toggle -->
+    <div class="flex items-center gap-[var(--cd-space-sm)] border-b border-[var(--cd-color-border)] bg-white p-[var(--cd-space-sm)]">
+      <div class="flex gap-1 rounded-[var(--cd-radius-btn)] bg-[var(--cd-color-accent)] p-1">
+        <button v-for="m in ['ego', 'impact', 'geheel']" :key="m" type="button" :data-testid="`lk-modus-${m}`" :aria-pressed="modus === m" :class="['rounded-[var(--cd-radius-btn)] px-[var(--cd-space-md)] py-1 text-[length:var(--cd-text-sm)]', modus === m ? 'bg-[var(--cd-color-primary)] text-white' : '']" @click="modus = m">
+          {{ m === 'ego' ? 'Ego-view' : m === 'impact' ? 'Impact-view' : 'Geheel model' }}
         </button>
-
-        <aside
-          v-if="filtersOpen && heeftData"
-          data-testid="lk-paneel"
-          class="absolute left-3 top-12 z-10 w-52 rounded-[8px] bg-white p-[var(--cd-space-md)] shadow-[var(--cd-shadow-md)]"
-        >
-          <label class="mb-[var(--cd-space-md)] block text-[length:var(--cd-text-sm)]">
-            <span class="mb-1 block font-semibold">Startpunt</span>
-            <select v-model="startpuntId" data-testid="lk-startpunt" class="w-full rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-1">
-              <option v-for="a in applicaties" :key="a.id" :value="a.id">{{ a.naam }}</option>
-            </select>
-          </label>
-          <p class="mb-1 font-semibold text-[length:var(--cd-text-sm)]">Ringen</p>
-          <div class="mb-[var(--cd-space-md)] flex flex-col gap-1">
-            <label v-for="r in RINGEN" :key="r" class="flex items-center gap-2 text-[length:var(--cd-text-sm)]">
-              <input type="checkbox" :checked="ringActief(r)" :data-testid="`lk-ring-${r}`" @change="toggleRing(r)" />
-              <span class="inline-block h-3 w-3 rounded-full" :style="{ background: RING_KLEUR[r] }"></span>{{ typeLabel(r) }}
-            </label>
-          </div>
-          <p class="mb-1 font-semibold text-[length:var(--cd-text-sm)]">ArchiMate-lagen</p>
-          <div class="flex flex-col gap-1">
-            <label v-for="l in LAGEN" :key="l" class="flex items-center gap-2 text-[length:var(--cd-text-sm)]">
-              <input type="checkbox" :checked="laagActief(l)" :data-testid="`lk-laag-${l}`" @change="toggleLaag(l)" />{{ typeLabel(l) }}
-            </label>
-          </div>
-        </aside>
-      </template>
-
-      <!-- Impact-samenvatting (overlay onderaan canvas) -->
-      <p
-        v-if="modus === 'impact' && heeftData"
-        data-testid="impact-samenvatting"
-        class="absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-white px-[var(--cd-space-md)] py-1 text-[length:var(--cd-text-sm)] font-semibold shadow-[var(--cd-shadow-md)]"
-      >
-        {{ impactSamenvatting }}
-      </p>
-
-      <!-- Node-tooltip -->
-      <div
-        v-if="hover"
-        data-testid="lk-tooltip"
-        class="pointer-events-none absolute z-20 rounded-[6px] bg-[var(--cd-color-text)] px-[var(--cd-space-sm)] py-1 text-[length:var(--cd-text-xs)] text-white shadow-[var(--cd-shadow-md)]"
-        :style="{ left: `${hover.x + 12}px`, top: `${hover.y - 8}px` }"
-      >
-        <span class="font-semibold">{{ hover.naam }}</span> · {{ typeLabel(hover.type) }}<template v-if="hover.lifecycle"> · {{ typeLabel(hover.lifecycle) }}</template>
       </div>
-
-      <!-- Status-overlays -->
-      <p v-if="fout" role="alert" data-testid="lk-fout" class="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 rounded-[var(--cd-radius-badge)] border border-[var(--cd-color-danger)] bg-white px-[var(--cd-space-md)] py-[var(--cd-space-sm)] text-[var(--cd-color-danger)]">{{ fout }}</p>
-      <p v-else-if="laden" data-testid="lk-laden" class="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 text-[var(--cd-color-text-muted)]">Landschap laden…</p>
-      <p v-else-if="!heeftData" data-testid="lk-leeg" class="absolute left-1/2 top-1/2 z-10 max-w-md -translate-x-1/2 -translate-y-1/2 text-center text-[var(--cd-color-text-muted)]">
-        Nog geen landschapsdata geregistreerd. Voeg componenten, partijen, contracten en relaties toe om de kaart te vullen.
-      </p>
+      <span class="ml-auto text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]" data-testid="lk-zichtbaar-aantal">{{ zichtbaarAantal }} nodes zichtbaar</span>
     </div>
 
-    <!-- Impact-view: vaste rechterzijbalk (altijd zichtbaar in deze modus) -->
-    <aside
-      v-if="modus === 'impact'"
-      data-testid="lk-sidebar"
-      class="flex w-56 flex-shrink-0 flex-col gap-[var(--cd-space-md)] overflow-y-auto border-l border-[var(--cd-color-border)] bg-white p-[var(--cd-space-md)]"
-    >
-      <!-- Modus-toggle bovenaan de zijbalk -->
-      <div class="flex gap-[var(--cd-space-sm)] rounded-[var(--cd-radius-btn)] bg-[var(--cd-color-accent)] p-1">
-        <button type="button" data-testid="lk-modus-ego" aria-pressed="false" class="flex-1 rounded-[var(--cd-radius-btn)] px-2 py-1 text-[length:var(--cd-text-sm)]" @click="modus = 'ego'">Ego-view</button>
-        <button type="button" data-testid="lk-modus-impact" aria-pressed="true" class="flex-1 rounded-[var(--cd-radius-btn)] bg-[var(--cd-color-primary)] px-2 py-1 text-[length:var(--cd-text-sm)] text-white">Impact-view</button>
-      </div>
+    <div class="flex min-h-0 flex-1">
+      <!-- Linkerpaneel: zoek + filters + resultaten -->
+      <aside class="flex w-60 flex-shrink-0 flex-col gap-[var(--cd-space-sm)] overflow-y-auto border-r border-[var(--cd-color-border)] bg-white p-[var(--cd-space-md)]" data-testid="lk-links">
+        <input v-model="zoekterm" type="search" data-testid="lk-zoek" placeholder="🔍 Zoek naam/domein/leverancier…" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-1 text-[length:var(--cd-text-sm)]" />
 
-      <!-- Migratieset -->
-      <div>
-        <p class="mb-1 font-semibold text-[length:var(--cd-text-sm)]">Migratieset</p>
-        <div class="flex max-h-64 flex-col gap-1 overflow-y-auto">
-          <label v-for="a in applicaties" :key="a.id" class="flex items-center gap-2 text-[length:var(--cd-text-sm)]">
-            <input type="checkbox" :checked="migratieSet.has(a.id)" :data-testid="`lk-migratie-${a.id}`" @change="toggleMigratie(a.id)" />
-            <span class="grow truncate">{{ a.naam }}</span>
-            <span class="inline-block h-3 w-3 shrink-0 rounded-full" :style="{ background: lifecycleKleur(a.lifecycle_status) }" :title="a.lifecycle_status || 'geen profiel'"></span>
+        <select v-model="filterDomein" data-testid="lk-filter-domein" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-1 text-[length:var(--cd-text-sm)]">
+          <option value="">Alle domeinen</option>
+          <option v-for="d in domeinOpties" :key="d" :value="d">{{ typeLabel(d) }}</option>
+        </select>
+        <select v-model="filterLeverancier" data-testid="lk-filter-leverancier" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-1 text-[length:var(--cd-text-sm)]">
+          <option value="">Alle leveranciers</option>
+          <option v-for="l in leverancierOpties" :key="l" :value="l">{{ l }}</option>
+        </select>
+        <select v-model="filterHosting" data-testid="lk-filter-hosting" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-1 text-[length:var(--cd-text-sm)]">
+          <option value="">Alle hosting</option>
+          <option v-for="h in hostingOpties" :key="h" :value="h">{{ typeLabel(h) }}</option>
+        </select>
+        <select v-model="filterLifecycle" data-testid="lk-filter-lifecycle" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-1 text-[length:var(--cd-text-sm)]">
+          <option value="">Alle lifecycle</option>
+          <option v-for="lc in LIFECYCLE_OPTIES" :key="lc" :value="lc">{{ typeLabel(lc) }}</option>
+        </select>
+
+        <label v-if="modus === 'geheel'" class="flex items-center gap-2 text-[length:var(--cd-text-sm)]">
+          <input type="checkbox" :checked="!opbouwModus" data-testid="lk-afpel-toggle" @change="opbouwModus = !opbouwModus" />Afpel-modus (begint vol)
+        </label>
+
+        <template v-if="modus === 'ego'">
+          <p class="font-semibold text-[length:var(--cd-text-sm)]">Ringen</p>
+          <label v-for="r in RINGEN" :key="r" class="flex items-center gap-2 text-[length:var(--cd-text-sm)]">
+            <input type="checkbox" :checked="ringAan.has(r)" :data-testid="`lk-ring-${r}`" @change="toggleRing(r)" />{{ typeLabel(r) }}
           </label>
-          <p v-if="!applicaties.length" class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">Geen applicaties.</p>
+        </template>
+
+        <p class="mt-[var(--cd-space-sm)] font-semibold text-[length:var(--cd-text-sm)]">Resultaten ({{ gefilterdeNodes.length }})</p>
+        <ul class="flex flex-col gap-1" data-testid="lk-resultaten">
+          <li v-for="n in gefilterdeNodes" :key="n.id" :data-testid="`lk-res-${n.id}`" :class="['flex items-center gap-1 rounded px-1 py-0.5 text-[length:var(--cd-text-sm)]', inSet(n.id) ? 'bg-[var(--cd-color-accent)]' : '']">
+            <span class="inline-block h-3 w-3 shrink-0 rounded-full" :style="{ background: lcStyle(n.lifecycle_status).bg, border: `1px solid ${lcStyle(n.lifecycle_status).border}` }"></span>
+            <button type="button" class="grow truncate text-left hover:underline" :data-testid="`lk-res-naam-${n.id}`" @click="selecteerNode(n.id)">{{ n.naam }}</button>
+            <span v-if="n.blokkades_open > 0" :data-testid="`lk-res-blok-${n.id}`" title="Open blokkade(s)">⚠</span>
+            <span v-if="n.hosting_model">{{ hostingIcoon(n.hosting_model) }}</span>
+            <button type="button" class="text-[var(--cd-color-primary)]" :data-testid="`lk-res-set-${n.id}`" @click="toggleSet(n.id)">{{ inSet(n.id) ? '×' : '+' }}</button>
+          </li>
+          <li v-if="!gefilterdeNodes.length" class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">Geen resultaten.</li>
+        </ul>
+        <button type="button" data-testid="lk-voeg-alle" class="mt-1 rounded-[var(--cd-radius-btn)] bg-[var(--cd-color-primary)] px-[var(--cd-space-sm)] py-1 text-[length:var(--cd-text-sm)] text-white" @click="voegAlleGefilterdeToe">+ Voeg alle gefilterde toe</button>
+      </aside>
+
+      <!-- Canvas -->
+      <div class="relative min-w-0 flex-1 bg-[var(--cd-color-surface)]">
+        <div ref="containerRef" data-testid="lk-canvas" class="h-full w-full"></div>
+
+        <!-- Tools (rechtsboven) -->
+        <div class="absolute right-3 top-3 z-10 flex gap-1">
+          <button type="button" data-testid="lk-centreer" class="rounded-[var(--cd-radius-btn)] bg-white/90 px-2 py-1 text-[length:var(--cd-text-sm)] shadow-[var(--cd-shadow-sm)]" @click="centreer">⊡ Centreer</button>
+          <button type="button" data-testid="lk-kleur-domein" :aria-pressed="kleurOpDomein" :class="['rounded-[var(--cd-radius-btn)] px-2 py-1 text-[length:var(--cd-text-sm)] shadow-[var(--cd-shadow-sm)]', kleurOpDomein ? 'bg-[var(--cd-color-primary)] text-white' : 'bg-white/90']" @click="kleurOpDomein = !kleurOpDomein">Kleur op domein</button>
+          <button type="button" data-testid="lk-verberg-onverbonden" :aria-pressed="verbergOnverbonden" :class="['rounded-[var(--cd-radius-btn)] px-2 py-1 text-[length:var(--cd-text-sm)] shadow-[var(--cd-shadow-sm)]', verbergOnverbonden ? 'bg-[var(--cd-color-primary)] text-white' : 'bg-white/90']" @click="verbergOnverbonden = !verbergOnverbonden">Verberg los</button>
         </div>
-        <button type="button" data-testid="lk-alles-toggle" class="mt-1 text-[length:var(--cd-text-xs)] text-[var(--cd-color-primary)] hover:underline" @click="toggleAlles">
-          {{ allesGeselecteerd ? 'Niets selecteren' : 'Alles selecteren' }}
-        </button>
+
+        <!-- Impact-samenvatting (overlay onderaan) -->
+        <p v-if="modus === 'impact'" data-testid="impact-samenvatting" class="absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-white px-[var(--cd-space-md)] py-1 text-[length:var(--cd-text-sm)] font-semibold shadow-[var(--cd-shadow-md)]">{{ impactSamenvatting }}</p>
+
+        <p v-if="laden" data-testid="lk-laden" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[var(--cd-color-text-muted)]">Landschap laden…</p>
+        <p v-else-if="fout" role="alert" data-testid="lk-fout" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[var(--cd-color-danger)]">{{ fout }}</p>
+        <p v-else-if="!heeftData" data-testid="lk-leeg" class="absolute left-1/2 top-1/2 max-w-md -translate-x-1/2 -translate-y-1/2 text-center text-[var(--cd-color-text-muted)]">Nog geen landschapsdata geregistreerd.</p>
       </div>
 
-      <!-- Laagfilters -->
-      <div>
-        <p class="mb-1 font-semibold text-[length:var(--cd-text-sm)]">ArchiMate-lagen</p>
-        <div class="flex flex-col gap-1">
-          <label v-for="l in LAGEN" :key="l" class="flex items-center gap-2 text-[length:var(--cd-text-sm)]">
-            <input type="checkbox" :checked="laagActief(l)" :data-testid="`lk-sidebar-laag-${l}`" @change="toggleLaag(l)" />{{ typeLabel(l) }}
-          </label>
+      <!-- Rechterpaneel: actieve set + detail + legenda -->
+      <aside class="flex w-56 flex-shrink-0 flex-col gap-[var(--cd-space-md)] overflow-y-auto border-l border-[var(--cd-color-border)] bg-white p-[var(--cd-space-md)]" data-testid="lk-rechts">
+        <div>
+          <p class="mb-1 font-semibold text-[length:var(--cd-text-sm)]">Actieve set ({{ actieveSet.size }})</p>
+          <ul class="flex max-h-40 flex-col gap-1 overflow-y-auto" data-testid="lk-set">
+            <li v-for="n in actieveSetNodes" :key="n.id" :data-testid="`lk-set-${n.id}`" class="flex items-center gap-1 text-[length:var(--cd-text-sm)]">
+              <span class="inline-block h-3 w-3 shrink-0 rounded-full" :style="{ background: lcStyle(n.lifecycle_status).bg }"></span>
+              <button type="button" class="grow truncate text-left hover:underline" @click="selecteerNode(n.id)">{{ n.naam }}</button>
+              <span v-if="n.blokkades_open > 0">⚠</span>
+              <button type="button" class="text-[var(--cd-color-danger)]" :data-testid="`lk-set-verwijder-${n.id}`" @click="toggleSet(n.id)">×</button>
+            </li>
+            <li v-if="!actieveSet.size" class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">Nog niets geselecteerd.</li>
+          </ul>
         </div>
-      </div>
 
-      <!-- Lifecycle-legenda -->
-      <div data-testid="lk-legenda">
-        <p class="mb-1 font-semibold text-[length:var(--cd-text-sm)]">Legenda</p>
-        <div class="flex flex-col gap-1 text-[length:var(--cd-text-sm)]">
-          <span class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm" :style="{ background: INSET_KLEUR }"></span>In set</span>
-          <span class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-sm border border-[#ea580c]" :style="{ background: RAAKVLAK_KLEUR }"></span>Raakvlak</span>
-          <span v-for="lg in LEGENDA" :key="lg.label" class="flex items-center gap-2"><span class="inline-block h-3 w-3 rounded-full border border-[var(--cd-color-border)]" :style="{ background: lg.kleur }"></span>{{ lg.label }}</span>
+        <div class="border-t border-[var(--cd-color-border)] pt-[var(--cd-space-sm)]">
+          <p class="mb-1 font-semibold text-[length:var(--cd-text-sm)]">Detail</p>
+          <div v-if="detailNode" data-testid="lk-detail" class="flex flex-col gap-1 text-[length:var(--cd-text-sm)]">
+            <p class="font-semibold" data-testid="lk-detail-naam">{{ detailNode.naam }}</p>
+            <p><span class="text-[var(--cd-color-text-muted)]">Domein:</span> {{ detailNode.domein || '—' }}</p>
+            <p><span class="text-[var(--cd-color-text-muted)]">Leverancier:</span> {{ detailNode.leverancier_naam || '—' }}</p>
+            <p><span class="text-[var(--cd-color-text-muted)]">Hosting:</span> {{ detailNode.hosting_model ? typeLabel(detailNode.hosting_model) : '—' }}</p>
+            <p><span class="text-[var(--cd-color-text-muted)]">Lifecycle:</span> <span class="inline-block rounded px-1" :style="{ background: lcStyle(detailNode.lifecycle_status).bg }">{{ detailNode.lifecycle_status ? typeLabel(detailNode.lifecycle_status) : '—' }}</span></p>
+            <p><span class="text-[var(--cd-color-text-muted)]">Blokkades:</span> {{ detailNode.blokkades_open }}</p>
+            <p><span class="text-[var(--cd-color-text-muted)]">Koppelingen:</span> {{ detailKoppelingen }}</p>
+            <button v-if="isApplicatie(detailNode)" type="button" data-testid="lk-detail-open" class="mt-1 rounded-[var(--cd-radius-btn)] bg-[var(--cd-color-primary)] px-[var(--cd-space-sm)] py-1 text-white" @click="openApplicatie">Open applicatie →</button>
+            <button type="button" :data-testid="`lk-detail-set`" class="rounded-[var(--cd-radius-btn)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-1" @click="toggleSet(detailNode.id)">{{ inSet(detailNode.id) ? '× Verwijder uit set' : '+ Voeg toe aan set' }}</button>
+          </div>
+          <p v-else class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]" data-testid="lk-detail-leeg">Klik een node voor detail.</p>
         </div>
-      </div>
-    </aside>
+
+        <div class="border-t border-[var(--cd-color-border)] pt-[var(--cd-space-sm)]" data-testid="lk-legenda">
+          <p class="mb-1 font-semibold text-[length:var(--cd-text-sm)]">Legenda</p>
+          <div class="flex flex-col gap-1 text-[length:var(--cd-text-sm)]">
+            <span v-for="lc in LIFECYCLE_OPTIES.concat(['null'])" :key="lc" class="flex items-center gap-2">
+              <span class="inline-block h-3 w-3 rounded-full" :style="{ background: lcStyle(lc).bg, border: `1px solid ${lcStyle(lc).border}` }"></span>{{ lc === 'null' ? 'geen profiel' : typeLabel(lc) }}
+            </span>
+            <span class="flex items-center gap-2">⚠ Open blokkade(s)</span>
+            <span class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">Klik een node = detail</span>
+          </div>
+        </div>
+      </aside>
+    </div>
   </div>
 </template>

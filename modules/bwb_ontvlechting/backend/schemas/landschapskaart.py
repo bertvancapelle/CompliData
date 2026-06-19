@@ -17,6 +17,11 @@ class LandschapsNode(BaseModel):
     archimate_element: str | None = None
     lifecycle_status: str | None = None     # concept / in_inventarisatie / geblokkeerd / migratieklaar
     soort: str | None = None                # voor partijen: externe_partij / organisatie / …
+    # ADR-025 v3 — verrijking voor zoeken/filteren/detail in de UI.
+    domein: str | None = None               # componenttype-label (proxy voor functioneel domein)
+    leverancier_naam: str | None = None     # externe partij via roltoewijzing (technisch/contractbeheer)
+    hosting_model: str | None = None        # hostingmodel van de component (enum-waarde)
+    blokkades_open: int = 0                 # aantal niet-opgeloste blokkades (read-only telling)
 
 
 class LandschapsEdge(BaseModel):

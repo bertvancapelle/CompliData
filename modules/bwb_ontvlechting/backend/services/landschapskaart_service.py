@@ -13,13 +13,15 @@ bewust zónder de ORM-klasse te importeren (zie het engine-invariant in complida
 """
 import uuid
 
-from sqlalchemy import and_, column, select, table
+from sqlalchemy import String, and_, cast, column, func, select, table
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.models import (
     Component,
+    ComponentConfigDimensie,
     Contract,
     Partij,
+    PartijAard,
     Relatie,
     RelatieKenmerkDimensie,
     Roltoewijzing,
@@ -28,11 +30,14 @@ from schemas.landschapskaart import LandschapsEdge, LandschapskaartResponse, Lan
 from services import componentconfig_catalog as comp_catalog
 from services import relatiekenmerk_catalog as rk_catalog
 
-# Lichtgewicht read-only handle op de engine-tabel `component_profiel` — bewust GEEN ORM-import
-# (de import-afwezigheidstest verbiedt `ComponentProfiel`). Alleen de twee kolommen die we lezen.
+# Lichtgewicht read-only handles op engine-tabellen — bewust GEEN ORM-import (de import-
+# afwezigheidstest verbiedt `ComponentProfiel`/`Blokkade`). Alleen de gelezen kolommen.
 _profiel = table("component_profiel", column("id"), column("tenant_id"), column("lifecycle_status"))
+_blokkade = table("blokkade", column("component_id"), column("tenant_id"), column("status"))
 
 _RK_BEHEERROL = RelatieKenmerkDimensie.beheerrol
+# Rollen waaruit we een "leverancier" afleiden voor de node-verrijking.
+_LEVERANCIER_ROLLEN = ("technisch_beheer", "contractbeheer")
 
 
 def _tenant_uuid(tenant_id) -> uuid.UUID:
@@ -47,6 +52,34 @@ def _val(x):
 async def haal_grafdata_op(session: AsyncSession, tenant_id) -> LandschapskaartResponse:
     tid = _tenant_uuid(tenant_id)
     typing = await comp_catalog.archimate_typing(session)  # {componenttype: {archimate_element, laag, aspect}}
+    type_labels = await comp_catalog.labels(session, ComponentConfigDimensie.componenttype)
+
+    # Verrijkingsmaps (read-only): open-blokkade-telling + afgeleide leverancier per component.
+    blok_map = {
+        r.component_id: r.aantal
+        for r in (
+            await session.execute(
+                select(_blokkade.c.component_id, func.count().label("aantal"))
+                # `status` is een PG-enum; via de lichtgewicht (untyped) kolom expliciet naar tekst
+                # casten zodat de vergelijking met de string-literal een geldige operator heeft.
+                .where(_blokkade.c.tenant_id == tid, cast(_blokkade.c.status, String) != "opgelost")
+                .group_by(_blokkade.c.component_id)
+            )
+        ).all()
+    }
+    lev_map: dict[uuid.UUID, str] = {}
+    for r in (
+        await session.execute(
+            select(Roltoewijzing.object_id, Partij.naam)
+            .join(Partij, Partij.id == Roltoewijzing.partij_id)
+            .where(
+                Roltoewijzing.tenant_id == tid,
+                Roltoewijzing.rol.in_(_LEVERANCIER_ROLLEN),
+                Partij.aard == PartijAard.externe_partij,
+            )
+        )
+    ).all():
+        lev_map.setdefault(r.object_id, r.naam)  # eerste gevonden externe partij
 
     nodes: list[LandschapsNode] = []
     component_ids: set[uuid.UUID] = set()
@@ -56,7 +89,7 @@ async def haal_grafdata_op(session: AsyncSession, tenant_id) -> LandschapskaartR
     comp_rijen = (
         await session.execute(
             select(
-                Component.id, Component.naam, Component.componenttype,
+                Component.id, Component.naam, Component.componenttype, Component.hostingmodel,
                 _profiel.c.lifecycle_status.label("lifecycle_status"),
             )
             .outerjoin(_profiel, and_(_profiel.c.id == Component.id, _profiel.c.tenant_id == tid))
@@ -70,6 +103,10 @@ async def haal_grafdata_op(session: AsyncSession, tenant_id) -> LandschapskaartR
             id=r.id, naam=r.naam, element_type=r.componenttype,
             laag=t.get("laag"), archimate_element=t.get("archimate_element"),
             lifecycle_status=_val(r.lifecycle_status),
+            domein=comp_catalog.resolveer_een(r.componenttype, type_labels),
+            leverancier_naam=lev_map.get(r.id),
+            hosting_model=_val(r.hostingmodel),
+            blokkades_open=blok_map.get(r.id, 0),
         ))
 
     # ── Partij-nodes — business-laag, aard als `soort` ──

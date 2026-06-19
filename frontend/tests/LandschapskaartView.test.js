@@ -1,30 +1,50 @@
-/** Tests — LandschapskaartView (ADR-025, overlay-layout; Ego- + Impact-modus). */
+/** Tests — LandschapskaartView v3 (ADR-025, Cytoscape; drie modi + zoek/filter/set/detail). */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
+import { createMemoryHistory, createRouter } from 'vue-router'
 
+// Cytoscape gemockt (via de frontend-wrapper): de graaf-rendering is een side-effect;
+// de panelen zijn de testbare laag.
+vi.mock('@/composables/cytoscape', () => ({
+  default: vi.fn(() => ({
+    on: vi.fn(),
+    elements: () => ({ remove: vi.fn() }),
+    add: vi.fn(),
+    layout: () => ({ run: vi.fn() }),
+    fit: vi.fn(),
+    destroy: vi.fn(),
+  })),
+}))
 vi.mock('@/api', () => ({ api: { landschapskaart: { haalGrafdata: vi.fn() } } }))
 
+import cytoscape from '@/composables/cytoscape'
 import { api } from '@/api'
 import LandschapskaartView from '@modules/bwb_ontvlechting/frontend/views/LandschapskaartView.vue'
 
 const GRAF = () => ({
   nodes: [
-    { id: 'a1', naam: 'App1', element_type: 'applicatie', laag: 'application', lifecycle_status: 'geblokkeerd' },
-    { id: 'a2', naam: 'App2', element_type: 'applicatie', laag: 'application', lifecycle_status: 'migratieklaar' },
-    { id: 'p1', naam: 'Org', element_type: 'partij', laag: 'business', soort: 'organisatie' },
-    { id: 'k1', naam: 'Contract', element_type: 'contract', laag: 'business' },
+    { id: 'a1', naam: 'Zaaksysteem', element_type: 'applicatie', laag: 'application', lifecycle_status: 'migratieklaar', domein: 'applicatie', hosting_model: 'saas', leverancier_naam: 'SaaS BV', blokkades_open: 0 },
+    { id: 'a2', naam: 'Documentbeheer', element_type: 'applicatie', laag: 'application', lifecycle_status: 'geblokkeerd', domein: 'applicatie', hosting_model: 'on_premise', leverancier_naam: null, blokkades_open: 1 },
+    { id: 'p1', naam: 'Org', element_type: 'partij', laag: 'business', soort: 'organisatie', blokkades_open: 0 },
+    { id: 'k1', naam: 'Contract X', element_type: 'contract', laag: 'business', blokkades_open: 0 },
   ],
-  edges: [
-    { bron_id: 'a1', doel_id: 'a2', relatietype: 'flow', label: 'koppeling', ring: 'applicaties' },
-    { bron_id: 'a1', doel_id: 'k1', relatietype: 'association', label: 'valt onder', ring: 'contracten' },
-    { bron_id: 'p1', doel_id: 'a1', relatietype: 'roltoewijzing', label: 'Eigenaar', ring: 'beheerorganisatie' },
-  ],
+  edges: [{ bron_id: 'a1', doel_id: 'a2', relatietype: 'flow', label: 'koppeling', ring: 'applicaties' }],
 })
 
 async function mountView() {
-  const w = mount(LandschapskaartView)
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      { path: '/', name: 'home', component: { template: '<div/>' } },
+      { path: '/applicaties/:id', name: 'applicatie-detail', component: { template: '<div/>' } },
+    ],
+  })
+  await router.push('/')
+  await router.isReady()
+  const pushSpy = vi.spyOn(router, 'push')
+  const w = mount(LandschapskaartView, { global: { plugins: [router] } })
   await flushPromises()
-  return w
+  return { w, pushSpy }
 }
 
 beforeEach(() => {
@@ -33,81 +53,74 @@ beforeEach(() => {
 })
 afterEach(() => vi.restoreAllMocks())
 
-describe('LandschapskaartView', () => {
-  it('rendert in Ego-modus met full-bleed canvas en nodes (overlay-layout)', async () => {
-    const w = await mountView()
-    // SVG vult de container; modus-toggle en filterknop zweven als overlay.
-    expect(w.find('[data-testid="lk-svg"]').exists()).toBe(true)
-    expect(w.find('[data-testid="lk-modus-ego"]').exists()).toBe(true)
-    expect(w.find('[data-testid="lk-filter-toggle"]').exists()).toBe(true)
-    // Startpunt = eerste applicatie (a1) centraal; buren (a2/k1/p1) gerenderd.
-    expect(w.find('[data-testid="lk-node-a1"]').exists()).toBe(true)
-    expect(w.find('[data-testid="lk-node-a2"]').exists()).toBe(true)
-    expect(w.find('[data-testid="lk-node-k1"]').exists()).toBe(true)
+describe('LandschapskaartView v3', () => {
+  it('rendert in Ego-modus en initialiseert Cytoscape', async () => {
+    const { w } = await mountView()
+    expect(cytoscape).toHaveBeenCalled()
+    expect(w.find('[data-testid="lk-canvas"]').exists()).toBe(true)
+    expect(w.find('[data-testid="lk-modus-ego"]').attributes('aria-pressed')).toBe('true')
+    // resultatenlijst toont alle nodes (geen filter).
+    expect(w.findAll('[data-testid^="lk-res-naam-"]').length).toBe(4)
   })
 
-  it('houdt het filterpaneel standaard ingeklapt en toggelt het via de filterknop', async () => {
-    const w = await mountView()
-    // Standaard dicht: geen paneel, startpunt-dropdown niet zichtbaar.
-    expect(w.find('[data-testid="lk-paneel"]').exists()).toBe(false)
-    expect(w.find('[data-testid="lk-startpunt"]').exists()).toBe(false)
-    // Openen.
-    await w.find('[data-testid="lk-filter-toggle"]').trigger('click')
-    expect(w.find('[data-testid="lk-paneel"]').exists()).toBe(true)
-    expect(w.find('[data-testid="lk-startpunt"]').exists()).toBe(true)
-    // Weer sluiten.
-    await w.find('[data-testid="lk-filter-toggle"]').trigger('click')
-    expect(w.find('[data-testid="lk-paneel"]').exists()).toBe(false)
+  it('zoekfilter vermindert de zichtbare resultaten', async () => {
+    const { w } = await mountView()
+    await w.find('[data-testid="lk-zoek"]').setValue('zaak')
+    await flushPromises()
+    expect(w.find('[data-testid="lk-res-naam-a1"]').exists()).toBe(true)
+    expect(w.find('[data-testid="lk-res-naam-a2"]').exists()).toBe(false)
+    expect(w.findAll('[data-testid^="lk-res-naam-"]').length).toBe(1)
   })
 
-  it('mapt lifecycle-status naar de node-achtergrondkleur', async () => {
-    const w = await mountView()
-    // a1 = geblokkeerd → #fee2e2 (lichtrood) als rect-fill.
-    const rect = w.find('[data-testid="lk-node-a1"] rect')
-    expect(rect.attributes('data-fill')).toBe('#fee2e2')
-  })
-
-  it('schakelt naar Impact-modus: vaste rechterzijbalk + legenda + samenvatting-teller', async () => {
-    const w = await mountView()
-    // Ego-default: geen zijbalk.
-    expect(w.find('[data-testid="lk-sidebar"]').exists()).toBe(false)
+  it('Impact-modus telt set/raakvlakken/grensoverschrijdend', async () => {
+    const { w } = await mountView()
     await w.find('[data-testid="lk-modus-impact"]').trigger('click')
     await flushPromises()
-    // Impact: vaste zijbalk met legenda + samenvatting als overlay.
-    expect(w.find('[data-testid="lk-sidebar"]').exists()).toBe(true)
-    expect(w.find('[data-testid="lk-legenda"]').exists()).toBe(true)
-    const samenvatting = w.find('[data-testid="impact-samenvatting"]')
-    expect(samenvatting.exists()).toBe(true)
-    expect(samenvatting.text()).toBe('0 in set · 0 raakvlakken · 0 grensoverschrijdende koppelingen')
-    // De ego-overlay-filterknop is in impact-view weg.
-    expect(w.find('[data-testid="lk-filter-toggle"]').exists()).toBe(false)
-  })
-
-  it('telt set/raakvlakken/grensoverschrijdend bij selectie via de zijbalk-checkbox', async () => {
-    const w = await mountView()
-    await w.find('[data-testid="lk-modus-impact"]').trigger('click')
+    expect(w.find('[data-testid="impact-samenvatting"]').text()).toBe('0 in set · 0 raakvlakken · 0 grensoverschrijdende koppelingen')
+    await w.find('[data-testid="lk-res-set-a1"]').trigger('click') // a1 in de set
     await flushPromises()
-    // Migratieset-checkboxen staan direct in de vaste zijbalk (geen paneel-open nodig).
-    await w.find('[data-testid="lk-migratie-a1"]').setValue(true)
-    await flushPromises()
-    // a1 in de set; flow a1→a2 wordt grensoverschrijdend en a2 een raakvlak.
+    // flow a1→a2: a2 wordt raakvlak, koppeling grensoverschrijdend.
     expect(w.find('[data-testid="impact-samenvatting"]').text()).toBe('1 in set · 1 raakvlakken · 1 grensoverschrijdende koppelingen')
   })
 
-  it('"Alles selecteren" in de zijbalk zet de hele migratieset', async () => {
-    const w = await mountView()
-    await w.find('[data-testid="lk-modus-impact"]').trigger('click')
+  it('Geheel-model: opbouw begint leeg, afpel toont alles', async () => {
+    const { w } = await mountView()
+    await w.find('[data-testid="lk-modus-geheel"]').trigger('click')
     await flushPromises()
-    await w.find('[data-testid="lk-alles-toggle"]').trigger('click')
+    // opbouw (default) zonder filter → 0 zichtbaar.
+    expect(w.find('[data-testid="lk-zichtbaar-aantal"]').text()).toContain('0 nodes')
+    await w.find('[data-testid="lk-afpel-toggle"]').setValue(true)
     await flushPromises()
-    // Beide applicaties (a1+a2) in de set → geen raakvlak, koppeling intern (0 grensoverschrijdend).
-    expect(w.find('[data-testid="impact-samenvatting"]').text()).toBe('2 in set · 0 raakvlakken · 0 grensoverschrijdende koppelingen')
+    expect(w.find('[data-testid="lk-zichtbaar-aantal"]').text()).toContain('4 nodes')
   })
 
-  it('toont een lege staat als de API geen nodes teruggeeft', async () => {
-    api.landschapskaart.haalGrafdata.mockResolvedValueOnce({ nodes: [], edges: [] })
-    const w = await mountView()
-    expect(w.find('[data-testid="lk-leeg"]').exists()).toBe(true)
-    expect(w.find('[data-testid="lk-svg"]').exists()).toBe(false)
+  it('node-klik (resultaatrij) toont het detail-paneel', async () => {
+    const { w } = await mountView()
+    expect(w.find('[data-testid="lk-detail-leeg"]').exists()).toBe(true)
+    await w.find('[data-testid="lk-res-naam-a2"]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-testid="lk-detail-naam"]').text()).toBe('Documentbeheer')
+  })
+
+  it('"Open applicatie →" navigeert naar het applicatie-detail', async () => {
+    const { w, pushSpy } = await mountView()
+    await w.find('[data-testid="lk-res-naam-a1"]').trigger('click')
+    await flushPromises()
+    await w.find('[data-testid="lk-detail-open"]').trigger('click')
+    expect(pushSpy).toHaveBeenCalledWith({ name: 'applicatie-detail', params: { id: 'a1' } })
+  })
+
+  it('"Voeg alle gefilterde toe" vult de actieve set', async () => {
+    const { w } = await mountView()
+    await w.find('[data-testid="lk-voeg-alle"]').trigger('click')
+    await flushPromises()
+    // alle 4 nodes (geen filter) in de set.
+    expect(w.find('[data-testid="lk-rechts"]').text()).toContain('Actieve set (4)')
+  })
+
+  it('toont het blokkade-icoon op een node met open blokkades', async () => {
+    const { w } = await mountView()
+    expect(w.find('[data-testid="lk-res-blok-a2"]').exists()).toBe(true)
+    expect(w.find('[data-testid="lk-res-blok-a1"]').exists()).toBe(false)
   })
 })

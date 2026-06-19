@@ -28,6 +28,18 @@ def test_landschapskaart_service_raakt_engine_niet():
         assert not hasattr(s, naam), f"landschapskaart_service mag de engine niet importeren: {naam!r}"
 
 
+def test_landschapsnode_heeft_v3_velden():
+    """ADR-025 v3 — de node-verrijking (domein/leverancier/hosting/blokkades) zit in het schema."""
+    from schemas.landschapskaart import LandschapsNode
+
+    velden = LandschapsNode.model_fields
+    for veld in ("domein", "leverancier_naam", "hosting_model", "blokkades_open"):
+        assert veld in velden, f"LandschapsNode mist het v3-veld {veld!r}"
+    # blokkades_open is een int met default 0 (geen open blokkades → 0).
+    n = LandschapsNode(id=uuid.uuid4(), naam="X", element_type="applicatie")
+    assert n.blokkades_open == 0 and n.hosting_model is None
+
+
 def test_landschapskaart_geen_schrijfpad_in_bron():
     """Read-only: de servicebron bevat geen schrijf-operaties op de sessie."""
     import inspect
@@ -148,6 +160,10 @@ def test_landschapskaart_graf_vier_ringen_en_lifecycle_live():
     # Nodes: applicatie met lifecycle, partij met soort, contract.
     assert node_per_id[app_id].element_type == "applicatie"
     assert node_per_id[app_id].lifecycle_status == "concept"   # uit component_profiel (read-only)
+    # v3-verrijking op de applicatie-node: hosting (enum-waarde), domein-label, geen open blokkades.
+    assert node_per_id[app_id].hosting_model == "saas"
+    assert node_per_id[app_id].domein  # componenttype-label gevuld
+    assert node_per_id[app_id].blokkades_open == 0
     assert node_per_id[org_id].element_type == "partij" and node_per_id[org_id].soort == "organisatie"
     assert node_per_id[org_id].laag == "business"
     assert node_per_id[contract_id].element_type == "contract"
@@ -159,3 +175,40 @@ def test_landschapskaart_graf_vier_ringen_en_lifecycle_live():
     # De beheerorganisatie-edge draagt de rol-naam als label.
     beheer = [e for e in graf.edges if e.ring == "beheerorganisatie" and e.bron_id == org_id]
     assert beheer and beheer[0].label
+
+
+@integratie
+def test_landschapskaart_blokkades_open_telling_live():
+    """Een via de engine ontstane open blokkade (score 'nee') telt mee in `blokkades_open`."""
+    from sqlalchemy import select as _select, text as _text
+
+    from models.models import ChecklistVraag
+    from schemas.applicatie import ApplicatieCreate
+    from schemas.checklistscore import ChecklistscoreCreate
+    from services import applicatie_service, checklistscore_service, landschapskaart_service as svc
+
+    tid = uuid.UUID(_TID)
+
+    async def _flow(s):
+        ids = []
+        try:
+            app = await applicatie_service.maak_aan(
+                s, tid, ApplicatieCreate(naam="WT-LK-Blok", hostingmodel="saas", migratiepad="onbekend",
+                                         complexiteit="midden", prioriteit="midden"))
+            ids.append(app.id)
+            await applicatie_service.start_inventarisatie(s, tid, app.id)
+            vraag_id = (await s.execute(
+                _select(ChecklistVraag.id).where(ChecklistVraag.componenttype == "applicatie").limit(1)
+            )).scalar_one()
+            # Score 'nee' → de engine genereert een open blokkade (read-only geteld door de kaart).
+            await checklistscore_service.maak_aan(
+                s, tid, ChecklistscoreCreate(component_id=app.id, checklistvraag_id=vraag_id, score="nee"))
+            graf = await svc.haal_grafdata_op(s, _TID)
+            return next(n for n in graf.nodes if n.id == app.id)
+        finally:
+            for eid in ids:
+                await s.execute(_text("DELETE FROM element WHERE id=:i"), {"i": str(eid)})
+            await s.commit()
+
+    node = asyncio.run(_run_rls(_flow))
+    assert node.blokkades_open >= 1  # de open blokkade wordt geteld
