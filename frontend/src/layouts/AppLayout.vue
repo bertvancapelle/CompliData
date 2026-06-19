@@ -137,13 +137,6 @@ async function uitloggen() {
             Blokkades
           </router-link>
           <router-link
-            :to="{ name: 'koppelingenkaart' }"
-            data-testid="nav-koppelingenkaart"
-            class="rounded-[var(--cd-radius-nav)] px-[var(--cd-space-md)] py-[var(--cd-space-sm)] text-[var(--cd-color-text)] hover:bg-[var(--cd-color-accent)] aria-[current=page]:bg-[var(--cd-color-accent)] aria-[current=page]:font-semibold"
-          >
-            Koppelingenkaart
-          </router-link>
-          <router-link
             v-if="magArchitectuurZien"
             :to="{ name: 'architectuur' }"
             data-testid="nav-architectuur"

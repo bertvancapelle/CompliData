@@ -9,12 +9,13 @@
  * UI testbaar is met een gemockte cytoscape. Read-only; geen engine-aanraking.
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRouter } from '@/composables/router'
+import { useRoute, useRouter } from '@/composables/router'
 import cytoscape from '@/composables/cytoscape'
 import { api } from '@/api'
 import { humaniseer } from '../labels'
 
 const router = useRouter()
+const route = useRoute()
 
 // Lifecycle → kleur (node-achtergrond + rand).
 const LC_STYLE = {
@@ -122,8 +123,9 @@ const zichtbareNodes = computed(() => {
     return nodes.value.filter((n) => n.id === sp || egoBuren.value.has(n.id))
   }
   if (modus.value === 'impact') return nodes.value.filter(isApplicatie)
-  // geheel model: opbouw = alleen de match (begint leeg); afpel = alles behalve de match (begint vol)
-  if (!filterActief.value) return opbouwModus.value ? [] : nodes.value
+  // Geheel model toont standaard het VOLLEDIGE landschap (Fix 1: gebruiker verwacht alles te zien).
+  // Filters verfijnen: opbouw = alleen de match; afpel = alles behalve de match.
+  if (!filterActief.value) return nodes.value
   const match = new Set(gefilterdeNodes.value.map((n) => n.id))
   return nodes.value.filter((n) => (opbouwModus.value ? match.has(n.id) : !match.has(n.id)))
 })
@@ -176,6 +178,13 @@ function selecteerNode(id) {
   detailId.value = id
   // In ego-modus hercentreert een applicatie-klik.
   if (modus.value === 'ego' && isApplicatie(nodePerId.value[id])) egoStartId.value = id
+  // Fix 3: highlight + centreer de node in de grafiek (voor o.a. klik op een actieve-set-item).
+  if (!cy) return
+  cy.elements?.().unselect?.()
+  const node = cy.getElementById?.(String(id))
+  if (!node || !node.length) return
+  node.select?.()
+  cy.animate?.({ center: { eles: node }, zoom: Math.max(cy.zoom?.() ?? 1, 1.2), duration: 400, easing: 'ease-in-out-cubic' })
 }
 function openApplicatie() {
   if (detailNode.value) router.push({ name: 'applicatie-detail', params: { id: detailNode.value.id } })
@@ -235,8 +244,18 @@ const zichtbaarAantal = computed(() => {
 })
 
 function _layout() {
-  if (modus.value === 'ego') return { name: 'concentric', concentric: (n) => (n.id() === egoStartId.value ? 10 : 5), levelWidth: () => 1, minNodeSpacing: 40 }
-  return { name: 'cose', animate: false, padding: 30, nodeRepulsion: modus.value === 'geheel' ? 12000 : 6000 }
+  if (modus.value === 'ego') {
+    return {
+      name: 'concentric', concentric: (n) => (n.id() === egoStartId.value ? 10 : 5), levelWidth: () => 1,
+      minNodeSpacing: 60, padding: 60, animate: true, animationDuration: 400, // Fix 2: meer ruimte
+    }
+  }
+  // Fix 2: ruimere cose-spreiding → leesbaardere labels/relaties (impact + geheel).
+  return {
+    name: 'cose', idealEdgeLength: 200, nodeRepulsion: modus.value === 'geheel' ? 12000 : 8000,
+    nodeOverlap: 4, gravity: 0.25, numIter: 1000, initialTemp: 200, coolingFactor: 0.99, minTemp: 1.0,
+    padding: 60, randomize: false, animate: true, animationDuration: 600, fit: true,
+  }
 }
 async function tekenGraaf() {
   if (!cy) return
@@ -272,12 +291,24 @@ const CY_STYLE = [
       'target-arrow-shape': 'triangle', 'target-arrow-color': 'data(lc)', 'curve-style': 'bezier',
     },
   },
+  // Fix 3: visuele markering van de geselecteerde node (klik op set-item / node).
+  { selector: 'node:selected', style: { 'border-width': 4, 'border-color': '#f59e0b', 'border-style': 'solid' } },
 ]
 
 let resizeObserver = null
 
 onMounted(async () => {
   await laad()
+  // ADR-025 deep-link: ?center=<applicatie-id>&modus=<ego|impact|geheel> (vanuit het applicatie-detail).
+  // De center-applicatie wordt het ego-middelpunt + de actieve set, zodat de kaart erop centreert.
+  const qModus = route.query?.modus ? String(route.query.modus) : null
+  const qCenter = route.query?.center ? String(route.query.center) : null
+  if (qModus && ['ego', 'impact', 'geheel'].includes(qModus)) modus.value = qModus
+  if (qCenter) {
+    actieveSet.value = new Set([qCenter])
+    egoStartId.value = qCenter
+    detailId.value = qCenter
+  }
   await nextTick() // wacht tot de canvas-div in de DOM staat (en de flex-hoogte gezet is)
   if (containerRef.value) {
     cy = cytoscape({ container: containerRef.value, elements: [], style: CY_STYLE })
@@ -305,6 +336,12 @@ watch(
   { deep: false },
 )
 
+function setModus(m) {
+  modus.value = m
+  // Fix 1: Geheel model vult de actieve set met álle applicaties (de gebruiker ziet meteen
+  // het volledige landschap; daarna verwijderen/filteren kan). Afpel-modus begint dus óók "vol".
+  if (m === 'geheel') actieveSet.value = new Set(appNodes.value.map((n) => n.id))
+}
 function centreer() {
   cy?.fit?.()
 }
@@ -321,7 +358,7 @@ const typeLabel = (t) => humaniseer(t)
     <!-- Topbar: modus-toggle -->
     <div class="flex items-center gap-[var(--cd-space-sm)] border-b border-[var(--cd-color-border)] bg-white p-[var(--cd-space-sm)]">
       <div class="flex gap-1 rounded-[var(--cd-radius-btn)] bg-[var(--cd-color-accent)] p-1">
-        <button v-for="m in ['ego', 'impact', 'geheel']" :key="m" type="button" :data-testid="`lk-modus-${m}`" :aria-pressed="modus === m" :class="['rounded-[var(--cd-radius-btn)] px-[var(--cd-space-md)] py-1 text-[length:var(--cd-text-sm)]', modus === m ? 'bg-[var(--cd-color-primary)] text-white' : '']" @click="modus = m">
+        <button v-for="m in ['ego', 'impact', 'geheel']" :key="m" type="button" :data-testid="`lk-modus-${m}`" :aria-pressed="modus === m" :class="['rounded-[var(--cd-radius-btn)] px-[var(--cd-space-md)] py-1 text-[length:var(--cd-text-sm)]', modus === m ? 'bg-[var(--cd-color-primary)] text-white' : '']" @click="setModus(m)">
           {{ m === 'ego' ? 'Ego-view' : m === 'impact' ? 'Impact-view' : 'Geheel model' }}
         </button>
       </div>

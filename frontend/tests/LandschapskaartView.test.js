@@ -8,7 +8,10 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 vi.mock('@/composables/cytoscape', () => ({
   default: vi.fn(() => ({
     on: vi.fn(),
-    elements: () => ({ remove: vi.fn() }),
+    elements: () => ({ remove: vi.fn(), unselect: vi.fn() }),
+    getElementById: () => ({ length: 0, select: vi.fn() }),
+    animate: vi.fn(),
+    zoom: () => 1,
     add: vi.fn(),
     layout: () => ({ run: vi.fn() }),
     resize: vi.fn(),
@@ -32,15 +35,16 @@ const GRAF = () => ({
   edges: [{ bron_id: 'a1', doel_id: 'a2', relatietype: 'flow', label: 'koppeling', ring: 'applicaties' }],
 })
 
-async function mountView() {
+async function mountView({ query = '' } = {}) {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
       { path: '/', name: 'home', component: { template: '<div/>' } },
+      { path: '/landschapskaart', name: 'landschapskaart', component: { template: '<div/>' } },
       { path: '/applicaties/:id', name: 'applicatie-detail', component: { template: '<div/>' } },
     ],
   })
-  await router.push('/')
+  await router.push(`/landschapskaart${query}`)
   await router.isReady()
   const pushSpy = vi.spyOn(router, 'push')
   const w = mount(LandschapskaartView, { global: { plugins: [router] } })
@@ -86,15 +90,13 @@ describe('LandschapskaartView v3', () => {
     expect(w.find('[data-testid="impact-samenvatting"]').text()).toBe('1 in set · 1 raakvlakken · 1 grensoverschrijdende koppelingen')
   })
 
-  it('Geheel-model: opbouw begint leeg, afpel toont alles', async () => {
+  it('Geheel-model toont direct alle nodes en vult de set met alle applicaties (Fix 1)', async () => {
     const { w } = await mountView()
     await w.find('[data-testid="lk-modus-geheel"]').trigger('click')
     await flushPromises()
-    // opbouw (default) zonder filter → 0 zichtbaar.
-    expect(w.find('[data-testid="lk-zichtbaar-aantal"]').text()).toContain('0 nodes')
-    await w.find('[data-testid="lk-afpel-toggle"]').setValue(true)
-    await flushPromises()
+    // Volledig landschap meteen zichtbaar (alle 4 nodes), en de actieve set bevat de 2 applicaties.
     expect(w.find('[data-testid="lk-zichtbaar-aantal"]').text()).toContain('4 nodes')
+    expect(w.find('[data-testid="lk-rechts"]').text()).toContain('Actieve set (2)')
   })
 
   it('node-klik (resultaatrij) toont het detail-paneel', async () => {
@@ -119,6 +121,23 @@ describe('LandschapskaartView v3', () => {
     await flushPromises()
     // alleen de twee applicaties komen in de set (partij/contract zijn niet selecteerbaar).
     expect(w.find('[data-testid="lk-rechts"]').text()).toContain('Actieve set (2)')
+  })
+
+  it('Fix 3: klik op een actieve-set-item selecteert de node (detail-paneel)', async () => {
+    const { w } = await mountView()
+    await w.find('[data-testid="lk-res-set-a1"]').trigger('click') // a1 in de set
+    await flushPromises()
+    await w.find('[data-testid="lk-set-a1"]').find('button').trigger('click') // klik het set-item (naam)
+    await flushPromises()
+    expect(w.find('[data-testid="lk-detail-naam"]').text()).toBe('Zaaksysteem')
+  })
+
+  it('deep-link ?center=<id>&modus=ego zet de modus en de actieve set (ADR-025)', async () => {
+    const { w } = await mountView({ query: '?center=a1&modus=ego' })
+    expect(w.find('[data-testid="lk-modus-ego"]').attributes('aria-pressed')).toBe('true')
+    // de center-applicatie staat in de actieve set en is het detail.
+    expect(w.find('[data-testid="lk-rechts"]').text()).toContain('Actieve set (1)')
+    expect(w.find('[data-testid="lk-detail-naam"]').text()).toBe('Zaaksysteem')
   })
 
   it('toont het blokkade-icoon op een node met open blokkades', async () => {

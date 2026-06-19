@@ -130,6 +130,11 @@ function naarBewerken() {
   router.push({ name: 'applicatie-bewerken', params: { id: props.id } })
 }
 
+// ADR-025: open de Landschapskaart in Ego-view, gecentreerd op deze applicatie.
+function openInLandschapskaart() {
+  router.push({ name: 'landschapskaart', query: { center: props.id, modus: 'ego' } })
+}
+
 // Lifecycle-coördinatie (ADR-013): de frontend berekent niets zelf — na een
 // score/blokkade-mutatie wordt de status opnieuw bij de backend opgehaald.
 const scoreSectie = ref(null)
@@ -301,6 +306,13 @@ onMounted(async () => {
         </dl>
 
         <div class="mt-[var(--cd-space-lg)] flex flex-wrap gap-[var(--cd-space-md)]">
+          <Button
+            label="🗺 Open in Landschapskaart →"
+            severity="secondary"
+            outlined
+            data-testid="open-landschapskaart-knop"
+            @click="openInLandschapskaart"
+          />
           <Button v-if="magBewerken" label="Bewerken" data-testid="bewerken-knop" @click="naarBewerken" />
           <Button
             v-if="magStarten"

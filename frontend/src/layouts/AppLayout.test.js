@@ -26,7 +26,6 @@ function maakRouter() {
           { path: 'partijen', name: 'partij-lijst', component: { template: '<div/>' } },
           { path: 'contracten', name: 'contract-lijst', component: { template: '<div/>' } },
           { path: 'blokkades', name: 'blokkades', component: { template: '<div/>' } },
-          { path: 'koppelingenkaart', name: 'koppelingenkaart', component: { template: '<div/>' } },
           { path: 'checklistvragen', name: 'checklistvragen', component: { template: '<div/>' } },
           { path: 'architectuur', name: 'architectuur', component: { template: '<div/>' } },
           { path: 'landschapskaart', name: 'landschapskaart', component: { template: '<div/>' } },
@@ -98,13 +97,6 @@ describe('AppLayout', () => {
     expect(link.exists()).toBe(true)
     expect(link.element.tagName).toBe('A')
     expect(link.attributes('href')).toContain('/componenten')
-  })
-
-  it('toont de Koppelingenkaart-navlink (CD023)', async () => {
-    const { wrapper } = await mountShell()
-    const link = wrapper.find('[data-testid="nav-koppelingenkaart"]')
-    expect(link.exists()).toBe(true)
-    expect(link.attributes('href')).toContain('/koppelingenkaart')
   })
 
   it('toggelt de sidebar en werkt aria-expanded bij', async () => {

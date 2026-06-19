@@ -12,7 +12,6 @@ import BeheerLayout from '../layouts/BeheerLayout.vue'
 // en de guard blijven ongewijzigd; alleen het laadmoment verschuift.
 const DashboardView = () => import('../views/DashboardView.vue')
 const BlokkadeOverzichtView = () => import('../views/BlokkadeOverzichtView.vue')
-const KoppelingenkaartView = () => import('../views/KoppelingenkaartView.vue')
 // ADR-023 Fase F / F-2 — cross-element laagprojectie, lazy.
 const ArchitectuurView = () => import('../views/ArchitectuurView.vue')
 const LandschapskaartView = () => import('@modules/bwb_ontvlechting/frontend/views/LandschapskaartView.vue')
@@ -76,7 +75,6 @@ const routes = [
     children: [
       { path: '', name: 'dashboard', component: DashboardView },
       { path: 'blokkades', name: 'blokkades', component: BlokkadeOverzichtView },
-      { path: 'koppelingenkaart', name: 'koppelingenkaart', component: KoppelingenkaartView },
       // ADR-023 Fase F / F-2 — cross-element laagprojectie (read-only); élke tenant-rol leest.
       { path: 'architectuur', name: 'architectuur', component: ArchitectuurView, meta: { roles: MIGRATIE_ROLLEN } },
       // ADR-025 — Landschapskaart (read-only grafische landschapsweergave); zelfde leesrecht als architectuur.
