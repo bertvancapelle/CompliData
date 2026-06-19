@@ -802,6 +802,9 @@ LK_ROLLEN = [
     ("P. van Dijk", "product_owner", "Klantportaal"),
     ("P. van Dijk", "eigenaar", "Burgerzaken-suite"),
     ("SaaS-leverancier NL", "technisch_beheer", "Financieel systeem"),
+    # ADR-024 — nieuwe rollen, voor de doorklik vanuit de VerantwoordelijkheidSectie.
+    ("P. van Dijk", "account_manager", "Zaaksysteem"),
+    ("J. de Vries", "service_delivery_manager", "Klantportaal"),
 ]
 
 
@@ -872,9 +875,18 @@ async def seed_landschapskaart_demo(session, tenant_id) -> dict:
 
     org_id = await _zorg_partij(PartijAard.organisatie, "Gemeente BWB", omschrijving="Demo-organisatie")
     afd_id = await _zorg_partij(PartijAard.organisatie_eenheid, "Afdeling Informatisering", organisatie_id=org_id)
-    await _zorg_partij(PartijAard.persoon, "P. van Dijk", organisatie_id=org_id, afdeling_id=afd_id)
+    # ADR-024 (Optie 1) — personen met contactgegevens (functietitel is persoon-only).
+    await _zorg_partij(
+        PartijAard.persoon, "P. van Dijk", organisatie_id=org_id, afdeling_id=afd_id,
+        email="p.vandijk@bwb.nl", telefoon="06-12345678", functietitel="Informatiemanager")
+    await _zorg_partij(
+        PartijAard.persoon, "J. de Vries", organisatie_id=org_id, afdeling_id=afd_id,
+        email="j.devries@bwb.nl", telefoon="06-87654321", functietitel="Product Owner")
     await _zorg_partij(PartijAard.externe_partij, "TechSupplier BV")
     await _zorg_partij(PartijAard.externe_partij, "SaaS-leverancier NL")
+    # Zaaksysteem (basis-seed) resolvbaar maken voor een roltoewijzing (staat niet in LK_APPS).
+    if "Zaaksysteem" in bestaande_apps:
+        naam_naar_id["Zaaksysteem"] = bestaande_apps["Zaaksysteem"]
 
     # --- Contracten (leverancier = externe partij) ---
     con_ids = {r.contractnaam: r.id for r in (await session.execute(select(Contract))).scalars().all()}

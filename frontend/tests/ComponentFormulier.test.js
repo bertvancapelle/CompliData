@@ -80,12 +80,11 @@ describe('ComponentFormulier', () => {
     expect(router.currentRoute.value.params.id).toBe('app-new')
   })
 
-  it('het leverancier-veld verduidelijkt de inventarisatie-notitie (a11y-gekoppeld; ADR-023 Fase D)', async () => {
+  it('toont de vrije-tekstvelden eigenaar (naam) en leverancier niet meer (ADR-024)', async () => {
     const { w } = await mountForm()
-    const help = w.find('[data-testid="leverancier-help"]')
-    expect(help.exists()).toBe(true)
-    expect(help.text()).toContain('contractuele')
-    expect(w.find('[data-testid="veld-leverancier"]').attributes('aria-describedby')).toBe('f-leverancier-help')
+    expect(w.find('[data-testid="veld-leverancier"]').exists()).toBe(false)
+    expect(w.find('[data-testid="veld-eigenaar-naam"]').exists()).toBe(false)
+    expect(w.find('[data-testid="leverancier-help"]').exists()).toBe(false)
   })
 
   it('naam is verplicht (geen API-call bij leeg)', async () => {

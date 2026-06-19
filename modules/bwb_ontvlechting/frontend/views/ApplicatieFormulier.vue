@@ -31,8 +31,6 @@ const form = reactive({
   hostingmodel: '',
   eigenaar_organisatie_id: null,
   eigenaar_organisatie_naam: '',  // initieel label voor de ZoekSelect (bewerken-modus)
-  eigenaar_naam: '',
-  leverancier: '',
   migratiepad: '',
   complexiteit: '',
   prioriteit: '',
@@ -58,8 +56,6 @@ async function init() {
         hostingmodel: a.hostingmodel,
         eigenaar_organisatie_id: a.eigenaar_organisatie_id ?? null,
         eigenaar_organisatie_naam: a.eigenaar_organisatie_naam || '',
-        eigenaar_naam: a.eigenaar_naam || '',
-        leverancier: a.leverancier || '',
         migratiepad: a.migratiepad,
         complexiteit: a.complexiteit,
         prioriteit: a.prioriteit,
@@ -94,8 +90,6 @@ function _payload() {
     beschrijving: form.beschrijving.trim() || null,
     hostingmodel: form.hostingmodel,
     eigenaar_organisatie_id: form.eigenaar_organisatie_id || null,
-    eigenaar_naam: form.eigenaar_naam.trim() || null,
-    leverancier: form.leverancier.trim() || null,
     migratiepad: form.migratiepad,
     complexiteit: form.complexiteit,
     prioriteit: form.prioriteit,
@@ -189,20 +183,6 @@ onMounted(init)
           placeholder="Zoek een organisatie (optioneel)…"
         />
         <span v-if="fouten.eigenaar_organisatie_id" id="fout-eigenaar-organisatie" role="alert" data-testid="fout-eigenaar-organisatie" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.eigenaar_organisatie_id }}</span>
-      </div>
-
-      <div class="flex flex-col gap-[var(--cd-space-xs)]">
-        <label for="f-eigenaar-naam" class="font-semibold">Eigenaar (naam)</label>
-        <InputText id="f-eigenaar-naam" v-model="form.eigenaar_naam" data-testid="veld-eigenaar-naam" />
-      </div>
-
-      <div class="flex flex-col gap-[var(--cd-space-xs)]">
-        <label for="f-leverancier" class="font-semibold">Leverancier</label>
-        <InputText id="f-leverancier" v-model="form.leverancier" data-testid="veld-leverancier" aria-describedby="f-leverancier-help" />
-        <p id="f-leverancier-help" data-testid="leverancier-help" class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">
-          Vrije inventarisatie-notitie (interne/feitelijke benaming). Staat los van de contractuele
-          leverancier — die leg je vast via het contract.
-        </p>
       </div>
 
       <div

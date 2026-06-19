@@ -251,3 +251,41 @@ def test_live_geen_wees_element_partij():
         finally:
             await eng.dispose()
     assert asyncio.run(_run()) == 0
+
+
+# ── ADR-024 (Optie 1): functietitel is persoon-only ──────────────────────────────
+
+def test_functietitel_alleen_persoon_pure():
+    """`_valideer_functietitel`: toegestaan voor persoon, 422 FUNCTIETITEL_ALLEEN_PERSOON anders."""
+    from models.models import PartijAard
+    from services import partij_service as svc
+    from services.errors import OngeldigeRegistratie
+
+    # persoon: ingevuld mag; elke aard mag None (niet ingevuld) hebben.
+    svc._valideer_functietitel(PartijAard.persoon, "Informatiemanager")
+    svc._valideer_functietitel(PartijAard.organisatie, None)
+    # niet-persoon met ingevulde functietitel → 422 met de juiste code.
+    for aard in (PartijAard.organisatie, PartijAard.organisatie_eenheid, PartijAard.externe_partij):
+        with pytest.raises(OngeldigeRegistratie) as exc:
+            svc._valideer_functietitel(aard, "Manager")
+        assert getattr(exc.value, "code", None) == "FUNCTIETITEL_ALLEEN_PERSOON"
+
+
+def test_functietitel_in_partij_schema():
+    from schemas.partij import PartijCreate, PartijRead, PartijUpdate
+
+    for model in (PartijCreate, PartijUpdate, PartijRead):
+        assert "functietitel" in model.model_fields
+
+
+def test_component_schema_zonder_eigenaar_naam_leverancier():
+    """De vrije-tekstvelden zijn verwijderd uit component- én applicatie-schemas (ADR-024)."""
+    from schemas.applicatie import ApplicatieCreate, ApplicatieRead, ApplicatieUpdate
+    from schemas.component import ComponentCreate, ComponentRead, ComponentUpdate
+
+    for model in (ComponentCreate, ComponentUpdate, ComponentRead,
+                  ApplicatieCreate, ApplicatieUpdate, ApplicatieRead):
+        assert "eigenaar_naam" not in model.model_fields
+        assert "leverancier" not in model.model_fields
+        # de partij-FK blijft bestaan
+        assert "eigenaar_organisatie_id" in model.model_fields

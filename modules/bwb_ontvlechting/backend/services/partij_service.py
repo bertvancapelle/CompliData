@@ -186,10 +186,21 @@ async def haal_op(session: AsyncSession, tenant_id, partij_id) -> Partij:
     return obj
 
 
+def _valideer_functietitel(aard: PartijAard, functietitel: str | None) -> None:
+    """ADR-024 (Optie 1) — `functietitel` geldt uitsluitend voor een persoon (422 bij andere aarden).
+    E-mail/telefoon blijven gedeelde contactvelden; alleen de functietitel is persoon-eigen."""
+    if functietitel is not None and aard != PartijAard.persoon:
+        raise OngeldigeRegistratie(
+            "FUNCTIETITEL_ALLEEN_PERSOON",
+            "Een functietitel kan alleen voor een persoon worden vastgelegd.",
+        )
+
+
 async def maak_aan(session: AsyncSession, tenant_id, data: PartijCreate) -> Partij:
     tid = _tenant_uuid(tenant_id)
     await partijsoort_catalog.valideer_soort(session, data.soort)
     await _valideer_lidmaatschap(session, tid, data.aard, data.organisatie_id, data.afdeling_id)
+    _valideer_functietitel(data.aard, data.functietitel)
     # Element-identiteit eerst (shared-PK), dan de partij-subtype-rij. `aard` uit de invoer.
     elem = Element(tenant_id=tid, element_type=ElementType.partij)
     session.add(elem)
@@ -213,6 +224,8 @@ async def werk_bij(session: AsyncSession, tenant_id, partij_id, data: PartijUpda
         nieuw_org = velden.get("organisatie_id", obj.organisatie_id)
         nieuw_afd = velden.get("afdeling_id", obj.afdeling_id)
         await _valideer_lidmaatschap(session, tid, obj.aard, nieuw_org, nieuw_afd)
+    if "functietitel" in velden:
+        _valideer_functietitel(obj.aard, velden["functietitel"])  # aard ligt vast
     for veld, waarde in velden.items():
         setattr(obj, veld, waarde)
     await session.commit()

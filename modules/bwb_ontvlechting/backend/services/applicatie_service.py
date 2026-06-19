@@ -35,7 +35,7 @@ from models.models import (
 
 # Velden die op de component leven (ADR-021 herfundering) — voor mutatie-routering.
 _COMPONENTVELDEN = frozenset(
-    {"naam", "beschrijving", "hostingmodel", "eigenaar_organisatie_id", "eigenaar_naam", "leverancier"}
+    {"naam", "beschrijving", "hostingmodel", "eigenaar_organisatie_id"}
 )
 from schemas.applicatie import ApplicatieCreate, ApplicatieUpdate
 from services.errors import NietGevonden, OngeldigeStatusovergang
@@ -244,8 +244,6 @@ async def maak_applicatie_subtype(
     beschrijving: str | None,
     hostingmodel: HostingModel,
     eigenaar_organisatie_id: uuid.UUID | None,
-    eigenaar_naam: str | None,
-    leverancier: str | None,
     migratiepad: Migratiepad,
     complexiteit: NiveauEnum,
     prioriteit: NiveauEnum,
@@ -268,8 +266,6 @@ async def maak_applicatie_subtype(
         componenttype="applicatie",
         hostingmodel=hostingmodel,
         eigenaar_organisatie_id=eigenaar_organisatie_id,
-        eigenaar_naam=eigenaar_naam,
-        leverancier=leverancier,
         beschrijving=beschrijving,
     )
     session.add(comp)
@@ -311,8 +307,6 @@ async def maak_aan(session: AsyncSession, tenant_id, data: ApplicatieCreate) -> 
         beschrijving=d["beschrijving"],
         hostingmodel=d["hostingmodel"],
         eigenaar_organisatie_id=d["eigenaar_organisatie_id"],
-        eigenaar_naam=d["eigenaar_naam"],
-        leverancier=d["leverancier"],
         migratiepad=d["migratiepad"],
         complexiteit=d["complexiteit"],
         prioriteit=d["prioriteit"],

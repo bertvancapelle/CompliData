@@ -38,8 +38,6 @@ class ComponentCreate(BaseModel):
     hostingmodel: HostingModel = HostingModel.onbekend
     # ADR-024 UX-B6-b — optionele verwijzing naar de eigenaar-organisatie (partij, aard=organisatie).
     eigenaar_organisatie_id: uuid.UUID | None = None
-    eigenaar_naam: str | None = None
-    leverancier: str | None = None
     beschrijving: str | None = None
 
     @field_validator("naam")
@@ -60,8 +58,6 @@ class ComponentUpdate(BaseModel):
     componenttype: str | None = None
     hostingmodel: HostingModel | None = None
     eigenaar_organisatie_id: uuid.UUID | None = None
-    eigenaar_naam: str | None = None
-    leverancier: str | None = None
     beschrijving: str | None = None
 
     @field_validator("naam")
@@ -84,8 +80,6 @@ class ComponentRead(BaseModel):
     # ADR-024 UX-B6-b — eigenaar-organisatie als verwijzing + geresolveerde naam (read).
     eigenaar_organisatie_id: uuid.UUID | None = None
     eigenaar_organisatie_naam: str | None = None
-    eigenaar_naam: str | None
-    leverancier: str | None
     beschrijving: str | None
     heeft_applicatie_subtype: bool
     # ADR-023 Fase C: ArchiMate-typing uit de catalogus (read-only projectie) — laag-label

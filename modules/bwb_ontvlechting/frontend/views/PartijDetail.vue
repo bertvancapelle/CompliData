@@ -206,6 +206,11 @@ const RIJEN = [
           <dt class="font-semibold">{{ r.label }}</dt>
           <dd class="whitespace-pre-wrap">{{ partij[r.veld] || '—' }}</dd>
         </template>
+        <!-- ADR-024 (Optie 1) — functietitel alleen voor een persoon, en alleen indien gevuld. -->
+        <template v-if="isPersoon && partij.functietitel">
+          <dt class="font-semibold">Functietitel</dt>
+          <dd data-testid="detail-functietitel">{{ partij.functietitel }}</dd>
+        </template>
       </dl>
 
       <!-- Hoort bij (afdeling/persoon) -->

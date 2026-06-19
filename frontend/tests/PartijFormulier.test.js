@@ -55,6 +55,16 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks())
 
 describe('PartijFormulier — aanmaken', () => {
+  it('toont het functietitel-veld bij aard=persoon en verbergt het bij andere aarden (ADR-024)', async () => {
+    const { w } = await mountForm()
+    await w.find('[data-testid="veld-aard"]').setValue('persoon')
+    expect(w.find('[data-testid="veld-functietitel"]').exists()).toBe(true)
+    await w.find('[data-testid="veld-aard"]').setValue('organisatie')
+    expect(w.find('[data-testid="veld-functietitel"]').exists()).toBe(false)
+    await w.find('[data-testid="veld-aard"]').setValue('externe_partij')
+    expect(w.find('[data-testid="veld-functietitel"]').exists()).toBe(false)
+  })
+
   it('naam leeg ⇒ validatiefout, geen API-call', async () => {
     const { w } = await mountForm()
     await w.find('[data-testid="veld-aard"]').setValue('persoon')

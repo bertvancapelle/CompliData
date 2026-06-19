@@ -93,8 +93,8 @@ def test_create_optionele_lege_tekst_wordt_none():
     from schemas.applicatie import ApplicatieCreate
 
     d = _basis()
-    d["leverancier"] = "   "
-    assert ApplicatieCreate(**d).leverancier is None
+    d["beschrijving"] = "   "
+    assert ApplicatieCreate(**d).beschrijving is None
 
 
 def test_create_geen_serverbeheerde_velden():
@@ -136,9 +136,9 @@ def test_update_null_op_verplicht_veld_geweigerd():
 def test_update_nullable_veld_wissen_toegestaan():
     from schemas.applicatie import ApplicatieUpdate
 
-    m = ApplicatieUpdate(leverancier=None)
-    assert "leverancier" in m.model_fields_set
-    assert m.leverancier is None
+    m = ApplicatieUpdate(eigenaar_organisatie_id=None)
+    assert "eigenaar_organisatie_id" in m.model_fields_set
+    assert m.eigenaar_organisatie_id is None
 
 
 def test_update_geen_lifecycle_veld():

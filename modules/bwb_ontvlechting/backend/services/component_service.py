@@ -227,8 +227,6 @@ async def _lees(session: AsyncSession, tid: uuid.UUID, obj: Component) -> dict:
             if obj.eigenaar_organisatie_id is not None
             else None
         ),
-        "eigenaar_naam": obj.eigenaar_naam,
-        "leverancier": obj.leverancier,
         "beschrijving": obj.beschrijving,
         "heeft_applicatie_subtype": await _heeft_subtype(session, tid, obj.id),
         # ADR-022 Fase E: of dit componenttype checklist-dragend is (UI toont dan de
@@ -397,7 +395,6 @@ async def maak_aan(session: AsyncSession, tenant_id, data: ComponentCreate) -> d
             session, tid,
             naam=data.naam, beschrijving=data.beschrijving, hostingmodel=data.hostingmodel,
             eigenaar_organisatie_id=data.eigenaar_organisatie_id,
-            eigenaar_naam=data.eigenaar_naam, leverancier=data.leverancier,
             **_SUBTYPE_DEFAULTS,
         )
         return await _lees(session, tid, obj.component)
@@ -410,7 +407,6 @@ async def maak_aan(session: AsyncSession, tenant_id, data: ComponentCreate) -> d
         id=elem.id, tenant_id=tid, naam=data.naam, componenttype=data.componenttype,
         hostingmodel=data.hostingmodel,
         eigenaar_organisatie_id=data.eigenaar_organisatie_id,
-        eigenaar_naam=data.eigenaar_naam, leverancier=data.leverancier,
         beschrijving=data.beschrijving,
     )
     session.add(obj)

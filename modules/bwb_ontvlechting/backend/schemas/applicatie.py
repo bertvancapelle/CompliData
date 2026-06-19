@@ -91,8 +91,6 @@ class ApplicatieCreate(BaseModel):
     hostingmodel: HostingModel
     # ADR-024 UX-B6-b — optionele verwijzing naar de eigenaar-organisatie (partij, aard=organisatie).
     eigenaar_organisatie_id: uuid.UUID | None = None
-    eigenaar_naam: str | None = None
-    leverancier: str | None = None
     migratiepad: Migratiepad
     complexiteit: NiveauEnum
     prioriteit: NiveauEnum
@@ -101,11 +99,6 @@ class ApplicatieCreate(BaseModel):
     @classmethod
     def _v_naam(cls, v: str) -> str:
         return _verplichte_tekst(v, "naam", 255)
-
-    @field_validator("eigenaar_naam", "leverancier")
-    @classmethod
-    def _v_opt_255(cls, v: str | None) -> str | None:
-        return _optionele_tekst(v, 255)
 
     @field_validator("beschrijving")
     @classmethod
@@ -128,8 +121,6 @@ class ApplicatieUpdate(BaseModel):
     beschrijving: str | None = None
     hostingmodel: HostingModel | None = None
     eigenaar_organisatie_id: uuid.UUID | None = None
-    eigenaar_naam: str | None = None
-    leverancier: str | None = None
     migratiepad: Migratiepad | None = None
     complexiteit: NiveauEnum | None = None
     prioriteit: NiveauEnum | None = None
@@ -138,11 +129,6 @@ class ApplicatieUpdate(BaseModel):
     @classmethod
     def _v_naam(cls, v: str | None) -> str | None:
         return v if v is None else _verplichte_tekst(v, "naam", 255)
-
-    @field_validator("eigenaar_naam", "leverancier")
-    @classmethod
-    def _v_opt_255(cls, v: str | None) -> str | None:
-        return _optionele_tekst(v, 255)
 
     @field_validator("beschrijving")
     @classmethod
@@ -170,8 +156,6 @@ class ApplicatieRead(BaseModel):
     # ADR-024 UX-B6-b — eigenaar-organisatie als verwijzing + geresolveerde naam (read).
     eigenaar_organisatie_id: uuid.UUID | None = None
     eigenaar_organisatie_naam: str | None = None
-    eigenaar_naam: str | None
-    leverancier: str | None
     migratiepad: Migratiepad
     complexiteit: NiveauEnum
     prioriteit: NiveauEnum

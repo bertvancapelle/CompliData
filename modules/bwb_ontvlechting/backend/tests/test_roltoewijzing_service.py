@@ -60,14 +60,14 @@ def test_beheerrol_dimensie_bestaat():
     assert "beheerrol" in {e.value for e in RelatieKenmerkDimensie}
 
 
-def test_seed_bevat_zeven_beheerrollen():
+def test_seed_bevat_negen_beheerrollen():
     from services.seed_relatiekenmerk import _BEHEERROL, bouw_relatiekenmerk
 
-    assert len(_BEHEERROL) == 7
+    assert len(_BEHEERROL) == 9  # +Account Manager, +Service Delivery Manager
     rijen = bouw_relatiekenmerk()
     beheer = [r for r in rijen if getattr(r["dimensie"], "value", r["dimensie"]) == "beheerrol"]
-    assert len(beheer) == 7
-    assert len(rijen) == 14  # 4 dispositie + 3 relatie_rol + 7 beheerrol
+    assert len(beheer) == 9
+    assert len(rijen) == 16  # 4 dispositie + 3 relatie_rol + 9 beheerrol
 
 
 # ── Service: happy path + foutpaden ──────────────────────────────────────────────

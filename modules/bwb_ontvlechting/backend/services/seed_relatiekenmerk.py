@@ -36,6 +36,8 @@ _BEHEERROL: list[tuple[str, str]] = [
     ("product_owner", "Product owner"),
     ("eigenaar", "Eigenaar"),
     ("proceseigenaar", "Proceseigenaar"),
+    ("account_manager", "Account Manager"),
+    ("service_delivery_manager", "Service Delivery Manager"),
 ]
 
 _CATALOGUS: list[tuple[RelatieKenmerkDimensie, list[tuple[str, str]]]] = [
@@ -62,7 +64,7 @@ def bouw_relatiekenmerk() -> list[dict]:
 
 async def seed_relatiekenmerk(session) -> int:
     """Zaai de default-catalogus (idempotent). Geeft het aantal optie-rijen terug
-    (vast 14 = 4 dispositie + 3 relatie_rol + 7 beheerrol, ook bij een tweede idempotente run)."""
+    (vast 16 = 4 dispositie + 3 relatie_rol + 9 beheerrol, ook bij een tweede idempotente run)."""
     rijen = bouw_relatiekenmerk()
     stmt = pg_insert(RelatieKenmerkOptie).values(rijen).on_conflict_do_nothing(
         index_elements=["dimensie", "optie_sleutel"]

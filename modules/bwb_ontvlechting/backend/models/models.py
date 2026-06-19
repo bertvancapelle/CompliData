@@ -316,8 +316,6 @@ class Component(Base, TenantMixin, TimestampMixin):
     hostingmodel: Mapped[HostingModel] = mapped_column(hostingmodel_enum, nullable=False)
     # ADR-024 UX-B6-b — optionele verwijzing naar de eigenaar-organisatie (partij, aard=organisatie).
     eigenaar_organisatie_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
-    eigenaar_naam: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    leverancier: Mapped[str | None] = mapped_column(String(255), nullable=True)  # B4
     beschrijving: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
@@ -793,6 +791,8 @@ class Partij(Base, TenantMixin, TimestampMixin):
     telefoon: Mapped[str | None] = mapped_column(String(40), nullable=True)
     mobiel: Mapped[str | None] = mapped_column(String(40), nullable=True)
     email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # ADR-024 (Optie 1) — contactveld dat uitsluitend voor aard=persoon geldt (service dwingt af).
+    functietitel: Mapped[str | None] = mapped_column(String(150), nullable=True)
     omschrijving: Mapped[str | None] = mapped_column(Text, nullable=True)
     soort: Mapped[str | None] = mapped_column(String(60), nullable=True)
     # ADR-024 slice 2a-bis — lidmaatschap (zie __table_args__).

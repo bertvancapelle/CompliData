@@ -39,8 +39,6 @@ const form = reactive({
   hostingmodel: 'onbekend',
   eigenaar_organisatie_id: null,
   eigenaar_organisatie_naam: '',  // initieel label voor de ZoekSelect (bewerken-modus)
-  eigenaar_naam: '',
-  leverancier: '',
   beschrijving: '',
 })
 const fouten = reactive({})
@@ -78,8 +76,6 @@ async function init() {
         hostingmodel: c.hostingmodel,
         eigenaar_organisatie_id: c.eigenaar_organisatie_id ?? null,
         eigenaar_organisatie_naam: c.eigenaar_organisatie_naam || '',
-        eigenaar_naam: c.eigenaar_naam || '',
-        leverancier: c.leverancier || '',
         beschrijving: c.beschrijving || '',
       })
     }
@@ -108,8 +104,6 @@ function _payload() {
     componenttype: form.componenttype,
     hostingmodel: form.hostingmodel,
     eigenaar_organisatie_id: form.eigenaar_organisatie_id || null,
-    eigenaar_naam: form.eigenaar_naam.trim() || null,
-    leverancier: form.leverancier.trim() || null,
     beschrijving: form.beschrijving.trim() || null,
   }
 }
@@ -225,20 +219,6 @@ onMounted(init)
           :zoek-functie="zoekOrganisaties"
           placeholder="Zoek een organisatie (optioneel)…"
         />
-      </div>
-
-      <div class="flex flex-col gap-[var(--cd-space-xs)]">
-        <label for="f-eigenaar-naam" class="font-semibold">Eigenaar (naam)</label>
-        <InputText id="f-eigenaar-naam" v-model="form.eigenaar_naam" data-testid="veld-eigenaar-naam" />
-      </div>
-
-      <div class="flex flex-col gap-[var(--cd-space-xs)]">
-        <label for="f-leverancier" class="font-semibold">Leverancier</label>
-        <InputText id="f-leverancier" v-model="form.leverancier" data-testid="veld-leverancier" aria-describedby="f-leverancier-help" />
-        <p id="f-leverancier-help" data-testid="leverancier-help" class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">
-          Vrije inventarisatie-notitie (interne/feitelijke benaming). Staat los van de contractuele
-          leverancier — die leg je vast via het contract.
-        </p>
       </div>
 
       <div class="flex flex-col gap-[var(--cd-space-xs)]">

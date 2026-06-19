@@ -26,7 +26,7 @@ const aardLabel = (a) => label(PARTIJ_AARD, a)
 
 const VELDEN = [
   'naam', 'straat_huisnummer', 'postcode', 'plaats',
-  'contactpersoon', 'telefoon', 'mobiel', 'email', 'omschrijving',
+  'contactpersoon', 'telefoon', 'mobiel', 'email', 'functietitel', 'omschrijving',
 ]
 const form = reactive(Object.fromEntries(VELDEN.map((v) => [v, ''])))
 const aard = ref('')      // verplicht bij aanmaken; vast daarna
@@ -281,6 +281,13 @@ const TEKSTVELDEN = [
         <label :for="`pf-${v.veld}`" class="font-semibold">{{ v.label }}</label>
         <InputText :id="`pf-${v.veld}`" v-model="form[v.veld]" :data-testid="`veld-${v.veld}`" :aria-invalid="!!fouten[v.veld]" :aria-describedby="`fout-${v.veld}`" />
         <span v-if="fouten[v.veld]" :id="`fout-${v.veld}`" role="alert" :data-testid="`fout-${v.veld}`" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten[v.veld] }}</span>
+      </div>
+
+      <!-- ADR-024 (Optie 1) — functietitel uitsluitend voor een persoon. -->
+      <div v-if="aard === 'persoon'" class="flex flex-col gap-[var(--cd-space-xs)]" data-testid="veld-functietitel-wrap">
+        <label for="pf-functietitel" class="font-semibold">Functietitel (optioneel)</label>
+        <InputText id="pf-functietitel" v-model="form.functietitel" data-testid="veld-functietitel" :aria-invalid="!!fouten.functietitel" aria-describedby="fout-functietitel" />
+        <span v-if="fouten.functietitel" id="fout-functietitel" role="alert" data-testid="fout-functietitel" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.functietitel }}</span>
       </div>
 
       <div class="flex flex-col gap-[var(--cd-space-xs)]">

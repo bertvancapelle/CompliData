@@ -41,6 +41,8 @@ class PartijCreate(BaseModel):
     telefoon: str | None = None
     mobiel: str | None = None
     email: str | None = None
+    # ADR-024 (Optie 1) — persoon-only contactveld (de service weigert het bij andere aarden).
+    functietitel: str | None = None
     omschrijving: str | None = None
     soort: str | None = None  # platform-catalogus partijsoort_optie; service valideert
     # ADR-024 slice 2a-bis — lidmaatschap. Structuur (verplicht/verboden per aard) hieronder;
@@ -84,6 +86,11 @@ class PartijCreate(BaseModel):
     def _v_soort(cls, v: str | None) -> str | None:
         return _optionele_tekst(v, 60)
 
+    @field_validator("functietitel")
+    @classmethod
+    def _v_functietitel(cls, v: str | None) -> str | None:
+        return _optionele_tekst(v, 150)
+
     @field_validator("omschrijving")
     @classmethod
     def _v_omschrijving(cls, v: str | None) -> str | None:
@@ -104,6 +111,7 @@ class PartijUpdate(BaseModel):
     telefoon: str | None = None
     mobiel: str | None = None
     email: str | None = None
+    functietitel: str | None = None
     omschrijving: str | None = None
     soort: str | None = None
     # ADR-024 slice 2a-bis — lidmaatschap kan wijzigen (bv. persoon verhuist); de service
@@ -136,6 +144,11 @@ class PartijUpdate(BaseModel):
     def _v_soort(cls, v: str | None) -> str | None:
         return _optionele_tekst(v, 60)
 
+    @field_validator("functietitel")
+    @classmethod
+    def _v_functietitel(cls, v: str | None) -> str | None:
+        return _optionele_tekst(v, 150)
+
     @field_validator("omschrijving")
     @classmethod
     def _v_omschrijving(cls, v: str | None) -> str | None:
@@ -162,6 +175,7 @@ class PartijRead(BaseModel):
     telefoon: str | None
     mobiel: str | None
     email: str | None
+    functietitel: str | None
     omschrijving: str | None
     soort: str | None
     organisatie_id: uuid.UUID | None
