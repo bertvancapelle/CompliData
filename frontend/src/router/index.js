@@ -41,6 +41,9 @@ const ContractConfigBeheer = () => import('../views/ContractConfigBeheer.vue')
 const ComponentConfigBeheer = () => import('../views/ComponentConfigBeheer.vue')
 // ADR-023 Fase F / F-4 — platform-beheer relatie-kenmerk-catalogus, lazy.
 const RelatieKenmerkConfigBeheer = () => import('../views/RelatieKenmerkConfigBeheer.vue')
+// Catalogi-beheer-schuld dichten — platform-beheer vraagbetekenis + partijsoort, lazy.
+const VraagBetekenisConfigBeheer = () => import('../views/VraagBetekenisConfigBeheer.vue')
+const PartijsoortConfigBeheer = () => import('../views/PartijsoortConfigBeheer.vue')
 // ADR-023 Fase F (F-1) — migratielaag-overzicht (read-only), lazy.
 const PlateauLijstView = () => import('../views/migratie/PlateauLijstView.vue')
 const PlateauDetailView = () => import('../views/migratie/PlateauDetailView.vue')
@@ -153,6 +156,8 @@ const routes = [
       { path: 'contractconfig', name: 'beheer-contractconfig', component: ContractConfigBeheer },
       { path: 'componentconfig', name: 'beheer-componentconfig', component: ComponentConfigBeheer },
       { path: 'relatiekenmerkconfig', name: 'beheer-relatiekenmerkconfig', component: RelatieKenmerkConfigBeheer },
+      { path: 'vraagbetekenisconfig', name: 'beheer-vraagbetekenisconfig', component: VraagBetekenisConfigBeheer },
+      { path: 'partijsoortconfig', name: 'beheer-partijsoortconfig', component: PartijsoortConfigBeheer },
     ],
   },
 

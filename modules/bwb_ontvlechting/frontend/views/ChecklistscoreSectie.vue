@@ -35,12 +35,19 @@ const props = defineProps({
   // F-1-vervolg (blokkade-herkomst): wordt een vraag-code gezet, dan scrollt + markeert
   // de sectie die rij (read-only navigatie vanuit BlokkadeSectie). null = niets markeren.
   markeerCode: { type: String, default: null },
+  // ADR-027 read-only-invariant: is de checklist van dit componenttype open voor invoer?
+  // false ⇒ bestaande scores blijven leesbaar, maar invoer is gesloten (velden disabled).
+  bewerkbaar: { type: Boolean, default: true },
 })
 const emit = defineEmits(['gewijzigd'])
 const auth = useAuthStore()
 const toast = useToast()
 
-const mag = computed(() => auth.hasRole('medewerker', 'beheerder'))
+const magRol = computed(() => auth.hasRole('medewerker', 'beheerder'))
+// Invoer mag alleen mét de rol ÉN wanneer het type checklist-dragend is (open voor bewerking).
+const mag = computed(() => magRol.value && props.bewerkbaar)
+// Toon de gesloten-melding alleen aan wie anders had mogen bewerken (geen ruis voor viewers).
+const toonGeslotenMelding = computed(() => magRol.value && !props.bewerkbaar)
 
 const vragen = ref([])
 const scoreMap = reactive({}) // vraag_code -> { id, score, bevinding, eigenaar, actie }
@@ -341,6 +348,16 @@ laad()
     </div>
 
     <p v-if="fout" role="alert" data-testid="cs-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ fout }}</p>
+
+    <p
+      v-if="toonGeslotenMelding"
+      role="status"
+      data-testid="cs-gesloten"
+      class="mb-[var(--cd-space-sm)] flex items-center gap-[var(--cd-space-xs)] rounded-[var(--cd-radius-input)] bg-[color-mix(in_srgb,var(--cd-color-warn)_12%,transparent)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)] text-[var(--cd-color-warn)]"
+    >
+      <span aria-hidden="true">🔒</span>
+      De checklist voor dit componenttype is gesloten voor bewerking. Bestaande antwoorden blijven leesbaar.
+    </p>
 
     <table>
       <thead>

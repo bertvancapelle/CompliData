@@ -29,8 +29,14 @@ from models.models import (
     ComponentProfiel,
 )
 from schemas.checklistscore import ChecklistscoreCreate, ChecklistscoreUpdate
+from services import componentconfig_catalog as comp_catalog
 from services import lifecycle_service
-from services.errors import ChecklistscoreConflict, NietGevonden, OngeldigAntwoord
+from services.errors import (
+    ChecklistscoreConflict,
+    NietGevonden,
+    OngeldigAntwoord,
+    OngeldigeRegistratie,
+)
 from services.pagination import (
     decode_sort_cursor_nullable,
     encode_sort_cursor_nullable,
@@ -87,6 +93,26 @@ async def _componenttype_van_profiel(session: AsyncSession, tid: uuid.UUID, comp
     if componenttype is None:
         raise NietGevonden("component_profiel", component_id)
     return componenttype
+
+
+async def _verzeker_checklist_open(session: AsyncSession, componenttype: str) -> None:
+    """ADR-027 — read-only-invariant: score-INVOER (maak/werk_bij) mag alleen als het
+    componenttype `checklist_dragend` is. Een gesloten type → 422 `CHECKLIST_GESLOTEN`.
+
+    Dit is een **invoer-blokkade**, GEEN engine-mutatie: bestaande scores/lifecycle blijven
+    staan en leesbaar; het auto-blokkade-/lifecycle-pad (`_synchroniseer_blokkade`/
+    `herbereken_lifecycle`) wordt NIET via dit pad geraakt (die draaien intern, niet als invoer).
+    Symmetrisch: type weer `checklist_dragend=true` → invoer weer mogelijk."""
+    if not await comp_catalog.is_checklist_dragend(session, componenttype):
+        raise OngeldigeRegistratie(
+            "CHECKLIST_GESLOTEN",
+            "De checklist voor dit componenttype is gesloten voor bewerking.",
+        )
+
+
+async def _verzeker_checklist_open_voor(session: AsyncSession, tid: uuid.UUID, component_id) -> None:
+    """werk_bij-variant: leid het componenttype af uit het component en pas de invariant toe."""
+    await _verzeker_checklist_open(session, await _componenttype_van_profiel(session, tid, component_id))
 
 
 async def _valideer_checklistvraag_id(
@@ -293,6 +319,7 @@ async def maak_aan(
     # profiel ⇒ niet scoorbaar (404). Het componenttype komt van de component en stuurt
     # de type-bewuste vraagvalidatie (Fase B): de vraag moet bij dat type horen.
     componenttype = await _componenttype_van_profiel(session, tid, data.component_id)
+    await _verzeker_checklist_open(session, componenttype)
     await _valideer_checklistvraag_id(session, data.checklistvraag_id, componenttype)
 
     # Uniciteit up-front (tenant, component, checklistvraag) → 409.
@@ -331,6 +358,9 @@ async def werk_bij(
 ) -> Checklistscore:
     tid = _tenant_uuid(tenant_id)
     obj = await haal_op(session, tenant_id, checklistscore_id)
+    # ADR-027 — read-only-invariant: ook het bijwerken van een score is invoer en wordt
+    # geblokkeerd als het componenttype niet (meer) checklist-dragend is.
+    await _verzeker_checklist_open_voor(session, tid, obj.component_id)
     # ADR-019: alleen valideren als antwoord_waarde wérd meegestuurd (los van score).
     if "antwoord_waarde" in data.model_fields_set:
         await _valideer_antwoord_waarde(session, obj.checklistvraag_id, data.antwoord_waarde)

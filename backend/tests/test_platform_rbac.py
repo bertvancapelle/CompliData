@@ -35,6 +35,9 @@ VERWACHT = {
     PlatformEntiteit.COMPONENTCONFIG: {PlatformRol.PLATFORMBEHEERDER: _LAW, PlatformRol.PLATFORMOPERATOR: _L},
     # ADR-023 Fase F / F-4: relatiekenmerkconfig — zelfde verdeling (geen V).
     PlatformEntiteit.RELATIEKENMERKCONFIG: {PlatformRol.PLATFORMBEHEERDER: _LAW, PlatformRol.PLATFORMOPERATOR: _L},
+    # Catalogi-beheer-schuld: vraagbetekenis + partijsoort — zelfde verdeling (geen V).
+    PlatformEntiteit.VRAAGBETEKENISCONFIG: {PlatformRol.PLATFORMBEHEERDER: _LAW, PlatformRol.PLATFORMOPERATOR: _L},
+    PlatformEntiteit.PARTIJSOORTCONFIG: {PlatformRol.PLATFORMBEHEERDER: _LAW, PlatformRol.PLATFORMOPERATOR: _L},
 }
 
 

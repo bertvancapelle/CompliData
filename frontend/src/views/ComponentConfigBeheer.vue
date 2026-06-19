@@ -93,7 +93,25 @@ const addDim = ref(null)
 const addForm = reactive({
   optie_sleutel: '', label: '', volgorde: '',
   archimate_element: '', archimate_laag: '', archimate_aspect: '',
+  checklist_dragend: false,
 })
+
+// ADR-027 Deel 4 — read-only inzage: kenmerk-definitie per relatietype (code-eigendom).
+const kenmerkRelaties = computed(() =>
+  opties.value
+    .filter((o) => o.dimensie === 'archimate_relatie')
+    .sort((a, b) => a.volgorde - b.volgorde || a.id - b.id),
+)
+function kenmerkRijen(def) {
+  return Object.entries(def || {}).map(([sleutel, spec]) => {
+    const type = spec?.type ?? 'onbekend'
+    let detail = ''
+    if (type === 'catalogus') detail = `catalogus · ${spec.catalogus ?? '?'} / ${spec.dimensie ?? '?'}`
+    else if (type === 'enum') detail = `enum · ${spec.enum ?? '?'}`
+    else if (type === 'registratie') detail = 'vrij registratieveld'
+    return { sleutel, type, detail }
+  })
+}
 const addFouten = reactive({})
 const addFormFout = ref(null)
 
@@ -102,6 +120,7 @@ function openToevoegen(dim) {
   Object.assign(addForm, {
     optie_sleutel: '', label: '', volgorde: '',
     archimate_element: '', archimate_laag: '', archimate_aspect: '',
+    checklist_dragend: false,
   })
   Object.keys(addFouten).forEach((k) => delete addFouten[k])
   addFormFout.value = null
@@ -134,6 +153,7 @@ async function bevestigToevoegen() {
       data.archimate_element = addForm.archimate_element
       data.archimate_laag = addForm.archimate_laag
       data.archimate_aspect = addForm.archimate_aspect
+      data.checklist_dragend = addForm.checklist_dragend
     }
     const optie = await api.platformComponentconfig.maak(data)
     opties.value.push(optie)
@@ -155,7 +175,7 @@ async function bevestigToevoegen() {
 // ── Bewerken (label + volgorde; sleutel/dimensie immutabel — ook voor systeem) ─
 const editOpen = ref(false)
 const editOptie = ref(null)
-const editForm = reactive({ label: '', volgorde: '', archimate_element: '', archimate_laag: '', archimate_aspect: '' })
+const editForm = reactive({ label: '', volgorde: '', archimate_element: '', archimate_laag: '', archimate_aspect: '', checklist_dragend: false })
 const editFouten = reactive({})
 const editIsComponenttype = computed(() => isComponenttype(editOptie.value?.dimensie))
 
@@ -166,6 +186,7 @@ function openBewerken(optie) {
     archimate_element: optie.archimate_element ?? '',
     archimate_laag: optie.archimate_laag ?? '',
     archimate_aspect: optie.archimate_aspect ?? '',
+    checklist_dragend: optie.checklist_dragend === true,
   })
   Object.keys(editFouten).forEach((k) => delete editFouten[k])
   editOpen.value = true
@@ -192,6 +213,7 @@ async function bevestigBewerken() {
       data.archimate_element = editForm.archimate_element
       data.archimate_laag = editForm.archimate_laag
       data.archimate_aspect = editForm.archimate_aspect
+      data.checklist_dragend = editForm.checklist_dragend
     }
     const updated = await api.platformComponentconfig.werkBij(editOptie.value.id, data)
     _vervang(updated)
@@ -277,6 +299,7 @@ laadTyperingOpties()
                 <th>Element</th>
                 <th>Laag</th>
                 <th>Aspect</th>
+                <th>Checklist</th>
               </template>
               <th>Status</th>
               <th></th>
@@ -297,6 +320,13 @@ laadTyperingOpties()
                 <td class="font-mono" :data-testid="`cat-element-${optie.id}`">{{ optie.archimate_element || '—' }}</td>
                 <td class="font-mono" :data-testid="`cat-laag-${optie.id}`">{{ optie.archimate_laag || '—' }}</td>
                 <td class="font-mono" :data-testid="`cat-aspect-${optie.id}`">{{ optie.archimate_aspect || '—' }}</td>
+                <td>
+                  <Tag
+                    :data-testid="`cat-dragend-${optie.id}`"
+                    :value="optie.checklist_dragend ? 'Ja' : 'Nee'"
+                    :severity="optie.checklist_dragend ? 'success' : 'secondary'"
+                  />
+                </td>
               </template>
               <td>
                 <Tag
@@ -336,12 +366,41 @@ laadTyperingOpties()
               </td>
             </tr>
             <tr v-if="!perDimensie(dim.key).length">
-              <td :colspan="isComponenttype(dim.key) ? 8 : 5" :data-testid="`cat-leeg-${dim.key}`" class="py-[var(--cd-space-sm)] text-[var(--cd-color-text-muted)]">
+              <td :colspan="isComponenttype(dim.key) ? 9 : 5" :data-testid="`cat-leeg-${dim.key}`" class="py-[var(--cd-space-sm)] text-[var(--cd-color-text-muted)]">
                 Nog geen opties in deze dimensie.
               </td>
             </tr>
           </tbody>
         </table>
+      </section>
+
+      <!-- ADR-027 Deel 4 — kenmerk-definitie per relatietype: READ-ONLY inzage (code-eigendom). -->
+      <section class="card" data-testid="cat-kenmerk-viewer" aria-labelledby="cat-kenmerk-kop">
+        <h2 id="cat-kenmerk-kop" class="text-[length:var(--cd-text-lg)] font-semibold mb-[var(--cd-space-xs)]">
+          Relatie-kenmerken per relatietype
+        </h2>
+        <p class="mb-[var(--cd-space-sm)] max-w-prose text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]">
+          Deze kenmerk-definities horen bij het relatiemodel (ADR-023) en zijn <strong>code-eigendom</strong> —
+          alleen ter inzage, niet bewerkbaar. De <em>inhoud</em> van de catalogus-verwijzingen (disposities,
+          relatie-rollen) beheer je wél, via de Relatie-kenmerk-catalogus.
+        </p>
+        <div class="flex flex-col gap-[var(--cd-space-md)]">
+          <div v-for="rel in kenmerkRelaties" :key="rel.id" :data-testid="`cat-kenmerk-${rel.optie_sleutel}`">
+            <h3 class="font-semibold">{{ rel.label }} <span class="font-mono text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">{{ rel.optie_sleutel }}</span></h3>
+            <p
+              v-if="!kenmerkRijen(rel.kenmerk_definitie).length"
+              :data-testid="`cat-kenmerk-leeg-${rel.optie_sleutel}`"
+              class="text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]"
+            >
+              Geen kenmerken (kale relatie).
+            </p>
+            <ul v-else class="list-disc pl-[var(--cd-space-lg)] text-[length:var(--cd-text-sm)]">
+              <li v-for="k in kenmerkRijen(rel.kenmerk_definitie)" :key="k.sleutel" :data-testid="`cat-kenmerk-${rel.optie_sleutel}-${k.sleutel}`">
+                <span class="font-mono">{{ k.sleutel }}</span> — {{ k.type }}<span v-if="k.detail"> ({{ k.detail }})</span>
+              </li>
+            </ul>
+          </div>
+        </div>
       </section>
     </div>
 
@@ -389,6 +448,11 @@ laadTyperingOpties()
             </select>
             <span v-if="addFouten.archimate_aspect" role="alert" data-testid="cat-add-fout-archimate_aspect" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ addFouten.archimate_aspect }}</span>
           </div>
+          <label class="flex items-center gap-[var(--cd-space-sm)]">
+            <input type="checkbox" v-model="addForm.checklist_dragend" data-testid="cat-add-checklist_dragend" />
+            <span class="font-semibold">Checklist-dragend</span>
+            <span class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">— componenten van dit type krijgen een checklist</span>
+          </label>
         </template>
         <div class="flex gap-[var(--cd-space-md)]">
           <Button type="submit" label="Toevoegen" data-testid="cat-add-opslaan" :disabled="bezig" />
@@ -442,6 +506,11 @@ laadTyperingOpties()
             </select>
             <span v-if="editFouten.archimate_aspect" role="alert" data-testid="cat-edit-fout-archimate_aspect" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ editFouten.archimate_aspect }}</span>
           </div>
+          <label class="flex items-center gap-[var(--cd-space-sm)]">
+            <input type="checkbox" v-model="editForm.checklist_dragend" data-testid="cat-edit-checklist_dragend" />
+            <span class="font-semibold">Checklist-dragend</span>
+            <span class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">— uitzetten sluit de invoer (bestaande antwoorden blijven leesbaar)</span>
+          </label>
         </template>
         <div class="flex gap-[var(--cd-space-md)]">
           <Button type="submit" label="Opslaan" data-testid="cat-edit-opslaan" :disabled="bezig" />

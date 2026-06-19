@@ -138,8 +138,14 @@ async def _org_naam(session: AsyncSession, tid: uuid.UUID, organisatie_id) -> st
 
 async def _met_org_naam(session: AsyncSession, tid: uuid.UUID, obj: Applicatie) -> Applicatie:
     """UX-B6-b — hang de geresolveerde eigenaar-organisatie-naam als transient attribuut aan de
-    ORM-applicatie (naam-in-read; `ApplicatieRead` leest het via `from_attributes`)."""
+    ORM-applicatie (naam-in-read; `ApplicatieRead` leest het via `from_attributes`).
+
+    ADR-027 — hang óók `checklist_dragend` aan (van componenttype `applicatie`), zodat het
+    detailscherm de checklist read-only kan tonen als het type voor invoer gesloten is."""
+    from services import componentconfig_catalog as _cfg
+
     obj.eigenaar_organisatie_naam = await _org_naam(session, tid, obj.eigenaar_organisatie_id)
+    obj.checklist_dragend = await _cfg.is_checklist_dragend(session, "applicatie")
     return obj
 
 

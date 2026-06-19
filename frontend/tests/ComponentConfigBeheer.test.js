@@ -18,10 +18,13 @@ import { useAuthStore } from '@/store/auth'
 import ComponentConfigBeheer from '@/views/ComponentConfigBeheer.vue'
 
 const _opties = () => [
-  { id: 1, dimensie: 'componenttype', optie_sleutel: 'applicatie', label: 'Applicatie', volgorde: 0, actief: true, archimate_element: 'application_component', archimate_laag: 'application', archimate_aspect: 'active' },
-  { id: 2, dimensie: 'componenttype', optie_sleutel: 'database', label: 'Database', volgorde: 1, actief: true, archimate_element: 'system_software', archimate_laag: 'technology', archimate_aspect: 'active' },
-  { id: 3, dimensie: 'componenttype', optie_sleutel: 'oud', label: 'Oud', volgorde: 2, actief: false, archimate_element: 'node', archimate_laag: 'technology', archimate_aspect: 'active' },
+  { id: 1, dimensie: 'componenttype', optie_sleutel: 'applicatie', label: 'Applicatie', volgorde: 0, actief: true, archimate_element: 'application_component', archimate_laag: 'application', archimate_aspect: 'active', checklist_dragend: true },
+  { id: 2, dimensie: 'componenttype', optie_sleutel: 'database', label: 'Database', volgorde: 1, actief: true, archimate_element: 'system_software', archimate_laag: 'technology', archimate_aspect: 'active', checklist_dragend: false },
+  { id: 3, dimensie: 'componenttype', optie_sleutel: 'oud', label: 'Oud', volgorde: 2, actief: false, archimate_element: 'node', archimate_laag: 'technology', archimate_aspect: 'active', checklist_dragend: false },
   { id: 4, dimensie: 'structuurrelatie_type', optie_sleutel: 'draait_op', label: 'Draait op', volgorde: 0, actief: true },
+  // ADR-027 Deel 4 — archimate_relatie-rijen met (code-eigen) kenmerk_definitie voor de read-only viewer.
+  { id: 5, dimensie: 'archimate_relatie', optie_sleutel: 'flow', label: 'Flow', volgorde: 4, actief: true, kenmerk_definitie: { protocol: { type: 'enum', enum: 'koppelprotocol' }, richting: { type: 'enum', enum: 'koppelrichting' } } },
+  { id: 6, dimensie: 'archimate_relatie', optie_sleutel: 'composition', label: 'Composition', volgorde: 0, actief: true, kenmerk_definitie: {} },
 ]
 
 const _typering = () => ({
@@ -181,5 +184,50 @@ describe('ComponentConfigBeheer — rol-gating', () => {
     expect(w.find('[data-testid="cat-bewerk-2"]').exists()).toBe(false)
     expect(w.find('[data-testid="cat-deactiveer-2"]').exists()).toBe(false)
     expect(w.text()).toContain('Database')  // catalogus zelf wél zichtbaar
+  })
+})
+
+describe('ComponentConfigBeheer — ADR-027 checklist_dragend-toggle + kenmerk-viewer', () => {
+  it('toont de Checklist-status per componenttype (Ja/Nee)', async () => {
+    const w = await mountBeheer()
+    expect(w.find('[data-testid="cat-dragend-1"]').text()).toContain('Ja') // applicatie
+    expect(w.find('[data-testid="cat-dragend-2"]').text()).toContain('Nee') // database
+  })
+
+  it('aanmaken van een componenttype stuurt checklist_dragend mee', async () => {
+    api.platformComponentconfig.maak.mockResolvedValue({ id: 9, dimensie: 'componenttype', optie_sleutel: 'middleware', label: 'Middleware', volgorde: 3, actief: true, archimate_element: 'system_software', archimate_laag: 'technology', archimate_aspect: 'active', checklist_dragend: true })
+    const w = await mountBeheer()
+    await w.find('[data-testid="cat-toevoegen-componenttype"]').trigger('click')
+    await w.find('[data-testid="cat-add-sleutel"]').setValue('middleware')
+    await w.find('[data-testid="cat-add-label"]').setValue('Middleware')
+    await w.find('[data-testid="cat-add-element"]').setValue('system_software')
+    await w.find('[data-testid="cat-add-laag"]').setValue('technology')
+    await w.find('[data-testid="cat-add-aspect"]').setValue('active')
+    await w.find('[data-testid="cat-add-checklist_dragend"]').setValue(true)
+    await w.find('[data-testid="cat-add-form"]').trigger('submit')
+    await flushPromises()
+    expect(api.platformComponentconfig.maak).toHaveBeenCalledWith(expect.objectContaining({ optie_sleutel: 'middleware', checklist_dragend: true }))
+  })
+
+  it('bewerken stuurt checklist_dragend mee (toggle uit)', async () => {
+    api.platformComponentconfig.werkBij.mockResolvedValue({ ..._opties()[0], checklist_dragend: false })
+    const w = await mountBeheer()
+    await w.find('[data-testid="cat-bewerk-1"]').trigger('click')
+    await w.find('[data-testid="cat-edit-checklist_dragend"]').setValue(false)
+    await w.find('[data-testid="cat-edit-form"]').trigger('submit')
+    await flushPromises()
+    expect(api.platformComponentconfig.werkBij).toHaveBeenCalledWith(1, expect.objectContaining({ checklist_dragend: false }))
+  })
+
+  it('kenmerk-viewer toont read-only de kenmerken per relatietype; géén bewerk-affordance', async () => {
+    const w = await mountBeheer()
+    const viewer = w.find('[data-testid="cat-kenmerk-viewer"]')
+    expect(viewer.exists()).toBe(true)
+    expect(w.find('[data-testid="cat-kenmerk-flow-protocol"]').text()).toContain('enum')
+    expect(w.find('[data-testid="cat-kenmerk-flow-richting"]').exists()).toBe(true)
+    expect(w.find('[data-testid="cat-kenmerk-leeg-composition"]').exists()).toBe(true) // kale relatie
+    // read-only: geen toevoeg/bewerk-knoppen of inputs binnen de viewer
+    expect(viewer.find('button').exists()).toBe(false)
+    expect(viewer.find('input').exists()).toBe(false)
   })
 })

@@ -160,6 +160,8 @@ class ApplicatieRead(BaseModel):
     complexiteit: NiveauEnum
     prioriteit: NiveauEnum
     lifecycle_status: LifecycleStatus
+    # ADR-027 — of het componenttype 'applicatie' (nog) checklist-dragend is (open voor invoer).
+    checklist_dragend: bool = False
     created_at: datetime
     updated_at: datetime
 

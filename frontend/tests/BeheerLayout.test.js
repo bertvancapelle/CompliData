@@ -31,6 +31,9 @@ describe('BeheerLayout', () => {
     expect(wrapper.find('[data-testid="beheer-badge"]').text()).toBe('Beheer')
     expect(wrapper.find('[data-testid="platform-email"]').text()).toBe('beheer@platform.nl')
     expect(wrapper.find('[data-testid="nav-contractconfig"]').exists()).toBe(true)
+    // Catalogi-beheer-schuld dichten — nieuwe platform-nav-items.
+    expect(wrapper.find('[data-testid="nav-vraagbetekenisconfig"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="nav-partijsoortconfig"]').exists()).toBe(true)
   })
 
   it('uitloggen roept auth.logout aan', async () => {

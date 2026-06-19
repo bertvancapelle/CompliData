@@ -22,7 +22,7 @@ const VRAGEN = [
   { id: 2, code: '1.2', categorie_nr: 1, categorie_naam: 'C', vraag: 'Vraag twee', prioriteit: 'hoog' },
 ]
 
-async function mountSectie({ rollen = ['medewerker'], categorieNr = null, componenttype, markeerCode } = {}) {
+async function mountSectie({ rollen = ['medewerker'], categorieNr = null, componenttype, markeerCode, bewerkbaar } = {}) {
   const pinia = createPinia()
   const auth = useAuthStore(pinia)
   auth.user = { sub: 's', tenant_id: 't', email: 'a@b.nl', roles: rollen }
@@ -31,6 +31,7 @@ async function mountSectie({ rollen = ['medewerker'], categorieNr = null, compon
       applicatieId: APP, categorieNr,
       ...(componenttype !== undefined ? { componenttype } : {}),
       ...(markeerCode !== undefined ? { markeerCode } : {}),
+      ...(bewerkbaar !== undefined ? { bewerkbaar } : {}),
     },
     global: { plugins: [pinia, [PrimeVue, { unstyled: true }], ToastService] },
   })
@@ -295,5 +296,26 @@ describe('ChecklistscoreSectie', () => {
     expect(w.find('[data-testid="cs-rij-2.1"]').exists()).toBe(false) // andere categorie verborgen
     // voortgang telt ALLE vragen (globaal), niet alleen de getoonde categorie
     expect(w.find('[data-testid="cs-voortgang"]').text()).toContain('0/2')
+  })
+})
+
+describe('ChecklistscoreSectie — ADR-027 read-only (bewerkbaar=false)', () => {
+  it('toont de gesloten-melding en disablet de score-invoer; bestaande scores blijven leesbaar', async () => {
+    const w = await mountSectie({ rollen: ['medewerker'], bewerkbaar: false })
+    expect(w.find('[data-testid="cs-gesloten"]').exists()).toBe(true)
+    // score-select is disabled (geen invoer); de waarde blijft wél zichtbaar
+    expect(w.find('[data-testid="cs-score-1.2"]').attributes('disabled')).toBeDefined()
+    expect(w.text()).toContain('1.2')
+  })
+
+  it('bij bewerkbaar=true is de invoer open en is er geen gesloten-melding', async () => {
+    const w = await mountSectie({ rollen: ['medewerker'], bewerkbaar: true })
+    expect(w.find('[data-testid="cs-gesloten"]').exists()).toBe(false)
+    expect(w.find('[data-testid="cs-score-1.2"]').attributes('disabled')).toBeUndefined()
+  })
+
+  it('viewer (zonder bewerk-rol) ziet géén gesloten-melding (geen ruis)', async () => {
+    const w = await mountSectie({ rollen: ['viewer'], bewerkbaar: false })
+    expect(w.find('[data-testid="cs-gesloten"]').exists()).toBe(false)
   })
 })

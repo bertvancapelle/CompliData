@@ -30,6 +30,9 @@ class PlatformEntiteit(str, Enum):
     COMPONENTCONFIG = "componentconfig"
     # ADR-023 Fase F / F-4: beheer van de relatie-kenmerk-catalogus (dispositie/relatie_rol).
     RELATIEKENMERKCONFIG = "relatiekenmerkconfig"
+    # Catalogi-beheer-schuld dichten: vraagbetekenis-markers + partijsoort-catalogus.
+    VRAAGBETEKENISCONFIG = "vraagbetekenisconfig"
+    PARTIJSOORTCONFIG = "partijsoortconfig"
 
 
 KNOWN_PLATFORM_ROLES: frozenset[str] = frozenset(r.value for r in PlatformRol)
@@ -72,6 +75,16 @@ PLATFORM_PERMISSIES: dict[PlatformEntiteit, dict[PlatformRol, frozenset[Actie]]]
     },
     # F-4: relatie-kenmerk-catalogus — beheerder LAW (geen V), operator L (soft-deactivate, geen hard delete).
     PlatformEntiteit.RELATIEKENMERKCONFIG: {
+        PlatformRol.PLATFORMBEHEERDER: _LAW,
+        PlatformRol.PLATFORMOPERATOR: _L,
+    },
+    # Vraagbetekenis-markers — beheerder LAW (geen V), operator L (soft-deactivate).
+    PlatformEntiteit.VRAAGBETEKENISCONFIG: {
+        PlatformRol.PLATFORMBEHEERDER: _LAW,
+        PlatformRol.PLATFORMOPERATOR: _L,
+    },
+    # Partijsoort-catalogus (platform-laag) — beheerder LAW (geen V), operator L (soft-deactivate).
+    PlatformEntiteit.PARTIJSOORTCONFIG: {
         PlatformRol.PLATFORMBEHEERDER: _LAW,
         PlatformRol.PLATFORMOPERATOR: _L,
     },

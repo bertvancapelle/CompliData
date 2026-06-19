@@ -102,6 +102,8 @@ class ComponentConfigOptieUpdate(BaseModel):
     label: str | None = None
     volgorde: int | None = None
     actief: bool | None = None
+    # ADR-027 — markeert (alleen zinvol op dimensie componenttype) of het type een checklist draagt.
+    checklist_dragend: bool | None = None
     # ADR-026 — typering corrigeren naar geldige waarden. Leegmaken (None) voor een
     # componenttype wordt in de service geweigerd (Besluit 5) + door de DB-CHECK afgevangen.
     archimate_element: str | None = None
@@ -138,8 +140,13 @@ class ComponentConfigOptieRead(BaseModel):
     label: str
     volgorde: int
     actief: bool
+    # ADR-022/027 — of het type een checklist draagt (alleen zinvol op dimensie componenttype).
+    checklist_dragend: bool = False
     # ADR-026 — typering meegeven. De model-kolommen heten `laag`/`aspect`; de API-velden
     # dragen het `archimate_`-voorvoegsel (validation_alias mapt de ORM-attributen).
     archimate_element: str | None = None
     archimate_laag: str | None = Field(default=None, validation_alias="laag")
     archimate_aspect: str | None = Field(default=None, validation_alias="aspect")
+    # ADR-027 Deel 4 — read-only inzage: de (code-eigen) kenmerk-definitie per relatietype
+    # (dimensie archimate_relatie). Niet bewerkbaar via de API; alleen ter inzage in de UI.
+    kenmerk_definitie: dict = {}

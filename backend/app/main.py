@@ -48,6 +48,8 @@ from routes.component import router as component_router  # noqa: E402
 from routes.component_contract import router as component_contract_router  # noqa: E402
 from routes.componentconfig import router as componentconfig_router  # noqa: E402
 from routes.relatiekenmerkconfig import router as relatiekenmerkconfig_router  # noqa: E402
+from routes.vraagbetekenisconfig import router as vraagbetekenisconfig_router  # noqa: E402
+from routes.partijsoortconfig import router as partijsoortconfig_router  # noqa: E402
 from routes.contract import router as contract_router  # noqa: E402
 from routes.contractconfig import router as contractconfig_router  # noqa: E402
 from routes.dashboard import router as dashboard_router  # noqa: E402
@@ -156,4 +158,6 @@ app.include_router(checklistconfig_router, prefix="/api/v1")
 app.include_router(contractconfig_router, prefix="/api/v1")
 app.include_router(componentconfig_router, prefix="/api/v1")
 app.include_router(relatiekenmerkconfig_router, prefix="/api/v1")
+app.include_router(vraagbetekenisconfig_router, prefix="/api/v1")
+app.include_router(partijsoortconfig_router, prefix="/api/v1")
 app.include_router(dashboard_router, prefix="/api/v1")

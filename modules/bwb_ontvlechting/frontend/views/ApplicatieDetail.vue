@@ -420,6 +420,7 @@ onMounted(async () => {
             :componenttype="'applicatie'"
             :categorie-nr="actieveCategorieNr"
             :markeer-code="markeerVraagCode"
+            :bewerkbaar="applicatie.checklist_dragend !== false"
             @gewijzigd="onScoreGewijzigd"
           />
         </div>

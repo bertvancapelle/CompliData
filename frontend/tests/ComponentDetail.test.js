@@ -185,10 +185,22 @@ describe('ComponentDetail', () => {
     expect(api.checklistvragen.lijst).toHaveBeenCalledWith('database')
   })
 
-  it('toont de checklist-sectie NIET bij checklist_dragend === false', async () => {
-    const { w } = await mountDetail() // default checklist_dragend: false
+  it('toont de checklist-sectie NIET bij checklist_dragend === false zónder profiel', async () => {
+    const { w } = await mountDetail() // default checklist_dragend: false, lifecycle_status: null
     expect(w.find('[data-testid="cs-voortgang"]').exists()).toBe(false)
     expect(api.checklistvragen.lijst).not.toHaveBeenCalled()
+  })
+
+  it('ADR-027: gesloten type MÉT profiel toont de checklist read-only (banner + bewerkbaar=false)', async () => {
+    // checklist_dragend=false maar lifecycle_status gezet ⇒ was dragend, nu gesloten → read-only tonen.
+    api.componenten.haal.mockResolvedValue(_component({ checklist_dragend: false, lifecycle_status: 'in_inventarisatie' }))
+    api.checklistvragen.lijst.mockResolvedValue([
+      { id: 1, code: '3.2', categorie_nr: 3, categorie_naam: 'Data', vraag: 'a', prioriteit: 'hoog' },
+    ])
+    const { w } = await mountDetail({ rollen: ['medewerker'] })
+    expect(w.find('[data-testid="cs-voortgang"]').exists()).toBe(true)
+    expect(w.findComponent(ChecklistscoreSectie).props('bewerkbaar')).toBe(false)
+    expect(w.find('[data-testid="cs-gesloten"]').exists()).toBe(true)
   })
 
   it('markeert de vraag uit de deep-link-query (blokkadelijst-doorklik, ADR-024-vervolg)', async () => {

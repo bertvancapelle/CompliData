@@ -207,12 +207,14 @@ onMounted(() => {
         <ContractSectie :applicatie-id="props.id" />
         <VerantwoordelijkheidSectie :object-id="props.id" />
         <ImpactSectie :component-id="props.id" />
-        <!-- ADR-022 Fase E — checklist alleen voor checklist-dragende typen. -->
+        <!-- ADR-022 Fase E — checklist voor checklist-dragende typen; ADR-027 — óók read-only
+             tonen voor een gesloten type dat al een profiel/scores heeft (lifecycle_status gezet). -->
         <ChecklistscoreSectie
-          v-if="component.checklist_dragend === true"
+          v-if="component.checklist_dragend === true || component.lifecycle_status"
           :applicatie-id="component.id"
           :componenttype="component.componenttype"
           :markeer-code="markeerVraagCode"
+          :bewerkbaar="component.checklist_dragend === true"
           @gewijzigd="onScoreGewijzigd"
         />
         <!-- F-1-vervolg — blokkades met herkomst-kolom + doorklik, alleen voor

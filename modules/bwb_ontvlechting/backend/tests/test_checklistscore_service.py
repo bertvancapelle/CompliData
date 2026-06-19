@@ -45,8 +45,8 @@ def test_maak_aan_onbekende_checklistvraag_id():
     from services.errors import NietGevonden
 
     session = AsyncMock()
-    # 1) componenttype van profiel (scoorbaar), 2) checklistvraag_id niet gevonden.
-    session.execute.side_effect = [_result("applicatie"), _result(None)]
+    # 1) componenttype van profiel (scoorbaar), 2) checklist_dragend?, 3) checklistvraag_id niet gevonden.
+    session.execute.side_effect = [_result("applicatie"), _result(True), _result(None)]
     with pytest.raises(NietGevonden):
         asyncio.run(svc.maak_aan(session, uuid.uuid4(), _create()))
 
@@ -58,6 +58,7 @@ def test_maak_aan_dubbele_score():
     session = AsyncMock()
     session.execute.side_effect = [
         _result("applicatie"),   # componenttype van profiel (scoorbaar)
+        _result(True),           # checklist_dragend? (ADR-027 invoer-invariant)
         _result(_VRAAG),         # checklistvraag_id bestaat (juiste type)
         _result(uuid.uuid4()),   # bestaande score gevonden → conflict
     ]
@@ -77,12 +78,36 @@ def test_maak_aan_roept_herbereken(monkeypatch):
 
     session = AsyncMock()
     session.add = lambda o: None
-    # componenttype van profiel, vraag bestaat, geen dup, geen bestaande blokkade (nvt).
+    # componenttype van profiel, checklist_dragend?, vraag bestaat, geen dup, geen bestaande blokkade (nvt).
     session.execute.side_effect = [
-        _result("applicatie"), _result(_VRAAG), _result(None), _result(None)
+        _result("applicatie"), _result(True), _result(_VRAAG), _result(None), _result(None)
     ]
     asyncio.run(svc.maak_aan(session, uuid.uuid4(), _create(score="nvt")))
     assert aangeroepen.get("yes") is True
+
+
+def test_maak_aan_geweigerd_als_type_niet_checklist_dragend(monkeypatch):
+    """ADR-027 read-only-invariant: score-invoer op een niet-dragend componenttype ⇒ 422
+    CHECKLIST_GESLOTEN, ZONDER engine-mutatie (geen add, geen herbereken)."""
+    from services import checklistscore_service as svc, lifecycle_service
+    from services.errors import OngeldigeRegistratie
+
+    herb = {}
+
+    async def _herb(*a, **k):
+        herb["x"] = True
+
+    monkeypatch.setattr(lifecycle_service, "herbereken_lifecycle", _herb)
+
+    session = AsyncMock()
+    toegevoegd = []
+    session.add = lambda o: toegevoegd.append(o)
+    # 1) componenttype van profiel ('middleware'), 2) checklist_dragend? → None = niet dragend.
+    session.execute.side_effect = [_result("middleware"), _result(None)]
+    with pytest.raises(OngeldigeRegistratie) as exc:
+        asyncio.run(svc.maak_aan(session, uuid.uuid4(), _create()))
+    assert exc.value.code == "CHECKLIST_GESLOTEN"
+    assert not toegevoegd and not herb  # engine onaangeroerd (geen add/herbereken)
 
 
 # ── invariant score↔blokkade (_synchroniseer_blokkade) ──────────────────────
@@ -200,6 +225,12 @@ def test_werk_bij_zonder_score_raakt_blokkade_en_lifecycle_niet(monkeypatch):
         return score_obj
 
     monkeypatch.setattr(svc, "haal_op", _haal)
+    # ADR-027 invoer-invariant is orthogonaal aan dit blokkade/lifecycle-no-op-bewijs → no-op
+    # (de invariant heeft een eigen test). Voorkomt dat de dragend-query de sentinel raakt.
+    async def _kv_open(*a, **k):
+        return None
+
+    monkeypatch.setattr(svc, "_verzeker_checklist_open_voor", _kv_open)
 
     herb = {}
 
@@ -334,6 +365,11 @@ def test_werk_bij_met_antwoord_zonder_score_raakt_engine_niet(monkeypatch):
         return score_obj
 
     monkeypatch.setattr(svc, "haal_op", _haal)
+
+    async def _kv_open(*a, **k):
+        return None
+
+    monkeypatch.setattr(svc, "_verzeker_checklist_open_voor", _kv_open)  # ADR-027 invariant: eigen test
 
     async def _valid(*a, **k):
         return None

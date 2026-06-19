@@ -406,4 +406,17 @@ export const api = {
     werkBij: (id, data) =>
       request(`/platform/relatiekenmerkconfig/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   },
+  // Catalogi-beheer-schuld dichten — enkel-doel platform-catalogi (geen dimensie). Soft-deactivate.
+  platformVraagbetekenisconfig: {
+    lijst: () => request('/platform/vraagbetekenisconfig'),
+    maak: (data) => request('/platform/vraagbetekenisconfig', { method: 'POST', body: JSON.stringify(data) }),
+    werkBij: (id, data) =>
+      request(`/platform/vraagbetekenisconfig/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  },
+  platformPartijsoortconfig: {
+    lijst: () => request('/platform/partijsoortconfig'),
+    maak: (data) => request('/platform/partijsoortconfig', { method: 'POST', body: JSON.stringify(data) }),
+    werkBij: (id, data) =>
+      request(`/platform/partijsoortconfig/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  },
 }
