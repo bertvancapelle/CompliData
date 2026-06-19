@@ -286,8 +286,8 @@ async def _seed_applicatie(session, app: dict, bestaande: dict) -> "uuid_like":
         ApplicatieCreate(
             naam=naam, beschrijving=app["beschrijving"], hostingmodel=app["host"],
             # ADR-024 B6-b: eigenaar-organisatie is nu een optionele partij-verwijzing
-            # (`eigenaar_organisatie_id`); de vrije-tekst-`org` is geen invoerveld meer.
-            eigenaar_naam=None, leverancier=None,
+            # (`eigenaar_organisatie_id`); de vrije-tekst-velden `eigenaar_naam`/`leverancier`
+            # zijn met migratie 0034 verwijderd en niet langer invoervelden (extra='forbid').
             **APP_DEFAULTS,
         ),
     )
