@@ -6,6 +6,16 @@ bijgewerkt: V013
 
 # CompliData UX / Interaction-Design Skill
 
+## Kernprincipe (niet-onderhandelbaar)
+
+**Gebruikerservaring is altijd het startpunt.**
+Elke ontwerpbeslissing, elke afweging en elk advies vertrekt vanuit de vraag:
+*wat is het beste voor de gebruiker van KILARA?*
+Schema, migraties, RBAC en technische borging zijn vangrails die de UX-keuze
+ondersteunen — ze sturen hem niet.
+
+Dit principe overschrijft technische voorkeur als de twee conflicteren.
+
 ## Waarom deze skill bestaat
 
 CompliData wordt gebouwd vanuit één vast uitgangspunt: **continu optimaliseren van de

@@ -11,25 +11,34 @@ Zonder deze trigger: niets doen, wachten.
 
 ---
 
-## Interactieregel (VERPLICHT — niet-onderhandelbaar)
+## Werkprotocol claude.ai ↔ CC (niet-onderhandelbaar, elke sessie)
 
-Geldt voor zowel CC als claude.ai, in elke sessie:
+Geldt voor zowel CC als claude.ai, in elke sessie. Dit is de gezaghebbende bron;
+andere secties verwijzen hiernaar en herhalen het niet.
 
-- Stel vragen ALTIJD één voor één. Stel nooit meerdere vragen tegelijk.
-  Wacht op het antwoord van Bert voordat je een volgende vraag stelt.
-- Geef adviezen ALTIJD één voor één. Geef nooit meerdere adviezen tegelijk.
-  Wacht op de reactie van Bert voordat je een volgend advies geeft.
+### Kern: gebruikerservaring is altijd het startpunt
+Elk gesprek, elke vraag, elk advies en elke afweging vertrekt vanuit
+**het continu optimaliseren van de gebruikerservaring van KILARA**.
+Techniek, schema-keuzes, gates en commit-discipline zijn vangrails —
+nooit het uitgangspunt of de toon van een antwoord. Conflicteert gebruikerslogica
+of procesvoorkeur met een technische voorkeur, dan wint de gebruikerservaring.
 
-Deze regel is niet-onderhandelbaar en overschrijft elke neiging om
-meerdere vragen of adviezen te bundelen.
+### Interactieregels
+- Vragen: ALTIJD één voor één — wachten op antwoord vóór de volgende vraag.
+- Adviezen: ALTIJD één voor één — wachten op reactie vóór het volgende advies.
+- CC-taken: één voor één, óf in één duidelijke batch uitsluitend als er geen
+  openstaande vragen of adviezen zijn die terugkoppeling vragen.
+- Nooit vragen, adviezen en taken door elkaar in één beurt (veroorzaakt verstrengeling).
+- Niet-onderhandelbaar; overschrijft elke neiging om te bundelen.
 
----
+### Formulering en analyses
+- Altijd kort en bondig, vanuit functioneel/gebruikersperspectief.
+- Analyses starten bij de gebruiker, niet bij de tabel of het schema.
 
-## Opdrachtformaat CC-opdrachten (VERPLICHT — standaardwerkwijze)
-
-claude.ai levert elke CC-opdracht ALTIJD aan als een .md-bestand
-(downloadbaar), nooit als een los codeblok in de chat. Bert gebruikt dat
-.md-bestand in CC. Deze afspraak geldt in elke sessie.
+### Opdrachtformaat
+- CC-instructies: altijd als volledig zelfstandig leesbaar `.md`-bestand
+  (downloadbaar), nooit als los codeblok of chattekst.
+- Regel 1 = `START: [taaknaam]`; bij plakken direct uitvoeren.
 
 ---
 
@@ -379,8 +388,8 @@ Bert expliciet anders aangeeft.
 - CC voert uit in de repo (code, tests, commits, push)
 - Bert plakt het CC-resultaat terug in claude.ai ter beoordeling
 - Nooit ZIPs van applicatiecode vragen — altijd CC voor repo-werk
-- Opdrachten komen ALTIJD als `.md` en starten met een `START:`-trigger; vragen
-  en adviezen één voor één (zie de Interactieregel + Opdrachtformaat bovenaan).
+- Vragen/adviezen één voor één, opdrachten als `.md` met `START:`-trigger —
+  zie het Werkprotocol bovenaan (gezaghebbende bron, niet hier herhaald).
 
 ### Gate-werkwijze (twee fasen + checkpoints)
 - **Twee fasen**: CC voert Fase A uit (analyse/implementatie/tests/TST),
