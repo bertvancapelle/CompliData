@@ -60,8 +60,10 @@ describe('LandschapskaartView v3', () => {
     expect(cytoscape).toHaveBeenCalled()
     expect(w.find('[data-testid="lk-canvas"]').exists()).toBe(true)
     expect(w.find('[data-testid="lk-modus-ego"]').attributes('aria-pressed')).toBe('true')
-    // resultatenlijst toont alle nodes (geen filter).
-    expect(w.findAll('[data-testid^="lk-res-naam-"]').length).toBe(4)
+    // resultatenlijst toont ALLEEN applicaties (a1, a2) — niet de partij/contract.
+    expect(w.findAll('[data-testid^="lk-res-naam-"]').length).toBe(2)
+    expect(w.find('[data-testid="lk-res-naam-p1"]').exists()).toBe(false)
+    expect(w.find('[data-testid="lk-res-naam-k1"]').exists()).toBe(false)
   })
 
   it('zoekfilter vermindert de zichtbare resultaten', async () => {
@@ -115,8 +117,8 @@ describe('LandschapskaartView v3', () => {
     const { w } = await mountView()
     await w.find('[data-testid="lk-voeg-alle"]').trigger('click')
     await flushPromises()
-    // alle 4 nodes (geen filter) in de set.
-    expect(w.find('[data-testid="lk-rechts"]').text()).toContain('Actieve set (4)')
+    // alleen de twee applicaties komen in de set (partij/contract zijn niet selecteerbaar).
+    expect(w.find('[data-testid="lk-rechts"]').text()).toContain('Actieve set (2)')
   })
 
   it('toont het blokkade-icoon op een node met open blokkades', async () => {

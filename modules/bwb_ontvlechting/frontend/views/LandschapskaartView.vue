@@ -76,8 +76,13 @@ async function laad() {
   }
 }
 
-// ── Filter-opties (datagedreven) ────────────────────────────────────────────────
-const _uniek = (sel) => [...new Set(nodes.value.map(sel).filter(Boolean))].sort()
+// Alleen applicaties zijn selecteerbaar via de zoeklijst/filters/actieve set; partijen,
+// contracten en infrastructuur verschijnen automatisch als ring-nodes rond de gekozen apps.
+const _isApp = (n) => n?.element_type === 'applicatie' || (n?.element_type === 'component' && n?.laag === 'application')
+const appNodes = computed(() => nodes.value.filter(_isApp))
+
+// ── Filter-opties (datagedreven; alleen uit de applicaties) ──────────────────────
+const _uniek = (sel) => [...new Set(appNodes.value.map(sel).filter(Boolean))].sort()
 const domeinOpties = computed(() => _uniek((n) => n.domein))
 const leverancierOpties = computed(() => _uniek((n) => n.leverancier_naam))
 const hostingOpties = computed(() => _uniek((n) => n.hosting_model))
@@ -96,7 +101,7 @@ function _matcht(n) {
   if (filterLifecycle.value && n.lifecycle_status !== filterLifecycle.value) return false
   return true
 }
-const gefilterdeNodes = computed(() => nodes.value.filter(_matcht))
+const gefilterdeNodes = computed(() => appNodes.value.filter(_matcht))
 
 // ── Zichtbare nodes/edges per modus ──────────────────────────────────────────────
 const egoBuren = computed(() => {
@@ -233,15 +238,22 @@ function _layout() {
   if (modus.value === 'ego') return { name: 'concentric', concentric: (n) => (n.id() === egoStartId.value ? 10 : 5), levelWidth: () => 1, minNodeSpacing: 40 }
   return { name: 'cose', animate: false, padding: 30, nodeRepulsion: modus.value === 'geheel' ? 12000 : 6000 }
 }
-function tekenGraaf() {
+async function tekenGraaf() {
   if (!cy) return
+  await nextTick()
+  await nextTick() // tweede tick voor (HMR-)edge cases waarin de layout nog niet geflusht is
+  // Cytoscape meet zijn container soms op 0 (flex-hoogte nog niet gezet) → forceer een hoogte
+  // zodat de graaf nooit op 0px initialiseert en zichtbaar blijft i.p.v. leeg.
+  const el = containerRef.value
+  if (el && el.offsetHeight === 0) el.style.minHeight = '500px'
   cy.elements().remove()
   cy.add(_elementen())
   cy.layout(_layout()).run()
-  // Cytoscape meet zijn container soms op 0 (flex-hoogte nog niet gezet) → her-meten + passend
-  // maken zodra de elementen erin staan, zodat de graaf zichtbaar wordt i.p.v. leeg te blijven.
-  cy.resize?.()
-  cy.fit?.(undefined, 50)
+  // Klein delay voor de browser-layout-flush, dán her-meten + passend maken.
+  setTimeout(() => {
+    cy?.resize?.()
+    cy?.fit?.(undefined, 50)
+  }, 100)
 }
 
 const CY_STYLE = [
@@ -366,7 +378,9 @@ const typeLabel = (t) => humaniseer(t)
       <!-- Canvas — min-h-0 is kritiek: zonder negeert een flex-child de height:100% van de parent,
            waardoor Cytoscape op hoogte 0 initialiseert en de graaf leeg/onzichtbaar blijft. -->
       <div class="relative min-h-0 min-w-0 flex-1 bg-[var(--cd-color-surface)]">
-        <div ref="containerRef" data-testid="lk-canvas" class="h-full w-full"></div>
+        <!-- Inline min-height als harde vangrail: zelfs als de flex-hoogteketen faalt, krijgt
+             Cytoscape een meetbare hoogte op het init-moment (anders blijft de graaf leeg). -->
+        <div ref="containerRef" data-testid="lk-canvas" class="h-full w-full" style="min-height: 500px"></div>
 
         <!-- Tools (rechtsboven) -->
         <div class="absolute right-3 top-3 z-10 flex gap-1">
