@@ -131,7 +131,7 @@ defineExpose({ items, laad })
       <h2 id="sectie-partij-rollen" class="text-[length:var(--cd-text-lg)] font-semibold">
         Rollen op objecten
       </h2>
-      <Button v-if="mag" label="Rol toevoegen" size="small" data-testid="pr-toevoegen" class="ml-auto" @click="openToevoegen" />
+      <Button v-if="mag" label="Rol toevoegen" severity="secondary" size="small" data-testid="pr-toevoegen" class="ml-auto" @click="openToevoegen" />
     </div>
 
     <DataTable :value="items" data-testid="pr-tabel">

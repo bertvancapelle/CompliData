@@ -253,7 +253,7 @@ onMounted(() => {
 
       <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
         <h2 class="text-[length:var(--cd-text-lg)] font-semibold">Leden</h2>
-        <Button v-if="magBeheren" label="+ Lid koppelen" size="small" data-testid="lid-koppelen" class="ml-auto" @click="openKoppelen" />
+        <Button v-if="magBeheren" label="+ Lid koppelen" severity="secondary" size="small" data-testid="lid-koppelen" class="ml-auto" @click="openKoppelen" />
       </div>
 
       <DataTable :value="leden" data-testid="plateau-leden-tabel" class="bg-[var(--cd-color-surface)] rounded-[var(--cd-radius-card)] shadow-[var(--cd-shadow-sm)]">

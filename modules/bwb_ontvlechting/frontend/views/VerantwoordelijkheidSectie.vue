@@ -139,7 +139,7 @@ defineExpose({ items, laad })
       <h2 id="sectie-verantwoordelijkheden" class="text-[length:var(--cd-text-lg)] font-semibold">
         Verantwoordelijkheden
       </h2>
-      <Button v-if="mag" label="Toewijzing toevoegen" size="small" data-testid="vw-toevoegen" class="ml-auto" @click="openToevoegen" />
+      <Button v-if="mag" label="Toewijzing toevoegen" severity="secondary" size="small" data-testid="vw-toevoegen" class="ml-auto" @click="openToevoegen" />
     </div>
 
     <p v-if="fout" role="alert" data-testid="vw-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ fout }}</p>

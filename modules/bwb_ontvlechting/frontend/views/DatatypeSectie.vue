@@ -192,7 +192,7 @@ laad({ reset: true })
   <section class="card" aria-labelledby="sectie-datatypes">
     <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
       <h2 id="sectie-datatypes" class="text-[length:var(--cd-text-lg)] font-semibold">Datatypes</h2>
-      <Button v-if="mag" label="Toevoegen" size="small" data-testid="dt-toevoegen" class="ml-auto" @click="openNieuw" />
+      <Button v-if="mag" label="Toevoegen" severity="secondary" size="small" data-testid="dt-toevoegen" class="ml-auto" @click="openNieuw" />
     </div>
 
     <p v-if="fout" role="alert" data-testid="dt-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ fout }}</p>

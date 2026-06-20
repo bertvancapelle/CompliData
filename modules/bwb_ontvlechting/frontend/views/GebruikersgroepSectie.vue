@@ -182,7 +182,7 @@ laad({ reset: true })
   <section class="card" aria-labelledby="sectie-gebruikersgroepen">
     <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
       <h2 id="sectie-gebruikersgroepen" class="text-[length:var(--cd-text-lg)] font-semibold">Gebruikersgroepen</h2>
-      <Button v-if="mag" label="Toevoegen" size="small" data-testid="gg-toevoegen" class="ml-auto" @click="openNieuw" />
+      <Button v-if="mag" label="Toevoegen" severity="secondary" size="small" data-testid="gg-toevoegen" class="ml-auto" @click="openNieuw" />
     </div>
 
     <p v-if="fout" role="alert" data-testid="gg-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ fout }}</p>

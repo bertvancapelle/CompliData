@@ -236,7 +236,7 @@ onMounted(laad)
 
       <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
         <h2 class="text-[length:var(--cd-text-lg)] font-semibold">Leden</h2>
-        <Button v-if="magBeheren" label="+ Lid koppelen" size="small" data-testid="gap-lid-koppelen" class="ml-auto" @click="openKoppelen" />
+        <Button v-if="magBeheren" label="+ Lid koppelen" severity="secondary" size="small" data-testid="gap-lid-koppelen" class="ml-auto" @click="openKoppelen" />
       </div>
       <DataTable :value="leden" data-testid="gap-leden-tabel" class="bg-[var(--cd-color-surface)] rounded-[var(--cd-radius-card)] shadow-[var(--cd-shadow-sm)]">
         <Column header="Type"><template #body="{ data }"><Tag :value="TYPE_LABEL[data.lid_element_type] || data.lid_element_type" severity="secondary" /></template></Column>

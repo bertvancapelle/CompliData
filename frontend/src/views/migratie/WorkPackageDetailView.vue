@@ -189,7 +189,7 @@ onMounted(laad)
 
       <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
         <h2 class="text-[length:var(--cd-text-lg)] font-semibold">Subpakketten ({{ directeSubpakketten.length }} direct)</h2>
-        <Button v-if="magBeheren" label="+ Sub-werkpakket" size="small" data-testid="wp-sub-toevoegen" class="ml-auto" @click="openSub" />
+        <Button v-if="magBeheren" label="+ Sub-werkpakket" severity="secondary" size="small" data-testid="wp-sub-toevoegen" class="ml-auto" @click="openSub" />
       </div>
       <DataTable :value="subboom" data-testid="wp-subboom-tabel" class="bg-[var(--cd-color-surface)] rounded-[var(--cd-radius-card)] shadow-[var(--cd-shadow-sm)]">
         <Column field="naam" header="Naam">

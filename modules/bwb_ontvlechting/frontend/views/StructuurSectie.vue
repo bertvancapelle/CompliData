@@ -170,7 +170,7 @@ laad()
   <section class="card" aria-labelledby="sectie-opbouw">
     <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
       <h2 id="sectie-opbouw" class="text-[length:var(--cd-text-lg)] font-semibold">Opbouw</h2>
-      <Button v-if="mag" label="Draait-op toevoegen" size="small" data-testid="st-toevoegen" class="ml-auto" @click="openNieuw" />
+      <Button v-if="mag" label="Draait-op toevoegen" severity="secondary" size="small" data-testid="st-toevoegen" class="ml-auto" @click="openNieuw" />
     </div>
 
     <p v-if="fout" role="alert" data-testid="st-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ fout }}</p>

@@ -22,10 +22,11 @@ export default {
       'cursor-pointer transition-all duration-[var(--cd-transition-fast)]',
       'disabled:opacity-50 disabled:cursor-not-allowed',
 
-      // Size-variant
+      // Size-variant — vaste hoogte (h-8/h-10) zodat álle varianten in een balk
+      // exact even hoog zijn ongeacht tekstlengte; `items-center` (root) centreert.
       props.size === 'small'
-        ? 'px-3 py-1 text-[length:var(--cd-text-xs)]'
-        : 'px-4 py-2 text-[length:var(--cd-text-sm)]',
+        ? 'h-8 px-3 text-[length:var(--cd-text-xs)]'
+        : 'h-10 px-4 text-[length:var(--cd-text-sm)]',
 
       // Variant — `text` (ghost/tertiair) wint van `severity`
       props.text

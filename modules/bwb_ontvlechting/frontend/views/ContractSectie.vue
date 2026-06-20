@@ -162,7 +162,7 @@ defineExpose({ items, laad })
   <section class="card" aria-labelledby="sectie-contracten">
     <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
       <h2 id="sectie-contracten" class="text-[length:var(--cd-text-lg)] font-semibold">Contracten</h2>
-      <Button v-if="mag" label="Contract koppelen" size="small" data-testid="ct-koppelen" class="ml-auto" @click="openKoppelen" />
+      <Button v-if="mag" label="Contract koppelen" severity="secondary" size="small" data-testid="ct-koppelen" class="ml-auto" @click="openKoppelen" />
     </div>
 
     <p v-if="fout" role="alert" data-testid="ct-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ fout }}</p>

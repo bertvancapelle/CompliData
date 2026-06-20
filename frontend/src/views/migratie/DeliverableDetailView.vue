@@ -206,7 +206,7 @@ onMounted(laad)
       <!-- Opgeleverd door werkpakketten -->
       <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
         <h2 class="text-[length:var(--cd-text-lg)] font-semibold">Opgeleverd door (werkpakketten)</h2>
-        <Button v-if="magBeheren" label="+ Werkpakket koppelen" size="small" data-testid="del-wp-koppelen" class="ml-auto" @click="openWpKoppel" />
+        <Button v-if="magBeheren" label="+ Werkpakket koppelen" severity="secondary" size="small" data-testid="del-wp-koppelen" class="ml-auto" @click="openWpKoppel" />
       </div>
       <DataTable :value="keten.werkpakketten" data-testid="del-werkpakketten-tabel" class="mb-[var(--cd-space-lg)] bg-[var(--cd-color-surface)] rounded-[var(--cd-radius-card)] shadow-[var(--cd-shadow-sm)]">
         <Column field="naam" header="Werkpakket">
@@ -229,7 +229,7 @@ onMounted(laad)
       <!-- Helpt realiseren (plateaus) -->
       <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
         <h2 class="text-[length:var(--cd-text-lg)] font-semibold">Helpt realiseren (plateaus)</h2>
-        <Button v-if="magBeheren" label="+ Plateau koppelen" size="small" data-testid="del-pl-koppelen" class="ml-auto" @click="openPlKoppel" />
+        <Button v-if="magBeheren" label="+ Plateau koppelen" severity="secondary" size="small" data-testid="del-pl-koppelen" class="ml-auto" @click="openPlKoppel" />
       </div>
       <DataTable :value="keten.plateaus" data-testid="del-plateaus-tabel" class="bg-[var(--cd-color-surface)] rounded-[var(--cd-radius-card)] shadow-[var(--cd-shadow-sm)]">
         <Column field="naam" header="Plateau">

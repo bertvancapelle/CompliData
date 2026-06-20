@@ -240,6 +240,7 @@ const RIJEN = [
             <Button
               v-if="!isAfdeling"
               label="+ Afdeling"
+              severity="secondary"
               size="small"
               data-testid="lid-afdeling"
               class="ml-auto"
@@ -247,6 +248,7 @@ const RIJEN = [
             />
             <Button
               label="+ Persoon"
+              severity="secondary"
               size="small"
               data-testid="lid-persoon"
               :class="isAfdeling ? 'ml-auto' : ''"
