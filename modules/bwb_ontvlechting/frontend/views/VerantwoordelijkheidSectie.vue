@@ -139,7 +139,7 @@ defineExpose({ items, laad })
       <h2 id="sectie-verantwoordelijkheden" class="text-[length:var(--cd-text-lg)] font-semibold">
         Verantwoordelijkheden
       </h2>
-      <Button v-if="mag" label="Toewijzing toevoegen" severity="secondary" size="small" data-testid="vw-toevoegen" class="ml-auto" @click="openToevoegen" />
+      <Button v-if="mag" label="Toewijzing toevoegen" severity="secondary" data-testid="vw-toevoegen" class="ml-auto" @click="openToevoegen" />
     </div>
 
     <p v-if="fout" role="alert" data-testid="vw-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ fout }}</p>
@@ -161,7 +161,7 @@ defineExpose({ items, laad })
           </td>
           <td><Tag :value="aardLabel(rij.partij_aard)" severity="info" /></td>
           <td class="text-right">
-            <Button v-if="mag" label="Verwijderen" size="small" severity="danger" :data-testid="`vw-verwijder-${rij.toewijzing_id}`" @click="(e) => vraagVerwijder(e, rij)" />
+            <Button v-if="mag" label="Verwijderen" severity="danger" :data-testid="`vw-verwijder-${rij.toewijzing_id}`" @click="(e) => vraagVerwijder(e, rij)" />
           </td>
         </tr>
       </tbody>

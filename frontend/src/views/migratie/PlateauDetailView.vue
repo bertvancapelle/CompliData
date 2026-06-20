@@ -246,14 +246,14 @@ onMounted(() => {
           {{ plateau.naam }}
         </h1>
         <ObjectHistoriePaneel entiteit-type="plateau" :entiteit-id="props.id" class="ml-auto" />
-        <Button v-if="magBeheren" label="Bewerken" size="small" data-testid="plateau-bewerken" @click="openBewerken" />
-        <Button v-if="magVerwijderen" label="Verwijderen" size="small" severity="danger" data-testid="plateau-verwijderen" @click="verwijderOpen = true" />
+        <Button v-if="magBeheren" label="Bewerken" data-testid="plateau-bewerken" @click="openBewerken" />
+        <Button v-if="magVerwijderen" label="Verwijderen" severity="danger" data-testid="plateau-verwijderen" @click="verwijderOpen = true" />
       </div>
       <p v-if="plateau.toelichting" class="mb-[var(--cd-space-lg)] text-[var(--cd-color-text)]">{{ plateau.toelichting }}</p>
 
       <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
         <h2 class="text-[length:var(--cd-text-lg)] font-semibold">Leden</h2>
-        <Button v-if="magBeheren" label="+ Lid koppelen" severity="secondary" size="small" data-testid="lid-koppelen" class="ml-auto" @click="openKoppelen" />
+        <Button v-if="magBeheren" label="+ Lid koppelen" severity="secondary" data-testid="lid-koppelen" class="ml-auto" @click="openKoppelen" />
       </div>
 
       <DataTable :value="leden" data-testid="plateau-leden-tabel" class="bg-[var(--cd-color-surface)] rounded-[var(--cd-radius-card)] shadow-[var(--cd-shadow-sm)]">
@@ -286,7 +286,7 @@ onMounted(() => {
         <Column header="Bevestigd op"><template #body="{ data }">{{ formatDatum(data.bevestigd_op) }}</template></Column>
         <Column header="">
           <template #body="{ data }">
-            <Button v-if="magVerwijderen" label="Ontkoppelen" size="small" severity="danger" :data-testid="`lid-ontkoppel-${data.id}`" @click="(e) => vraagOntkoppel(e, data)" />
+            <Button v-if="magVerwijderen" label="Ontkoppelen" severity="danger" :data-testid="`lid-ontkoppel-${data.id}`" @click="(e) => vraagOntkoppel(e, data)" />
           </template>
         </Column>
         <template #empty>

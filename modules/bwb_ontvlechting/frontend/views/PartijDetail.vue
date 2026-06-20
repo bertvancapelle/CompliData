@@ -241,7 +241,6 @@ const RIJEN = [
               v-if="!isAfdeling"
               label="+ Afdeling"
               severity="secondary"
-              size="small"
               data-testid="lid-afdeling"
               class="ml-auto"
               @click="nieuwLid('organisatie_eenheid')"
@@ -249,7 +248,6 @@ const RIJEN = [
             <Button
               label="+ Persoon"
               severity="secondary"
-              size="small"
               data-testid="lid-persoon"
               :class="isAfdeling ? 'ml-auto' : ''"
               @click="nieuwLid('persoon')"
@@ -274,7 +272,7 @@ const RIJEN = [
           <template #empty><span data-testid="partij-leden-leeg">Nog geen onderliggende partijen.</span></template>
         </DataTable>
         <div v-if="ledenCursor" class="mt-[var(--cd-space-sm)]">
-          <Button label="Meer laden" severity="secondary" size="small" data-testid="leden-meer-laden" :loading="ledenLaden" @click="laadLeden()" />
+          <Button label="Meer laden" severity="secondary" data-testid="leden-meer-laden" :loading="ledenLaden" @click="laadLeden()" />
         </div>
       </section>
 
@@ -297,7 +295,7 @@ const RIJEN = [
           <Column header="Einddatum"><template #body="{ data }">{{ data.einddatum || '—' }}</template></Column>
           <template #empty><span data-testid="partij-contracten-leeg">Geen contracten van deze partij.</span></template>
         </DataTable>
-        <Button v-if="contractenCursor" label="Meer laden" size="small" severity="secondary" data-testid="partij-contracten-meer" :disabled="contractenLaden" class="mt-[var(--cd-space-sm)]" @click="laadContracten()" />
+        <Button v-if="contractenCursor" label="Meer laden" severity="secondary" data-testid="partij-contracten-meer" :disabled="contractenLaden" class="mt-[var(--cd-space-sm)]" @click="laadContracten()" />
       </section>
     </template>
 

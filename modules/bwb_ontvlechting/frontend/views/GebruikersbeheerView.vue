@@ -145,7 +145,6 @@ onMounted(laad)
       <Button
         v-if="magBeheren"
         label="Gebruiker toevoegen"
-        size="small"
         data-testid="gebr-toevoegen"
         class="ml-auto"
         @click="openDialog"

@@ -182,7 +182,7 @@ laad({ reset: true })
   <section class="card" aria-labelledby="sectie-gebruikersgroepen">
     <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
       <h2 id="sectie-gebruikersgroepen" class="text-[length:var(--cd-text-lg)] font-semibold">Gebruikersgroepen</h2>
-      <Button v-if="mag" label="Toevoegen" severity="secondary" size="small" data-testid="gg-toevoegen" class="ml-auto" @click="openNieuw" />
+      <Button v-if="mag" label="Toevoegen" severity="secondary" data-testid="gg-toevoegen" class="ml-auto" @click="openNieuw" />
     </div>
 
     <p v-if="fout" role="alert" data-testid="gg-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ fout }}</p>
@@ -213,15 +213,15 @@ laad({ reset: true })
       <Column header="">
         <template #body="{ data }">
           <div v-if="mag" class="flex gap-[var(--cd-space-sm)]">
-            <Button label="Bewerken" size="small" severity="secondary" :data-testid="`gg-bewerk-${data.id}`" @click="(e) => openBewerken(e, data)" />
-            <Button label="Verwijderen" size="small" severity="danger" :data-testid="`gg-verwijder-${data.id}`" @click="(e) => vraagVerwijder(e, data)" />
+            <Button label="Bewerken" severity="secondary" :data-testid="`gg-bewerk-${data.id}`" @click="(e) => openBewerken(e, data)" />
+            <Button label="Verwijderen" severity="danger" :data-testid="`gg-verwijder-${data.id}`" @click="(e) => vraagVerwijder(e, data)" />
           </div>
         </template>
       </Column>
       <template #empty><span data-testid="gg-leeg">Nog geen gebruikersgroepen.</span></template>
     </DataTable>
 
-    <Button v-if="cursor" label="Meer laden" size="small" severity="secondary" data-testid="gg-meer" :disabled="laden" class="mt-[var(--cd-space-sm)]" @click="laad()" />
+    <Button v-if="cursor" label="Meer laden" severity="secondary" data-testid="gg-meer" :disabled="laden" class="mt-[var(--cd-space-sm)]" @click="laad()" />
 
     <Dialog v-model:visible="dialogOpen" modal :closable="false" :header="bewerkenId ? 'Gebruikersgroep bewerken' : 'Gebruikersgroep toevoegen'" data-testid="gg-dialog" @show="focusEerste" @hide="onHide">
       <form class="flex flex-col gap-[var(--cd-space-md)] min-w-[20rem]" data-testid="gg-form" @submit.prevent="opslaan">

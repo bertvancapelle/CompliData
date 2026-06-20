@@ -81,7 +81,6 @@ async function uitloggen() {
         <Button
           label="Uitloggen"
           severity="secondary"
-          size="small"
           data-testid="uitlog-knop"
           class="!bg-white/15 !text-white !border !border-white/50 hover:!bg-white/25 focus:!outline-white"
           @click="uitloggen"

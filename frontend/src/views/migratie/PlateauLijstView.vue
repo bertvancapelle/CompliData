@@ -84,7 +84,7 @@ onMounted(() => laad({ reset: true }))
       <h1 id="plateaus-titel" class="text-[length:var(--cd-text-2xl)] font-semibold text-[var(--cd-color-primary)]">
         Plateaus
       </h1>
-      <Button v-if="magAanmaken" label="+ Nieuw plateau" size="small" data-testid="plateau-nieuw" class="ml-auto" @click="openNieuw" />
+      <Button v-if="magAanmaken" label="+ Nieuw plateau" data-testid="plateau-nieuw" class="ml-auto" @click="openNieuw" />
     </div>
 
     <p

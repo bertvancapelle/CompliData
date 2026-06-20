@@ -207,7 +207,6 @@ laad()
           <Button
             v-if="magBeheren"
             label="Optie toevoegen"
-            size="small"
             :data-testid="`cat-toevoegen-${dim.key}`"
             class="ml-auto"
             @click="openToevoegen(dim.key)"
@@ -244,11 +243,10 @@ laad()
               </td>
               <td class="text-right">
                 <div v-if="magBeheren" class="flex justify-end gap-[var(--cd-space-xs)]">
-                  <Button label="Bewerken" size="small" severity="secondary" :data-testid="`cat-bewerk-${optie.id}`" @click="openBewerken(optie)" />
+                  <Button label="Bewerken" severity="secondary" :data-testid="`cat-bewerk-${optie.id}`" @click="openBewerken(optie)" />
                   <Button
                     v-if="optie.actief"
                     label="Deactiveren"
-                    size="small"
                     severity="danger"
                     :data-testid="`cat-deactiveer-${optie.id}`"
                     @click="vraagDeactiveren(optie)"
@@ -256,7 +254,6 @@ laad()
                   <Button
                     v-else
                     label="Reactiveren"
-                    size="small"
                     :data-testid="`cat-reactiveer-${optie.id}`"
                     @click="reactiveer(optie)"
                   />

@@ -90,7 +90,7 @@ onMounted(() => laad({ reset: true }))
       <h1 id="wp-titel" class="text-[length:var(--cd-text-2xl)] font-semibold text-[var(--cd-color-primary)]">
         Werkpakketten
       </h1>
-      <Button v-if="magAanmaken" label="+ Nieuw werkpakket" size="small" data-testid="wp-nieuw" class="ml-auto" @click="openNieuw" />
+      <Button v-if="magAanmaken" label="+ Nieuw werkpakket" data-testid="wp-nieuw" class="ml-auto" @click="openNieuw" />
     </div>
 
     <p

@@ -72,7 +72,6 @@ function toon() {
       icon="pi pi-info-circle"
       label="Geschiedenis"
       severity="secondary"
-      size="small"
       aria-label="Toon geschiedenis"
       data-testid="oh-knop"
       @click="toon"
@@ -109,7 +108,7 @@ function toon() {
         </ol>
 
         <div v-if="cursor" class="mt-[var(--cd-space-md)] flex justify-center">
-          <Button :label="laden ? 'Laden…' : 'Meer laden'" severity="secondary" size="small" :disabled="laden" data-testid="oh-meer" @click="laad({ meer: true })" />
+          <Button :label="laden ? 'Laden…' : 'Meer laden'" severity="secondary" :disabled="laden" data-testid="oh-meer" @click="laad({ meer: true })" />
         </div>
       </template>
     </Dialog>

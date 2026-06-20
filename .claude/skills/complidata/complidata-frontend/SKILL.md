@@ -113,6 +113,26 @@ generieke get/post).
   409→conflict, 422→veldfouten, 401→bestaande sessie-flow.
 - Toegankelijk: `label/for`, `aria-invalid`, `aria-describedby`, focusbeheer.
 
+## Knopstandaard KILARA (niet-onderhandelbaar)
+
+De knop is **één herbruikbaar standaardobject met één vaste hoogte** (`h-10`), volledig
+gestuurd door `frontend/src/presets/Button.js`. Er is **GEEN** size-variatie — `size="small"`
+bestaat niet meer (preset-tak verwijderd; een `size`-prop heeft geen hoogte-effect). De enige
+toegestane variatie is:
+
+- **(a) kleur per rol** — `primary` (donkerblauw, hoofdactie; default zonder severity),
+  `secondary` (lichtblauw, nevenactie), `danger` (rood, destructief), `text` (ghost/tertiair,
+  transparant + primary-tekst). Per scherm geldt: **maximaal één primary** (de hoofdactie).
+- **(b) breedte** — past zich aan de tekst aan (`px-4`, geen vaste breedte).
+
+**Geen per-call-site hoogte/padding-overrides** (`class`/`:pt`/`style`) — alleen positionering
+(`ml-auto`/`mt-*`) is toegestaan. Alle knoppen lopen via het ene preset; zo kan een
+hoogteafwijking structureel niet meer ontstaan.
+
+**Tabbladen** (`AppTabs.vue`) volgen dezelfde kleurtaal én hoogte (`h-10`, `--cd-radius-btn`):
+omlijnd = beschikbaar, lichtblauw (`--cd-color-primary-50/700`) = hover, donkerblauw
+(`--cd-color-primary`, wit, semibold) = gekozen.
+
 ## ZoekSelect-standaard (niet-onderhandelbaar)
 
 Elke keuzelijst met meer dan 10 opties OF met een open-ended catalogus gebruikt altijd de

@@ -192,7 +192,7 @@ laad({ reset: true })
   <section class="card" aria-labelledby="sectie-datatypes">
     <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
       <h2 id="sectie-datatypes" class="text-[length:var(--cd-text-lg)] font-semibold">Datatypes</h2>
-      <Button v-if="mag" label="Toevoegen" severity="secondary" size="small" data-testid="dt-toevoegen" class="ml-auto" @click="openNieuw" />
+      <Button v-if="mag" label="Toevoegen" severity="secondary" data-testid="dt-toevoegen" class="ml-auto" @click="openNieuw" />
     </div>
 
     <p v-if="fout" role="alert" data-testid="dt-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ fout }}</p>
@@ -213,15 +213,15 @@ laad({ reset: true })
       <Column header="">
         <template #body="{ data }">
           <div v-if="mag" class="flex gap-[var(--cd-space-sm)]">
-            <Button label="Bewerken" size="small" severity="secondary" :data-testid="`dt-bewerk-${data.id}`" @click="(e) => openBewerken(e, data)" />
-            <Button label="Verwijderen" size="small" severity="danger" :data-testid="`dt-verwijder-${data.id}`" @click="(e) => vraagVerwijder(e, data)" />
+            <Button label="Bewerken" severity="secondary" :data-testid="`dt-bewerk-${data.id}`" @click="(e) => openBewerken(e, data)" />
+            <Button label="Verwijderen" severity="danger" :data-testid="`dt-verwijder-${data.id}`" @click="(e) => vraagVerwijder(e, data)" />
           </div>
         </template>
       </Column>
       <template #empty><span data-testid="dt-leeg">Nog geen datatypes.</span></template>
     </DataTable>
 
-    <Button v-if="cursor" label="Meer laden" size="small" severity="secondary" data-testid="dt-meer" :disabled="laden" class="mt-[var(--cd-space-sm)]" @click="laad()" />
+    <Button v-if="cursor" label="Meer laden" severity="secondary" data-testid="dt-meer" :disabled="laden" class="mt-[var(--cd-space-sm)]" @click="laad()" />
 
     <!-- Aanmaken/bewerken -->
     <Dialog v-model:visible="dialogOpen" modal :closable="false" :header="bewerkenId ? 'Datatype bewerken' : 'Datatype toevoegen'" data-testid="dt-dialog" @show="focusEerste" @hide="onHide">

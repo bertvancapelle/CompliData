@@ -198,15 +198,15 @@ onMounted(laad)
           {{ deliverable.naam }}
         </h1>
         <ObjectHistoriePaneel entiteit-type="deliverable" :entiteit-id="props.id" class="ml-auto" />
-        <Button v-if="magBeheren" label="Bewerken" size="small" data-testid="del-bewerken" @click="openBewerken" />
-        <Button v-if="magVerwijderen" label="Verwijderen" size="small" severity="danger" data-testid="del-verwijderen" @click="verwijderOpen = true" />
+        <Button v-if="magBeheren" label="Bewerken" data-testid="del-bewerken" @click="openBewerken" />
+        <Button v-if="magVerwijderen" label="Verwijderen" severity="danger" data-testid="del-verwijderen" @click="verwijderOpen = true" />
       </div>
       <p v-if="deliverable.toelichting" class="mb-[var(--cd-space-lg)] text-[var(--cd-color-text)]">{{ deliverable.toelichting }}</p>
 
       <!-- Opgeleverd door werkpakketten -->
       <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
         <h2 class="text-[length:var(--cd-text-lg)] font-semibold">Opgeleverd door (werkpakketten)</h2>
-        <Button v-if="magBeheren" label="+ Werkpakket koppelen" severity="secondary" size="small" data-testid="del-wp-koppelen" class="ml-auto" @click="openWpKoppel" />
+        <Button v-if="magBeheren" label="+ Werkpakket koppelen" severity="secondary" data-testid="del-wp-koppelen" class="ml-auto" @click="openWpKoppel" />
       </div>
       <DataTable :value="keten.werkpakketten" data-testid="del-werkpakketten-tabel" class="mb-[var(--cd-space-lg)] bg-[var(--cd-color-surface)] rounded-[var(--cd-radius-card)] shadow-[var(--cd-shadow-sm)]">
         <Column field="naam" header="Werkpakket">
@@ -216,7 +216,7 @@ onMounted(laad)
         </Column>
         <Column header="">
           <template #body="{ data }">
-            <Button v-if="magVerwijderen" label="Ontkoppelen" size="small" severity="danger" :data-testid="`del-wp-ontkoppel-${data.relatie_id}`" @click="ontkoppelWp(data)" />
+            <Button v-if="magVerwijderen" label="Ontkoppelen" severity="danger" :data-testid="`del-wp-ontkoppel-${data.relatie_id}`" @click="ontkoppelWp(data)" />
           </template>
         </Column>
         <template #empty>
@@ -229,7 +229,7 @@ onMounted(laad)
       <!-- Helpt realiseren (plateaus) -->
       <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
         <h2 class="text-[length:var(--cd-text-lg)] font-semibold">Helpt realiseren (plateaus)</h2>
-        <Button v-if="magBeheren" label="+ Plateau koppelen" severity="secondary" size="small" data-testid="del-pl-koppelen" class="ml-auto" @click="openPlKoppel" />
+        <Button v-if="magBeheren" label="+ Plateau koppelen" severity="secondary" data-testid="del-pl-koppelen" class="ml-auto" @click="openPlKoppel" />
       </div>
       <DataTable :value="keten.plateaus" data-testid="del-plateaus-tabel" class="bg-[var(--cd-color-surface)] rounded-[var(--cd-radius-card)] shadow-[var(--cd-shadow-sm)]">
         <Column field="naam" header="Plateau">
@@ -239,7 +239,7 @@ onMounted(laad)
         </Column>
         <Column header="">
           <template #body="{ data }">
-            <Button v-if="magVerwijderen" label="Ontkoppelen" size="small" severity="danger" :data-testid="`del-pl-ontkoppel-${data.relatie_id}`" @click="ontkoppelPl(data)" />
+            <Button v-if="magVerwijderen" label="Ontkoppelen" severity="danger" :data-testid="`del-pl-ontkoppel-${data.relatie_id}`" @click="ontkoppelPl(data)" />
           </template>
         </Column>
         <template #empty>

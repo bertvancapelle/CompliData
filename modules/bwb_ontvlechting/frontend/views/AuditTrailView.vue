@@ -101,8 +101,8 @@ laad()
           <option v-for="a in ['create', 'update', 'delete', 'derive']" :key="a" :value="a">{{ label(AUDIT_ACTIE, a) }}</option>
         </select>
       </div>
-      <Button label="Zoeken" size="small" data-testid="audit-toepassen" @click="pasToe" />
-      <Button label="Wissen" severity="secondary" size="small" data-testid="audit-wissen" @click="wis" />
+      <Button label="Zoeken" data-testid="audit-toepassen" @click="pasToe" />
+      <Button label="Wissen" severity="secondary" data-testid="audit-wissen" @click="wis" />
     </div>
 
     <p v-if="fout" role="alert" data-testid="audit-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ fout }}</p>

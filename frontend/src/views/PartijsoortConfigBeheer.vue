@@ -184,7 +184,7 @@ laad()
     <section class="card" data-testid="ps-sectie">
       <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
         <h2 class="text-[length:var(--cd-text-lg)] font-semibold">Partijsoort-opties</h2>
-        <Button v-if="magBeheren" label="Optie toevoegen" size="small" data-testid="ps-toevoegen" class="ml-auto" @click="openToevoegen" />
+        <Button v-if="magBeheren" label="Optie toevoegen" data-testid="ps-toevoegen" class="ml-auto" @click="openToevoegen" />
       </div>
 
       <table class="w-full text-[length:var(--cd-text-sm)]" data-testid="ps-tabel">
@@ -213,9 +213,9 @@ laad()
             </td>
             <td class="text-right">
               <div v-if="magBeheren" class="flex items-center justify-end gap-[var(--cd-space-xs)]">
-                <Button label="Bewerken" size="small" severity="secondary" :data-testid="`ps-bewerk-${optie.id}`" @click="openBewerken(optie)" />
-                <Button v-if="optie.actief" label="Deactiveren" size="small" severity="danger" :data-testid="`ps-deactiveer-${optie.id}`" @click="vraagDeactiveren(optie)" />
-                <Button v-else label="Reactiveren" size="small" :data-testid="`ps-reactiveer-${optie.id}`" @click="reactiveer(optie)" />
+                <Button label="Bewerken" severity="secondary" :data-testid="`ps-bewerk-${optie.id}`" @click="openBewerken(optie)" />
+                <Button v-if="optie.actief" label="Deactiveren" severity="danger" :data-testid="`ps-deactiveer-${optie.id}`" @click="vraagDeactiveren(optie)" />
+                <Button v-else label="Reactiveren" :data-testid="`ps-reactiveer-${optie.id}`" @click="reactiveer(optie)" />
               </div>
             </td>
           </tr>

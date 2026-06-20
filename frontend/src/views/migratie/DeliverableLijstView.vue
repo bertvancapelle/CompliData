@@ -84,7 +84,7 @@ onMounted(() => laad({ reset: true }))
       <h1 id="del-titel" class="text-[length:var(--cd-text-2xl)] font-semibold text-[var(--cd-color-primary)]">
         Deliverables
       </h1>
-      <Button v-if="magAanmaken" label="+ Nieuwe deliverable" size="small" data-testid="del-nieuw" class="ml-auto" @click="openNieuw" />
+      <Button v-if="magAanmaken" label="+ Nieuwe deliverable" data-testid="del-nieuw" class="ml-auto" @click="openNieuw" />
     </div>
 
     <p

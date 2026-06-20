@@ -271,7 +271,7 @@ laadBeide()
   <section class="card" aria-labelledby="sectie-koppelingen">
     <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
       <h2 id="sectie-koppelingen" class="text-[length:var(--cd-text-lg)] font-semibold">Koppelingen</h2>
-      <Button v-if="mag" label="Toevoegen" severity="secondary" size="small" data-testid="kp-toevoegen" class="ml-auto" @click="openNieuw" />
+      <Button v-if="mag" label="Toevoegen" severity="secondary" data-testid="kp-toevoegen" class="ml-auto" @click="openNieuw" />
     </div>
 
     <p v-if="fout" role="alert" data-testid="kp-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ fout }}</p>
@@ -291,14 +291,14 @@ laadBeide()
       <Column header="">
         <template #body="{ data }">
           <div v-if="mag" class="flex gap-[var(--cd-space-sm)]">
-            <Button label="Bewerken" size="small" severity="secondary" :data-testid="`kp-bewerk-${data.id}`" @click="(e) => openBewerken(e, data)" />
-            <Button label="Verwijderen" size="small" severity="danger" :data-testid="`kp-verwijder-${data.id}`" @click="(e) => vraagVerwijder(e, data)" />
+            <Button label="Bewerken" severity="secondary" :data-testid="`kp-bewerk-${data.id}`" @click="(e) => openBewerken(e, data)" />
+            <Button label="Verwijderen" severity="danger" :data-testid="`kp-verwijder-${data.id}`" @click="(e) => vraagVerwijder(e, data)" />
           </div>
         </template>
       </Column>
       <template #empty><span data-testid="kp-leeg-uitgaand">Geen uitgaande koppelingen.</span></template>
     </DataTable>
-    <Button v-if="uitgaand.cursor" label="Meer laden" size="small" severity="secondary" data-testid="kp-meer-uitgaand" :disabled="uitgaand.laden" class="mt-[var(--cd-space-sm)]" @click="laadUitgaand()" />
+    <Button v-if="uitgaand.cursor" label="Meer laden" severity="secondary" data-testid="kp-meer-uitgaand" :disabled="uitgaand.laden" class="mt-[var(--cd-space-sm)]" @click="laadUitgaand()" />
 
     <!-- Inkomend: deze applicatie = doel -->
     <h3 class="font-semibold mt-[var(--cd-space-md)]">Inkomend (deze applicatie is doel)</h3>
@@ -315,14 +315,14 @@ laadBeide()
       <Column header="">
         <template #body="{ data }">
           <div v-if="mag" class="flex gap-[var(--cd-space-sm)]">
-            <Button label="Bewerken" size="small" severity="secondary" :data-testid="`kp-bewerk-${data.id}`" @click="(e) => openBewerken(e, data)" />
-            <Button label="Verwijderen" size="small" severity="danger" :data-testid="`kp-verwijder-${data.id}`" @click="(e) => vraagVerwijder(e, data)" />
+            <Button label="Bewerken" severity="secondary" :data-testid="`kp-bewerk-${data.id}`" @click="(e) => openBewerken(e, data)" />
+            <Button label="Verwijderen" severity="danger" :data-testid="`kp-verwijder-${data.id}`" @click="(e) => vraagVerwijder(e, data)" />
           </div>
         </template>
       </Column>
       <template #empty><span data-testid="kp-leeg-inkomend">Geen inkomende koppelingen.</span></template>
     </DataTable>
-    <Button v-if="inkomend.cursor" label="Meer laden" size="small" severity="secondary" data-testid="kp-meer-inkomend" :disabled="inkomend.laden" class="mt-[var(--cd-space-sm)]" @click="laadInkomend()" />
+    <Button v-if="inkomend.cursor" label="Meer laden" severity="secondary" data-testid="kp-meer-inkomend" :disabled="inkomend.laden" class="mt-[var(--cd-space-sm)]" @click="laadInkomend()" />
 
     <!-- Aanmaken/bewerken -->
     <Dialog v-model:visible="dialogOpen" modal :closable="false" :header="bewerkenId ? 'Koppeling bewerken' : 'Koppeling toevoegen'" data-testid="kp-dialog" @show="focusEerste" @hide="onHide">

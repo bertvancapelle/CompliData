@@ -170,7 +170,7 @@ laad()
   <section class="card" aria-labelledby="sectie-opbouw">
     <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
       <h2 id="sectie-opbouw" class="text-[length:var(--cd-text-lg)] font-semibold">Opbouw</h2>
-      <Button v-if="mag" label="Draait-op toevoegen" severity="secondary" size="small" data-testid="st-toevoegen" class="ml-auto" @click="openNieuw" />
+      <Button v-if="mag" label="Draait-op toevoegen" severity="secondary" data-testid="st-toevoegen" class="ml-auto" @click="openNieuw" />
     </div>
 
     <p v-if="fout" role="alert" data-testid="st-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ fout }}</p>
@@ -188,8 +188,8 @@ laad()
       <Column header="">
         <template #body="{ data }">
           <div v-if="mag" class="flex gap-[var(--cd-space-sm)]">
-            <Button label="Bewerken" size="small" severity="secondary" :data-testid="`st-bewerk-${data.structuur_id}`" @click="(e) => openBewerken(e, data)" />
-            <Button label="Ontkoppelen" size="small" severity="danger" :data-testid="`st-ontkoppel-${data.structuur_id}`" @click="(e) => vraagVerwijder(e, data)" />
+            <Button label="Bewerken" severity="secondary" :data-testid="`st-bewerk-${data.structuur_id}`" @click="(e) => openBewerken(e, data)" />
+            <Button label="Ontkoppelen" severity="danger" :data-testid="`st-ontkoppel-${data.structuur_id}`" @click="(e) => vraagVerwijder(e, data)" />
           </div>
         </template>
       </Column>
@@ -209,8 +209,8 @@ laad()
       <Column header="">
         <template #body="{ data }">
           <div v-if="mag" class="flex gap-[var(--cd-space-sm)]">
-            <Button label="Bewerken" size="small" severity="secondary" :data-testid="`st-bewerk-${data.structuur_id}`" @click="(e) => openBewerken(e, data)" />
-            <Button label="Ontkoppelen" size="small" severity="danger" :data-testid="`st-ontkoppel-${data.structuur_id}`" @click="(e) => vraagVerwijder(e, data)" />
+            <Button label="Bewerken" severity="secondary" :data-testid="`st-bewerk-${data.structuur_id}`" @click="(e) => openBewerken(e, data)" />
+            <Button label="Ontkoppelen" severity="danger" :data-testid="`st-ontkoppel-${data.structuur_id}`" @click="(e) => vraagVerwijder(e, data)" />
           </div>
         </template>
       </Column>

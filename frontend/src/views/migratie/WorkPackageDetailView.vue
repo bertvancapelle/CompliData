@@ -169,8 +169,8 @@ onMounted(laad)
           {{ wp.naam }}
         </h1>
         <ObjectHistoriePaneel entiteit-type="work_package" :entiteit-id="props.id" class="ml-auto" />
-        <Button v-if="magBeheren" label="Bewerken" size="small" data-testid="wp-bewerken" @click="openBewerken" />
-        <Button v-if="magVerwijderen" label="Verwijderen" size="small" severity="danger" data-testid="wp-verwijderen" @click="verwijderOpen = true" />
+        <Button v-if="magBeheren" label="Bewerken" data-testid="wp-bewerken" @click="openBewerken" />
+        <Button v-if="magVerwijderen" label="Verwijderen" severity="danger" data-testid="wp-verwijderen" @click="verwijderOpen = true" />
       </div>
       <p v-if="wp.toelichting" class="mb-[var(--cd-space-md)] text-[var(--cd-color-text)]">{{ wp.toelichting }}</p>
 
@@ -189,7 +189,7 @@ onMounted(laad)
 
       <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
         <h2 class="text-[length:var(--cd-text-lg)] font-semibold">Subpakketten ({{ directeSubpakketten.length }} direct)</h2>
-        <Button v-if="magBeheren" label="+ Sub-werkpakket" severity="secondary" size="small" data-testid="wp-sub-toevoegen" class="ml-auto" @click="openSub" />
+        <Button v-if="magBeheren" label="+ Sub-werkpakket" severity="secondary" data-testid="wp-sub-toevoegen" class="ml-auto" @click="openSub" />
       </div>
       <DataTable :value="subboom" data-testid="wp-subboom-tabel" class="bg-[var(--cd-color-surface)] rounded-[var(--cd-radius-card)] shadow-[var(--cd-shadow-sm)]">
         <Column field="naam" header="Naam">

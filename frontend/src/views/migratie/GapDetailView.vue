@@ -209,8 +209,8 @@ onMounted(laad)
           {{ gap.naam }}
         </h1>
         <ObjectHistoriePaneel entiteit-type="gap" :entiteit-id="props.id" class="ml-auto" />
-        <Button v-if="magBeheren" label="Bewerken" size="small" data-testid="gap-bewerken" @click="openBewerken" />
-        <Button v-if="magVerwijderen" label="Verwijderen" size="small" severity="danger" data-testid="gap-verwijderen" @click="verwijderOpen = true" />
+        <Button v-if="magBeheren" label="Bewerken" data-testid="gap-bewerken" @click="openBewerken" />
+        <Button v-if="magVerwijderen" label="Verwijderen" severity="danger" data-testid="gap-verwijderen" @click="verwijderOpen = true" />
       </div>
       <p v-if="gap.toelichting" class="mb-[var(--cd-space-md)] text-[var(--cd-color-text)]">{{ gap.toelichting }}</p>
 
@@ -236,14 +236,14 @@ onMounted(laad)
 
       <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
         <h2 class="text-[length:var(--cd-text-lg)] font-semibold">Leden</h2>
-        <Button v-if="magBeheren" label="+ Lid koppelen" severity="secondary" size="small" data-testid="gap-lid-koppelen" class="ml-auto" @click="openKoppelen" />
+        <Button v-if="magBeheren" label="+ Lid koppelen" severity="secondary" data-testid="gap-lid-koppelen" class="ml-auto" @click="openKoppelen" />
       </div>
       <DataTable :value="leden" data-testid="gap-leden-tabel" class="bg-[var(--cd-color-surface)] rounded-[var(--cd-radius-card)] shadow-[var(--cd-shadow-sm)]">
         <Column header="Type"><template #body="{ data }"><Tag :value="TYPE_LABEL[data.lid_element_type] || data.lid_element_type" severity="secondary" /></template></Column>
         <Column field="naam" header="Naam"><template #body="{ data }">{{ data.naam || '—' }}</template></Column>
         <Column header="">
           <template #body="{ data }">
-            <Button v-if="magVerwijderen" label="Ontkoppelen" size="small" severity="danger" :data-testid="`gap-lid-ontkoppel-${data.id}`" @click="ontkoppel(data)" />
+            <Button v-if="magVerwijderen" label="Ontkoppelen" severity="danger" :data-testid="`gap-lid-ontkoppel-${data.id}`" @click="ontkoppel(data)" />
           </template>
         </Column>
         <template #empty>

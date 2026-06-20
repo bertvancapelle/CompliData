@@ -162,7 +162,7 @@ defineExpose({ items, laad })
   <section class="card" aria-labelledby="sectie-contracten">
     <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
       <h2 id="sectie-contracten" class="text-[length:var(--cd-text-lg)] font-semibold">Contracten</h2>
-      <Button v-if="mag" label="Contract koppelen" severity="secondary" size="small" data-testid="ct-koppelen" class="ml-auto" @click="openKoppelen" />
+      <Button v-if="mag" label="Contract koppelen" severity="secondary" data-testid="ct-koppelen" class="ml-auto" @click="openKoppelen" />
     </div>
 
     <p v-if="fout" role="alert" data-testid="ct-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ fout }}</p>
@@ -211,7 +211,7 @@ defineExpose({ items, laad })
             <span v-else>{{ rij.relatie_rol_label }}</span>
           </td>
           <td class="text-right">
-            <Button v-if="mag" label="Ontkoppelen" size="small" severity="danger" :data-testid="`ct-ontkoppel-${rij.koppeling_id}`" @click="(e) => vraagOntkoppel(e, rij)" />
+            <Button v-if="mag" label="Ontkoppelen" severity="danger" :data-testid="`ct-ontkoppel-${rij.koppeling_id}`" @click="(e) => vraagOntkoppel(e, rij)" />
           </td>
         </tr>
       </tbody>

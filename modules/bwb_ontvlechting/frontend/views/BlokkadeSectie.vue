@@ -214,13 +214,13 @@ laad({ reset: true })
       <Column field="eigenaar" header="Eigenaar" sortable />
       <Column header="">
         <template #body="{ data }">
-          <Button v-if="mag" label="Bewerken" size="small" severity="secondary" :data-testid="`bk-bewerk-${data.id}`" @click="(e) => openBewerken(e, data)" />
+          <Button v-if="mag" label="Bewerken" severity="secondary" :data-testid="`bk-bewerk-${data.id}`" @click="(e) => openBewerken(e, data)" />
         </template>
       </Column>
       <template #empty><span data-testid="bk-leeg">Geen blokkades.</span></template>
     </DataTable>
 
-    <Button v-if="cursor" label="Meer laden" size="small" severity="secondary" data-testid="bk-meer" :disabled="laden" class="mt-[var(--cd-space-sm)]" @click="laad()" />
+    <Button v-if="cursor" label="Meer laden" severity="secondary" data-testid="bk-meer" :disabled="laden" class="mt-[var(--cd-space-sm)]" @click="laad()" />
 
     <Dialog v-model:visible="dialogOpen" modal :closable="false" header="Blokkade bewerken" data-testid="bk-dialog" @show="focusEerste" @hide="onHide">
       <form class="flex flex-col gap-[var(--cd-space-md)] min-w-[20rem]" data-testid="bk-form" @submit.prevent="opslaan">
