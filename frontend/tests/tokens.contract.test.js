@@ -1,0 +1,52 @@
+// @vitest-environment node
+/**
+ * Laag A — Token-contracttest (UI-borging interactiestates).
+ *
+ * Faalt als een afgesproken `--cd-`-token dat de knop-/tab-standaard draagt
+ * ontbreekt of een lege waarde heeft in `themes/base.css`. Zo kan een toekomstige
+ * wijziging die een token hernoemt/verwijdert niet meer stil een interactie-state
+ * breken (bv. tab-hover die op `--cd-color-primary-50` leunt).
+ *
+ * Uitbreiden = een token aan VEREISTE_TOKENS toevoegen.
+ */
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { describe, expect, it } from 'vitest'
+
+// Tokens die de knop- + tab-interactiestandaard dragen (zie complidata-frontend).
+const VEREISTE_TOKENS = [
+  '--cd-color-primary',
+  '--cd-color-primary-50',
+  '--cd-color-primary-100',
+  '--cd-color-primary-700',
+  '--cd-color-danger',
+  '--cd-color-border',
+  '--cd-color-text',
+  '--cd-radius-btn',
+  '--cd-text-sm',
+  '--cd-text-xs',
+]
+
+const BASE_CSS = readFileSync(
+  fileURLToPath(new URL('../src/themes/base.css', import.meta.url)),
+  'utf8',
+)
+
+/** Parseer alle `--token: waarde;`-definities uit base.css naar een map. */
+function parseTokens(css) {
+  const map = {}
+  for (const m of css.matchAll(/(--cd-[a-z0-9-]+)\s*:\s*([^;]+);/gi)) {
+    map[m[1]] = m[2].trim()
+  }
+  return map
+}
+
+describe('Token-contract — base.css', () => {
+  const tokens = parseTokens(BASE_CSS)
+
+  it.each(VEREISTE_TOKENS)('token %s bestaat en heeft een niet-lege waarde', (naam) => {
+    expect(tokens, `token ${naam} ontbreekt in base.css`).toHaveProperty(naam)
+    expect(tokens[naam], `token ${naam} heeft een lege waarde`).toBeTruthy()
+    expect(tokens[naam].length).toBeGreaterThan(0)
+  })
+})

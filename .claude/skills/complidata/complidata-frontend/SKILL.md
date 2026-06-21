@@ -133,6 +133,36 @@ hoogteafwijking structureel niet meer ontstaan.
 omlijnd = beschikbaar, lichtblauw (`--cd-color-primary-50/700`) = hover, donkerblauw
 (`--cd-color-primary`, wit, semibold) = gekozen.
 
+## UI-interactiestates + borging (niet-onderhandelbaar)
+
+**Interactiestates.** Hover/focus/selected lopen uitsluitend via `--cd-`-tokens en de centrale
+componenten (`presets/Button.js`, `AppTabs.vue`). Geen losse kleuren of state-klassen op
+call-sites.
+
+**Tailwind-scanning (vereist, geen optie).** Tailwind v4 scant **glob-gebaseerd** (niet via de
+Vite module-graph). Elke module-frontend buiten `frontend/` (onder `modules/`) MOET via een
+`@source`-directive in `src/assets/main.css` worden meegescand — anders ontbreken module-unieke
+klassen **stil** in de productie-CSS (bewezen: zonder `@source` vallen de tab-hover- en
+`border-[0.5px]`-klassen uit de build; ADR-/incidentlijn tab-hover). Een nieuwe module ⇒ een
+`@source`-regel toevoegen.
+
+**Borging — drie lagen (`frontend/tests/` + `npm run test:css-build`):**
+1. **Token-contracttest** (`tokens.contract.test.js`) — afgesproken `--cd-`-tokens bestaan en zijn
+   niet-leeg.
+2. **Component-render-state-test** (`interactiestates.test.js`) — Button-preset (elke variant zet
+   de juiste token-klasse + vaste `h-10`) en AppTabs (states op de juiste — klikbare — `role="tab"`,
+   juiste token-klassen).
+3. **Build-CSS-check** (`scripts/check-css-build.mjs`, script `test:css-build`) — faalt als een
+   kritische interactie-klasse niet in de **gebouwde** CSS belandt, óók bij een ontbrekende
+   `@source`. Draait een productie-build en greep't de dist-CSS.
+
+**Vals-groen-valkuil (cruciaal).** De build-CSS-check (en render-state-test) staan zélf onder
+`frontend/` en worden dus door Tailwind gescand. Een te-matchen class-token dat hier **aaneengesloten**
+als literal staat, wordt door Tailwind als candidate opgepikt en zélf gegenereerd → de check maakt
+zijn eigen controle waar (vals-groen). Daarom: bouw zulke tokens uit **fragmenten** met de sluit-`]`
+afgesplitst (`'border-[0.5px' + ']'`) — een los fragment met ongebalanceerde `[` is geen candidate.
+Bij elke nieuwe kritische-klasse-check deze de-vervuiling aanhouden.
+
 ## ZoekSelect-standaard (niet-onderhandelbaar)
 
 Elke keuzelijst met meer dan 10 opties OF met een open-ended catalogus gebruikt altijd de
