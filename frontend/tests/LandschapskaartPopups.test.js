@@ -77,30 +77,48 @@ const veld = (w, label) => {
   return dt ? dt.element.nextElementSibling.textContent : null
 }
 
-describe('Landschapskaart — koppeling-popup (gegroepeerd, ADR-023a Fase 3)', () => {
-  it('haalt het ONGEORDENDE paar op en groepeert flows naar Uitgaand/Inkomend', async () => {
+describe('Landschapskaart — koppeling-popup (master-detail, ADR-023a Fase 4)', () => {
+  const TWEE = () => ({ items: [
+    { id: 'r1', bron_id: 'a1', doel_id: 'a2', naam: 'B-koppeling', kenmerken: { protocol: 'rest', richting: 'eenrichting', impact_bij_verbreking: 'hoog' }, omschrijving: 'desc B' },
+    { id: 'r2', bron_id: 'a2', doel_id: 'a1', naam: 'A-koppeling', kenmerken: { protocol: 'soap', richting: 'tweerichting' }, omschrijving: null },
+  ] })
+
+  it('toont een master-detail (linker lijst + rechter detail); eerste rij (op naam) auto-geselecteerd', async () => {
+    api.relaties.lijst.mockResolvedValue(TWEE())
+    const { w } = await mountView()
+    await w.vm.openEdgePopup({ bron_id: 'a1', doel_id: 'a2', ring: 'applicaties' })
+    await flushPromises()
+    expect(api.relaties.lijst).toHaveBeenCalledWith({ paar_bron_id: 'a1', paar_doel_id: 'a2', relatietype: 'flow' })
+    expect(w.find('[data-testid="lk-popup-md"]').exists()).toBe(true)
+    expect(w.find('[data-testid="lk-popup-lijst"]').exists()).toBe(true)
+    expect(w.find('[data-testid="lk-popup-detail"]').exists()).toBe(true)
+    expect(w.findAll('[data-testid^="lk-popup-flow-"]')).toHaveLength(2)
+    // Gesorteerd op naam asc → 'A-koppeling' (r2) eerst en automatisch geselecteerd.
+    expect(w.find('[data-testid="lk-popup-flow-r2"]').attributes('aria-selected')).toBe('true')
+    expect(w.find('[data-testid="lk-popup-detail-naam"]').text()).toBe('A-koppeling')
+    // Tegenpartij = doel van die flow (r2: a2→a1 → a1 = Zaaksysteem).
+    expect(w.find('[data-testid="lk-popup-detail"]').text()).toContain('Zaaksysteem')
+  })
+
+  it('klik op een andere rij wisselt het detail-paneel', async () => {
+    api.relaties.lijst.mockResolvedValue(TWEE())
+    const { w } = await mountView()
+    await w.vm.openEdgePopup({ bron_id: 'a1', doel_id: 'a2', ring: 'applicaties' })
+    await flushPromises()
+    await w.find('[data-testid="lk-popup-flow-r1"]').trigger('click')
+    expect(w.find('[data-testid="lk-popup-detail-naam"]').text()).toBe('B-koppeling')
+  })
+
+  it('n=1: zelfde master-detail-layout (één rij + detail)', async () => {
     api.relaties.lijst.mockResolvedValue({ items: [
-      { id: 'r1', bron_id: 'a1', doel_id: 'a2', naam: 'REST sync', kenmerken: { protocol: 'rest', richting: 'eenrichting' } },
-      { id: 'r2', bron_id: 'a1', doel_id: 'a2', naam: null, kenmerken: { protocol: 'bestand' } },
-      { id: 'r3', bron_id: 'a2', doel_id: 'a1', naam: 'Terugkoppeling', kenmerken: { protocol: 'soap' } },
+      { id: 'x', bron_id: 'a1', doel_id: 'a2', naam: 'Enige koppeling', kenmerken: { protocol: 'rest' }, omschrijving: null },
     ] })
     const { w } = await mountView()
     await w.vm.openEdgePopup({ bron_id: 'a1', doel_id: 'a2', ring: 'applicaties' })
     await flushPromises()
-    // Ongeordend-paar-filter (NIET gericht bron_id/doel_id).
-    expect(api.relaties.lijst).toHaveBeenCalledWith({ paar_bron_id: 'a1', paar_doel_id: 'a2', relatietype: 'flow' })
-    expect(w.find('[data-testid="lk-popup"]').exists()).toBe(true)
-    const uit = w.find('[data-testid="lk-popup-groep-uitgaand"]')
-    const ink = w.find('[data-testid="lk-popup-groep-inkomend"]')
-    expect(uit.exists()).toBe(true)
-    expect(ink.exists()).toBe(true)
-    // Uitgaand: 2 flows (a1→a2); naam getoond, naamloze als "–".
-    expect(uit.findAll('li')).toHaveLength(2)
-    expect(uit.text()).toContain('REST sync')
-    expect(uit.text()).toContain('–')
-    // Inkomend: 1 flow (a2→a1).
-    expect(ink.findAll('li')).toHaveLength(1)
-    expect(ink.text()).toContain('Terugkoppeling')
+    expect(w.find('[data-testid="lk-popup-md"]').exists()).toBe(true)
+    expect(w.findAll('[data-testid^="lk-popup-flow-"]')).toHaveLength(1)
+    expect(w.find('[data-testid="lk-popup-detail-naam"]').text()).toBe('Enige koppeling')
   })
 
   it('edge-klik gebruikt paar_bron_id + paar_doel_id (niet gericht bron_id/doel_id)', async () => {

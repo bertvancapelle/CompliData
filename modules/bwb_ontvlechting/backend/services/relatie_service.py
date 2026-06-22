@@ -31,12 +31,21 @@ from services import relatiekenmerk_catalog
 from services.errors import NietGevonden, OngeldigeRegistratie, RegistratieConflict
 from services.pagination import (
     decode_sort_cursor,
+    decode_sort_cursor_nullable,
     encode_sort_cursor,
+    encode_sort_cursor_nullable,
+    keyset_order_by_nulls_last,
+    keyset_seek_nulls_last,
 )
 
 _ENTITEIT = "relatie"
 _STANDAARD_LIMIT = 25
 _MAX_LIMIT = 100
+
+# ADR-023a Fase 4 — sorteerbare kolommen (allowlist; rauwe kolomnaam komt NOOIT in ORDER BY).
+# `naam` is DB-nullable → v2n-keyset (NULLS-LAST); `created_at` blijft de default (v2-cursor,
+# bestaande cursors blijven geldig). De route dwingt de allowlist af (422 bij onbekende waarde).
+_SORTEERVELDEN = {"created_at": Relatie.created_at, "naam": Relatie.naam}
 
 # OK-2: enum-namen in de kenmerk-definitie → de werkelijke model-enums.
 _KENMERK_ENUMS = {
@@ -236,12 +245,17 @@ async def lijst(
     bron_id: uuid.UUID | None = None, doel_id: uuid.UUID | None = None,
     relatietype: str | None = None,
     paar_bron_id: uuid.UUID | None = None, paar_doel_id: uuid.UUID | None = None,
+    sort: str | None = None, order: str | None = None,
 ) -> tuple[list[Relatie], str | None]:
-    """Keyset-lijst binnen de tenant (created_at oplopend), filterbaar op
-    bron/doel/relatietype. ADR-023a — `paar_bron_id`+`paar_doel_id` (beide vereist) filteren
-    op het ONGEORDENDE paar (A,B)≡(B,A); naast de bestaande gerichte bron/doel-filters.
-    Cursor-mismatch ⇒ `ValueError` (route ⇒ 400)."""
+    """Keyset-lijst binnen de tenant, filterbaar op bron/doel/relatietype en het ONGEORDENDE
+    paar (`paar_bron_id`+`paar_doel_id`, (A,B)≡(B,A)). ADR-023a Fase 4 — sorteerbaar op
+    `naam` (v2n NULLS-LAST) of `created_at` (default, v2). De allowlist wordt op de API-rand
+    afgedwongen (422); hier wordt aangenomen dat sort/order geldig zijn. Een `after`-cursor die
+    niet bij de actieve sort/order past ⇒ `ValueError` (route ⇒ 400 ONGELDIGE_CURSOR)."""
     limit = max(1, min(limit, _MAX_LIMIT))
+    sort = sort or "created_at"
+    order = order or "asc"
+    sort_kolom = _SORTEERVELDEN[sort]
     tid = _tenant_uuid(tenant_id)
     stmt = select(Relatie).where(Relatie.tenant_id == tid)
     if bron_id is not None:
@@ -258,20 +272,29 @@ async def lijst(
     if relatietype:
         stmt = stmt.where(Relatie.relatietype == relatietype)
     if after:
-        _s, _o, waarde_str, c_id = decode_sort_cursor(after)
-        c_waarde = datetime.fromisoformat(waarde_str)
+        # `naam` → v2n (nullable); `created_at` → v2 (achterwaarts compatibel). Een cursor van
+        # het andere schema/sort/order → ValueError (versie- of token-mismatch) ⇒ 400.
+        if sort == "naam":
+            c_sort, c_order, c_isnull, c_waarde, c_id = decode_sort_cursor_nullable(after)
+        else:
+            c_sort, c_order, c_waarde_str, c_id = decode_sort_cursor(after)
+            c_isnull = False
+            c_waarde = datetime.fromisoformat(c_waarde_str)
+        if c_sort != sort or c_order != order:
+            raise ValueError("cursor past niet bij de actieve sortering")
         stmt = stmt.where(
-            or_(
-                Relatie.created_at > c_waarde,
-                and_(Relatie.created_at == c_waarde, Relatie.id > c_id),
+            keyset_seek_nulls_last(
+                sort_kolom, Relatie.id, order=order, is_null=c_isnull, waarde=c_waarde, cursor_id=c_id
             )
         )
-    stmt = stmt.order_by(Relatie.created_at.asc(), Relatie.id.asc()).limit(limit + 1)
+    stmt = stmt.order_by(*keyset_order_by_nulls_last(sort_kolom, Relatie.id, order)).limit(limit + 1)
     rijen = list((await session.execute(stmt)).scalars().all())
     heeft_meer = len(rijen) > limit
     items = rijen[:limit]
-    volgende = (
-        encode_sort_cursor(sort="created_at", order="asc", waarde=items[-1].created_at, id=items[-1].id)
-        if heeft_meer else None
-    )
+    if not heeft_meer:
+        return items, None
+    laatste = items[-1]
+    sleutel = laatste.naam if sort == "naam" else laatste.created_at
+    encoder = encode_sort_cursor_nullable if sort == "naam" else encode_sort_cursor
+    volgende = encoder(sort=sort, order=order, waarde=sleutel, id=laatste.id)
     return items, volgende

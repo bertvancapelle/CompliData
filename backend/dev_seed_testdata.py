@@ -358,10 +358,13 @@ async def _seed_koppelingen(session, app_ids: dict) -> None:
         if (bron_id, doel_id) in bestaande:
             print(f"  = flow {bron_idx}→{doel_idx}: bestaat al — overgeslagen")
             continue
+        # ADR-023a — naam verplicht voor flow: beschrijvende naam op basis van de
+        # bron-/doel-applicatienamen (paren in deze seed zijn uniek → geen volgnummer nodig).
+        naam = f"{APPS[bron_idx - 1]['naam']} → {APPS[doel_idx - 1]['naam']}"
         await relatie_service.maak_aan(
             session, DEV_TENANT,
             RelatieCreate(
-                bron_id=bron_id, doel_id=doel_id, relatietype="flow",
+                bron_id=bron_id, doel_id=doel_id, relatietype="flow", naam=naam,
                 kenmerken={"protocol": protocol, "richting": KOP_DEFAULTS["richting"],
                            "impact_bij_verbreking": KOP_DEFAULTS["impact_bij_verbreking"]},
                 omschrijving=omschrijving,
@@ -914,7 +917,7 @@ async def seed_landschapskaart_demo(session, tenant_id) -> dict:
         if (b, d) in flow_set:
             continue
         await relatie_service.maak_aan(session, tenant_id, RelatieCreate(
-            bron_id=b, doel_id=d, relatietype="flow",
+            bron_id=b, doel_id=d, relatietype="flow", naam=f"{bron} → {doel}",
             kenmerken={"richting": KOP_DEFAULTS["richting"], "impact_bij_verbreking": KOP_DEFAULTS["impact_bij_verbreking"]},
             omschrijving="koppeling"))
         print(f"  + flow {bron}→{doel}")

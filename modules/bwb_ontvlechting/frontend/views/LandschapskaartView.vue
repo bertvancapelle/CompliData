@@ -223,8 +223,12 @@ const popupTitel = ref('')
 const popupBadge = ref(null) // 'Inkomend' | 'Uitgaand' (alleen koppeling t.o.v. ego)
 const popupLaden = ref(false)
 const popupVelden = ref([]) // [{ label, waarde }] — uitsluitend ingevulde velden (knoop-popup)
-const popupGroepen = ref([]) // [{ testid, titel, rijen:[{naam, protocol}] }] — koppeling-popup (ADR-023a Fase 3)
+// Koppeling-popup (ADR-023a Fase 4) — master-detail: links de flow-lijst van het paar, rechts het detail.
+const popupFlows = ref([]) // [{ id, naam, positie:'uit'|'in', tegenNaam, richting, protocol, impact, omschrijving }]
+const popupSelId = ref(null) // geselecteerde flow (master); default = eerste rij
 const popupMelding = ref(null) // RBAC-/terugval-melding (geen technische fout)
+const popupGeselecteerd = computed(() => popupFlows.value.find((f) => f.id === popupSelId.value) || popupFlows.value[0] || null)
+function selecteerFlow(id) { popupSelId.value = id }
 const popupActie = ref(null) // { label, fn } | null
 const fullscreen = ref(false)
 
@@ -234,7 +238,8 @@ function sluitPopup() {
   popupTitel.value = ''
   popupBadge.value = null
   popupVelden.value = []
-  popupGroepen.value = []
+  popupFlows.value = []
+  popupSelId.value = null
   popupMelding.value = null
   popupActie.value = null
 }
@@ -314,7 +319,8 @@ async function openNodePopup(id) {
   popupActie.value = isApplicatie(n)
     ? { label: 'Open applicatie →', fn: () => router.push({ name: 'applicatie-detail', params: { id } }) }
     : null
-  popupGroepen.value = []
+  popupFlows.value = []
+  popupSelId.value = null
   popupVelden.value = _nodePrefill(n)
   popupOpen.value = true
   popupLaden.value = true
@@ -336,16 +342,26 @@ async function openNodePopup(id) {
   }
 }
 
-// Eén flow-relatie → een popup-rij: identificerende naam (of "–") + protocol.
-function _flowRij(r) {
-  const protocol = (r.kenmerken || {}).protocol
-  return { naam: r.naam || '–', protocol: protocol ? typeLabel(protocol) : '' }
+// Eén flow-relatie → een master-detail-rij. Positie t.o.v. de aangeklikte pijl: 'uit'
+// (bron===edge.bron, uitgaand →) of 'in' (bron===edge.doel, inkomend ←). Tegenpartij = het
+// doel van déze flow (waar de stroom heen gaat).
+function _flowRij(r, edge) {
+  const k = r.kenmerken || {}
+  return {
+    id: r.id,
+    naam: r.naam || '–',
+    positie: r.bron_id === edge.bron_id ? 'uit' : 'in',
+    tegenNaam: nodePerId.value[r.doel_id]?.naam || '',
+    richting: k.richting,
+    protocol: k.protocol,
+    impact: k.impact_bij_verbreking,
+    omschrijving: r.omschrijving,
+  }
 }
 
-// Koppeling-popup (flow-edge) — ADR-023a Fase 3. Eén edge = een gericht applicatiepaar dat
-// meerdere flows kan bundelen. We halen ALLE flows van het ONGEORDENDE paar op en groeperen
-// ze naar richting t.o.v. de aangeklikte pijl: Uitgaand (bron→doel) en Inkomend (doel→bron).
-// (Fase 4 vervangt deze popup volledig — structuur hier bewust minimaal.)
+// Koppeling-popup (flow-edge) — ADR-023a Fase 4. Eén edge = een gericht applicatiepaar dat één
+// of meer flows bundelt. Haal ALLE flows van het ONGEORDENDE paar op, sorteer op naam, en toon
+// ze als master-detail (links lijst + richting-icoon, rechts detail). Geldt ook bij n=1.
 async function openEdgePopup(edge) {
   if (!edge || edge.ring !== 'applicaties') return
   const bronNaam = nodePerId.value[edge.bron_id]?.naam || '?'
@@ -356,19 +372,17 @@ async function openEdgePopup(edge) {
   popupActie.value = null
   popupMelding.value = null
   popupVelden.value = []
-  popupGroepen.value = []
+  popupFlows.value = []
+  popupSelId.value = null
   popupOpen.value = true
   popupLaden.value = true
   try {
     const p = await api.relaties.lijst({ paar_bron_id: edge.bron_id, paar_doel_id: edge.doel_id, relatietype: 'flow' })
     if (popupKind.value !== 'edge') return
-    const items = p.items || []
-    const uit = items.filter((r) => r.bron_id === edge.bron_id).map(_flowRij)
-    const inkomend = items.filter((r) => r.bron_id === edge.doel_id).map(_flowRij)
-    popupGroepen.value = [
-      { testid: 'uitgaand', titel: `Uitgaand (${bronNaam} →)`, rijen: uit },
-      { testid: 'inkomend', titel: `Inkomend (${doelNaam} →)`, rijen: inkomend },
-    ].filter((g) => g.rijen.length)
+    const rijen = (p.items || []).map((r) => _flowRij(r, edge))
+    rijen.sort((a, b) => String(a.naam).localeCompare(String(b.naam), 'nl'))
+    popupFlows.value = rijen
+    popupSelId.value = rijen[0]?.id ?? null // eerste rij automatisch geselecteerd
   } catch (e) {
     popupMelding.value = e?.status === 403
       ? 'Meer details niet beschikbaar (geen leesrecht).'
@@ -579,7 +593,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', _opEscape)
 })
 
-defineExpose({ openNodePopup, openEdgePopup, onNodeTap, sluitPopup, toggleFullscreen, fullscreen, popupOpen, _edgeData })
+defineExpose({ openNodePopup, openEdgePopup, selecteerFlow, onNodeTap, sluitPopup, toggleFullscreen, fullscreen, popupOpen, _edgeData })
 
 // Hertekenen bij elke state die de graaf raakt.
 watch(
@@ -700,7 +714,7 @@ const typeLabel = (t) => humaniseer(t)
           data-testid="lk-popup"
           role="dialog"
           aria-label="Detail"
-          class="absolute left-3 top-3 z-20 w-72 max-w-[80%] rounded-[var(--cd-radius-card)] border border-[var(--cd-color-border)] bg-white p-[var(--cd-space-md)] shadow-[var(--cd-shadow-lg)]"
+          :class="['absolute left-3 top-3 z-20 max-w-[90%] rounded-[var(--cd-radius-card)] border border-[var(--cd-color-border)] bg-white p-[var(--cd-space-md)] shadow-[var(--cd-shadow-lg)]', popupKind === 'edge' ? 'w-[34rem]' : 'w-72']"
         >
           <div class="flex items-start justify-between gap-2">
             <div>
@@ -716,19 +730,33 @@ const typeLabel = (t) => humaniseer(t)
               <dd class="break-words">{{ v.waarde }}</dd>
             </template>
           </dl>
-          <!-- Koppeling-popup (flow-edge): alle flows van het paar, gegroepeerd naar richting (ADR-023a Fase 3). -->
-          <div v-if="popupGroepen.length" data-testid="lk-popup-groepen" class="mt-2 flex flex-col gap-[var(--cd-space-sm)]">
-            <div v-for="g in popupGroepen" :key="g.testid" :data-testid="`lk-popup-groep-${g.testid}`">
-              <p class="font-semibold text-[length:var(--cd-text-sm)]">{{ g.titel }} ({{ g.rijen.length }})</p>
-              <ul class="mt-0.5 flex flex-col gap-0.5 text-[length:var(--cd-text-sm)]">
-                <li v-for="(r, i) in g.rijen" :key="i" class="flex items-center justify-between gap-[var(--cd-space-sm)]">
-                  <span class="break-words">{{ r.naam }}</span>
-                  <span v-if="r.protocol" class="shrink-0 text-[var(--cd-color-text-muted)]">{{ r.protocol }}</span>
-                </li>
-              </ul>
-            </div>
+          <!-- Koppeling-popup (flow-edge) — master-detail: links de flow-lijst (naam + richting-
+               icoon), rechts het detail van de geselecteerde flow. Ook bij n=1 (ADR-023a Fase 4). -->
+          <div v-if="popupKind === 'edge' && popupFlows.length" data-testid="lk-popup-md" class="mt-2 flex gap-[var(--cd-space-md)]">
+            <ul data-testid="lk-popup-lijst" class="w-2/5 shrink-0 flex flex-col gap-0.5 border-r border-[var(--cd-color-border)] pr-[var(--cd-space-sm)] text-[length:var(--cd-text-sm)]">
+              <li v-for="f in popupFlows" :key="f.id">
+                <button
+                  type="button"
+                  :data-testid="`lk-popup-flow-${f.id}`"
+                  :aria-selected="popupGeselecteerd && f.id === popupGeselecteerd.id"
+                  :class="['flex w-full items-center gap-1 rounded px-1 py-0.5 text-left', popupGeselecteerd && f.id === popupGeselecteerd.id ? 'bg-[var(--cd-color-accent)] font-semibold' : 'hover:bg-[var(--cd-color-accent)]']"
+                  @click="selecteerFlow(f.id)"
+                >
+                  <span :class="['shrink-0', f.positie === 'uit' ? 'text-[var(--cd-color-success,#16a34a)]' : 'text-[var(--cd-color-danger)]']" :title="f.positie === 'uit' ? 'Uitgaand' : 'Inkomend'">{{ f.positie === 'uit' ? '→' : '←' }}</span>
+                  <span class="grow truncate">{{ f.naam }}</span>
+                </button>
+              </li>
+            </ul>
+            <dl v-if="popupGeselecteerd" data-testid="lk-popup-detail" class="grid w-3/5 grid-cols-[auto_1fr] content-start gap-x-[var(--cd-space-sm)] gap-y-0.5 text-[length:var(--cd-text-sm)]">
+              <dt class="col-span-2 font-semibold text-[length:var(--cd-text-base)]" data-testid="lk-popup-detail-naam">{{ popupGeselecteerd.naam }}</dt>
+              <dt class="text-[var(--cd-color-text-muted)]">Tegenpartij</dt><dd class="break-words">{{ popupGeselecteerd.tegenNaam || '—' }}</dd>
+              <dt class="text-[var(--cd-color-text-muted)]">Datastroom</dt><dd>{{ popupGeselecteerd.richting ? typeLabel(popupGeselecteerd.richting) : '—' }}</dd>
+              <dt class="text-[var(--cd-color-text-muted)]">Protocol</dt><dd>{{ popupGeselecteerd.protocol ? typeLabel(popupGeselecteerd.protocol) : '—' }}</dd>
+              <dt class="text-[var(--cd-color-text-muted)]">Impact bij verbreking</dt><dd>{{ popupGeselecteerd.impact ? typeLabel(popupGeselecteerd.impact) : '—' }}</dd>
+              <template v-if="popupGeselecteerd.omschrijving"><dt class="text-[var(--cd-color-text-muted)]">Omschrijving</dt><dd class="break-words">{{ popupGeselecteerd.omschrijving }}</dd></template>
+            </dl>
           </div>
-          <p v-else-if="popupKind === 'edge' && !popupLaden && !popupMelding" data-testid="lk-popup-groepen-leeg" class="mt-2 text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]">Geen koppelingen gevonden.</p>
+          <p v-else-if="popupKind === 'edge' && !popupLaden && !popupMelding" data-testid="lk-popup-md-leeg" class="mt-2 text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]">Geen koppelingen gevonden.</p>
           <p v-if="popupMelding" data-testid="lk-popup-melding" class="mt-2 text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">{{ popupMelding }}</p>
           <button v-if="popupActie" type="button" data-testid="lk-popup-actie" class="mt-2 rounded-[var(--cd-radius-btn)] bg-[var(--cd-color-primary)] px-[var(--cd-space-sm)] py-1 text-[length:var(--cd-text-sm)] text-white" @click="popupActie.fn">{{ popupActie.label }}</button>
         </div>

@@ -14,6 +14,7 @@ vi.mock('@/api', () => ({
 }))
 
 import { api } from '@/api'
+import { DataTable, Column } from '@/primevue'
 import { useAuthStore } from '@/store/auth'
 import KoppelingSectie from '@modules/bwb_ontvlechting/frontend/views/KoppelingSectie.vue'
 
@@ -130,6 +131,7 @@ describe('KoppelingSectie', () => {
     const voor = api.relaties.lijst.mock.calls.length
     await w.find('[data-testid="kp-toevoegen"]').trigger('click')
     await flushPromises()
+    await w.find('[data-testid="kp-veld-naam"]').setValue('Mijn koppeling')
     await kiesZoek(w, 'kp-veld-doel', ANDER)
     await w.find('[data-testid="kp-veld-richting"]').setValue('eenrichting')
     await w.find('[data-testid="kp-veld-protocol"]').setValue('api')
@@ -141,6 +143,7 @@ describe('KoppelingSectie', () => {
       bron_id: APP,
       doel_id: ANDER,
       relatietype: 'flow',
+      naam: 'Mijn koppeling',
       kenmerken: { richting: 'eenrichting', protocol: 'api', impact_bij_verbreking: 'hoog' },
     })
     expect(api.relaties.lijst.mock.calls.length).toBe(voor + 2) // beide richtingen herladen
@@ -173,5 +176,93 @@ describe('KoppelingSectie', () => {
     await w.find('[data-testid="kp-meer-uitgaand"]').trigger('click')
     await flushPromises()
     expect(api.relaties.lijst).toHaveBeenLastCalledWith({ relatietype: 'flow', bron_id: APP, limit: 25, after: 'cur-uit' })
+  })
+})
+
+describe('KoppelingSectie — ADR-023a Fase 4 (naam, DUBBEL, naam-kolom, sortering)', () => {
+  async function vulGeldigFormulier(w, naam = 'K1') {
+    await w.find('[data-testid="kp-toevoegen"]').trigger('click')
+    await flushPromises()
+    await w.find('[data-testid="kp-veld-naam"]').setValue(naam)
+    await kiesZoek(w, 'kp-veld-doel', ANDER)
+    await w.find('[data-testid="kp-veld-richting"]').setValue('eenrichting')
+    await w.find('[data-testid="kp-veld-protocol"]').setValue('api')
+    await w.find('[data-testid="kp-veld-impact_bij_verbreking"]').setValue('hoog')
+  }
+
+  it('toont een verplicht Naam-veld in het aanmaakformulier', async () => {
+    const w = await mountSectie()
+    await w.find('[data-testid="kp-toevoegen"]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-testid="kp-veld-naam"]').exists()).toBe(true)
+    expect(w.find('[data-testid="kp-form"]').text()).toContain('Naam *')
+  })
+
+  it('toont het Naam-veld voorgevuld bij bewerken', async () => {
+    api.relaties.lijst.mockImplementation(({ bron_id }) =>
+      Promise.resolve(
+        bron_id === APP
+          ? { items: [{ ..._rel('k1', APP, ANDER), naam: 'Bestaande naam' }], volgende_cursor: null }
+          : { items: [], volgende_cursor: null },
+      ),
+    )
+    const w = await mountSectie()
+    await w.find('[data-testid="kp-bewerk-k1"]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-testid="kp-veld-naam"]').element.value).toBe('Bestaande naam')
+  })
+
+  it('leeg Naam-veld → client-side fout en geen submit', async () => {
+    const w = await mountSectie()
+    await w.find('[data-testid="kp-toevoegen"]').trigger('click')
+    await flushPromises()
+    await kiesZoek(w, 'kp-veld-doel', ANDER)
+    await w.find('[data-testid="kp-veld-richting"]').setValue('eenrichting')
+    await w.find('[data-testid="kp-veld-protocol"]').setValue('api')
+    await w.find('[data-testid="kp-veld-impact_bij_verbreking"]').setValue('hoog')
+    await w.find('[data-testid="kp-form"]').trigger('submit')
+    await flushPromises()
+    expect(w.find('[data-testid="kp-fout-naam"]').exists()).toBe(true)
+    expect(api.relaties.maak).not.toHaveBeenCalled()
+  })
+
+  it('409 KOPPELING_DUBBEL toont een bevestigingsdialoog (geen fout-toast)', async () => {
+    api.relaties.maak.mockRejectedValueOnce({ status: 409, code: 'KOPPELING_DUBBEL' })
+    const w = await mountSectie()
+    await vulGeldigFormulier(w)
+    await w.find('[data-testid="kp-form"]').trigger('submit')
+    await flushPromises()
+    expect(w.find('[data-testid="kp-dubbel-dialog"]').exists()).toBe(true)
+    expect(api.relaties.maak).toHaveBeenCalledTimes(1)
+  })
+
+  it('na "Toch aanmaken" hersubmit met negeer_waarschuwing=true', async () => {
+    api.relaties.maak.mockRejectedValueOnce({ status: 409, code: 'KOPPELING_DUBBEL' })
+    api.relaties.maak.mockResolvedValueOnce({ id: 'new' })
+    const w = await mountSectie()
+    await vulGeldigFormulier(w)
+    await w.find('[data-testid="kp-form"]').trigger('submit')
+    await flushPromises()
+    await w.find('[data-testid="kp-dubbel-bevestig"]').trigger('click')
+    await flushPromises()
+    expect(api.relaties.maak).toHaveBeenCalledTimes(2)
+    expect(api.relaties.maak.mock.calls[1][0]).toMatchObject({ naam: 'K1', negeer_waarschuwing: true })
+  })
+
+  it('toont een Naam-kolom in beide tabellen', async () => {
+    const w = await mountSectie()
+    const headers = w.findAllComponents(Column).map((c) => c.props('header'))
+    expect(headers.filter((h) => h === 'Naam').length).toBe(2)
+  })
+
+  it('klik op de Naam-kolomheader stuurt sort=naam server-side mee (per tabel)', async () => {
+    const w = await mountSectie()
+    const voor = api.relaties.lijst.mock.calls.length
+    // Eerste DataTable = Uitgaand (bron_id = deze app).
+    w.findAllComponents(DataTable)[0].vm.$emit('sort', { sortField: 'naam', sortOrder: -1 })
+    await flushPromises()
+    const laatste = api.relaties.lijst.mock.calls.at(-1)[0]
+    expect(laatste).toMatchObject({ relatietype: 'flow', bron_id: APP, sort: 'naam', order: 'desc' })
+    expect(api.relaties.lijst.mock.calls.length).toBeGreaterThan(voor)
   })
 })

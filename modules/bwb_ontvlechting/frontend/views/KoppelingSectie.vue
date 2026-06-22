@@ -12,7 +12,9 @@
  * (DB-CHECK bron != doel → geen overlap): Uitgaand (deze applicatie = bron) en Inkomend
  * (= doel), elk met eigen keyset-cursor en eigen "Meer laden". Bron/doel via applicatie-
  * pickers; bron == doel client-side geweigerd; endpoints immutabel bij bewerken.
- * NB: `/relaties` kent (nog) geen server-side sortering → de kolommen zijn niet sorteerbaar.
+ * ADR-023a Fase 4 — elke koppeling heeft een verplichte `naam` (eerste, sorteerbare kolom;
+ * server-side sort=naam per tabel, onafhankelijk). Een 409 KOPPELING_DUBBEL opent een
+ * bevestigingsdialoog → hersubmit met `negeer_waarschuwing: true`.
  */
 import { computed, reactive, ref } from 'vue'
 import { Button, Column, DataTable, Dialog, Tag, Textarea, useToast } from '@/primevue'
@@ -31,9 +33,10 @@ const mag = computed(() => auth.hasRole('medewerker', 'beheerder'))
 const VELD_LABEL = { richting: 'Richting', protocol: 'Protocol', impact_bij_verbreking: 'Impact bij verbreking' }
 const OPTIE_MAP = { richting: KOPPELRICHTING, protocol: KOPPELPROTOCOL, impact_bij_verbreking: IMPACT_VERBREKING }
 
-// Elke richting heeft een eigen keyset-cursor (server-side paginering via /relaties).
-const uitgaand = reactive({ items: [], cursor: null, laden: false })
-const inkomend = reactive({ items: [], cursor: null, laden: false })
+// Elke richting heeft een eigen keyset-cursor + eigen sort-state (server-side paginering +
+// sortering via /relaties; Uitgaand en Inkomend sorteren onafhankelijk — ADR-023a Fase 4).
+const uitgaand = reactive({ items: [], cursor: null, laden: false, sort: null, order: 'asc' })
+const inkomend = reactive({ items: [], cursor: null, laden: false, sort: null, order: 'asc' })
 const fout = ref(null)
 
 // Bron/doel-pickers: server-side zoeken (CD049). `dezeAppNaam` + bron/doel-initieel
@@ -64,6 +67,7 @@ function _naarKoppeling(r) {
   const k = r.kenmerken || {}
   return {
     id: r.id,
+    naam: r.naam,
     bron_applicatie_id: r.bron_id,
     doel_applicatie_id: r.doel_id,
     tegenpartij_naam: appNaam(tegen),
@@ -79,6 +83,7 @@ const bewerkenId = ref(null)
 const bezig = ref(false)
 const opties = ref({ richting: [], protocol: [], impact_bij_verbreking: [] })
 const form = reactive({
+  naam: '',
   bron_applicatie_id: '',
   doel_applicatie_id: '',
   richting: '',
@@ -99,7 +104,10 @@ async function _laadRichting(state, params, reset) {
   state.laden = true
   try {
     const after = reset ? undefined : state.cursor
-    const p = await api.relaties.lijst({ relatietype: 'flow', ...params, limit: 25, after })
+    const p = await api.relaties.lijst({
+      relatietype: 'flow', ...params, limit: 25, after,
+      sort: state.sort || undefined, order: state.sort ? state.order : undefined,
+    })
     const mapped = (p.items || []).map(_naarKoppeling)
     state.items = reset ? mapped : state.items.concat(mapped)
     state.cursor = p.volgende_cursor
@@ -111,6 +119,17 @@ async function _laadRichting(state, params, reset) {
 }
 const laadUitgaand = (reset = false) => _laadRichting(uitgaand, { bron_id: props.applicatieId }, reset)
 const laadInkomend = (reset = false) => _laadRichting(inkomend, { doel_id: props.applicatieId }, reset)
+
+// Server-side kolomsortering per tabel (alleen naam) — @sort → sort/order + cursor-reset + refetch.
+function _onSort(state, laad, e) {
+  state.sort = e.sortField || null
+  state.order = e.sortOrder === 1 ? 'asc' : 'desc'
+  state.cursor = null
+  laad(true)
+}
+const onSortUitgaand = (e) => _onSort(uitgaand, laadUitgaand, e)
+const onSortInkomend = (e) => _onSort(inkomend, laadInkomend, e)
+const primeSortOrder = (state) => (state.sort ? (state.order === 'asc' ? 1 : -1) : 0)
 
 async function laadBeide() {
   fout.value = null
@@ -135,6 +154,7 @@ async function _laadOptiesEenmalig() {
 
 function _reset() {
   Object.assign(form, {
+    naam: '',
     bron_applicatie_id: props.applicatieId, // default: deze applicatie als bron
     doel_applicatie_id: '',
     richting: '',
@@ -161,6 +181,7 @@ async function openBewerken(e, rij) {
   await _laadOptiesEenmalig()
   Object.keys(fouten).forEach((k) => delete fouten[k])
   Object.assign(form, {
+    naam: rij.naam || '',
     bron_applicatie_id: rij.bron_applicatie_id,
     doel_applicatie_id: rij.doel_applicatie_id,
     richting: rij.richting,
@@ -186,6 +207,7 @@ function onHide() {
 
 function valideer() {
   Object.keys(fouten).forEach((k) => delete fouten[k])
+  if (!form.naam.trim()) fouten.naam = 'Geef de koppeling een naam.'
   if (!form.bron_applicatie_id) fouten.bron_applicatie_id = 'Kies een bron-applicatie.'
   if (!form.doel_applicatie_id) fouten.doel_applicatie_id = 'Kies een doel-applicatie.'
   if (form.bron_applicatie_id && form.bron_applicatie_id === form.doel_applicatie_id)
@@ -209,33 +231,66 @@ function _serverveldfouten(e) {
   return false
 }
 
+const _kenmerken = () => ({
+  richting: form.richting,
+  protocol: form.protocol,
+  impact_bij_verbreking: form.impact_bij_verbreking,
+})
+
+// Eén aanmaak-call; `extra` voegt bv. `negeer_waarschuwing: true` toe bij de DUBBEL-hersubmit.
+function _maakKoppeling(extra = {}) {
+  return api.relaties.maak({
+    bron_id: form.bron_applicatie_id,
+    doel_id: form.doel_applicatie_id,
+    relatietype: 'flow',
+    naam: form.naam.trim(),
+    kenmerken: _kenmerken(),
+    omschrijving: form.omschrijving.trim() || null,
+    ...extra,
+  })
+}
+
+function _gelukt() {
+  toast.add({ severity: 'success', summary: bewerkenId.value ? 'Opgeslagen' : 'Toegevoegd', life: 3000 })
+  dialogOpen.value = false
+  laadBeide() // ververs beide richtingen (relevante richting is altijd inbegrepen)
+}
+
 async function opslaan() {
   if (!valideer()) return
   bezig.value = true
   try {
-    const kenmerken = {
-      richting: form.richting,
-      protocol: form.protocol,
-      impact_bij_verbreking: form.impact_bij_verbreking,
-    }
     if (bewerkenId.value) {
-      // endpoints immutabel → alleen kenmerken + omschrijving wijzigen
+      // endpoints + relatietype immutabel → alleen naam/kenmerken/omschrijving wijzigen
       await api.relaties.werkBij(bewerkenId.value, {
-        kenmerken,
+        naam: form.naam.trim(),
+        kenmerken: _kenmerken(),
         omschrijving: form.omschrijving.trim() || null,
       })
     } else {
-      await api.relaties.maak({
-        bron_id: form.bron_applicatie_id,
-        doel_id: form.doel_applicatie_id,
-        relatietype: 'flow',
-        kenmerken,
-        omschrijving: form.omschrijving.trim() || null,
-      })
+      await _maakKoppeling()
     }
-    toast.add({ severity: 'success', summary: bewerkenId.value ? 'Opgeslagen' : 'Toegevoegd', life: 3000 })
-    dialogOpen.value = false
-    laadBeide() // ververs beide richtingen (relevante richting is altijd inbegrepen)
+    _gelukt()
+  } catch (e) {
+    // 409 KOPPELING_DUBBEL → bevestigingsdialoog (geen fout-toast); overige 409 → bestaand gedrag.
+    if (!bewerkenId.value && e?.status === 409 && e?.code === 'KOPPELING_DUBBEL') {
+      dubbelOpen.value = true
+      return
+    }
+    if (!_serverveldfouten(e)) _toastFout(e)
+  } finally {
+    bezig.value = false
+  }
+}
+
+// "Toch aanmaken" → hersubmit dezelfde data met de overrule-vlag.
+const dubbelOpen = ref(false)
+async function bevestigDubbel() {
+  bezig.value = true
+  try {
+    await _maakKoppeling({ negeer_waarschuwing: true })
+    dubbelOpen.value = false
+    _gelukt()
   } catch (e) {
     if (!_serverveldfouten(e)) _toastFout(e)
   } finally {
@@ -281,8 +336,12 @@ laadBeide()
     <DataTable
       :value="uitgaand.items"
       lazy
+      :sort-field="uitgaand.sort"
+      :sort-order="primeSortOrder(uitgaand)"
       data-testid="kp-tabel-uitgaand"
+      @sort="onSortUitgaand"
     >
+      <Column field="naam" header="Naam" sortable><template #body="{ data }">{{ data.naam || '—' }}</template></Column>
       <Column header="Rol"><template #body>Bron</template></Column>
       <Column header="Tegenpartij (doel)"><template #body="{ data }">{{ data.tegenpartij_naam }}</template></Column>
       <Column header="Richting"><template #body="{ data }"><Tag :value="label(KOPPELRICHTING, data.richting)" /></template></Column>
@@ -305,8 +364,12 @@ laadBeide()
     <DataTable
       :value="inkomend.items"
       lazy
+      :sort-field="inkomend.sort"
+      :sort-order="primeSortOrder(inkomend)"
       data-testid="kp-tabel-inkomend"
+      @sort="onSortInkomend"
     >
+      <Column field="naam" header="Naam" sortable><template #body="{ data }">{{ data.naam || '—' }}</template></Column>
       <Column header="Rol"><template #body>Doel</template></Column>
       <Column header="Tegenpartij (bron)"><template #body="{ data }">{{ data.tegenpartij_naam }}</template></Column>
       <Column header="Richting"><template #body="{ data }"><Tag :value="label(KOPPELRICHTING, data.richting)" /></template></Column>
@@ -328,10 +391,22 @@ laadBeide()
     <Dialog v-model:visible="dialogOpen" modal :closable="false" :header="bewerkenId ? 'Koppeling bewerken' : 'Koppeling toevoegen'" data-testid="kp-dialog" @show="focusEerste" @hide="onHide">
       <form class="flex flex-col gap-[var(--cd-space-md)] min-w-[22rem]" data-testid="kp-form" @submit.prevent="opslaan">
         <div class="flex flex-col gap-[var(--cd-space-xs)]">
+          <label for="kp-naam" class="font-semibold">Naam *</label>
+          <input
+            id="kp-naam"
+            ref="eersteVeld"
+            v-model="form.naam"
+            data-testid="kp-veld-naam"
+            :aria-invalid="!!fouten.naam"
+            aria-describedby="kp-fout-naam"
+            class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white"
+          />
+          <span v-if="fouten.naam" id="kp-fout-naam" role="alert" data-testid="kp-fout-naam" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.naam }}</span>
+        </div>
+        <div class="flex flex-col gap-[var(--cd-space-xs)]">
           <label for="kp-bron" class="font-semibold">Bron-applicatie *</label>
           <ZoekSelect
             id="kp-bron"
-            ref="eersteVeld"
             testid="kp-veld-bron"
             v-model="form.bron_applicatie_id"
             :zoek-functie="zoekApplicaties"
@@ -381,6 +456,16 @@ laadBeide()
       <div class="flex justify-end gap-[var(--cd-space-md)]">
         <Button label="Annuleren" severity="secondary" @click="verwijderOpen = false" />
         <Button label="Verwijderen" severity="danger" data-testid="kp-verwijder-bevestig" :disabled="bezig" @click="bevestigVerwijder" />
+      </div>
+    </Dialog>
+
+    <!-- KOPPELING_DUBBEL: bevestig een tweede vergelijkbare koppeling (ADR-023a). Het
+         aanmaakformulier blijft open (data behouden) zodat Annuleren terugvalt op bewerken. -->
+    <Dialog v-model:visible="dubbelOpen" modal header="Vergelijkbare koppeling bestaat al" data-testid="kp-dubbel-dialog">
+      <p class="mb-[var(--cd-space-md)] max-w-prose">Er bestaat al een koppeling van dit type tussen deze applicaties. Wil je toch een tweede aanmaken?</p>
+      <div class="flex justify-end gap-[var(--cd-space-md)]">
+        <Button label="Annuleren" severity="secondary" data-testid="kp-dubbel-annuleren" @click="dubbelOpen = false" />
+        <Button label="Toch aanmaken" data-testid="kp-dubbel-bevestig" :disabled="bezig" @click="bevestigDubbel" />
       </div>
     </Dialog>
   </section>

@@ -348,6 +348,105 @@ def test_relatie_paar_filter_symmetrie_live():
     assert r["gericht_aantal"] == 2       # gericht bron=a,doel=b: alleen die richting
 
 
+# ── Sortering: allowlist (offline) + cursor-mismatch (offline, vóór session-gebruik) ──
+
+@pytest.mark.parametrize("query", ["sort=bogus", "order=zijwaarts", "sort=naam&order=krom"])
+def test_lijst_sort_order_allowlist_422(monkeypatch, query):
+    """Onbekende sort/order → 422 op de API-rand (Query-pattern), svc wordt niet bereikt."""
+    app = _maak_app(monkeypatch, _payload("viewer"))
+    resp = _client(app).get(f"/api/v1/relaties?{query}")
+    assert resp.status_code == 422, resp.text
+
+
+@pytest.mark.parametrize("query", ["sort=naam", "sort=naam&order=desc", "sort=created_at&order=asc"])
+def test_lijst_sort_order_geldig_200(monkeypatch, query):
+    app = _maak_app(monkeypatch, _payload("viewer"))
+    assert _client(app).get(f"/api/v1/relaties?{query}").status_code == 200
+
+
+def test_lijst_cursor_mismatch_400(monkeypatch):
+    """Een v2n naam-cursor bij een sort=created_at-request → 400 ONGELDIGE_CURSOR (de service
+    detecteert de versie-/sort-mismatch vóór enige DB-toegang; echte svc, dummy-sessie)."""
+    import app.middleware.auth as auth_mod
+    from app.middleware.tenant import get_tenant_session
+    from routes.relatie import router
+    from services.pagination import encode_sort_cursor_nullable
+
+    monkeypatch.setattr(auth_mod, "decode_token", lambda token: _payload("viewer"))
+    app = FastAPI()
+    app.include_router(router, prefix="/api/v1")
+
+    async def _fake_session():
+        yield SimpleNamespace()
+
+    app.dependency_overrides[get_tenant_session] = _fake_session
+    bad = encode_sort_cursor_nullable(sort="naam", order="asc", waarde="X", id=uuid.UUID(_REL))
+    resp = _client(app).get(f"/api/v1/relaties?after={bad}&sort=created_at")
+    assert resp.status_code == 400, resp.text
+    assert resp.json()["fout"]["code"] == "ONGELDIGE_CURSOR"
+
+
+@live
+def test_lijst_naam_sort_v2n_live():
+    """ADR-023a Fase 4 — v2n naam-sortering: asc oplopend, desc aflopend, NULL altijd achteraan,
+    en keyset-paginering levert de juiste vervolgpagina."""
+    from app.core import tenant_context as tc
+    from app.core.database import _markeer_rls
+    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
+    from models.models import Component, Element, ElementType, Relatie
+    from services import relatie_service
+
+    async def _comp(s, tid, naam):
+        elem = Element(tenant_id=tid, element_type=ElementType.component); s.add(elem); await s.flush()
+        s.add(Component(id=elem.id, tenant_id=tid, naam=naam, componenttype="middleware",
+                        hostingmodel="on_premise")); await s.flush()
+        return elem.id
+
+    async def _run():
+        eng = create_async_engine(_CD_APP_URL)
+        smf = async_sessionmaker(eng, class_=AsyncSession, expire_on_commit=False)
+        tid = uuid.UUID(TENANT_A)
+        try:
+            tok = tc.zet_tenant_context(TENANT_A); atok = tc.zet_audit_context("system:dev_seed")
+            try:
+                async with smf() as s:
+                    _markeer_rls(s)
+                    a = await _comp(s, tid, f"NS-A-{uuid.uuid4().hex[:6]}")
+                    b = await _comp(s, tid, f"NS-B-{uuid.uuid4().hex[:6]}")
+                    # 3 named flows + 1 zonder naam (direct ORM; naam nullable). Verschillende namen
+                    # → geen dubbel. Gescoped via paar-filter zodat alleen deze 4 meetellen.
+                    for nm in ("Naam-B", "Naam-A", "Naam-C", None):
+                        s.add(Relatie(tenant_id=tid, bron_id=a, doel_id=b, relatietype="flow", naam=nm))
+                    await s.commit()
+                    kw = dict(paar_bron_id=a, paar_doel_id=b, relatietype="flow")
+
+                    asc, _ = await relatie_service.lijst(s, TENANT_A, sort="naam", order="asc", **kw)
+                    desc, _ = await relatie_service.lijst(s, TENANT_A, sort="naam", order="desc", **kw)
+                    p1, cur1 = await relatie_service.lijst(s, TENANT_A, sort="naam", order="asc", limit=2, **kw)
+                    p2, _ = await relatie_service.lijst(s, TENANT_A, sort="naam", order="asc", limit=2, after=cur1, **kw)
+                    r = {
+                        "asc": [x.naam for x in asc],
+                        "desc": [x.naam for x in desc],
+                        "p1": [x.naam for x in p1],
+                        "p2": [x.naam for x in p2],
+                        "cur1": cur1,
+                    }
+                    await s.execute(text("DELETE FROM element WHERE id IN (:a,:b)"), {"a": str(a), "b": str(b)})
+                    await s.commit()
+                    return r
+            finally:
+                tc.reset_audit_context(atok); tc.reset_tenant_context(tok)
+        finally:
+            await eng.dispose()
+
+    r = asyncio.run(_run())
+    assert r["asc"] == ["Naam-A", "Naam-B", "Naam-C", None]   # oplopend, NULL achteraan
+    assert r["desc"] == ["Naam-C", "Naam-B", "Naam-A", None]  # aflopend, NULL nog steeds achteraan
+    assert r["p1"] == ["Naam-A", "Naam-B"] and r["cur1"]      # eerste pagina + vervolgcursor
+    assert r["p2"] == ["Naam-C", None]                        # tweede pagina (keyset over NULL-grens)
+
+
 def test_audit_capture_dubbel_markering():
     """ADR-023a — de override-markering is een mapped column → de audit-diff (bouw_wijziging)
     capture't hem automatisch, dus de override verschijnt in de objecthistorie van de koppeling."""
