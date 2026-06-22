@@ -107,13 +107,13 @@ Daarna: wacht op START: [naam] van Bert.
 
 ---
 
-# CLAUDE.md — CompliData Platform
+# CLAUDE.md — LIKARA Platform
 
-**CompliData** is een modulair, multi-tenant databeheer- en migratieplatform voor
+**LIKARA** is een modulair, multi-tenant databeheer- en migratieplatform voor
 Nederlandse overheidsorganisaties. Het platform ondersteunt gecontroleerde data-inventarisatie,
 migratieanalyse en overdrachtsvoorbereiding — te beginnen met de BWB-ontvlechtingsmodule.
 
-- **Eigenaar**: G. van Capelle Beheer B.V. — CompliData is een product van G. van Capelle Beheer B.V.
+- **Eigenaar**: G. van Capelle Beheer B.V. — LIKARA is een product van G. van Capelle Beheer B.V.
 - **Operator**: configureerbaar per deployment — nooit hardcoded in code
 - **Domain**: nader te bepalen
 - **Huidige build**: V001 (Juni 2026)
@@ -134,7 +134,7 @@ migratieanalyse en overdrachtsvoorbereiding — te beginnen met de BWB-ontvlecht
 | Cache | Redis 7 |
 | Hosting | VPS — EU-jurisdictie |
 
-**Niet aanwezig in CompliData V001 (bewuste keuze):**
+**Niet aanwezig in LIKARA V001 (bewuste keuze):**
 - Flowable BPMN-engine — geen compliance-workflows vereist in V001
 - eXo Digital Workplace — niet van toepassing
 - ClamAV — optioneel, toe te voegen bij bestandsupload-functionaliteit
@@ -279,7 +279,7 @@ CREATE POLICY tenant_isolation ON new_table
 ```
 
 ### Naamgeving
-- Platform-prefix: `cd_` (CompliData) — niet `cm_`
+- Platform-prefix: `cd_` (LIKARA) — niet `cm_`
 - Database: `complidata`
 - App-gebruiker: `cd_app`
 - Admin-gebruiker: `cd_admin`
@@ -309,7 +309,7 @@ query = "SELECT * FROM applicaties WHERE tenant_id = 'abc-123'"
 localStorage.setItem('access_token', token)
 
 # NOOIT — platform-naam hardcoded
-response = {"powered_by": "CompliData"}  # gebruik platform_config
+response = {"powered_by": "LIKARA"}  # gebruik platform_config
 
 # NOOIT — directe blob store toegang buiten applicatielaag
 s3_client.get_object(Bucket='tenant-bucket', Key='file.pdf')
@@ -459,7 +459,7 @@ Pas dan: klaar.
      LAATSTE stap automatisch de backup: lokale PostgreSQL-dump
      (~/complidata/backups/complidata_*.sql) + iCloud-kopie van UITSLUITEND die
      .sql naar ICLOUD_BACKUP_DIR (default: ~/Library/Mobile Documents/
-     com~apple~CloudDocs/CompliData-backups/). Secrets worden NOOIT gekopieerd;
+     com~apple~CloudDocs/LIKARA-backups/). Secrets worden NOOIT gekopieerd;
      ontbrekende/niet-gemounte iCloud-map → waarschuwing, build gaat door. [CD013-A]
 6. git commit + git push
 7. (Backup loopt nu automatisch in stap 5 — geen losse handmatige pg_dump/iCloud-

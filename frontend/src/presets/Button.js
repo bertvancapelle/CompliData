@@ -8,7 +8,7 @@
  *             hover:underline) — voor informatieve/tertiaire acties zoals
  *             "Geschiedenis". Wint van `severity`.
  *
- * KNOPSTANDAARD (KILARA): de knop heeft ÉÉN vaste hoogte (h-10). Er is GEEN
+ * KNOPSTANDAARD (LIKARA): de knop heeft ÉÉN vaste hoogte (h-10). Er is GEEN
  * size-variatie — een `size`-prop op een call-site heeft geen hoogte-effect.
  * Enige variatie: kleur per rol (severity/text) + breedte (volgt de tekst).
  *

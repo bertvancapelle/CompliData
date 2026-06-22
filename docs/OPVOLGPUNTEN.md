@@ -1,4 +1,4 @@
-# CompliData — Opvolgpunten (backlog)
+# LIKARA — Opvolgpunten (backlog)
 
 Bijgehouden met de hand. Niet door `gen_build.py` gegenereerd.
 Bron: sessie 2–3 (P1–P5, OP-9 t/m OP-12). Status per punt expliciet vermeld.
@@ -48,7 +48,7 @@ grotendeels gerealiseerd + objecthistorie ('i'-knop).
   geconsolideerd.
 - **ADR-029 herschreven** (gebruikersbeheer als primaire ingang; LIKARA als bron van waarheid).
 - **ADR-029 Fase 2** — backend gebruikersaanmaak: `gebruiker_persoon`-koppeltabel (migratie 0037),
-  Keycloak Admin API-provisioning via dedicated service-account `kilara-user-provisioning`
+  Keycloak Admin API-provisioning via dedicated service-account `likara-user-provisioning`
   (least-privilege manage-users/view-users), server-gegenereerd eenmalig wachtwoord,
   orphan-cleanup. Live-geverifieerd na realm-herimport.
 - **ADR-029 Fase 4** — gebruikersbeheer-scherm (beheerder-only nav + lijst + aanmaak-dialog +
@@ -386,7 +386,7 @@ Zie docs/adr/ADR-028_componentclassificatie_voorstel.md.
 ### LIKARA — naamswijziging codebase (geparkeerd, DC013)
 
 Besloten productnaam: LIKARA (Kaart ICT Landschap Afhankelijkheden
-Relaties Analyse). Vervangt CompliData/CompliMan overal in de
+Relaties Analyse). Vervangt LIKARA/CompliMan overal in de
 codebase: bestandsnamen, variabelen, README, CLAUDE.md,
 seed-namen, Keycloak-realm, Docker-images. Uitvoeren als
 gecontroleerde zoek-vervang-slice in een aparte sessie.

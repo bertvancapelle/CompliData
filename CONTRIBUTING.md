@@ -1,4 +1,4 @@
-# CONTRIBUTING.md — CompliData
+# CONTRIBUTING.md — LIKARA
 
 ## Sectie 6 — TST-validatiecyclus
 

@@ -9,7 +9,7 @@
 
 ## Context
 
-CompliData kent twee fundamenteel verschillende soorten handelingen:
+LIKARA kent twee fundamenteel verschillende soorten handelingen:
 
 1. **Tenant-werk** — inhoudelijk werken binnen één tenant (applicaties,
    checklists, koppelingen), afgeschermd door Row Level Security (ADR-003) en
@@ -22,7 +22,7 @@ CompliData kent twee fundamenteel verschillende soorten handelingen:
 Drie problemen dwingen een expliciete beslissing af:
 
 - De geïmporteerde Keycloak-realm bevatte 17 rollen uit een ander product
-  (CompliMan: `R-DIR`…`R-SDM`) die niet op het CompliData-autorisatiemodel
+  (CompliMan: `R-DIR`…`R-SDM`) die niet op het LIKARA-autorisatiemodel
   aansluiten.
 - Tenant-aanmaak is een platform-handeling, maar er was geen rol/permissie-
   domein dat dit afdekt zonder tenant-context.
@@ -64,10 +64,10 @@ bedienen (kruis-toegang ⇒ 403).
 
 Gevolg: **`cd_admin` verdwijnt volledig uit de app-laag** (OP-11 opgelost).
 
-### B4 — Realm op CompliData afstemmen
+### B4 — Realm op LIKARA afstemmen
 
 De 17 CompliMan-rollen worden uit de realm verwijderd; er komen 6
-CompliData-realm-rollen (4 tenant + 2 platform). De rollen-mapper schrijft
+LIKARA-realm-rollen (4 tenant + 2 platform). De rollen-mapper schrijft
 naar `realm_access.roles` (zodat de backend ze leest); per rol komt er een
 dev-testgebruiker, met respect voor de strikte scheiding (een gebruiker
 krijgt óf platform- óf tenant-rollen).
@@ -80,7 +80,7 @@ krijgt óf platform- óf tenant-rollen).
 - **Scheiding van zorg**: een platformoperator ziet metadata, nooit
   inhoudelijke tenantdata; tenant-isolatie (RLS) blijft volledig intact en
   staat náást de RBAC-laag.
-- **Realm-opschoning**: de realm weerspiegelt voortaan het CompliData-model;
+- **Realm-opschoning**: de realm weerspiegelt voortaan het LIKARA-model;
   CompliMan-rollen verdwijnen.
 - **Gefaseerde invoering**: ADR (dit), `cd_platform` + cd_admin-verwijdering,
   realm, platform-permissiedomein/guard, en tenant-onboarding-endpoints

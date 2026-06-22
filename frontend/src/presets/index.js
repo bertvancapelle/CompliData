@@ -1,5 +1,5 @@
 /**
- * CompliData — PrimeVue PassThrough presets index (ADR-047 B6).
+ * LIKARA — PrimeVue PassThrough presets index (ADR-047 B6).
  * Centraal beheer van alle component-presets.
  * Geregistreerd via PrimeVue pt-optie in main.js.
  */

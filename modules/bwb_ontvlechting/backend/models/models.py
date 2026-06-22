@@ -877,7 +877,7 @@ class GebruikerPersoon(Base, TenantMixin):
     Tenant-scoped registratie-feit (FORCE RLS), géén ArchiMate-element. Eén login ↔ ten hoogste
     één persoon per tenant en omgekeerd (twee UNIQUE-constraints). `persoon_id` is een composiet-FK
     naar `element(tenant_id, id)` (CASCADE: de koppeling verdwijnt met de persoon). De koppeling
-    ontstaat bij gebruiker-aanmaak via KILARA (sub uit de Keycloak Admin API). Puur registratief —
+    ontstaat bij gebruiker-aanmaak via LIKARA (sub uit de Keycloak Admin API). Puur registratief —
     geen engine-koppeling. Eigen `aangemaakt_op` (geen TimestampMixin: deze rij wordt niet gemuteerd)."""
 
     __tablename__ = "gebruiker_persoon"

@@ -20,10 +20,10 @@ def main():
     if SESSIE_BRIEFING.exists():
         briefing = SESSIE_BRIEFING.read_text()
 
-    inhoud = f"""# SESSIESTART — CompliData {build_label}
+    inhoud = f"""# SESSIESTART — LIKARA {build_label}
 
 **Datum**: {date.today().isoformat()}
-**Platform**: CompliData — een product van G. van Capelle Beheer B.V.
+**Platform**: LIKARA — een product van G. van Capelle Beheer B.V.
 
 ---
 
@@ -35,7 +35,7 @@ def main():
    - Zo ja: normale modus — lees alle complidata-skills + engineering/security
    - Zo nee: bootstrap-modus — lees alleen engineering/security
 3. Lees SESSIE_BRIEFING.md voor de actuele projectstatus
-4. Bevestig: "Sessiestart compleet — CompliData {build_label} — [N] skills geladen"
+4. Bevestig: "Sessiestart compleet — LIKARA {build_label} — [N] skills geladen"
 5. Wacht op START: [naam] van Bert
 
 ---

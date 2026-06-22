@@ -1,4 +1,4 @@
-# NEXT_SESSION.md — CompliData V017
+# NEXT_SESSION.md — LIKARA V017
 
 **Gegenereerd**: 2026-06-22 (sessie DC016)
 **Build**: V016 → **V017**
@@ -74,5 +74,5 @@ Elke opdracht-`.md` begint op **regel 1** met `START: [taaknaam]`. **`AKKOORD: c
 commit-trigger op een groen (gate-)rapport. Schema-/endpoint-/RBAC-/datamodel-rakende slices = **gate**
 vóór commit; licht/additief = doorloop. CC verifieert zélf de groene staat vóór elke commit. Eén
 vraag/advies tegelijk; functioneel beschrijven vanuit de gebruiker is de norm. Reset-procedure:
-`docs/LOKAAL-TESTEN.md`. Startpunt volgende sessie: `docs/_output/CompliData_Sessiestart_V017.zip` →
+`docs/LOKAAL-TESTEN.md`. Startpunt volgende sessie: `docs/_output/LIKARA_Sessiestart_V017.zip` →
 **ADR-023a Fase 3**.

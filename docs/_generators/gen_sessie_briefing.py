@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Genereert SESSIE_BRIEFING.md voor CompliData.
+Genereert SESSIE_BRIEFING.md voor LIKARA.
 Wordt door CC gelezen bij sessiestart als context-briefing.
 Eigenaar: G. van Capelle Beheer B.V.
 """
@@ -44,7 +44,7 @@ def git_log(n=5):
 def main():
     build_label = sys.argv[1] if len(sys.argv) > 1 else "V???"
 
-    inhoud = f"""# SESSIE_BRIEFING.md — CompliData {build_label}
+    inhoud = f"""# SESSIE_BRIEFING.md — LIKARA {build_label}
 
 **Gegenereerd**: {date.today().isoformat()}
 
@@ -74,7 +74,7 @@ def main():
 
 1. Lees deze briefing volledig
 2. Lees CLAUDE.md (sessiestart-protocol)
-3. Bevestig: "Sessie-briefing geladen — CompliData {build_label}"
+3. Bevestig: "Sessie-briefing geladen — LIKARA {build_label}"
 4. Wacht op START: [naam] van Bert
 """
     OUTPUT.write_text(inhoud)

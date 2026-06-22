@@ -1,4 +1,4 @@
--- CompliData — Keycloak eigen database (CD055, A1).
+-- LIKARA — Keycloak eigen database (CD055, A1).
 --
 -- Isoleert Keycloak's interne schema (o.a. zijn eigen COMPONENT-tabel) van de
 -- app-database complidata/public. Lost de table-name-collision op die Keycloak

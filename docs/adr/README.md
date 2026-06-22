@@ -1,4 +1,4 @@
-# Architecture Decision Records — CompliData
+# Architecture Decision Records — LIKARA
 
 ADR's leggen significante architectuur- en scope-beslissingen vast. Eén bestand
 per beslissing, oplopend genummerd, nooit hergebruikt of verwijderd (vervallen

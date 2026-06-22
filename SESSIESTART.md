@@ -1,7 +1,7 @@
-# SESSIESTART — CompliData V017
+# SESSIESTART — LIKARA V017
 
 **Datum**: 2026-06-22
-**Platform**: CompliData — een product van G. van Capelle Beheer B.V.
+**Platform**: LIKARA — een product van G. van Capelle Beheer B.V.
 
 ---
 
@@ -13,7 +13,7 @@
    - Zo ja: normale modus — lees alle complidata-skills + engineering/security
    - Zo nee: bootstrap-modus — lees alleen engineering/security
 3. Lees SESSIE_BRIEFING.md voor de actuele projectstatus
-4. Bevestig: "Sessiestart compleet — CompliData V017 — [N] skills geladen"
+4. Bevestig: "Sessiestart compleet — LIKARA V017 — [N] skills geladen"
 5. Wacht op START: [naam] van Bert
 
 ---
@@ -40,7 +40,7 @@ claude.ai levert elke CC-opdracht ALTIJD aan als een .md-bestand
 
 ---
 
-# SESSIE_BRIEFING.md — CompliData V017
+# SESSIE_BRIEFING.md — LIKARA V017
 
 **Gegenereerd**: 2026-06-22
 
@@ -75,7 +75,7 @@ claude.ai levert elke CC-opdracht ALTIJD aan als een .md-bestand
 
 ## Prioriteiten volgende sessie
 
-# NEXT_SESSION.md — CompliData V017
+# NEXT_SESSION.md — LIKARA V017
 
 **Gegenereerd**: 2026-06-22 (sessie DC016)
 **Build**: V016 → **V017**
@@ -121,12 +121,12 @@ import-afwezigheid + live geen `component_profiel`).
    vanaf 2; popup → **universeel master-detail** (links sorteerbare interface-lijst naam/richting,
    pijl-buiten-groen=uitgaand / pijl-binnen-rood=inkomend met **pijlrichting als hoofdsignaal**; rechts
    detail; eerste regel geselecteerd; ook bij n=1). Vervangt de enkelvoudige popup uit `8de3451`.
-3. **Nieuw seed-traject** (groot) — volledige testdataset die het hele KILARA-landschap representeert,
+3. **Nieuw seed-traject** (groot) — volledige testdataset die het hele LIKARA-landschap representeert,
    **mét flow-namen + meervoudige benoemde koppelingen**. Volgt ná de ADR-023a-koppeling-keten.
 4. **Resterende DC016-prioriteiten** (niet aangeraakt): **ADR-029 Fase 5** (`gereedmeld_recht`,
    per-type persoon × componenttype); **ADR-023 Fase F-rest** (E-8 checklist-consistentiecheck +
    resterende RBAC/audit); **Landschapskaart server-side ego-subgraaf** (`?center=&diepte=`);
-   **KILARA codebase-rename** (geparkeerd).
+   **LIKARA codebase-rename** (geparkeerd).
 5. **ADR-030 contract-dekking per band** (design-checkpoint → bouw) — **ná** de koppeling-keten
    (de koppeling-uitbreiding als blauwdruk; open subknoop: contract-brede dekking behouden NAAST of
    vervangen).
@@ -151,7 +151,7 @@ Elke opdracht-`.md` begint op **regel 1** met `START: [taaknaam]`. **`AKKOORD: c
 commit-trigger op een groen (gate-)rapport. Schema-/endpoint-/RBAC-/datamodel-rakende slices = **gate**
 vóór commit; licht/additief = doorloop. CC verifieert zélf de groene staat vóór elke commit. Eén
 vraag/advies tegelijk; functioneel beschrijven vanuit de gebruiker is de norm. Reset-procedure:
-`docs/LOKAAL-TESTEN.md`. Startpunt volgende sessie: `docs/_output/CompliData_Sessiestart_V017.zip` →
+`docs/LOKAAL-TESTEN.md`. Startpunt volgende sessie: `docs/_output/LIKARA_Sessiestart_V017.zip` →
 **ADR-023a Fase 3**.
 
 
@@ -161,6 +161,6 @@ vraag/advies tegelijk; functioneel beschrijven vanuit de gebruiker is de norm. R
 
 1. Lees deze briefing volledig
 2. Lees CLAUDE.md (sessiestart-protocol)
-3. Bevestig: "Sessie-briefing geladen — CompliData V017"
+3. Bevestig: "Sessie-briefing geladen — LIKARA V017"
 4. Wacht op START: [naam] van Bert
 

@@ -9,7 +9,7 @@
 
 ## Context
 
-`bwb_ontvlechting` is de **eerste functionele module** van CompliData.
+`bwb_ontvlechting` is de **eerste functionele module** van LIKARA.
 
 **BWB** = **Bedrijfsvoeringsorganisatie West-Betuwe**, een gemeenschappelijke
 regeling (GR) van drie gemeenten: **Tiel, Culemborg en West-Betuwe**. Gemeente

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Assembleert de CompliData sessie-start ZIP.
-CompliData sessie-start ZIP assemblage.
+Assembleert de LIKARA sessie-start ZIP.
+LIKARA sessie-start ZIP assemblage.
 Eigenaar: G. van Capelle Beheer B.V.
 """
 
@@ -89,7 +89,7 @@ def verzamel_bestanden():
 
 def maak_zip(build_label: str):
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    zip_naam = f"CompliData_Sessiestart_{build_label}.zip"
+    zip_naam = f"LIKARA_Sessiestart_{build_label}.zip"
     zip_pad = OUTPUT_DIR / zip_naam
 
     bestanden = verzamel_bestanden()

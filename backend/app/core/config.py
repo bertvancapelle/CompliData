@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     keycloak_admin_user: str = Field("admin", description="Keycloak admin gebruiker")
     keycloak_admin_password: str = Field("changeme_dev", description="Keycloak admin wachtwoord")
     # ADR-029 — dedicated service-account voor user-provisioning (client-credentials, least-privilege)
-    kilara_provisioning_secret: str = Field("changeme_dev", description="Secret van de kilara-user-provisioning service-account")
+    kilara_provisioning_secret: str = Field("changeme_dev", description="Secret van de likara-user-provisioning service-account")
 
     # RBAC (ADR-010) — optioneel voorvoegsel op Keycloak-rolnamen.
     # Leeg = canonieke namen (viewer/medewerker/beheerder/auditor) 1-op-1.
@@ -98,7 +98,7 @@ def validate_startup_config() -> None:
         raise RuntimeError(
             "\n\n"
             + "=" * 56 + "\n"
-            + "  CompliData — CONFIGURATIEFOUT bij opstarten\n"
+            + "  LIKARA — CONFIGURATIEFOUT bij opstarten\n"
             + "=" * 56 + "\n"
             + "  Ontbrekende verplichte omgevingsvariabelen:\n"
             + "".join(f"    - {k}\n" for k in missing)

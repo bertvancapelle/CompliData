@@ -1,11 +1,11 @@
 ---
 name: complidata-backend
-description: Backend-patronen voor CompliData (FastAPI + SQLAlchemy + Alembic). Beschrijft de werkelijke V001-staat.
+description: Backend-patronen voor LIKARA (FastAPI + SQLAlchemy + Alembic). Beschrijft de werkelijke V001-staat.
 stack: Python 3.12, FastAPI, Pydantic v2, SQLAlchemy asyncio, Alembic, PostgreSQL 16
 bijgewerkt: V016
 ---
 
-# CompliData Backend Skill
+# LIKARA Backend Skill
 
 ## App-factory en lifespan
 
@@ -17,7 +17,7 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(
-    title="CompliData API",
+    title="LIKARA API",
     version="0.1.0",
     docs_url="/api/docs",
     openapi_url="/api/openapi.json",

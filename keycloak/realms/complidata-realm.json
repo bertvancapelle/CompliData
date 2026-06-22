@@ -27,7 +27,7 @@
   "clients": [
     {
       "clientId": "complidata-api",
-      "name": "CompliData Backend API",
+      "name": "LIKARA Backend API",
       "enabled": true,
       "clientAuthenticatorType": "client-secret",
       "secret": "changeme_dev",
@@ -81,7 +81,7 @@
     },
     {
       "clientId": "complidata-ui",
-      "name": "CompliData Frontend",
+      "name": "LIKARA Frontend",
       "enabled": true,
       "publicClient": true,
       "directAccessGrantsEnabled": false,
@@ -94,8 +94,8 @@
       }
     },
     {
-      "clientId": "kilara-user-provisioning",
-      "name": "KILARA User Provisioning",
+      "clientId": "likara-user-provisioning",
+      "name": "LIKARA User Provisioning",
       "enabled": true,
       "publicClient": false,
       "secret": "changeme_dev",
@@ -107,9 +107,9 @@
   ],
   "users": [
     {
-      "username": "service-account-kilara-user-provisioning",
+      "username": "service-account-likara-user-provisioning",
       "enabled": true,
-      "serviceAccountClientId": "kilara-user-provisioning",
+      "serviceAccountClientId": "likara-user-provisioning",
       "clientRoles": {
         "realm-management": ["manage-users", "view-users"]
       }
@@ -118,7 +118,7 @@
       "username": "viewer-test",
       "enabled": true,
       "emailVerified": true,
-      "email": "viewer@complidata.test",
+      "email": "viewer@likara.test",
       "firstName": "Viewer", "lastName": "Test",
       "attributes": { "tenant_id": ["11111111-1111-1111-1111-111111111111"] },
       "credentials": [{ "type": "password", "value": "changeme_dev", "temporary": false }],
@@ -128,7 +128,7 @@
       "username": "medewerker-test",
       "enabled": true,
       "emailVerified": true,
-      "email": "medewerker@complidata.test",
+      "email": "medewerker@likara.test",
       "firstName": "Medewerker", "lastName": "Test",
       "attributes": { "tenant_id": ["11111111-1111-1111-1111-111111111111"] },
       "credentials": [{ "type": "password", "value": "changeme_dev", "temporary": false }],
@@ -181,7 +181,7 @@
       "username": "auditor-test",
       "enabled": true,
       "emailVerified": true,
-      "email": "auditor@complidata.test",
+      "email": "auditor@likara.test",
       "firstName": "Auditor", "lastName": "Test",
       "attributes": { "tenant_id": ["11111111-1111-1111-1111-111111111111"] },
       "credentials": [{ "type": "password", "value": "changeme_dev", "temporary": false }],
@@ -191,7 +191,7 @@
       "username": "platformbeheerder-test",
       "enabled": true,
       "emailVerified": true,
-      "email": "platformbeheerder@complidata.test",
+      "email": "platformbeheerder@likara.test",
       "firstName": "Platform", "lastName": "Beheerder",
       "credentials": [{ "type": "password", "value": "changeme_dev", "temporary": false }],
       "realmRoles": ["platformbeheerder"]
@@ -200,7 +200,7 @@
       "username": "platformoperator-test",
       "enabled": true,
       "emailVerified": true,
-      "email": "platformoperator@complidata.test",
+      "email": "platformoperator@likara.test",
       "firstName": "Platform", "lastName": "Operator",
       "credentials": [{ "type": "password", "value": "changeme_dev", "temporary": false }],
       "realmRoles": ["platformoperator"]

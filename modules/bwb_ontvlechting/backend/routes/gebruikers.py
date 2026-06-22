@@ -1,6 +1,6 @@
 """HTTP-routes — gebruikersbeheer (ADR-029 Fase 2).
 
-KILARA is de primaire ingang voor gebruikers. `POST /gebruikers` maakt persoon + Keycloak-account
+LIKARA is de primaire ingang voor gebruikers. `POST /gebruikers` maakt persoon + Keycloak-account
 + koppelrij en geeft het tijdelijk wachtwoord éénmalig terug. RBAC via de `GEBRUIKERSBEHEER`-
 entiteit (alleen Beheerder = LAWV). Dunne handlers; logica in de service.
 Route-volgorde: lijst (`""`) vóór eventuele dynamische subpaden.

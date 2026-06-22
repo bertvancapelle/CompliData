@@ -10,7 +10,7 @@ ADR-020 (contractregister), ADR-012 (tweelaags rollenmodel), ADR-026 (catalogus-
 
 ## Context
 
-CompliData registreert nu een volledig **partijenregister**: externe partijen, interne
+LIKARA registreert nu een volledig **partijenregister**: externe partijen, interne
 organisaties, afdelingen en personen als first-class elementen binnen het ArchiMate-uitgelijnde
 model (ADR-023). **Verantwoordelijkheid** ("wie doet wat") is registreerbaar via **roltoewijzing**
 op componenten en contracten. ADR-020 modelleerde `leverancier` nog als losse tenant-tabel buiten

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CompliData smoke test — minimale operationele controle.
+# LIKARA smoke test — minimale operationele controle.
 # Verwacht een draaiende API op localhost:8000.
 set -u
 
@@ -18,7 +18,7 @@ check() {
   fi
 }
 
-echo "CompliData smoke test — API: $API"
+echo "LIKARA smoke test — API: $API"
 
 # 1. Health endpoint bereikbaar + status ok
 code=$(curl -s -o /tmp/cd_health.json -w "%{http_code}" "$API/api/v1/health" 2>/dev/null || echo "000")

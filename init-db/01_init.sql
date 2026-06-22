@@ -1,4 +1,4 @@
--- CompliData database initialisatie
+-- LIKARA database initialisatie
 -- Draait eenmalig via docker-entrypoint-initdb.d bij eerste container-start.
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";

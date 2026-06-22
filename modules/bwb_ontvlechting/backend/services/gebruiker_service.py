@@ -1,6 +1,6 @@
 """Service-laag — gebruikersbeheer (ADR-029 Fase 2).
 
-KILARA is de primaire ingang voor gebruikers: aanmaken maakt in één reeks een persoon-partij
+LIKARA is de primaire ingang voor gebruikers: aanmaken maakt in één reeks een persoon-partij
 (ADR-024) + een Keycloak-account (Admin API) + de koppelrij `gebruiker_persoon`. De koppeling
 `keycloak_sub <-> persoon_id` ontstaat bij aanmaak.
 

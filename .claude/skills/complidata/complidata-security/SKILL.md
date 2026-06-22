@@ -1,11 +1,11 @@
 ---
 name: complidata-security
-description: Security-patronen voor CompliData (Zero Trust, httpOnly cookies, NCSC, RLS). Beschrijft de werkelijke V001-staat.
+description: Security-patronen voor LIKARA (Zero Trust, httpOnly cookies, NCSC, RLS). Beschrijft de werkelijke V001-staat.
 stack: Keycloak 24.x, FastAPI middleware, Redis, PostgreSQL RLS
 bijgewerkt: V016
 ---
 
-# CompliData Security Skill
+# LIKARA Security Skill
 
 ## Kernregel: httpOnly cookies — geen localStorage
 
@@ -143,7 +143,7 @@ Authorization Code + PKCE, **volledig server-side** (`api/v1/auth.py`):
 
 ## NCSC-richtlijnen (niet NIST)
 
-CompliData volgt **NCSC** (Nederlandse overheid) als beveiligingskader.
+LIKARA volgt **NCSC** (Nederlandse overheid) als beveiligingskader.
 Gebruik nooit NIST als primaire referentie.
 
 ## IP-pseudonimisering
@@ -232,7 +232,7 @@ is onjuist — openstaand vervolgpunt.)
 ## V016-patronen (DC015 — ADR-029 gebruikersbeheer + identiteit)
 
 - **Keycloak Admin API-provisioning via dedicated service-account (least-privilege).**
-  Gebruikersaanmaak loopt via een eigen Keycloak-client `kilara-user-provisioning`
+  Gebruikersaanmaak loopt via een eigen Keycloak-client `likara-user-provisioning`
   (`serviceAccountsEnabled`, client-credentials-grant), met **uitsluitend** de
   `realm-management`-rollen `manage-users` + `view-users` — niet de brede master-admin-creds.
   Structureel consistent met de cd_app/cd_platform/cd_admin-least-privilege-driedeling.

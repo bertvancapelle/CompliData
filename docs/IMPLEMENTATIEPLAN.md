@@ -1,4 +1,4 @@
-# CompliData — Implementatieplan
+# LIKARA — Implementatieplan
 
 **Eigenaar**: G. van Capelle Beheer B.V.
 **Build bij aanmaak**: V001
@@ -18,7 +18,7 @@
 
 ## Platformvisie
 
-CompliData is een generiek platform voor data-inventarisatie
+LIKARA is een generiek platform voor data-inventarisatie
 en migratievoorbereiding voor Nederlandse overheidsorganisaties.
 De kern van het platform is de gestructureerde checklistmethodiek:
 12 categorieën, 89 vragen, lifecycle-statussen en koppelingenlogica
@@ -85,7 +85,7 @@ bij de initiële platform-setup.
 | 89 checklistvragen seeddata | ✅ Gereed | 3f09eb2 |
 | Alembic wiring (platform + module) | ✅ Gereed | f19233a |
 | Sessie-afsluit infrastructuur | ✅ Gereed | e32fba7 |
-| CompliData-skills (6 stuks) | ✅ Gereed | 5c0707b |
+| LIKARA-skills (6 stuks) | ✅ Gereed | 5c0707b |
 | Geen CompliMan-referenties | ✅ Gereed | 45ecf0c |
 
 ### Laag 1 — Platform-initialisatie (V002)
@@ -151,7 +151,7 @@ bij de initiële platform-setup.
 ### BWB Data-ontvlechting (eerste tenant)
 
 **Context**: Gemeente Tiel treedt uit Bedrijfsvoeringsorganisatie
-West-Betuwe (BWB). CompliData ondersteunt de inventarisatie en
+West-Betuwe (BWB). LIKARA ondersteunt de inventarisatie en
 migratievoorbereiding van het BWB-applicatielandschap (~150+ apps).
 
 **Module**: `modules/bwb_ontvlechting/`

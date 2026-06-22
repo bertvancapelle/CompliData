@@ -135,7 +135,7 @@ services:
       postgres:
         condition: service_healthy
 
-  # --- CompliData API ---
+  # --- LIKARA API ---
   api:
     build:
       context: ./backend
@@ -190,7 +190,7 @@ services:
       minio:
         condition: service_healthy
 
-  # --- CompliData UI ---
+  # --- LIKARA UI ---
   # Profile production: alleen starten met --profile production.
   # Lokale ontwikkeling: gebruik `npm run dev` in frontend/.
   ui:

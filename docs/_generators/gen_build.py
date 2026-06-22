@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-CompliData gen_build.py
+LIKARA gen_build.py
 Sessie-afsluiting en sessie-start ZIP generatie.
 Eigenaar: G. van Capelle Beheer B.V.
 """
@@ -32,13 +32,13 @@ OUTPUT_DIR = REPO_ROOT / "docs" / "_output"
 PG_CONTAINER = "cd-postgres"
 BACKUPS_DIR = Path.home() / "complidata" / "backups"
 # Configureerbaar pad; default = lokaal gemounte iCloud-Drive-map.
-# (~/Library/Mobile Documents/com~apple~CloudDocs/CompliData-backups/)
+# (~/Library/Mobile Documents/com~apple~CloudDocs/LIKARA-backups/)
 ICLOUD_BACKUP_DIR = Path(
     os.environ.get(
         "ICLOUD_BACKUP_DIR",
         str(
             Path.home()
-            / "Library" / "Mobile Documents" / "com~apple~CloudDocs" / "CompliData-backups"
+            / "Library" / "Mobile Documents" / "com~apple~CloudDocs" / "LIKARA-backups"
         ),
     )
 )
@@ -261,7 +261,7 @@ def backup_stap():
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
-    print("\n═══ CompliData gen_build.py ═══\n")
+    print("\n═══ LIKARA gen_build.py ═══\n")
 
     # 1. Bouwnummer ophogen
     data = verhoog_build()

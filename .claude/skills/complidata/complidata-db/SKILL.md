@@ -1,11 +1,11 @@
 ---
 name: complidata-db
-description: Database-patronen voor CompliData (PostgreSQL 16, RLS, Alembic). Beschrijft de werkelijke V001-staat.
+description: Database-patronen voor LIKARA (PostgreSQL 16, RLS, Alembic). Beschrijft de werkelijke V001-staat.
 stack: PostgreSQL 16, SQLAlchemy asyncio, Alembic
 bijgewerkt: V015
 ---
 
-# CompliData Database Skill
+# LIKARA Database Skill
 
 ## RLS-boilerplate (elke nieuwe tenant-tabel)
 

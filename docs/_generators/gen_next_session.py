@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Genereert NEXT_SESSION.md voor CompliData.
+Genereert NEXT_SESSION.md voor LIKARA.
 Eigenaar: G. van Capelle Beheer B.V.
 """
 
@@ -12,7 +12,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 OUTPUT = REPO_ROOT / "NEXT_SESSION.md"
 
 TEMPLATE = """\
-# NEXT_SESSION.md — CompliData {build_label}
+# NEXT_SESSION.md — LIKARA {build_label}
 
 **Gegenereerd**: {datum}
 **Vorige build**: {build_label}

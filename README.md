@@ -1,4 +1,4 @@
-# CompliData Platform V001 — een product van G. van Capelle Beheer B.V.
+# LIKARA Platform V001 — een product van G. van Capelle Beheer B.V.
 
 Modulair, multi-tenant databeheer- en migratieplatform voor Nederlandse
 overheidsorganisaties. Eerste module: **BWB Data-ontvlechting**.
@@ -30,5 +30,5 @@ cd frontend && npm install && npm run dev
 - `CLAUDE.md` — platform-architectuur, conventies, werkwijze
 - `docs/adr/` — Architecture Decision Records
 
-CompliData is een zelfstandig platform, ontwikkeld door G. van Capelle Beheer B.V.
+LIKARA is een zelfstandig platform, ontwikkeld door G. van Capelle Beheer B.V.
 Applicatielogica wordt per module opgebouwd onder `modules/`.

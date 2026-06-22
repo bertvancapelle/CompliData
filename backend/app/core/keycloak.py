@@ -139,7 +139,7 @@ class KeycloakProvisioningFout(Exception):
 
 
 async def get_provisioning_token() -> str:
-    """Admin-token via client-credentials voor de `kilara-user-provisioning`
+    """Admin-token via client-credentials voor de `likara-user-provisioning`
     service-account (ADR-029). Structureel minimaal-geprivilegieerd (manage-users +
     view-users) — géén brede master-admin-creds."""
     async with httpx.AsyncClient() as client:
@@ -147,7 +147,7 @@ async def get_provisioning_token() -> str:
             TOKEN_URL,
             data={
                 "grant_type": "client_credentials",
-                "client_id": "kilara-user-provisioning",
+                "client_id": "likara-user-provisioning",
                 "client_secret": settings.kilara_provisioning_secret,
             },
         )

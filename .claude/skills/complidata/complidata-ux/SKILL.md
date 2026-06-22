@@ -1,10 +1,10 @@
 ---
 name: complidata-ux
-description: Interaction-design-denkmethode voor CompliData. Verplicht te raadplegen bij ELKE frontend-rakende slice (nieuw scherm, nieuwe sectie, nieuwe actie) — door zowel CC als claude.ai. Borgt dat een functie de UI logisch en compleet houdt voor de gebruiker: geen lege lijsten zonder route naar de actie, actie op de plek waar de gebruiker hem verwacht, terminologie vanuit de gebruiker. Dit is GEEN stijl-/visuele skill (dat is complidata-frontend); dit gaat over of het scherm doet wat de gebruiker verwacht.
+description: Interaction-design-denkmethode voor LIKARA. Verplicht te raadplegen bij ELKE frontend-rakende slice (nieuw scherm, nieuwe sectie, nieuwe actie) — door zowel CC als claude.ai. Borgt dat een functie de UI logisch en compleet houdt voor de gebruiker: geen lege lijsten zonder route naar de actie, actie op de plek waar de gebruiker hem verwacht, terminologie vanuit de gebruiker. Dit is GEEN stijl-/visuele skill (dat is complidata-frontend); dit gaat over of het scherm doet wat de gebruiker verwacht.
 bijgewerkt: V015
 ---
 
-# CompliData UX / Interaction-Design Skill
+# LIKARA UX / Interaction-Design Skill
 
 ## Kernprincipe (niet-onderhandelbaar)
 
@@ -27,14 +27,14 @@ fout, óók als het technisch klopt: herformuleer het vanuit wat de gebruiker wi
 
 ## Waarom deze skill bestaat
 
-CompliData wordt gebouwd vanuit één vast uitgangspunt: **continu optimaliseren van de
+LIKARA wordt gebouwd vanuit één vast uitgangspunt: **continu optimaliseren van de
 gebruikerservaring.** Techniek, schema en proces zijn vangrail, nooit het vertrekpunt.
 Deze skill maakt dat uitgangspunt operationeel voor het scherm: bij elke functie die de
 UI raakt, eerst denken vanuit wat de gebruiker ziet, verwacht en wil doen — pas daarna bouwen.
 
 ## Vast uitgangspunt — GENERIEK multi-tenant platform (niet-onderhandelbaar)
 
-CompliData/CompliMan is een **generiek multi-tenant platform**. **BWB** is slechts een
+LIKARA/CompliMan is een **generiek multi-tenant platform**. **BWB** is slechts een
 voorbeeld van een organisatie die het gebruikt; **Tiel** een voorbeeld van een
 ontvlechtingscontext. Ontwerp platform, datamodel, schermen, terminologie en features
 **nooit** alsof ze BWB/Tiel-specifiek zijn — alles is **tenant-agnostisch en herbruikbaar**

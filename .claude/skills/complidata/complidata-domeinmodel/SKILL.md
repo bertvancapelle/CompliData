@@ -1,7 +1,7 @@
 ---
 name: complidata-domeinmodel
 description: >
-  Canonieke "kaart" van het CompliData-domeinmodel. Lees dit vóór elke slice
+  Canonieke "kaart" van het LIKARA-domeinmodel. Lees dit vóór elke slice
   die een element, relatie, catalogus, partij, of registratie-feit raakt.
   Dekt: element-familie + ArchiMate-typings, relatiemodel (8 typen), migratielaag
   (plateau/gap/work_package/deliverable), partijenregister (ADR-024, 4 aarden),
@@ -12,7 +12,7 @@ stack: PostgreSQL 16, SQLAlchemy asyncio, FastAPI — ADR-021/023/024/025/026
 bijgewerkt: V015
 ---
 
-# CompliData Domeinmodel — Kaart
+# LIKARA Domeinmodel — Kaart
 
 Dit is de canonieke referentie voor het domeinmodel: **wat** bestaat er, hoe hangt
 het samen, en welke regels zijn onschendbaar. De **HOE** (implementatiepatronen,
@@ -103,7 +103,7 @@ De HOE (validatie, dubbel-signalering, override-audit) staat in complidata-backe
 
 ### De acht ArchiMate-relatietypes
 
-| Type | Richting bron → doel | Primaire toepassing in CompliData |
+| Type | Richting bron → doel | Primaire toepassing in LIKARA |
 |---|---|---|
 | `composition` | geheel → deel | Component-hiërarchie (deel is existentieel afhankelijk) |
 | `aggregation` | geheel → deel | Plateau → lid; work_package → subpakket (lid bestaat zelfstandig) |

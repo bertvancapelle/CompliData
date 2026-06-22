@@ -1,4 +1,4 @@
-# OPVOLGPUNTEN — CompliData
+# OPVOLGPUNTEN — LIKARA
 
 Geparkeerde punten en volgende prioriteiten. Canoniek bijgewerkt bij sessie-afsluiting.
 OPVOLGPUNTEN.md is een **normaal tracked projectbestand** (besluit DC011).

@@ -1,6 +1,6 @@
 <script setup>
 /**
- * GebruikersbeheerView — beheerder maakt gebruikers aan vanuit KILARA (ADR-029 Fase 4).
+ * GebruikersbeheerView — beheerder maakt gebruikers aan vanuit LIKARA (ADR-029 Fase 4).
  *
  * Lijst van gekoppelde gebruikers (naam/email/aangemaakt) + aanmaak-dialog (persoon + Keycloak-
  * account + koppeling, server-side). Het server-gegenereerde tijdelijk wachtwoord wordt ÉÉNMALIG

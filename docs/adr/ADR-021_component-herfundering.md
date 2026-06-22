@@ -18,7 +18,7 @@ draait op database Y", "app A en app B delen database Y" (het gedeelde-infrastru
 vraag 2.7, nu alleen als oordeel), of "dit contract hoort bij de database, niet bij de app".
 
 Tegelijk is het applicatie-perspectief precies wat management en gebruikers onder "het
-ICT-landschap" verstaan. De waarde van CompliData is de **brug**: het logische landschap
+ICT-landschap" verstaan. De waarde van LIKARA is de **brug**: het logische landschap
 (applicaties, checklists, readiness, contracten) en het technische landschap (componentengraaf)
 als twee lenzen op één model — vanuit een applicatie afdalen ("waar draait dit op"), vanuit een
 component opstijgen ("welke applicaties — en dus welke readiness en contracten — raakt het als

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Sessie-afsluitacties voor CompliData.
+Sessie-afsluitacties voor LIKARA.
 Voert de verplichte checks uit vóór gen_build.py wordt aangeroepen.
 Eigenaar: G. van Capelle Beheer B.V.
 """
@@ -77,7 +77,7 @@ def check_git_status():
     return True
 
 def main():
-    print("\n═══ CompliData sluit_acties.py ═══\n")
+    print("\n═══ LIKARA sluit_acties.py ═══\n")
 
     checks = [
         ("TST-rapport", check_tst),

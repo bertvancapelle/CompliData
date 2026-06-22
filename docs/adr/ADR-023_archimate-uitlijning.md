@@ -11,7 +11,7 @@ ADR-006 (audit-trail).
 
 ## Context
 
-CompliData lijnt uit op de ArchiMate-definities om drie doelen inzichtelijk te maken:
+LIKARA lijnt uit op de ArchiMate-definities om drie doelen inzichtelijk te maken:
 inventarisatie, relaties (waar draaien componenten logisch, welke logische interfaces onderling),
 en de contractuele onderbouwing van het IT-landschap — inclusief een registreerbare gap-analyse mét
 migratie-work-packages. Bewust een **gecureerde subset** van ArchiMate, niet het Full Framework.

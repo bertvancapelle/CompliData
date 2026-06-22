@@ -1,6 +1,6 @@
 # Module — BWB-ontvlechting
 
-Eerste functionele module van CompliData. Inventariseert het applicatie- en
+Eerste functionele module van LIKARA. Inventariseert het applicatie- en
 datalandschap van de **Bedrijfsvoeringsorganisatie West-Betuwe (BWB)** en
 bereidt de ontvlechting/overdracht voor bij de uittreding van gemeente Tiel.
 

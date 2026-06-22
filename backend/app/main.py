@@ -1,4 +1,4 @@
-"""CompliData API — applicatie-entrypoint.
+"""LIKARA API — applicatie-entrypoint.
 
 Framework-basis: security-middleware + rate limiting + health/auth routers.
 Module-routers worden hier geregistreerd onder `/api/v1` zodra modules
@@ -99,7 +99,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="CompliData API",
+    title="LIKARA API",
     version="0.1.0",
     docs_url="/api/docs",
     openapi_url="/api/openapi.json",

@@ -13,7 +13,7 @@ export function label(map, code) {
   return map[code] ?? humaniseer(code)
 }
 
-// ADR-029 — toewijsbare gebruikersrollen bij aanmaak (gesloten lijst; beheerder buiten KILARA).
+// ADR-029 — toewijsbare gebruikersrollen bij aanmaak (gesloten lijst; beheerder buiten LIKARA).
 export const GEBRUIKER_ROL = {
   medewerker: 'Medewerker',
   viewer: 'Viewer',

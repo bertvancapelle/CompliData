@@ -129,7 +129,7 @@ html, body,
   margin: 0 auto !important;
 }
 
-/* Fix 3 — "Sign in to your account" verbergen (KILARA-branding vervangt dit) */
+/* Fix 3 — "Sign in to your account" verbergen (LIKARA-branding vervangt dit) */
 .pf-v5-c-login__header,
 .pf-v5-c-title,
 #kc-page-title,
@@ -174,7 +174,7 @@ header.login-pf-header {
   margin: 0 auto !important;
 }
 
-/* De witte kaart = #kc-form-wrapper (bevat KILARA-branding + form), content-hoogte. */
+/* De witte kaart = #kc-form-wrapper (bevat LIKARA-branding + form), content-hoogte. */
 #kc-form-wrapper {
   height: auto !important;
   min-height: 0 !important;

@@ -9,7 +9,7 @@
 
 ## Context
 
-CompliData is een nieuw, multi-tenant databeheer- en migratieplatform voor
+LIKARA is een nieuw, multi-tenant databeheer- en migratieplatform voor
 Nederlandse overheidsorganisaties. De eerste functionele module is
 BWB-ontvlechting (ADR-009); er volgen er meer. We moeten vastleggen:
 

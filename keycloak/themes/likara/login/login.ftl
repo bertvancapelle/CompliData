@@ -5,7 +5,7 @@
     <#elseif section = "form">
         <div id="kc-form">
           <div id="kc-form-wrapper">
-            <#-- KILARA-huisstijl (boven het formulier, binnen het witte kaartje) -->
+            <#-- LIKARA-huisstijl (boven het formulier, binnen het witte kaartje) -->
             <div class="kilara-brand">
               <div class="kilara-icon">L</div>
               <span class="kilara-name">LIKARA</span>

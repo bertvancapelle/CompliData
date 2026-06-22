@@ -3,7 +3,7 @@
  * PlateauLijstView — migratielaag (ADR-023 Fase E/F): lijst + aanmaken van plateaus.
  * Leunt op `GET /plateaus` (keyset) + `POST /plateaus`. "+ Nieuw plateau" (rol-gegate op
  * PLATEAU·AANMAKEN) opent een dialog (naam + toelichting) en navigeert na opslaan naar het
- * nieuwe plateau-detail. UX-A4-1: de migratielaag is binnen CompliData beheerbaar.
+ * nieuwe plateau-detail. UX-A4-1: de migratielaag is binnen LIKARA beheerbaar.
  */
 import { computed, onMounted, reactive, ref } from 'vue'
 import { Button, Column, DataTable, Dialog, InputText, Textarea, useToast } from '@/primevue'
