@@ -487,11 +487,11 @@ Pas dan: klaar.
 
 | Veld | Waarde |
 |------|--------|
-| Build | V016 |
+| Build | V017 |
 | Datum | June 2026 |
-| Commit | a4fd048 |
-| Tests | 856 backend + 500 frontend groen |
-| TST-rapport | TST-V016-Validatierapport.md |
+| Commit | 2bfcbd8 |
+| Tests | 859 backend + 534 frontend groen + css-build groen |
+| TST-rapport | TST-V017-Validatierapport.md |
 | Kritieke bevindingen | 0 kritiek |
 
 <!-- BOUWSTATUS_END -->

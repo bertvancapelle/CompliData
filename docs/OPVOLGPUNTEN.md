@@ -7,6 +7,35 @@ Bron: sessie 2–3 (P1–P5, OP-9 t/m OP-12). Status per punt expliciet vermeld.
 
 ## OPEN
 
+### Stand V017 (sessie-afsluiting DC016, 2026-06-22)
+
+Build **V017**, migratie head **`0040`**. Tests: **859** backend + **534** frontend groen +
+`test:css-build` groen. Deze sessie: UI-standaardisatie (knop/tab/interactie-borging),
+api-client-filterconventie, Landschapskaart popups/fullscreen, ADR-023a meervoudige
+flow-koppelingen Fase 1+2.
+
+**Nieuwe/geactualiseerde opvolgpunten (DC016)**:
+- **ADR-023a Fase 3** (read/contract, geen migratie) — kaart-edge-groepering: meerdere flows per
+  `(bron,doel)` → één lijn + **telling vanaf 2**; popup-fetch op het **ongeordende paar**, gegroepeerd
+  naar richting (uitgaand bij bron / inkomend bij doel).
+- **ADR-023a Fase 4** (frontend) — naam-veld (verplicht) + overrulebare **KOPPELING_DUBBEL**-
+  waarschuwingsdialoog; `KoppelingSectie` naam-kolom (sorteerbaar); kaart-telling vanaf 2; en de
+  popup ombouwen naar **universeel master-detail** (links sorteerbare interface-lijst op naam/richting,
+  pijl-buiten-groen=uitgaand / pijl-binnen-rood=inkomend met **pijlrichting als hoofdsignaal**; rechts
+  detail; eerste regel geselecteerd; ook bij n=1). Vervangt de enkelvoudige popup uit `8de3451`.
+- **NIEUW SEED-TRAJECT (groot)** — volledige testdataset opnieuw opzetten zodat hij het **hele
+  KILARA-landschap** representeert en alle functionaliteit raakt (besloten DC016). Moet **flow-namen**
+  + **meervoudige benoemde koppelingen** bevatten. Volgt ná de ADR-023a-koppeling-keten.
+- **Reseed gebroken op flow-namen** — `dev_seed_testdata._seed_koppelingen` maakt flows **zonder naam**
+  → faalt onder de naam-eis (ADR-023a Fase 2). Wordt opgelost in het nieuwe seed-traject; tot dan is
+  een reseed van de koppelingen gebroken (testdata-kwestie, géén migratievraagstuk).
+- **`test:css-build` nog niet in CI** — los script; een CI-stap of pre-push-hook is de logische
+  vervolgstap (aparte slice).
+- **ADR-030 contract-dekking per contract↔component-band** (voorstel, `3e28481`) — dekking als
+  per-band-kenmerk op de association i.p.v. uitsluitend contract-breed. Centrale open subknoop:
+  contract-brede dekking **behouden NAAST** per-band of **vervangen**. Op te pakken ná de
+  koppeling-keten (n≥2: de koppeling-uitbreiding als blauwdruk). Read-only verkenning is gedaan.
+
 ### Stand V016 (sessie-afsluiting DC015, 2026-06-20)
 
 Build **V016**, migratie head **`0038`**. Tests: **856** backend + **500** frontend groen
