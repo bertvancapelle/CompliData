@@ -95,3 +95,69 @@ input[type="email"] {
   text-align: center;
   padding: 16px 0 0;
 }
+
+/* ── KC 24 / PatternFly 5 fixes ───────────────────────────────────────────── */
+
+/* Fix 1 — volledige pagina donkerblauw, geen zwarte two-tone band */
+html, body,
+.pf-v5-c-login,
+.pf-v5-c-login__container,
+.pf-v5-c-page,
+.pf-v5-c-background-image,
+.login-pf-page,
+#kc-content {
+  background-color: #1a3a5c !important;
+  background-image: none !important;
+  min-height: 100vh;
+}
+
+/* Fix 2 — login-kaart verticaal + horizontaal gecentreerd op de viewport */
+.pf-v5-c-login,
+.login-pf-page {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 100vh !important;
+  padding: 24px !important;
+}
+
+.pf-v5-c-login__container,
+.login-pf-accounts {
+  width: 100% !important;
+  max-width: 400px !important;
+  margin: 0 auto !important;
+}
+
+/* Fix 3 — "Sign in to your account" verbergen (KILARA-branding vervangt dit) */
+.pf-v5-c-login__header,
+.pf-v5-c-title,
+#kc-page-title,
+h1#kc-page-title {
+  display: none !important;
+}
+
+/* Fix 4 — footer verbergen (voorkomt zwarte footer-band) */
+.pf-v5-c-login__footer,
+#kc-info,
+.login-pf-page-footer {
+  display: none !important;
+}
+
+/* ── KC 24.0.5 — het 'keycloak'-theme gebruikt de KLASSIEKE login-pf-*-classes,
+   niet PatternFly-5 (pf-v5-c-*). Onderstaande selectors zijn de daadwerkelijk
+   matchende targets zodat centering + donkerblauw + titel-verbergen écht landen. */
+
+/* Kolom-flex zodat de (lege) logo-header de kaart niet naast zich duwt; kaart centreert. */
+.login-pf-page {
+  flex-direction: column !important;
+}
+.login-pf-page-header {
+  display: none !important;
+}
+/* De login-kaart is `.card-pf` (geen `.login-pf-accounts` op de login-pagina). */
+.card-pf,
+#kc-form-wrapper {
+  width: 100% !important;
+  max-width: 400px !important;
+  margin: 0 auto !important;
+}
