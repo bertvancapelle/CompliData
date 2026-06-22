@@ -1,4 +1,4 @@
-# SESSIE_BRIEFING.md — LIKARA V017
+# SESSIE_BRIEFING.md — LIKARA V018
 
 **Gegenereerd**: 2026-06-22
 
@@ -10,11 +10,11 @@
 
 | Veld | Waarde |
 |------|--------|
-| Build | V017 |
+| Build | V018 |
 | Datum | June 2026 |
-| Commit | 2bfcbd8 |
-| Tests | 859 backend + 534 frontend groen + css-build groen |
-| TST-rapport | TST-V017-Validatierapport.md |
+| Commit | 9e42855 |
+| Tests | 860 backend passed + 555 frontend groen + build/css groen (9 backend env-DB-failures pre-existing, OP-30 e.a.) |
+| TST-rapport | TST-V018-Validatierapport.md |
 | Kritieke bevindingen | 0 kritiek |
 
 ---
@@ -22,82 +22,75 @@
 ## Recente commits
 
 ```
-2bfcbd8 docs(skills): DC016 skills-borging stap 1 — knop/tab/borging/api-filter/ADR-023a/testdata/sessiebewaking
-7a6e440 feat(relatie): ADR-023a Fase 2 — naam-verplicht-flow + dubbel-signalering + override-audit
-3e28481 docs(adr): ADR-030 contract-dekking per contract↔component-band (voorstel)
-80f0655 feat(relatie): ADR-023a Fase 1 — meervoudige flow-koppelingen + naam-kolom (schema)
-9da57d0 fix(frontend): api-client filterconventie — snake_case + allowlist (luide fout)
+9e42855 chore(rename): Laag 1 cleanup — CompliData/KILARA -> LIKARA in user-visible/config/skills/docs
+c6df5fb feat(rename): platform KILARA -> LIKARA + 3 BvoWB dev-loginaccounts
+eb1fe21 fix(theme): KILARA login-kaart niet meer 100vh + donkerblauwe leegte weg
+52d3308 fix(theme): KILARA login-CSS — donkerblauw vol vlak, gecentreerde kaart, titel verborgen
+22a33b8 feat(theme): KILARA Keycloak login-theme + app-header/titel rename
 ```
 
 ---
 
 ## Prioriteiten volgende sessie
 
-# NEXT_SESSION.md — LIKARA V017
+# NEXT_SESSION.md — LIKARA V018
 
-**Gegenereerd**: 2026-06-22 (sessie DC016)
-**Build**: V016 → **V017**
-**Laatste commit vóór de afsluiting**: `2bfcbd8` (skills-borging DC016); de afsluit-commit (OPVOLGPUNTEN/TST/NEXT_SESSION/changelog/build) volgt hierop.
-**Migratie head**: `0040`
-**Tests**: 859 backend + 534 frontend groen + `test:css-build` groen (1 pre-existing test-mock-warning).
-
----
-
-## Stand van zaken (V017) — UI-standaardisatie + api-borging + ADR-023a Fase 1+2
-
-Deze sessie (DC016):
-
-- **UI-standaardisatie & interactie-borging**: knop-preset gestandaardiseerd (`23ccfc8`); tabs +
-  vaste hoogte (`55eca62`); **één hoogte (`h-10`), geen size-variatie** (`8912203`); UI-interactie-
-  borging in **drie lagen** — token-contract, render-state, build-CSS-check (`cb4b9e7`); Tailwind
-  **`@source`** voor module-views buiten `frontend/` (`6f04ed2`).
-- **Api-client-filterconventie** (`9da57d0`): één conventie (snake_case = backend), `_filterQuery`-
-  allowlist → onbekende key = **luide fout**, nooit stille drop. Fixte de Koppelingen-bug (filter viel
-  stil weg → scherm toonde alle flows i.p.v. de objectspecifieke).
-- **Landschapskaart** (`8de3451`): klik-popups (koppeling + knoop, enkel/dubbelklik gescheiden) +
-  in-app fullscreen-overlay met staat-behoud.
-- **ADR-023a meervoudige flow-koppelingen**: **Fase 1 schema** (`80f0655`, migratie 0039 — partiële
-  flow-uniciteit `WHERE relatietype <> 'flow'` + `naam`-kolom) en **Fase 2 validatie** (`7a6e440`,
-  migratie 0040 — naam-verplicht-voor-flow, overrulebare `KOPPELING_DUBBEL`-signalering,
-  `RELATIE_BESTAAT` nu non-flow, override audit-naspeurbaar via `dubbel_waarschuwing_genegeerd`).
-- **ADR-030** contract-dekking per band (voorstel, `3e28481` — extern geland).
-- **Skills-borging DC016** (`2bfcbd8`): knop/tab/UI-borging/api-filter/ADR-023a/testdata-regel/
-  sessiebewaking canoniek vastgelegd.
-
-Score blijft de enige lifecycle-driver — de koppeling-uitbreiding staat náást de engine (offline
-import-afwezigheid + live geen `component_profiel`).
+**Gegenereerd**: 2026-06-22 (sessie DC017)
+**Build**: V017 → **V018**
+**Laatste commit vóór de afsluiting**: `9e42855` (Laag 1 cleanup CompliData/KILARA → LIKARA); de afsluit-commit (skills/OPVOLGPUNTEN/NEXT_SESSION/changelog/build) volgt hierop.
+**Migratie head**: `0041` (`0041_partij_aard_burger`)
+**Tests**: 860 backend passed + 555 frontend groen + `test:css-build` groen (9 pre-existing backend DB-state/env-failures, o.a. OP-30 Secure-cookie env-test — identiek op schone HEAD, geen regressie).
 
 ---
 
-## Top-prioriteiten volgende sessie (DC017)
+## Stand van zaken (V018) — LIKARA-rebranding + canoniek seed + login-theme + dev-gebruikers
 
-1. **ADR-023a Fase 3** — kaart-edge-groepering (meerdere flows per `(bron,doel)` → één lijn +
-   **telling vanaf 2**) + popup-fetch op het **ongeordende paar**, gegroepeerd naar richting.
-   Read/contract, **geen migratie**.
-2. **ADR-023a Fase 4** (het zichtbare deel) — naam-veld (verplicht) + overrulebare
-   **KOPPELING_DUBBEL**-waarschuwingsdialoog; `KoppelingSectie` naam-kolom (sorteerbaar); kaart-telling
-   vanaf 2; popup → **universeel master-detail** (links sorteerbare interface-lijst naam/richting,
-   pijl-buiten-groen=uitgaand / pijl-binnen-rood=inkomend met **pijlrichting als hoofdsignaal**; rechts
-   detail; eerste regel geselecteerd; ook bij n=1). Vervangt de enkelvoudige popup uit `8de3451`.
-3. **Nieuw seed-traject** (groot) — volledige testdataset die het hele LIKARA-landschap representeert,
-   **mét flow-namen + meervoudige benoemde koppelingen**. Volgt ná de ADR-023a-koppeling-keten.
-4. **Resterende DC016-prioriteiten** (niet aangeraakt): **ADR-029 Fase 5** (`gereedmeld_recht`,
-   per-type persoon × componenttype); **ADR-023 Fase F-rest** (E-8 checklist-consistentiecheck +
-   resterende RBAC/audit); **Landschapskaart server-side ego-subgraaf** (`?center=&diepte=`);
-   **LIKARA codebase-rename** (geparkeerd).
-5. **ADR-030 contract-dekking per band** (design-checkpoint → bouw) — **ná** de koppeling-keten
-   (de koppeling-uitbreiding als blauwdruk; open subknoop: contract-brede dekking behouden NAAST of
-   vervangen).
+Deze sessie (DC017):
+
+- **Canoniek dev-seed** (`be85709`): `_seed_bvowb_scenario` vervangt Veldendam — BvoWB als
+  shared-services dienstenprovider voor Tiel/Culemborg/West Betuwe (8 org, 10 leveranciers, 1 burger,
+  36 personen, 12 apps, 15 contracten incl. 3 DVO's, 29 flows met namen, 75 roltoewijzingen,
+  35 gebruikersgroepen, 267 scores; Zaaksysteem geblokkeerd, BRP migratieklaar).
+- **Keycloak login-theme** (`22a33b8`, `52d3308`, `eb1fe21`): custom KC 24-theme (huisstijl,
+  gecentreerde witte kaart, titel verborgen). KC 24 = klassieke `.login-pf-*` classes, niet PF5.
+- **LIKARA-rename + dev-gebruikers** (`c6df5fb`): theme/realm/frontend/tab-titel; 3 BvoWB
+  dev-accounts (j.devries/p.vandijk = medewerker, m.bakker = auditor) met vaste UUID's,
+  `_seed_dev_gebruikers` koppelt aan persoon (ADR-029, hardcoded KC-subs).
+- **Laag 1 cleanup** (`9e42855`): alle user-visible/config/skills/docs CompliData/KILARA → LIKARA;
+  KC-client `kilara-` → `likara-user-provisioning`; test-emails → `@likara.test`.
+- **Sessie-afsluiting DC017** (deze commit): skills + OPVOLGPUNTEN + V-bump V018 + nieuw
+  changelog-patroon `LIKARA_Changelog_*` (historische blijven CompliData).
+
+Score blijft de enige lifecycle-driver. **Reseed-risico opgelost**: het nieuwe seed-scenario maakt
+flows mét namen (ADR-023a-conform).
+
+---
+
+## Top-prioriteiten volgende sessie (DC018)
+
+1. **LIKARA Laag 2 rename** (eigen sprint) — technische identifiers: realm-ID `complidata` → `likara`,
+   container-namen `cd-*`, DB-rol `cd_app`, image `complidata-api:local`, ENV `KEYCLOAK_REALM`,
+   clientId `complidata-api`/`complidata-ui`, `kilara_provisioning_secret` → `likara_provisioning_secret`.
+   Raakt compose/.env/init-db/conftest/RLS-rol → **reseed (`down -v`) verplicht** + verificatie.
+2. **Dode seed-functies opruimen** in `dev_seed_testdata.py` (`_seed_applicatie`,
+   `seed_landschapskaart_demo`, `_seed_koppelingen` e.a. — ongebruikt sinds `_seed_bvowb_scenario`).
+3. **Stale child-secties bij detail→detail-hop** — child-secties in ComponentDetail/ApplicatieDetail
+   laden in `onMounted` zonder `:key`; remount-fix doortrekken.
+4. **ADR-030 contract-dekking per band** (design-checkpoint → bouw).
+5. **Resterende open punten**: ADR-029 Fase 5 (`gereedmeld_recht`), ADR-023 Fase F-rest
+   (E-8 + RBAC/audit), landschapskaart server-side ego-subgraaf, STATE_ONGELDIG → "sessie verlopen"-pagina,
+   objecthistorie-diff id→naam-resolutie, soort-catalogus uitbreiden (Dienstenprovider/Samenwerkende gemeente),
+   stale root `OPVOLGPUNTEN.md` (V012) consolideren.
 
 ---
 
 ## Bekende risico's en aandachtspunten
 
-- **Reseed gebroken op flow-namen**: `dev_seed_testdata._seed_koppelingen` maakt flows **zonder naam**
-  → faalt nu onder de naam-eis (ADR-023a Fase 2). Een reseed van de koppelingen is gebroken tot het
-  nieuwe seed-traject draait. **Testdata-kwestie, geen migratievraagstuk.**
 - **Dev-inlog** vereist de volledige stack (Keycloak); frontend draait buiten Docker
-  (`cd frontend && npm run dev`, poort 3000, proxy → :8000). Migratie head dev-DB: `0040`.
+  (`cd frontend && npm run dev`, poort 3000, proxy → :8000). Migratie head dev-DB: `0041`.
+- **Live KC-wijzigingen** (theme, client-rename, dev-users, emails) staan in het KC-volume; de
+  gecommitte realm-JSON reproduceert ze bij een verse `--import-realm`.
+- **OP-30** `test_auth_pkce` Secure-cookie test faalt omgevingsgebonden (vereist TST-env) — geen regressie.
 - **`test:css-build` nog niet in CI** (los script) — CI-stap/pre-push-hook is de logische vervolgstap.
 - **Eén tenant nu** — geen per-tenant-differentiatie ontwerpen (RBAC = één platform-brede matrix).
 
@@ -109,8 +102,8 @@ Elke opdracht-`.md` begint op **regel 1** met `START: [taaknaam]`. **`AKKOORD: c
 commit-trigger op een groen (gate-)rapport. Schema-/endpoint-/RBAC-/datamodel-rakende slices = **gate**
 vóór commit; licht/additief = doorloop. CC verifieert zélf de groene staat vóór elke commit. Eén
 vraag/advies tegelijk; functioneel beschrijven vanuit de gebruiker is de norm. Reset-procedure:
-`docs/LOKAAL-TESTEN.md`. Startpunt volgende sessie: `docs/_output/LIKARA_Sessiestart_V017.zip` →
-**ADR-023a Fase 3**.
+`docs/LOKAAL-TESTEN.md`. Startpunt volgende sessie: `docs/_output/LIKARA_Sessiestart_V018.zip` →
+**LIKARA Laag 2 rename (DC018)**.
 
 
 ---
@@ -119,5 +112,5 @@ vraag/advies tegelijk; functioneel beschrijven vanuit de gebruiker is de norm. R
 
 1. Lees deze briefing volledig
 2. Lees CLAUDE.md (sessiestart-protocol)
-3. Bevestig: "Sessie-briefing geladen — LIKARA V017"
+3. Bevestig: "Sessie-briefing geladen — LIKARA V018"
 4. Wacht op START: [naam] van Bert

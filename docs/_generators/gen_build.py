@@ -77,7 +77,7 @@ REQUIRED_SKILLS = [
 
 REQUIRED_PATTERNS = [
     ("docs/adr", "ADR-*.md", 1, "Minimaal 1 ADR vereist"),
-    ("docs/changelog", "CompliData_Changelog_V*.md", 1,
+    ("docs/changelog", "*_Changelog_V*.md", 1,
      "Changelog voor huidige build vereist"),
 ]
 
@@ -176,10 +176,10 @@ def update_claude_bouwstatus(build_label, test_status, kritieken):
 def maak_changelog(build_label):
     """Maakt een lege changelog-entry voor de huidige build."""
     CHANGELOG_DIR.mkdir(parents=True, exist_ok=True)
-    pad = CHANGELOG_DIR / f"CompliData_Changelog_{build_label}.md"
+    pad = CHANGELOG_DIR / f"LIKARA_Changelog_{build_label}.md"
     if not pad.exists():
         pad.write_text(
-            f"# CompliData Changelog {build_label}\n\n"
+            f"# LIKARA Changelog {build_label}\n\n"
             f"**Datum**: {date.today().isoformat()}\n\n"
             f"## Wijzigingen\n\n_Vul aan tijdens sessie-afsluiting._\n"
         )

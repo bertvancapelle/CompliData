@@ -258,3 +258,27 @@ is onjuist — openstaand vervolgpunt.)
   objecttype** (`COMPONENT.LEZEN`, `CONTRACT.LEZEN`, …). Mag je het object zien, dan zie je z'n
   geschiedenis. Sub-/schermloze entiteiten krijgen geen eigen ingang (verschijnen via hun ouder);
   nooit een type opnemen met een gegokte permissie — bij twijfel STOP.
+
+## Keycloak 24 custom login-theme (DC017)
+
+Structuur: `keycloak/themes/likara/login/` (parent=keycloak).
+- `theme.properties`: `parent=keycloak`, `styles=css/likara.css`
+- `login.ftl`: volledige override met `<#import "template.ftl">` + `<@layout.registrationLayout>`.
+  Voeg LIKARA-branding toe bovenaan de "form"-sectie.
+- `likara.css`: CSS-overrides voor KC 24.0.5 (PatternFly 4-stijl, NIET PF5).
+  KC 24 gebruikt `.login-pf-*` classes (`.pf-v5-*` bestaat niet op login-pagina).
+  Kritieke selectors: `html, body, .login-pf-page` voor achtergrond;
+  `.card-pf, #kc-content, #kc-content-wrapper` voor kaart (height:auto, transparent);
+  `#kc-form-wrapper` voor witte kaart; `#kc-page-title` display:none.
+  VALKUIL: `#kc-content` NIET `min-height:100vh` geven — zit ín de kaart!
+- Volume mount in docker-compose: `./keycloak/themes:/opt/keycloak/themes` (was al aanwezig).
+- Realm JSON: `"loginTheme": "likara"`, `"displayName": "LIKARA"`.
+- Tab-titel = realm displayName.
+
+## Dev-gebruiker aanmaken met persoon-koppeling (DC017, ADR-029)
+
+Aanpak: vaste UUID's in realm JSON (`"id": "<uuid>"`) + hardcoded in seed als keycloak_sub.
+- Voordeel: deterministisch over re-imports heen, geen runtime-KC-afhankelijkheid in seed.
+- Live toepassen: `kcadm partialImport` (honoreert vaste id's; `kcadm create users` kan dat niet).
+- Seed-functie `_seed_dev_gebruikers`: zoek persoon op naam → maak GebruikerPersoon aan.
+- KC-client voor gebruikersbeheer: `likara-user-provisioning` (hernoemd van kilara, DC017).

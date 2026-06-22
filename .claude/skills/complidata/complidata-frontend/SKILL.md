@@ -502,3 +502,72 @@ Vang een toch-403 netjes af (Toast). Nooit tokens in `localStorage` (httpOnly).
   `hasRole('beheerder')`; audit-view-nav via `hasRole('beheerder','auditor')`. Affordance —
   backend blijft de handhaver. Nieuwe gegate named-route → registreer 'm in BEIDE
   AppLayout-testrouters (`AppLayout.test.js` + `AppLayout.gating.test.js`), anders faalt de mount.
+
+## Kaart edge-groepering + master-detail popup (DC017, ADR-023a Fase 3+4)
+
+### Edge-groepering (LandschapskaartService)
+- Groepeer flows per gericht paar (bron_id, doel_id) → één LandschapsEdge met `aantal: int = 1`.
+- Richting/protocol: van eerste flow; niet-uniform → `"bidirectioneel"` resp. `None`.
+- Frontend: badge op edge-label als `aantal >= 2`.
+
+### Ongeordend-paar-fetch
+- Edge-klik: fetch via `paar_bron_id` + `paar_doel_id` (niet gericht bron_id/doel_id).
+- Backend-filter: `(bron=A AND doel=B) OR (bron=B AND doel=A)`.
+- api.js allowlist: `paar_bron_id`, `paar_doel_id`.
+
+### Master-detail popup (universeel, ook n=1)
+- Links (~40%): gesorteerde lijst naam + richting-icoon
+  (groen → = bron_id===edge.bron_id, rood ← = bron_id===edge.doel_id).
+- Rechts (~60%): detail geselecteerde koppeling.
+- Client-side sort op naam ASC; eerste rij auto-geselecteerd.
+- Geldt voor ALLE edge-klikken (ook n=1) — vervangt enkelvoudige popup.
+
+### KOPPELING_DUBBEL-dialoogpatroon (DC017, ook in complidata-backend)
+- 409 met code `KOPPELING_DUBBEL` → bevestigingsdialoog (NIET fout-toast).
+- "Toch aanmaken" → hersubmit met `negeer_waarschuwing: true`.
+- Overige 409 (RELATIE_BESTAAT) → bestaande fout-toast.
+- Formulier blijft open bij Annuleren (data behouden).
+
+## Detail-navigatie watch-patroon (DC017)
+
+Detail-views die via router-link naar dezelfde componentnaam navigeren (partij→partij,
+component→component) hergebruiken de Vue-instance → onMounted vuurt niet opnieuw.
+
+Fix: vervang onMounted door:
+```
+watch(() => props.id, () => herlaad(), { immediate: true })
+```
+- `immediate: true` vervangt onMounted volledig.
+- Voeg `:key="props.id"` toe op zelf-ladende child-secties (PartijRollenSectie,
+  ObjectHistoriePaneel etc.) zodat die ook remounten.
+- Toegepast op: PartijDetail, ComponentDetail, ApplicatieDetail (DC017).
+- NB: child-secties in Component/Applicatie-detail die zelf in onMounted laden
+  zonder :key kunnen nog stale zijn bij detail→detail-hop — OPVOLGPUNT DC018.
+
+## Context-in-header patroon (DC017)
+
+Parent-context ("hoort bij", "valt onder", "overgang") hoort als klikbare
+subtitelregel IN de header-div, direct onder naam + badge — NIET onder contentblokken.
+
+```html
+<div class="flex items-center gap-2">
+  <h1>{{ naam }}</h1><Tag :label="aard" />
+</div>
+<p class="text-sm text-secondary mt-1">
+  <router-link :to="{ name: 'partij-detail', params: { id: ouderOrgId } }">
+    {{ ouderOrgNaam }}
+  </router-link>
+  <span v-if="ouderAfdelingNaam"> › <router-link ...>{{ ouderAfdelingNaam }}</router-link></span>
+</p>
+```
+
+Toegepast op DC017: PartijDetail (hoort bij), ContractDetail (valt onder mantelcontract),
+GapDetailView (overgang baseline→doel), WorkPackageDetailView (onderdeel van bovenliggend pakket).
+
+## Aard_in-filter ZoekSelect (DC017)
+
+Voor ZoekSelect die alleen bepaalde aarden moet tonen:
+- Backend: voeg `aard_in: list[str] | None = Query(None)` toe aan het lijstendpunt.
+- Service: filter `WHERE aard = ANY(:aard_in)` indien meegegeven.
+- api.js allowlist: `aard_in` toevoegen.
+- Voorbeeld: GebruikersgroepSectie organisatie-picker → `aard_in: ['organisatie','burger']`.

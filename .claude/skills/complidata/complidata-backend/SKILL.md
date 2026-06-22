@@ -421,3 +421,27 @@ ongedefinieerde methodes → 405.
 - **Engine-borging gehandhaafd.** `relatie_service` importeert geen lifecycle/score/blokkade-symbolen
   (offline `hasattr`-test) en flows (incl. override) laten **geen `component_profiel`** ontstaan
   (live-test); de signalering/markering is registratief, geen engine-poort.
+
+## Ongeordend-paar-filter (DC017, relaties API)
+
+Optionele filterparameters `paar_bron_id` + `paar_doel_id` op GET /relaties:
+- Beide vereist (anders negeren).
+- WHERE `(bron_id=A AND doel_id=B) OR (bron_id=B AND doel_id=A)`.
+- Naast bestaande gericht-gerichte `bron_id`/`doel_id` filters.
+
+## Partij aard=burger (DC017, migratie 0041)
+
+- Geen organisatie_id vereist/toegestaan (service-side + CHECK).
+- Geen afdeling_id toegestaan.
+- Geen leden (geen personen/organisatie_eenheden als kinderen).
+- Geen "Hoort bij"-subtitel in PartijDetail.
+- In ZoekSelect voor gebruikersgroep-organisatie: aard_in=['organisatie','burger'].
+
+## Canoniek dev-seed scenario (DC017)
+
+Functie `_seed_bvowb_scenario` in dev_seed_testdata.py — leidend scenario:
+BvoWB als shared-services dienstenprovider voor Gemeente Tiel, Culemborg, West Betuwe.
+Scoringsplan: Zaaksysteem geblokkeerd (89+blokkade), BRP migratieklaar (89),
+DMS/Klantportaal/Burgerzaken-suite deels, overige 7 concept.
+Gebruiker_persoon: _seed_dev_gebruikers koppelt j.devries/p.vandijk/m.bakker
+aan hun BvoWB-persoon via hardcoded KC-subs (deterministisch, geen runtime-KC-dep).

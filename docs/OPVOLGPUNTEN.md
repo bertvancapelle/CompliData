@@ -7,6 +7,32 @@ Bron: sessie 2–3 (P1–P5, OP-9 t/m OP-12). Status per punt expliciet vermeld.
 
 ## OPEN
 
+### Stand V018 (sessie-afsluiting DC017, 2026-06-22)
+
+Build **V018**. DC017 = LIKARA-rebranding (Laag 1) + canoniek BvoWB-seed + Keycloak login-theme +
+dev-gebruikers + kaart-edge-groepering/master-detail (ADR-023a Fase 3+4).
+
+**Nieuw (DC017):**
+1. **LIKARA Laag 2 rename** — technische identifiers: realm-ID `complidata` → `likara`,
+   container-namen `cd-*`, DB-rol `cd_app`, image `complidata-api:local`, ENV `KEYCLOAK_REALM`,
+   clientId `complidata-api`/`complidata-ui`. Bewuste keuze: **eigen sprint DC018** (raakt compose,
+   .env, init-db, conftest, RLS-rol → reseed vereist).
+2. **`kilara_provisioning_secret`** identifier (config.py/keycloak.py) → `likara_provisioning_secret`
+   meenemen wanneer Laag 2 wordt opgepakt.
+3. **Reseed-verificatie (`down -v`)** verplicht na de Laag 2 rename.
+4. **Dode seed-functies opruimen** in `dev_seed_testdata.py` (`_seed_applicatie`,
+   `seed_landschapskaart_demo`, `_seed_koppelingen` e.a. — ongebruikt sinds `_seed_bvowb_scenario`).
+5. **Child-secties stale bij detail→detail-hop** — child-secties in ComponentDetail/ApplicatieDetail
+   laden zelf in `onMounted` zonder `:key`; bij een hop binnen hetzelfde type kunnen ze stale zijn.
+6. **soort-catalogus uitbreiden** — "Dienstenprovider" en "Samenwerkende gemeente" bestaan niet als
+   partijsoort → BvoWB + gemeenten krijgen nu `soort=None` in de seed; catalogus kan uitgebreid worden.
+7. **STATE_ONGELDIG-foutmelding** — ruwe JSON tonen → vriendelijke "sessie verlopen"-pagina.
+8. **Stale root `OPVOLGPUNTEN.md`** (staat nog op V012) — consolideren met `docs/OPVOLGPUNTEN.md` of verwijderen.
+
+**Herbevestigd (blijft open):** ADR-029 Fase 5 (`gereedmeld_recht`), ADR-023 Fase F-rest (E-8 +
+RBAC/audit), landschapskaart server-side ego-subgraaf, objecthistorie-diff id→naam-resolutie,
+OP-30 `test_auth_pkce` Secure-cookie env-test (omgevingsgebonden).
+
 ### Stand V017 (sessie-afsluiting DC016, 2026-06-22)
 
 Build **V017**, migratie head **`0040`**. Tests: **859** backend + **534** frontend groen +
