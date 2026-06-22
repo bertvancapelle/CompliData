@@ -1,7 +1,8 @@
 {
   "realm": "complidata",
   "enabled": true,
-  "displayName": "CompliData",
+  "displayName": "KILARA",
+  "loginTheme": "kilara",
   "sslRequired": "external",
   "registrationAllowed": false,
   "loginWithEmailAllowed": true,
