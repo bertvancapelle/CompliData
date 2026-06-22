@@ -560,7 +560,8 @@ async def _seed_aanvulling_d(session, app_ids: dict) -> dict:
     await _zorg_partij(
         PartijAard.persoon, "J. de Vries",
         organisatie_id=org_id, afdeling_id=afd_id,
-        email="j.devries@gemeente.example", omschrijving="Functioneel beheerder",
+        email="j.devries@gemeente.example", telefoon="06-12345678",
+        omschrijving="Functioneel beheerder",
     )
 
     # --- Contracten (idempotent op contractnaam; mantel vóór deel) ---

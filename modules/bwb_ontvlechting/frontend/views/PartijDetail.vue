@@ -7,7 +7,7 @@
  * Rol-gating is affordance; de backend handhaaft. Verwijderen via bevestigings-Dialog;
  * een partij met contracten levert 409 `IN_GEBRUIK` → nette Toast.
  */
-import { computed, onMounted, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { Button, Column, DataTable, Dialog, Tag, useToast } from '@/primevue'
 import { useRouter } from '@/composables/router'
 import { useAuthStore } from '@/store/auth'
@@ -78,57 +78,58 @@ const heeftLeden = computed(() => isOrganisatieAchtig.value || isAfdeling.value)
 const ouderOrgNaam = ref(null)
 const ouderAfdelingNaam = ref(null)
 
-// Leden-overzicht — server-side ADR-017 (lazy + keyset + @sort), zoals ComponentLijst. De
-// filter (organisatie_id voor een organisatie; afdeling_id voor een afdeling) gaat in elke fetch.
-const leden = ref([])
-const ledenFilter = ref(null)        // { organisatie_id } | { afdeling_id }
-const ledenCursor = ref(null)
-const ledenLaden = ref(false)
-const ledenSortVeld = ref('naam')
-const ledenSortRichting = ref('asc')
-const ledenPrimeSortOrder = computed(() => (ledenSortRichting.value === 'asc' ? 1 : -1))
+// Leden-overzicht — server-side ADR-017 (lazy + keyset + @sort), in TWEE aparte secties:
+// Afdelingen (aard=organisatie_eenheid) en Personen (aard=persoon), elk met eigen state +
+// aard-filter. De "hoort bij"-filter (organisatie_id resp. afdeling_id) gaat in elke fetch.
+const afdelingen = reactive({ items: [], cursor: null, laden: false, sortVeld: 'naam', sortRichting: 'asc' })
+const personen = reactive({ items: [], cursor: null, laden: false, sortVeld: 'naam', sortRichting: 'asc' })
+const afdelingenFilter = ref(null) // { organisatie_id, aard:'organisatie_eenheid' }
+const personenFilter = ref(null)   // { organisatie_id|afdeling_id, aard:'persoon' }
+const primeSort = (s) => (s.sortRichting === 'asc' ? 1 : -1)
 
 async function _naam(id) {
   if (!id) return null
   try { return (await api.partijen.haal(id)).naam } catch { return null }
 }
 
-async function laadLeden({ reset = false } = {}) {
-  if (!ledenFilter.value) return
-  ledenLaden.value = true
+async function _laadSectie(state, filter, reset) {
+  if (!filter) return
+  state.laden = true
   try {
     const pagina = await api.partijen.lijst({
-      ...ledenFilter.value,
-      sort: ledenSortVeld.value,
-      order: ledenSortRichting.value,
-      limit: 25,
-      after: reset ? undefined : ledenCursor.value,
+      ...filter, sort: state.sortVeld, order: state.sortRichting,
+      limit: 25, after: reset ? undefined : state.cursor,
     })
-    leden.value = reset ? pagina.items : leden.value.concat(pagina.items)
-    ledenCursor.value = pagina.volgende_cursor
+    state.items = reset ? pagina.items : state.items.concat(pagina.items)
+    state.cursor = pagina.volgende_cursor
   } catch {
-    if (reset) leden.value = []
+    if (reset) state.items = []
   } finally {
-    ledenLaden.value = false
+    state.laden = false
   }
 }
+const laadAfdelingen = (reset = false) => _laadSectie(afdelingen, afdelingenFilter.value, reset)
+const laadPersonen = (reset = false) => _laadSectie(personen, personenFilter.value, reset)
 
-function onLedenSort(event) {
-  ledenSortVeld.value = event.sortField
-  ledenSortRichting.value = event.sortOrder === 1 ? 'asc' : 'desc'
-  ledenCursor.value = null
-  laadLeden({ reset: true })
+function _onSort(state, laad, event) {
+  state.sortVeld = event.sortField
+  state.sortRichting = event.sortOrder === 1 ? 'asc' : 'desc'
+  state.cursor = null
+  laad(true)
 }
+const onAfdelingenSort = (e) => _onSort(afdelingen, laadAfdelingen, e)
+const onPersonenSort = (e) => _onSort(personen, laadPersonen, e)
 
 async function laadSamenhang() {
   const p = partij.value
   if (!p) return
   if (isOrganisatieAchtig.value) {
-    ledenFilter.value = { organisatie_id: p.id }
-    await laadLeden({ reset: true })
+    afdelingenFilter.value = { organisatie_id: p.id, aard: 'organisatie_eenheid' }
+    personenFilter.value = { organisatie_id: p.id, aard: 'persoon' }
+    await Promise.all([laadAfdelingen(true), laadPersonen(true)])
   } else if (isAfdeling.value) {
-    ledenFilter.value = { afdeling_id: p.id }
-    await laadLeden({ reset: true })
+    personenFilter.value = { afdeling_id: p.id, aard: 'persoon' }
+    await laadPersonen(true)
     ouderOrgNaam.value = await _naam(p.organisatie_id)
   } else if (isPersoon.value) {
     ouderOrgNaam.value = await _naam(p.organisatie_id)
@@ -171,11 +172,20 @@ async function bevestigVerwijderen() {
   }
 }
 
-onMounted(async () => {
+async function herlaad() {
+  // Reset afgeleide state zodat navigatie naar een andere partij niets ouds laat staan.
+  ouderOrgNaam.value = null
+  ouderAfdelingNaam.value = null
+  afdelingen.items = []; afdelingen.cursor = null; afdelingenFilter.value = null
+  personen.items = []; personen.cursor = null; personenFilter.value = null
+  contracten.value = []; contractenCursor.value = null
   await laad()
   if (isExternePartij.value) await laadContracten({ reset: true })
   await laadSamenhang()
-})
+}
+// Navigatie partij-detail → partij-detail hergebruikt de component-instance; een watch op
+// props.id (immediate) herlaadt het scherm bij elke id-wissel (vervangt onMounted).
+watch(() => props.id, () => herlaad(), { immediate: true })
 
 const RIJEN = [
   { veld: 'soort', label: 'Soort' },
@@ -214,13 +224,14 @@ const RIJEN = [
         </template>
       </dl>
 
-      <!-- Hoort bij (afdeling/persoon) -->
+      <!-- Hoort bij (afdeling/persoon) — klikbare router-links naar de ouder-partij -->
       <p v-if="ouderOrgNaam" data-testid="partij-hoortbij" class="mt-[var(--cd-space-md)] text-[var(--cd-color-text-muted)]">
-        Hoort bij: <strong>{{ ouderOrgNaam }}</strong><span v-if="ouderAfdelingNaam"> — afdeling {{ ouderAfdelingNaam }}</span>
+        Hoort bij:
+        <router-link :to="{ name: 'partij-detail', params: { id: partij.organisatie_id } }" data-testid="hoortbij-org-link" class="text-[var(--cd-color-primary)] hover:underline">{{ ouderOrgNaam }}</router-link><span v-if="ouderAfdelingNaam"> — afdeling <router-link :to="{ name: 'partij-detail', params: { id: partij.afdeling_id } }" data-testid="hoortbij-afd-link" class="text-[var(--cd-color-primary)] hover:underline">{{ ouderAfdelingNaam }}</router-link></span>
       </p>
 
       <div class="mt-[var(--cd-space-lg)] flex flex-wrap gap-[var(--cd-space-md)]">
-        <ObjectHistoriePaneel entiteit-type="partij" :entiteit-id="props.id" />
+        <ObjectHistoriePaneel :key="props.id" entiteit-type="partij" :entiteit-id="props.id" />
         <Button
           v-if="magBewerken"
           label="Bewerken"
@@ -230,55 +241,52 @@ const RIJEN = [
         <Button v-if="magVerwijderen" label="Verwijderen" severity="danger" data-testid="verwijder-knop" @click="verwijderDialog = true" />
       </div>
 
-      <!-- Onderdelen/personen ("hoort bij", andere kant) — organisatie/externe partij of afdeling -->
-      <section v-if="heeftLeden" class="card mt-[var(--cd-space-lg)]" data-testid="partij-leden-sectie" aria-labelledby="sectie-partij-leden">
-        <div class="flex items-center gap-[var(--cd-space-sm)] mb-[var(--cd-space-sm)]">
-          <h2 id="sectie-partij-leden" class="text-[length:var(--cd-text-lg)] font-semibold">
-            {{ isAfdeling ? 'Personen in deze afdeling' : 'Afdelingen en personen' }}
-          </h2>
-          <template v-if="magAanmaken">
-            <Button
-              v-if="!isAfdeling"
-              label="+ Afdeling"
-              severity="secondary"
-              data-testid="lid-afdeling"
-              class="ml-auto"
-              @click="nieuwLid('organisatie_eenheid')"
-            />
-            <Button
-              label="+ Persoon"
-              severity="secondary"
-              data-testid="lid-persoon"
-              :class="isAfdeling ? 'ml-auto' : ''"
-              @click="nieuwLid('persoon')"
-            />
-          </template>
-        </div>
-        <!-- Server-side sortering (ADR-017): lazy + @sort → sort/order + cursor-reset + refetch. -->
-        <DataTable
-          :value="leden"
-          data-testid="partij-leden-tabel"
-          lazy
-          :sort-field="ledenSortVeld"
-          :sort-order="ledenPrimeSortOrder"
-          @sort="onLedenSort"
-        >
-          <Column field="naam" header="Naam" sortable>
-            <template #body="{ data }">
-              <router-link :to="{ name: 'partij-detail', params: { id: data.id } }" data-testid="partij-lid-link" class="text-[var(--cd-color-primary)] hover:underline">{{ data.naam }}</router-link>
-            </template>
-          </Column>
-          <Column field="aard" header="Aard" sortable><template #body="{ data }"><Tag :value="aardLabel(data.aard)" severity="info" /></template></Column>
-          <template #empty><span data-testid="partij-leden-leeg">Nog geen onderliggende partijen.</span></template>
-        </DataTable>
-        <div v-if="ledenCursor" class="mt-[var(--cd-space-sm)]">
-          <Button label="Meer laden" severity="secondary" data-testid="leden-meer-laden" :loading="ledenLaden" @click="laadLeden()" />
-        </div>
-      </section>
+      <!-- Onderdelen ("hoort bij", andere kant) — gesplitst in Afdelingen + Personen -->
+      <template v-if="heeftLeden">
+        <!-- Afdelingen — alleen onder een organisatie(-achtige) -->
+        <section v-if="isOrganisatieAchtig" class="card mt-[var(--cd-space-lg)]" data-testid="partij-afdelingen-sectie" aria-labelledby="sectie-partij-afdelingen">
+          <div class="flex items-center gap-[var(--cd-space-sm)] mb-[var(--cd-space-sm)]">
+            <h2 id="sectie-partij-afdelingen" class="text-[length:var(--cd-text-lg)] font-semibold">Afdelingen</h2>
+            <Button v-if="magAanmaken" label="+ Afdeling" severity="secondary" data-testid="lid-afdeling" class="ml-auto" @click="nieuwLid('organisatie_eenheid')" />
+          </div>
+          <DataTable :value="afdelingen.items" data-testid="partij-afdelingen-tabel" lazy :sort-field="afdelingen.sortVeld" :sort-order="primeSort(afdelingen)" @sort="onAfdelingenSort">
+            <Column field="naam" header="Naam" sortable>
+              <template #body="{ data }">
+                <router-link :to="{ name: 'partij-detail', params: { id: data.id } }" data-testid="partij-afdeling-link" class="text-[var(--cd-color-primary)] hover:underline">{{ data.naam }}</router-link>
+              </template>
+            </Column>
+            <template #empty><span data-testid="partij-afdelingen-leeg">Geen afdelingen.</span></template>
+          </DataTable>
+          <div v-if="afdelingen.cursor" class="mt-[var(--cd-space-sm)]">
+            <Button label="Meer laden" severity="secondary" data-testid="afdelingen-meer-laden" :loading="afdelingen.laden" @click="laadAfdelingen()" />
+          </div>
+        </section>
+
+        <!-- Personen — onder een organisatie of afdeling; met e-mail + telefoon -->
+        <section class="card mt-[var(--cd-space-lg)]" data-testid="partij-personen-sectie" aria-labelledby="sectie-partij-personen">
+          <div class="flex items-center gap-[var(--cd-space-sm)] mb-[var(--cd-space-sm)]">
+            <h2 id="sectie-partij-personen" class="text-[length:var(--cd-text-lg)] font-semibold">Personen</h2>
+            <Button v-if="magAanmaken" label="+ Persoon" severity="secondary" data-testid="lid-persoon" class="ml-auto" @click="nieuwLid('persoon')" />
+          </div>
+          <DataTable :value="personen.items" data-testid="partij-personen-tabel" lazy :sort-field="personen.sortVeld" :sort-order="primeSort(personen)" @sort="onPersonenSort">
+            <Column field="naam" header="Naam" sortable>
+              <template #body="{ data }">
+                <router-link :to="{ name: 'partij-detail', params: { id: data.id } }" data-testid="partij-persoon-link" class="text-[var(--cd-color-primary)] hover:underline">{{ data.naam }}</router-link>
+              </template>
+            </Column>
+            <Column header="E-mail"><template #body="{ data }">{{ data.email || '—' }}</template></Column>
+            <Column header="Telefoon"><template #body="{ data }">{{ data.telefoon || '—' }}</template></Column>
+            <template #empty><span data-testid="partij-personen-leeg">Geen personen.</span></template>
+          </DataTable>
+          <div v-if="personen.cursor" class="mt-[var(--cd-space-sm)]">
+            <Button label="Meer laden" severity="secondary" data-testid="personen-meer-laden" :loading="personen.laden" @click="laadPersonen()" />
+          </div>
+        </section>
+      </template>
 
       <!-- ADR-024 slice 2b — rollen die deze partij vervult op objecten (alleen-lezen) -->
       <div class="mt-[var(--cd-space-lg)]">
-        <PartijRollenSectie :partij-id="props.id" />
+        <PartijRollenSectie :key="props.id" :partij-id="props.id" />
       </div>
 
       <!-- Contracten (tegenpartij-koppeling) — alleen voor een externe partij -->

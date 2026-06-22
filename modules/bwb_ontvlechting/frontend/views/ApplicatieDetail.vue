@@ -7,7 +7,7 @@
  * `lifecycle_status` is read-only (Tag); "Start inventarisatie" alleen bij
  * status `concept`. Verwijderen waarschuwt voor de cascade.
  */
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Button, Dialog, Tag, useToast } from '@/primevue'
 import { useRoute, useRouter } from '@/composables/router'
 import { useAuthStore } from '@/store/auth'
@@ -236,10 +236,9 @@ function onNaarVraag({ code, categorieNr }) {
   markeerVraagCode.value = code
 }
 
-onMounted(async () => {
-  await laad()
-  _initVanafQuery()
-})
+// Navigatie applicatie-detail → applicatie-detail hergebruikt de instance; watch op props.id
+// (immediate) herlaadt + her-initialiseert de deep-link bij elke id-wissel (vervangt onMounted).
+watch(() => props.id, async () => { await laad(); _initVanafQuery() }, { immediate: true })
 </script>
 
 <template>

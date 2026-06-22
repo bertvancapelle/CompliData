@@ -56,10 +56,19 @@ const _partij = (over = {}) => ({
   telefoon: null, mobiel: null, email: null, omschrijving: null, ...over,
 })
 
+// Leden-secties vragen per aard apart op (organisatie_eenheid / persoon). Mock per aard.
+function mockLeden({ afdelingen = [], personen = [] } = {}) {
+  api.partijen.lijst.mockImplementation((params) => {
+    if (params?.aard === 'organisatie_eenheid') return Promise.resolve({ items: afdelingen, volgende_cursor: null })
+    if (params?.aard === 'persoon') return Promise.resolve({ items: personen, volgende_cursor: null })
+    return Promise.resolve({ items: [], volgende_cursor: null })
+  })
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   api.contracten.lijst.mockResolvedValue({ items: [], volgende_cursor: null })
-  api.partijen.lijst.mockResolvedValue({ items: [], volgende_cursor: null })  // leden-overzicht
+  api.partijen.lijst.mockResolvedValue({ items: [], volgende_cursor: null })  // leden-overzicht (default leeg)
 })
 afterEach(() => vi.restoreAllMocks())
 
@@ -94,20 +103,51 @@ describe('PartijDetail', () => {
     expect(api.contracten.lijst).toHaveBeenCalledWith(expect.objectContaining({ leverancier_id: 'p1' }))
   })
 
-  it('organisatie: onderdelen-sectie toont afdelingen + personen ("hoort bij", andere kant)', async () => {
+  it('organisatie: aparte secties Afdelingen + Personen (met e-mail/telefoon-kolommen)', async () => {
     api.partijen.haal.mockResolvedValue(_partij({ aard: 'organisatie', naam: 'Gemeente X', soort: null }))
-    api.partijen.lijst.mockResolvedValue({
-      items: [
-        { id: 'a1', naam: 'Afdeling I&A', aard: 'organisatie_eenheid' },
-        { id: 'pp1', naam: 'J. Jansen', aard: 'persoon' },
-      ],
-      volgende_cursor: null,
+    mockLeden({
+      afdelingen: [{ id: 'a1', naam: 'Afdeling I&A', aard: 'organisatie_eenheid' }],
+      personen: [{ id: 'pp1', naam: 'J. Jansen', aard: 'persoon', email: 'j@x.nl', telefoon: '0612' }],
     })
     const { w } = await mountDetail()
-    expect(w.find('[data-testid="partij-leden-sectie"]').exists()).toBe(true)
-    expect(api.partijen.lijst).toHaveBeenCalledWith(expect.objectContaining({ organisatie_id: 'p1' }))
-    expect(w.text()).toContain('Afdeling I&A')
-    expect(w.text()).toContain('J. Jansen')
+    expect(w.find('[data-testid="partij-afdelingen-sectie"]').exists()).toBe(true)
+    expect(w.find('[data-testid="partij-personen-sectie"]').exists()).toBe(true)
+    expect(api.partijen.lijst).toHaveBeenCalledWith(expect.objectContaining({ organisatie_id: 'p1', aard: 'organisatie_eenheid' }))
+    expect(api.partijen.lijst).toHaveBeenCalledWith(expect.objectContaining({ organisatie_id: 'p1', aard: 'persoon' }))
+    expect(w.find('[data-testid="partij-afdelingen-tabel"]').text()).toContain('Afdeling I&A')
+    const personenTekst = w.find('[data-testid="partij-personen-tabel"]').text()
+    expect(personenTekst).toContain('J. Jansen')
+    expect(personenTekst).toContain('j@x.nl')      // e-mail-kolom
+    expect(personenTekst).toContain('0612')        // telefoon-kolom
+  })
+
+  it('navigatie naar een andere partij herlaadt het scherm (watch op props.id)', async () => {
+    api.partijen.haal.mockImplementation((id) =>
+      Promise.resolve(id === 'p1' ? _partij({ id: 'p1', naam: 'Partij A' }) : _partij({ id: 'p2', naam: 'Partij B' })),
+    )
+    const { w } = await mountDetail({ id: 'p1' })
+    expect(w.find('#partij-detail-titel').text()).toContain('Partij A')
+    await w.setProps({ id: 'p2' })
+    await flushPromises()
+    expect(api.partijen.haal).toHaveBeenCalledWith('p2')
+    expect(w.find('#partij-detail-titel').text()).toContain('Partij B')
+  })
+
+  it('persoon: "hoort bij" toont klikbare org- én afdeling-router-link', async () => {
+    api.partijen.haal.mockImplementation((id) =>
+      id === 'p1'
+        ? Promise.resolve(_partij({ aard: 'persoon', naam: 'J. de Vries', soort: null, organisatie_id: 'org9', afdeling_id: 'afd9' }))
+        : id === 'org9'
+          ? Promise.resolve(_partij({ id: 'org9', aard: 'organisatie', naam: 'Gemeente X' }))
+          : Promise.resolve(_partij({ id: 'afd9', aard: 'organisatie_eenheid', naam: 'Afdeling I&A', organisatie_id: 'org9' })),
+    )
+    const { w } = await mountDetail()
+    const orgLink = w.find('[data-testid="hoortbij-org-link"]')
+    const afdLink = w.find('[data-testid="hoortbij-afd-link"]')
+    expect(orgLink.exists()).toBe(true)
+    expect(orgLink.text()).toContain('Gemeente X')
+    expect(afdLink.exists()).toBe(true)
+    expect(afdLink.text()).toContain('Afdeling I&A')
   })
 
   it('UX-A2/A3: organisatie toont "+ Afdeling" en "+ Persoon"; klik prefilt de organisatie', async () => {
@@ -155,58 +195,66 @@ describe('PartijDetail', () => {
     expect(w.find('[data-testid="lid-persoon"]').exists()).toBe(false)
   })
 
-  it('leden-blok sorteert server-side (Aard) met cursor-reset', async () => {
+  it('afdelingen-sectie sorteert server-side met cursor-reset', async () => {
     api.partijen.haal.mockResolvedValue(_partij({ aard: 'organisatie', naam: 'Gemeente X', soort: null }))
-    api.partijen.lijst.mockResolvedValue({ items: [], volgende_cursor: null })
+    mockLeden({})
     const { w } = await mountDetail()
-    // initiële load: organisatie-filter + default sort naam/asc
-    expect(api.partijen.lijst).toHaveBeenLastCalledWith(
-      expect.objectContaining({ organisatie_id: 'p1', sort: 'naam', order: 'asc', after: undefined }),
+    // initiële afdelingen-load: org-filter + aard=organisatie_eenheid + default naam/asc
+    expect(api.partijen.lijst).toHaveBeenCalledWith(
+      expect.objectContaining({ organisatie_id: 'p1', aard: 'organisatie_eenheid', sort: 'naam', order: 'asc', after: undefined }),
     )
-    // @sort op de Aard-kolom (aflopend) → refetch met sort=aard/desc en gereset cursor
-    await w.findComponent(DataTable).vm.$emit('sort', { sortField: 'aard', sortOrder: -1 })
+    // @sort op de afdelingen-tabel (eerste DataTable) aflopend → refetch met order=desc, gereset cursor
+    await w.findComponent(DataTable).vm.$emit('sort', { sortField: 'naam', sortOrder: -1 })
     await flushPromises()
     expect(api.partijen.lijst).toHaveBeenLastCalledWith(
-      expect.objectContaining({ organisatie_id: 'p1', sort: 'aard', order: 'desc', after: undefined }),
+      expect.objectContaining({ aard: 'organisatie_eenheid', sort: 'naam', order: 'desc', after: undefined }),
     )
   })
 
-  it('leden-blok pagineert met de keyset-cursor ("Meer laden")', async () => {
+  it('personen-sectie pagineert met de keyset-cursor ("Meer laden")', async () => {
     api.partijen.haal.mockResolvedValue(_partij({ aard: 'organisatie', naam: 'Gemeente X', soort: null }))
-    api.partijen.lijst
-      .mockResolvedValueOnce({ items: [{ id: 'a1', naam: 'Afd', aard: 'organisatie_eenheid' }], volgende_cursor: 'cur-1' })
-      .mockResolvedValueOnce({ items: [{ id: 'pp1', naam: 'Jan', aard: 'persoon' }], volgende_cursor: null })
+    api.partijen.lijst.mockImplementation((params) => {
+      if (params?.aard === 'persoon') {
+        return params.after
+          ? Promise.resolve({ items: [{ id: 'pp2', naam: 'Bob', aard: 'persoon' }], volgende_cursor: null })
+          : Promise.resolve({ items: [{ id: 'pp1', naam: 'Jan', aard: 'persoon' }], volgende_cursor: 'cur-1' })
+      }
+      return Promise.resolve({ items: [], volgende_cursor: null })
+    })
     const { w } = await mountDetail()
-    expect(w.find('[data-testid="leden-meer-laden"]').exists()).toBe(true)
-    await w.find('[data-testid="leden-meer-laden"]').trigger('click')
+    expect(w.find('[data-testid="personen-meer-laden"]').exists()).toBe(true)
+    await w.find('[data-testid="personen-meer-laden"]').trigger('click')
     await flushPromises()
-    expect(api.partijen.lijst).toHaveBeenLastCalledWith(expect.objectContaining({ organisatie_id: 'p1', after: 'cur-1' }))
-    expect(w.find('[data-testid="leden-meer-laden"]').exists()).toBe(false)  // cursor op null
-    expect(w.text()).toContain('Afd')
-    expect(w.text()).toContain('Jan')
+    expect(api.partijen.lijst).toHaveBeenLastCalledWith(expect.objectContaining({ aard: 'persoon', after: 'cur-1' }))
+    expect(w.find('[data-testid="personen-meer-laden"]').exists()).toBe(false)  // cursor op null
+    const tekst = w.find('[data-testid="partij-personen-tabel"]').text()
+    expect(tekst).toContain('Jan')
+    expect(tekst).toContain('Bob')
   })
 
-  it('externe partij zonder leden → leden-blok is leeg', async () => {
+  it('externe partij zonder leden → beide secties tonen een lege-staat', async () => {
     api.partijen.haal.mockResolvedValue(_partij())  // externe_partij, organisatie-achtig
-    api.partijen.lijst.mockResolvedValue({ items: [], volgende_cursor: null })
+    mockLeden({})
     const { w } = await mountDetail()
-    expect(w.find('[data-testid="partij-leden-sectie"]').exists()).toBe(true)
-    expect(w.find('[data-testid="partij-leden-leeg"]').exists()).toBe(true)
-    expect(api.partijen.lijst).toHaveBeenCalledWith(expect.objectContaining({ organisatie_id: 'p1' }))
+    expect(w.find('[data-testid="partij-afdelingen-sectie"]').exists()).toBe(true)
+    expect(w.find('[data-testid="partij-afdelingen-leeg"]').exists()).toBe(true)
+    expect(w.find('[data-testid="partij-personen-sectie"]').exists()).toBe(true)
+    expect(w.find('[data-testid="partij-personen-leeg"]').exists()).toBe(true)
   })
 
-  it('afdeling: personen-sectie + "hoort bij" de organisatie', async () => {
+  it('afdeling: alleen Personen-sectie + klikbare "hoort bij" de organisatie', async () => {
     api.partijen.haal.mockImplementation((id) =>
       id === 'p1'
         ? Promise.resolve(_partij({ aard: 'organisatie_eenheid', naam: 'Afdeling I&A', soort: null, organisatie_id: 'org9' }))
         : Promise.resolve(_partij({ id: 'org9', aard: 'organisatie', naam: 'Gemeente X' })),
     )
-    api.partijen.lijst.mockResolvedValue({ items: [{ id: 'pp1', naam: 'J. Jansen', aard: 'persoon' }], volgende_cursor: null })
+    mockLeden({ personen: [{ id: 'pp1', naam: 'J. Jansen', aard: 'persoon' }] })
     const { w } = await mountDetail()
-    expect(w.find('[data-testid="partij-leden-sectie"]').exists()).toBe(true)
-    expect(api.partijen.lijst).toHaveBeenCalledWith(expect.objectContaining({ afdeling_id: 'p1' }))
-    expect(w.find('[data-testid="partij-hoortbij"]').text()).toContain('Gemeente X')
-    expect(w.text()).toContain('J. Jansen')
+    expect(w.find('[data-testid="partij-afdelingen-sectie"]').exists()).toBe(false)  // geen sub-afdelingen
+    expect(w.find('[data-testid="partij-personen-sectie"]').exists()).toBe(true)
+    expect(api.partijen.lijst).toHaveBeenCalledWith(expect.objectContaining({ afdeling_id: 'p1', aard: 'persoon' }))
+    expect(w.find('[data-testid="hoortbij-org-link"]').text()).toContain('Gemeente X')
+    expect(w.find('[data-testid="partij-personen-tabel"]').text()).toContain('J. Jansen')
   })
 
   it('verwijderen 409 IN_GEBRUIK blijft op het detail', async () => {

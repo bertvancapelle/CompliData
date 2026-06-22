@@ -8,7 +8,7 @@
  * ContractSectie — component_id == het applicatie-id bij subtypen). Bewerken/
  * verwijderen alleen bij niet-subtypen; verwijderen waarschuwt en mapt 409 IN_GEBRUIK.
  */
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { Button, Dialog, Tag, useToast } from '@/primevue'
 import { useRoute, useRouter } from '@/composables/router'
 import { useAuthStore } from '@/store/auth'
@@ -146,8 +146,10 @@ onMounted(() => {
   // Hergebruikt hetzelfde markeerpad als de in-page `naar-vraag` (component-detail is
   // tabloos → alleen de code, geen tab/categorie).
   if (route.query.markeer != null) markeerVraagCode.value = String(route.query.markeer)
-  laad()
 })
+// Navigatie component-detail → component-detail hergebruikt de instance; watch op props.id
+// (immediate) herlaadt bij elke id-wissel (vervangt de onMounted-laad).
+watch(() => props.id, () => laad(), { immediate: true })
 </script>
 
 <template>
