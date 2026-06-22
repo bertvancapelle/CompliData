@@ -214,6 +214,212 @@ function openApplicatie() {
   if (detailNode.value) router.push({ name: 'applicatie-detail', params: { id: detailNode.value.id } })
 }
 
+// ── Klik-detail-popups (koppeling + knoop) + fullscreen — read-only weergave ─────
+// Gedeelde popup-state: koppeling- én knoop-popup delen vorm + sluitgedrag. Een nieuwe
+// klik VERVANGT de open popup (zelfde refs). Engine onaangeroerd (alleen lezen via api).
+const popupOpen = ref(false)
+const popupKind = ref(null) // 'node' | 'edge'
+const popupTitel = ref('')
+const popupBadge = ref(null) // 'Inkomend' | 'Uitgaand' (alleen koppeling t.o.v. ego)
+const popupLaden = ref(false)
+const popupVelden = ref([]) // [{ label, waarde }] — uitsluitend ingevulde velden
+const popupMelding = ref(null) // RBAC-/terugval-melding (geen technische fout)
+const popupActie = ref(null) // { label, fn } | null
+const fullscreen = ref(false)
+
+function sluitPopup() {
+  popupOpen.value = false
+  popupKind.value = null
+  popupTitel.value = ''
+  popupBadge.value = null
+  popupVelden.value = []
+  popupMelding.value = null
+  popupActie.value = null
+}
+
+// Veld alleen opnemen als de waarde bestaat/ingevuld is (toon nooit lege regels).
+const _veld = (label, waarde) => (waarde != null && waarde !== '' ? { label, waarde } : null)
+const _velden = (arr) => arr.filter(Boolean)
+
+// Directe pre-fill van een knoop-popup uit de kaart-data (vóór de detail-fetch laadt).
+function _nodePrefill(n) {
+  return _velden([
+    _veld('Type', n.element_type ? typeLabel(n.element_type) : null),
+    _veld('Status', n.lifecycle_status ? typeLabel(n.lifecycle_status) : null),
+    _veld('Domein', n.domein ? typeLabel(n.domein) : null),
+    _veld('Leverancier', n.leverancier_naam),
+    _veld('Hosting', n.hosting_model ? typeLabel(n.hosting_model) : null),
+    n.blokkades_open != null ? { label: 'Open blokkades', waarde: String(n.blokkades_open) } : null,
+  ])
+}
+
+function _nodeVelden(et, d, n) {
+  if (et === 'applicatie') {
+    return _velden([
+      _veld('Status', d.lifecycle_status ? typeLabel(d.lifecycle_status) : null),
+      _veld('Eigenaar-organisatie', d.eigenaar_organisatie_naam),
+      _veld('Hostingmodel', d.hostingmodel ? typeLabel(d.hostingmodel) : null),
+      _veld('Migratiepad', d.migratiepad ? typeLabel(d.migratiepad) : null),
+      _veld('Complexiteit', d.complexiteit ? typeLabel(d.complexiteit) : null),
+      _veld('Prioriteit', d.prioriteit ? typeLabel(d.prioriteit) : null),
+      _veld('Beschrijving', d.beschrijving),
+      n.blokkades_open ? { label: 'Open blokkades', waarde: String(n.blokkades_open) } : null,
+    ])
+  }
+  if (et === 'contract') {
+    const looptijd = [d.begindatum, d.einddatum].some(Boolean) ? `${d.begindatum || '…'} – ${d.einddatum || '…'}` : null
+    return _velden([
+      _veld('Leverancier', d.leverancier_naam),
+      _veld('Contracttype', d.contracttype ? typeLabel(d.contracttype) : null),
+      _veld('Looptijd', looptijd),
+      _veld('Omschrijving', d.omschrijving),
+    ])
+  }
+  if (et === 'partij') {
+    const adres = [d.straat_huisnummer, d.postcode, d.plaats].filter(Boolean).join(', ') || null
+    return _velden([
+      _veld('Aard', d.aard ? typeLabel(d.aard) : null),
+      _veld('Functietitel', d.functietitel),
+      _veld('Contactpersoon', d.contactpersoon),
+      _veld('Adres', adres),
+      _veld('Telefoon', d.telefoon),
+      _veld('Mobiel', d.mobiel),
+      _veld('E-mail', d.email),
+      _veld('Omschrijving', d.omschrijving),
+    ])
+  }
+  // infrastructuur/generiek component
+  return _velden([
+    _veld('Type', d.componenttype_label),
+    _veld('Status', d.lifecycle_status ? typeLabel(d.lifecycle_status) : null),
+    _veld('Eigenaar-organisatie', d.eigenaar_organisatie_naam),
+    _veld('Hostingmodel', d.hostingmodel ? typeLabel(d.hostingmodel) : null),
+    _veld('Beschrijving', d.beschrijving),
+    n.blokkades_open ? { label: 'Open blokkades', waarde: String(n.blokkades_open) } : null,
+  ])
+}
+
+// Knoop-popup: dispatch per element_type naar het juiste detail-endpoint; node-data als
+// directe pre-fill. GEEN hercentreren (dat is dubbelklik). 403 → nette terugval-melding.
+async function openNodePopup(id) {
+  const n = nodePerId.value[id]
+  if (!n) return
+  detailId.value = id
+  popupKind.value = 'node'
+  popupBadge.value = null
+  popupTitel.value = n.naam || ''
+  popupMelding.value = null
+  popupActie.value = isApplicatie(n)
+    ? { label: 'Open applicatie →', fn: () => router.push({ name: 'applicatie-detail', params: { id } }) }
+    : null
+  popupVelden.value = _nodePrefill(n)
+  popupOpen.value = true
+  popupLaden.value = true
+  try {
+    const et = n.element_type
+    let d
+    if (et === 'applicatie') d = await api.applicaties.haal(id)
+    else if (et === 'contract') d = await api.contracten.haal(id)
+    else if (et === 'partij') d = await api.partijen.haal(id)
+    else d = await api.componenten.haal(id)
+    if (popupKind.value !== 'node' || detailId.value !== id) return // intussen vervangen
+    popupVelden.value = _nodeVelden(et, d, n)
+  } catch (e) {
+    popupMelding.value = e?.status === 403
+      ? 'Meer details niet beschikbaar (geen leesrecht).'
+      : 'Details konden niet geladen worden.'
+  } finally {
+    popupLaden.value = false
+  }
+}
+
+function _edgeVelden(edge, rel, tegenNaam) {
+  const k = rel.kenmerken || {}
+  const protocol = k.protocol ?? edge.protocol
+  const richting = k.richting ?? edge.richting
+  return _velden([
+    _veld('Tegenpartij', tegenNaam),
+    { label: 'Type', waarde: 'koppeling' },
+    _veld('Protocol', protocol ? typeLabel(protocol) : null),
+    _veld('Datastroom', richting ? typeLabel(richting) : null),
+    _veld('Impact bij verbreking', k.impact_bij_verbreking ? typeLabel(k.impact_bij_verbreking) : null),
+    _veld('Omschrijving', rel.omschrijving),
+  ])
+}
+
+// Koppeling-popup (flow-edge). "Inkomend/Uitgaand" = positie t.o.v. de gecentreerde
+// (ego) node; "Datastroom" = het richting-kenmerk (een-/tweerichting) — NIET hetzelfde.
+async function openEdgePopup(edge) {
+  if (!edge || edge.ring !== 'applicaties') return
+  const ego = egoStartId.value
+  let badge = null
+  let tegenId = null
+  if (edge.bron_id === ego) { badge = 'Uitgaand'; tegenId = edge.doel_id }
+  else if (edge.doel_id === ego) { badge = 'Inkomend'; tegenId = edge.bron_id }
+  const tegenNaam = tegenId
+    ? nodePerId.value[tegenId]?.naam || ''
+    : `${nodePerId.value[edge.bron_id]?.naam || '?'} → ${nodePerId.value[edge.doel_id]?.naam || '?'}`
+  popupKind.value = 'edge'
+  popupBadge.value = badge
+  popupTitel.value = 'Koppeling'
+  popupActie.value = null
+  popupMelding.value = null
+  popupVelden.value = _edgeVelden(edge, {}, tegenNaam) // pre-fill uit de edge (protocol/richting)
+  popupOpen.value = true
+  popupLaden.value = true
+  try {
+    const p = await api.relaties.lijst({ bronId: edge.bron_id, doelId: edge.doel_id, relatietype: 'flow' })
+    const rel = (p.items || [])[0]
+    if (popupKind.value !== 'edge') return
+    popupVelden.value = _edgeVelden(edge, rel || {}, tegenNaam)
+  } catch (e) {
+    popupMelding.value = e?.status === 403
+      ? 'Meer details niet beschikbaar (geen leesrecht).'
+      : 'Details konden niet geladen worden.'
+  } finally {
+    popupLaden.value = false
+  }
+}
+
+// Enkele- vs. dubbel-tap op een knoop (Cytoscape kent geen native dbltap). De enkele-
+// klik-actie (popup) wordt ~280ms uitgesteld; komt er binnen die drempel een tweede tap,
+// dan is het een dubbelklik → hercentreren, en de popup opent NIET (geen flikker).
+let _tapTimer = null
+let _tapId = null
+const _DBLTAP_MS = 280
+function onNodeTap(id) {
+  if (_tapId === id && _tapTimer) {
+    clearTimeout(_tapTimer); _tapTimer = null; _tapId = null
+    selecteerNode(id) // dubbelklik = hercentreren (ongewijzigd gedrag)
+    return
+  }
+  if (_tapTimer) clearTimeout(_tapTimer)
+  _tapId = id
+  _tapTimer = setTimeout(() => { _tapTimer = null; _tapId = null; openNodePopup(id) }, _DBLTAP_MS)
+}
+
+// Fullscreen-overlay (in-app): de hele view vult het venster via een CSS-klasse — GEEN
+// remount, dus alle state (centrum/selectie/popup/set/filters) blijft behouden. Zoom/pan
+// wordt expliciet bewaard (de ResizeObserver fit niet tijdens de toggle).
+let _behoudViewport = false
+function toggleFullscreen() {
+  const z = cy?.zoom?.()
+  const p = cy?.pan?.()
+  _behoudViewport = true
+  fullscreen.value = !fullscreen.value
+  nextTick(() => {
+    cy?.resize?.()
+    if (typeof z === 'number' && p) { cy?.zoom?.(z); cy?.pan?.(p) }
+    setTimeout(() => { _behoudViewport = false }, 200)
+  })
+}
+
+function _opEscape(e) {
+  if (e.key !== 'Escape') return
+  if (popupOpen.value) sluitPopup()
+  else if (fullscreen.value) fullscreen.value = false
+}
+
 // ── Cytoscape-graaf (afgeleide van de state) ─────────────────────────────────────
 const hostingIcoon = (h) => (h === 'saas' ? '☁' : '🏢')
 
@@ -345,22 +551,37 @@ onMounted(async () => {
   await nextTick() // wacht tot de canvas-div in de DOM staat (en de flex-hoogte gezet is)
   if (containerRef.value) {
     cy = cytoscape({ container: containerRef.value, elements: [], style: CY_STYLE })
-    cy.on('tap', 'node', (evt) => selecteerNode(evt.target.id()))
+    // Enkele tap = popup (uitgesteld), dubbele tap = hercentreren — zie onNodeTap.
+    cy.on('tap', 'node', (evt) => onNodeTap(evt.target.id()))
+    // Tap op een koppeling (flow-edge) opent de koppeling-popup.
+    cy.on('tap', 'edge', (evt) => {
+      const src = evt.target.data('source')
+      const tgt = evt.target.data('target')
+      const edge = edges.value.find((e) => e.bron_id === src && e.doel_id === tgt && e.ring === 'applicaties')
+      if (edge) openEdgePopup(edge)
+    })
+    // Tap op leeg canvas sluit een open popup.
+    cy.on('tap', (evt) => { if (evt.target === cy) sluitPopup() })
     tekenGraaf()
     // Her-meten + passend maken bij containerwijzigingen (modus-wissel, sidebar, venster-resize).
     if (typeof ResizeObserver !== 'undefined') {
       resizeObserver = new ResizeObserver(() => {
         cy?.resize?.()
+        if (_behoudViewport) return // fullscreen-toggle: zoom/pan behouden, niet fitten
         cy?.fit?.(undefined, 50)
       })
       resizeObserver.observe(containerRef.value)
     }
   }
+  window.addEventListener('keydown', _opEscape)
 })
 onBeforeUnmount(() => {
   resizeObserver?.disconnect()
   cy?.destroy?.()
+  window.removeEventListener('keydown', _opEscape)
 })
+
+defineExpose({ openNodePopup, openEdgePopup, onNodeTap, sluitPopup, toggleFullscreen, fullscreen, popupOpen })
 
 // Hertekenen bij elke state die de graaf raakt.
 watch(
@@ -387,7 +608,11 @@ const typeLabel = (t) => humaniseer(t)
 </script>
 
 <template>
-  <div class="flex w-full flex-col" data-testid="lk-wrapper" style="height: calc(100vh - 9rem)">
+  <div
+    :class="['flex w-full flex-col', fullscreen ? 'fixed inset-0 z-[400] bg-[var(--cd-color-bg)]' : '']"
+    data-testid="lk-wrapper"
+    :style="fullscreen ? 'height: 100vh' : 'height: calc(100vh - 9rem)'"
+  >
     <!-- Topbar: modus-toggle -->
     <div class="flex items-center gap-[var(--cd-space-sm)] border-b border-[var(--cd-color-border)] bg-white p-[var(--cd-space-sm)]">
       <div class="flex gap-1 rounded-[var(--cd-radius-btn)] bg-[var(--cd-color-accent)] p-1">
@@ -466,6 +691,35 @@ const typeLabel = (t) => humaniseer(t)
           <button type="button" data-testid="lk-centreer" class="rounded-[var(--cd-radius-btn)] bg-white/90 px-2 py-1 text-[length:var(--cd-text-sm)] shadow-[var(--cd-shadow-sm)]" @click="centreer">⊡ Centreer</button>
           <button type="button" data-testid="lk-kleur-domein" :aria-pressed="kleurOpDomein" :class="['rounded-[var(--cd-radius-btn)] px-2 py-1 text-[length:var(--cd-text-sm)] shadow-[var(--cd-shadow-sm)]', kleurOpDomein ? 'bg-[var(--cd-color-primary)] text-white' : 'bg-white/90']" @click="kleurOpDomein = !kleurOpDomein">Kleur op domein</button>
           <button type="button" data-testid="lk-verberg-onverbonden" :aria-pressed="verbergOnverbonden" :class="['rounded-[var(--cd-radius-btn)] px-2 py-1 text-[length:var(--cd-text-sm)] shadow-[var(--cd-shadow-sm)]', verbergOnverbonden ? 'bg-[var(--cd-color-primary)] text-white' : 'bg-white/90']" @click="verbergOnverbonden = !verbergOnverbonden">Verberg los</button>
+          <!-- Fullscreen-overlay (in-app): één toggle — vergroten ingebed, verkleinen in de overlay. -->
+          <button type="button" :data-testid="fullscreen ? 'lk-fullscreen-sluit' : 'lk-fullscreen-open'" :aria-pressed="fullscreen" class="rounded-[var(--cd-radius-btn)] bg-white/90 px-2 py-1 text-[length:var(--cd-text-sm)] shadow-[var(--cd-shadow-sm)]" @click="toggleFullscreen">{{ fullscreen ? '✕ Verkleinen' : '⛶ Vergroten' }}</button>
+        </div>
+
+        <!-- Klik-detail-popup (koppeling of knoop) — gedeelde vorm; sluiten via knop, Escape
+             of een tap op leeg canvas. Een nieuwe klik vervangt de inhoud. -->
+        <div
+          v-if="popupOpen"
+          data-testid="lk-popup"
+          role="dialog"
+          aria-label="Detail"
+          class="absolute left-3 top-3 z-20 w-72 max-w-[80%] rounded-[var(--cd-radius-card)] border border-[var(--cd-color-border)] bg-white p-[var(--cd-space-md)] shadow-[var(--cd-shadow-lg)]"
+        >
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <p v-if="popupBadge" data-testid="lk-popup-badge" class="text-[length:var(--cd-text-xs)] font-semibold uppercase text-[var(--cd-color-primary-700)]">{{ popupBadge }}</p>
+              <p class="font-semibold" data-testid="lk-popup-titel">{{ popupTitel }}</p>
+            </div>
+            <button type="button" data-testid="lk-popup-sluit" aria-label="Sluiten" class="shrink-0 text-[var(--cd-color-text-muted)] hover:text-[var(--cd-color-text)]" @click="sluitPopup">✕</button>
+          </div>
+          <p v-if="popupLaden" data-testid="lk-popup-laden" class="mt-2 text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]">Laden…</p>
+          <dl v-if="popupVelden.length" data-testid="lk-popup-velden" class="mt-2 grid grid-cols-[auto_1fr] gap-x-[var(--cd-space-sm)] gap-y-0.5 text-[length:var(--cd-text-sm)]">
+            <template v-for="v in popupVelden" :key="v.label">
+              <dt class="text-[var(--cd-color-text-muted)]">{{ v.label }}</dt>
+              <dd class="break-words">{{ v.waarde }}</dd>
+            </template>
+          </dl>
+          <p v-if="popupMelding" data-testid="lk-popup-melding" class="mt-2 text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">{{ popupMelding }}</p>
+          <button v-if="popupActie" type="button" data-testid="lk-popup-actie" class="mt-2 rounded-[var(--cd-radius-btn)] bg-[var(--cd-color-primary)] px-[var(--cd-space-sm)] py-1 text-[length:var(--cd-text-sm)] text-white" @click="popupActie.fn">{{ popupActie.label }}</button>
         </div>
 
         <!-- Impact-samenvatting (overlay onderaan) -->
