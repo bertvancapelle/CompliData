@@ -210,7 +210,8 @@ const zichtbareNodes = computed(() => {
 const zichtbareNodeIds = computed(() => new Set(zichtbareNodes.value.map((n) => n.id)))
 const zichtbareEdges = computed(() =>
   grafEdges.value.filter(
-    (e) => zichtbareNodeIds.value.has(e.bron_id) && zichtbareNodeIds.value.has(e.doel_id) && (modus.value !== 'ego' && modus.value !== 'geheel' ? true : ringAan.value.has(e.ring)),
+    // Fix 4 — ringAan filtert de edges in ALLE modi (niet meer alleen ego/geheel).
+    (e) => zichtbareNodeIds.value.has(e.bron_id) && zichtbareNodeIds.value.has(e.doel_id) && ringAan.value.has(e.ring),
   ),
 )
 
@@ -520,6 +521,13 @@ function _opEscape(e) {
 // ── Cytoscape-graaf (afgeleide van de state) ─────────────────────────────────────
 const hostingIcoon = (h) => (h === 'saas' ? '☁' : '🏢')
 
+// Fix 1 — tekstkleur volgt de achtergrond-luminantie: wit op donkere nodes, donker op lichte.
+function _txtColor(bg) {
+  const h = String(bg || '').replace('#', '')
+  if (h.length !== 6) return '#1a1a2e'
+  const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16)
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.55 ? '#ffffff' : '#1a1a2e'
+}
 function _nodeData(n) {
   const isGG = n.element_type === 'gebruikersgroep'
   let bg = isGG ? GG_STYLE.bg : lcStyle(n.lifecycle_status).bg
@@ -536,7 +544,7 @@ function _nodeData(n) {
   const label = isGG
     ? (n.naam || '') + (n.aantal_leden > 0 ? `\n(${n.aantal_leden})` : '')
     : (n.naam || '') + (n.blokkades_open > 0 ? ' ⚠' : '')
-  return { id: n.id, label, bg, border, shape: isGG ? 'ellipse' : 'round-rectangle' }
+  return { id: n.id, label, bg, border, txt: _txtColor(bg), shape: isGG ? 'ellipse' : 'round-rectangle' }
 }
 function _edgeData(e, i) {
   let lc = '#cbd5e1'
@@ -558,6 +566,8 @@ function _edgeData(e, i) {
     // ADR-031 — rol-naam / 'gebruikt door' / 'valt onder' / 'draait op' uit de edge-data.
     label = e.label || ''
   }
+  // Fix 2 — geheel-model: geen edge-labels (te druk). Ego/impact: wel; zoom-drempel via _pasEdgeLabels().
+  if (modus.value === 'geheel') label = ''
   return { id: `e${i}-${e.bron_id}-${e.doel_id}-${e.relatietype}`, source: e.bron_id, target: e.doel_id, ring: e.ring, lc, w, ls, label }
 }
 function _elementen() {
@@ -597,11 +607,22 @@ function _layout() {
     }
   }
   // Fix 2: ruimere cose-spreiding → leesbaardere labels/relaties (impact + geheel).
+  // Fix 3 — agressievere spreiding tegen node-overlap bij grotere grafen.
   return {
-    name: 'cose', idealEdgeLength: 200, nodeRepulsion: modus.value === 'geheel' ? 12000 : 8000,
-    nodeOverlap: 4, gravity: 0.25, numIter: 1000, initialTemp: 200, coolingFactor: 0.99, minTemp: 1.0,
+    name: 'cose', idealEdgeLength: 150, edgeElasticity: 100,
+    nodeRepulsion: modus.value === 'geheel' ? 14000 : 9000,
+    nodeOverlap: 20, componentSpacing: 100, gravity: 0.25, numIter: 1000,
+    initialTemp: 200, coolingFactor: 0.99, minTemp: 1.0,
     padding: 60, randomize: false, animate: true, animationDuration: 600, fit: true,
   }
+}
+
+// Fix 2 — edge-labels alleen boven de zoom-drempel én buiten geheel-model (anti-overlap).
+const _LABEL_ZOOM = 0.6
+function _pasEdgeLabels() {
+  if (!cy) return
+  const toon = modus.value !== 'geheel' && (cy.zoom?.() ?? 1) > _LABEL_ZOOM
+  cy.edges?.().style?.('text-opacity', toon ? 1 : 0)
 }
 async function tekenGraaf() {
   if (!cy) return
@@ -618,6 +639,7 @@ async function tekenGraaf() {
   setTimeout(() => {
     cy?.resize?.()
     cy?.fit?.(undefined, 50)
+    _pasEdgeLabels()
   }, 100)
 }
 
@@ -626,7 +648,7 @@ const CY_STYLE = [
     selector: 'node',
     style: {
       'background-color': 'data(bg)', 'border-color': 'data(border)', 'border-width': 2,
-      label: 'data(label)', 'font-size': 9, 'text-valign': 'center', 'text-halign': 'center',
+      label: 'data(label)', 'font-size': 11, color: 'data(txt)', 'text-valign': 'center', 'text-halign': 'center',
       width: 78, height: 28, shape: 'data(shape)', 'text-wrap': 'ellipsis', 'text-max-width': 70,
     },
   },
@@ -638,7 +660,7 @@ const CY_STYLE = [
       width: 'data(w)', 'line-color': 'data(lc)', 'line-style': 'data(ls)',
       'target-arrow-shape': 'triangle', 'target-arrow-color': 'data(lc)', 'curve-style': 'bezier',
       // Koppelingsdetail-label (flow-edges): protocol + richting.
-      label: 'data(label)', 'font-size': 7, color: 'var(--cd-color-text-muted)',
+      label: 'data(label)', 'font-size': 8, color: 'var(--cd-color-text-muted)', 'text-wrap': 'none',
       'text-rotation': 'autorotate', 'text-background-color': '#fff', 'text-background-opacity': 0.8,
     },
   },
@@ -675,6 +697,8 @@ onMounted(async () => {
     })
     // Tap op leeg canvas sluit een open popup.
     cy.on('tap', (evt) => { if (evt.target === cy) sluitPopup() })
+    // Fix 2 — edge-labels tonen/verbergen op zoomniveau (anti-overlap).
+    cy.on('zoom', _pasEdgeLabels)
     tekenGraaf()
     // Her-meten + passend maken bij containerwijzigingen (modus-wissel, sidebar, venster-resize).
     if (typeof ResizeObserver !== 'undefined') {
@@ -771,7 +795,8 @@ const typeLabel = (t) => humaniseer(t)
           </div>
         </div>
 
-        <template v-if="modus === 'ego'">
+        <!-- Fix 4 — ring-checkboxes in alle modi (globale laagfilters). -->
+        <template>
           <p class="font-semibold text-[length:var(--cd-text-sm)]">Ringen</p>
           <template v-for="r in RINGEN" :key="r">
             <label class="flex items-center gap-2 text-[length:var(--cd-text-sm)]">
