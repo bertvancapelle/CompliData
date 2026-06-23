@@ -795,18 +795,17 @@ const typeLabel = (t) => humaniseer(t)
           </div>
         </div>
 
-        <!-- Fix 4 — ring-checkboxes in alle modi (globale laagfilters). -->
-        <template>
-          <p class="font-semibold text-[length:var(--cd-text-sm)]">Ringen</p>
-          <template v-for="r in RINGEN" :key="r">
-            <label class="flex items-center gap-2 text-[length:var(--cd-text-sm)]">
-              <input type="checkbox" :checked="ringAan.has(r)" :data-testid="`lk-ring-${r}`" @change="toggleRing(r)" />{{ RING_LABELS[r] || typeLabel(r) }}
-            </label>
-            <!-- ADR-031 — sub-granulariteit: alleen zichtbaar als de Gebruikers-ring aan staat. -->
-            <label v-if="r === 'gebruikers' && ringAan.has('gebruikers')" class="ml-5 flex items-center gap-2 text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">
-              <input type="checkbox" :checked="groepeerPerOrg" data-testid="lk-groepeer-org" @change="groepeerPerOrg = !groepeerPerOrg" />Groepeer per organisatie
-            </label>
-          </template>
+        <!-- Fix 4 — ring-checkboxes in alle modi (globale laagfilters). Geen wrapper-<template>
+             zonder directive: Vue rendert die niet → checkboxes verdwenen (LI018-regressie). -->
+        <p class="font-semibold text-[length:var(--cd-text-sm)]">Ringen</p>
+        <template v-for="r in RINGEN" :key="r">
+          <label class="flex items-center gap-2 text-[length:var(--cd-text-sm)]">
+            <input type="checkbox" :checked="ringAan.has(r)" :data-testid="`lk-ring-${r}`" @change="toggleRing(r)" />{{ RING_LABELS[r] || typeLabel(r) }}
+          </label>
+          <!-- ADR-031 — sub-granulariteit: alleen zichtbaar als de Gebruikers-ring aan staat. -->
+          <label v-if="r === 'gebruikers' && ringAan.has('gebruikers')" class="ml-5 flex items-center gap-2 text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">
+            <input type="checkbox" :checked="groepeerPerOrg" data-testid="lk-groepeer-org" @change="groepeerPerOrg = !groepeerPerOrg" />Groepeer per organisatie
+          </label>
         </template>
 
         <p class="mt-[var(--cd-space-sm)] font-semibold text-[length:var(--cd-text-sm)]">Resultaten ({{ gefilterdeNodes.length }})</p>

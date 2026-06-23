@@ -70,6 +70,19 @@ describe('LandschapskaartView v3', () => {
     expect(w.find('[data-testid="lk-res-naam-k1"]').exists()).toBe(false)
   })
 
+  it('toont de ring-checkboxes in ALLE modi (regressie LI018)', async () => {
+    const RINGEN = ['lk-ring-applicaties', 'lk-ring-rollen', 'lk-ring-gebruikers', 'lk-ring-contracten', 'lk-ring-infrastructuur']
+    const alleRingenZichtbaar = (w) => RINGEN.every((t) => w.find(`[data-testid="${t}"]`).exists())
+    const { w } = await mountView()
+    expect(alleRingenZichtbaar(w)).toBe(true) // ego
+    await w.find('[data-testid="lk-modus-impact"]').trigger('click')
+    await flushPromises()
+    expect(alleRingenZichtbaar(w)).toBe(true) // impact
+    await w.find('[data-testid="lk-modus-geheel"]').trigger('click')
+    await flushPromises()
+    expect(alleRingenZichtbaar(w)).toBe(true) // geheel
+  })
+
   it('zoekfilter vermindert de zichtbare resultaten', async () => {
     const { w } = await mountView()
     await w.find('[data-testid="lk-zoek"]').setValue('zaak')
