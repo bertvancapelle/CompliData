@@ -164,6 +164,12 @@ function _matcht(n) {
   return true
 }
 const gefilterdeNodes = computed(() => appNodes.value.filter(_matcht))
+// LI027 — vrije zoekterm in de resultatenlijst (client-side, op naam, case-insensitive).
+const zoekResultaten = ref('')
+const gefilterdeResultaten = computed(() => {
+  const q = zoekResultaten.value.trim().toLowerCase()
+  return q ? gefilterdeNodes.value.filter((n) => (n.naam || '').toLowerCase().includes(q)) : gefilterdeNodes.value
+})
 
 // ── Zichtbare nodes/edges per modus ──────────────────────────────────────────────
 // Directe buren van één node (via de actieve ringen).
@@ -244,6 +250,14 @@ function voegAlleGefilterdeToe() {
   actieveSet.value = s
 }
 const actieveSetNodes = computed(() => [...actieveSet.value].map((id) => nodePerId.value[id]).filter(Boolean))
+
+// LI027 — focus op de actieve set (graph-filter) + wis-alles. Focus schakelt automatisch uit
+// zodra de set leeg is.
+const focusOpSet = ref(false)
+function wisSet() {
+  actieveSet.value = new Set()
+}
+watch(() => actieveSet.value.size, (n) => { if (n === 0) focusOpSet.value = false })
 
 // ── Detail ────────────────────────────────────────────────────────────────────
 const detailNode = computed(() => (detailId.value ? nodePerId.value[detailId.value] : null))
@@ -606,9 +620,22 @@ function _edgeData(e, i) {
 const getekendeNodes = computed(() => {
   const metZichtbareEdge = new Set()
   zichtbareEdges.value.forEach((e) => { metZichtbareEdge.add(e.bron_id); metZichtbareEdge.add(e.doel_id) })
+  // LI027 — focus op actieve set: beperk tot de set-nodes (altijd) + hun directe buren via een zichtbare edge.
+  let focusIds = null
+  if (focusOpSet.value && actieveSet.value.size > 0) {
+    focusIds = new Set(actieveSet.value)
+    zichtbareEdges.value.forEach((e) => {
+      if (actieveSet.value.has(e.bron_id)) focusIds.add(e.doel_id)
+      if (actieveSet.value.has(e.doel_id)) focusIds.add(e.bron_id)
+    })
+  }
   const uniek = new Map()
   for (const n of zichtbareNodes.value) {
     if (uniek.has(n.id)) continue
+    if (focusIds) {
+      if (focusIds.has(n.id)) uniek.set(n.id, n) // focus-modus: set-nodes + directe buren
+      continue
+    }
     const egoCentrum = modus.value === 'ego' && n.id === egoStartId.value
     if (egoCentrum || metZichtbareEdge.has(n.id)) uniek.set(n.id, n)
   }
@@ -862,16 +889,26 @@ const typeLabel = (t) => humaniseer(t)
           </label>
         </template>
 
-        <p class="mt-[var(--cd-space-sm)] font-semibold text-[length:var(--cd-text-sm)]">Resultaten ({{ gefilterdeNodes.length }})</p>
+        <p class="mt-[var(--cd-space-sm)] font-semibold text-[length:var(--cd-text-sm)]">
+          Resultaten ({{ zoekResultaten.trim() ? `${gefilterdeResultaten.length} van ${gefilterdeNodes.length}` : gefilterdeNodes.length }})
+        </p>
+        <input
+          v-model="zoekResultaten"
+          type="search"
+          placeholder="Zoek in resultaten…"
+          data-testid="lk-zoek-resultaten"
+          aria-label="Zoek in resultaten"
+          class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-1 text-[length:var(--cd-text-sm)] focus:outline-2 focus:outline-offset-2 focus:outline-[var(--cd-color-primary)]"
+        />
         <ul class="flex flex-col gap-1" data-testid="lk-resultaten">
-          <li v-for="n in gefilterdeNodes" :key="n.id" :data-testid="`lk-res-${n.id}`" :class="['flex items-center gap-1 rounded px-1 py-0.5 text-[length:var(--cd-text-sm)]', inSet(n.id) ? 'bg-[var(--cd-color-accent)]' : '']">
+          <li v-for="n in gefilterdeResultaten" :key="n.id" :data-testid="`lk-res-${n.id}`" :class="['flex items-center gap-1 rounded px-1 py-0.5 text-[length:var(--cd-text-sm)]', inSet(n.id) ? 'bg-[var(--cd-color-accent)]' : '']">
             <span class="inline-block h-3 w-3 shrink-0 rounded-full" :style="{ background: lcStyle(n.lifecycle_status).bg, border: `1px solid ${lcStyle(n.lifecycle_status).border}` }"></span>
             <button type="button" class="grow truncate text-left hover:underline" :data-testid="`lk-res-naam-${n.id}`" @click="selecteerNode(n.id)">{{ n.naam }}</button>
             <span v-if="n.blokkades_open > 0" :data-testid="`lk-res-blok-${n.id}`" title="Open blokkade(s)">⚠</span>
             <span v-if="n.hosting_model">{{ hostingIcoon(n.hosting_model) }}</span>
             <button type="button" class="text-[var(--cd-color-primary)]" :data-testid="`lk-res-set-${n.id}`" @click="toggleSet(n.id)">{{ inSet(n.id) ? '×' : '+' }}</button>
           </li>
-          <li v-if="!gefilterdeNodes.length" class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">Geen resultaten.</li>
+          <li v-if="!gefilterdeResultaten.length" class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">Geen resultaten.</li>
         </ul>
         <button type="button" data-testid="lk-voeg-alle" class="mt-1 rounded-[var(--cd-radius-btn)] bg-[var(--cd-color-primary)] px-[var(--cd-space-sm)] py-1 text-[length:var(--cd-text-sm)] text-white" @click="voegAlleGefilterdeToe">+ Voeg alle gefilterde toe</button>
       </aside>
@@ -958,7 +995,13 @@ const typeLabel = (t) => humaniseer(t)
       <!-- Rechterpaneel: actieve set + detail + legenda -->
       <aside class="flex w-56 flex-shrink-0 flex-col gap-[var(--cd-space-md)] overflow-y-auto border-l border-[var(--cd-color-border)] bg-white p-[var(--cd-space-md)]" data-testid="lk-rechts">
         <div>
-          <p class="mb-1 font-semibold text-[length:var(--cd-text-sm)]">Actieve set ({{ actieveSet.size }})</p>
+          <div class="mb-1 flex items-center gap-2">
+            <p class="font-semibold text-[length:var(--cd-text-sm)]">Actieve set ({{ actieveSet.size }})</p>
+            <button v-if="actieveSet.size > 0" type="button" data-testid="lk-set-wis" class="ml-auto text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)] hover:text-[var(--cd-color-danger)] hover:underline" @click="wisSet">Wis alles</button>
+          </div>
+          <label v-if="actieveSet.size > 0" class="mb-1 flex items-center gap-2 text-[length:var(--cd-text-sm)]">
+            <input type="checkbox" v-model="focusOpSet" data-testid="lk-focus-set" />Focus op actieve set
+          </label>
           <ul class="flex max-h-40 flex-col gap-1 overflow-y-auto" data-testid="lk-set">
             <li v-for="n in actieveSetNodes" :key="n.id" :data-testid="`lk-set-${n.id}`" class="flex items-center gap-1 text-[length:var(--cd-text-sm)]">
               <span class="inline-block h-3 w-3 shrink-0 rounded-full" :style="{ background: lcStyle(n.lifecycle_status).bg }"></span>
