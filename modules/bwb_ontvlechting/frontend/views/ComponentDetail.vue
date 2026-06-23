@@ -12,6 +12,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { Button, Dialog, Tag, useToast } from '@/primevue'
 import { useRoute, useRouter } from '@/composables/router'
 import { useAuthStore } from '@/store/auth'
+import { useTerugNavigatie } from '@/composables/useTerugNavigatie'
 import { api } from '@/api'
 import { HOSTINGMODEL, LIFECYCLE, LIFECYCLE_SEVERITY, REGISTER_FOUT, label } from '../labels'
 import ObjectHistoriePaneel from './ObjectHistoriePaneel.vue'
@@ -29,6 +30,7 @@ import MigratiegereedheidSectie from './MigratiegereedheidSectie.vue'
 const props = defineProps({ id: { type: String, required: true } })
 const router = useRouter()
 const route = useRoute()
+const { terugLabel, gaTerug } = useTerugNavigatie()
 const toast = useToast()
 const auth = useAuthStore()
 
@@ -154,6 +156,7 @@ watch(() => props.id, () => laad(), { immediate: true })
 
 <template>
   <section aria-labelledby="detail-titel">
+    <button v-if="terugLabel" type="button" data-testid="terug-knop" class="mb-[var(--cd-space-md)] inline-flex items-center text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)] hover:text-[var(--cd-color-primary)] hover:underline focus:outline-2 focus:outline-offset-2 focus:outline-[var(--cd-color-primary)]" @click="gaTerug">{{ terugLabel }}</button>
     <p v-if="fout" role="alert" data-testid="detail-fout" class="text-[var(--cd-color-danger)]">{{ fout }}</p>
 
     <template v-if="component">

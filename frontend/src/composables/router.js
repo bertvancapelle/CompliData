@@ -4,4 +4,4 @@
 // resolven (node_modules in frontend/). Ze importeren `useRouter`/`useRoute`
 // daarom via `@/composables/router`. (Route-params komen bij voorkeur via
 // `props: true` binnen, maar programmatische navigatie heeft `useRouter` nodig.)
-export { useRoute, useRouter } from 'vue-router'
+export { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'

@@ -9,7 +9,7 @@
  * UI testbaar is met een gemockte cytoscape. Read-only; geen engine-aanraking.
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from '@/composables/router'
+import { onBeforeRouteLeave, useRoute, useRouter } from '@/composables/router'
 import cytoscape from '@/composables/cytoscape'
 import { api } from '@/api'
 import { humaniseer } from '../labels'
@@ -700,17 +700,46 @@ const CY_STYLE = [
 
 let resizeObserver = null
 
+// LI022 — kaart-UI-state bewaren over navigatie heen (sessionStorage; transient UI-state, geen Pinia).
+const _LK_STATE_KEY = 'lk-state'
+function _bewaarKaartState() {
+  try {
+    sessionStorage.setItem(_LK_STATE_KEY, JSON.stringify({
+      modus: modus.value,
+      egoStartId: egoStartId.value,
+      ringAan: [...ringAan.value],
+      groepeerPerOrg: groepeerPerOrg.value,
+    }))
+  } catch { /* sessionStorage niet beschikbaar — negeren */ }
+}
+function _herstelKaartState() {
+  let s = null
+  try { s = JSON.parse(sessionStorage.getItem(_LK_STATE_KEY) || 'null') } catch { s = null }
+  if (!s) return
+  if (['ego', 'impact', 'geheel'].includes(s.modus)) modus.value = s.modus
+  if (Array.isArray(s.ringAan)) ringAan.value = new Set(s.ringAan.filter((r) => RINGEN.includes(r)))
+  if (typeof s.groepeerPerOrg === 'boolean') groepeerPerOrg.value = s.groepeerPerOrg
+  // egoStartId alleen herstellen als die node nog bestaat (anders het default-centrum behouden).
+  if (s.egoStartId && nodes.value.some((n) => n.id === s.egoStartId)) egoStartId.value = s.egoStartId
+}
+onBeforeRouteLeave(_bewaarKaartState)
+
 onMounted(async () => {
   await laad()
   // ADR-025 deep-link: ?center=<applicatie-id>&modus=<ego|impact|geheel> (vanuit het applicatie-detail).
   // De center-applicatie wordt het ego-middelpunt + de actieve set, zodat de kaart erop centreert.
   const qModus = route.query?.modus ? String(route.query.modus) : null
   const qCenter = route.query?.center ? String(route.query.center) : null
-  if (qModus && ['ego', 'impact', 'geheel'].includes(qModus)) modus.value = qModus
-  if (qCenter) {
-    actieveSet.value = new Set([qCenter])
-    egoStartId.value = qCenter
-    detailId.value = qCenter
+  if (qModus || qCenter) {
+    // Expliciete deep-link heeft voorrang op bewaarde state.
+    if (qModus && ['ego', 'impact', 'geheel'].includes(qModus)) modus.value = qModus
+    if (qCenter) {
+      actieveSet.value = new Set([qCenter])
+      egoStartId.value = qCenter
+      detailId.value = qCenter
+    }
+  } else {
+    _herstelKaartState()
   }
   await nextTick() // wacht tot de canvas-div in de DOM staat (en de flex-hoogte gezet is)
   if (containerRef.value) {

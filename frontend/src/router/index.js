@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../store/auth'
+import { registreerVorigeRoute } from '../composables/useTerugNavigatie'
 // Eager: het login-scherm en de app-shell horen bij de eerste paint.
 import LoginView from '../views/LoginView.vue'
 import AppLayout from '../layouts/AppLayout.vue'
@@ -177,6 +178,10 @@ export const router = createRouter({
   history: createWebHistory(),
   routes,
 })
+
+// Registreer na elke navigatie de herkomst-route, zodat detailpagina's een contextuele
+// "← Terug naar X"-knop kunnen tonen (useTerugNavigatie). Dekt <router-link> én push.
+router.afterEach((to, from) => registreerVorigeRoute(from))
 
 // Pure routeringsbeslissing (sessietype-bewust, 2E-b) — los van de async
 // fetchSession zodat hij unit-testbaar is. `auth` is de auth-store (of een

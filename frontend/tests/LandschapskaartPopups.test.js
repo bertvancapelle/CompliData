@@ -65,6 +65,7 @@ async function mountView() {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  sessionStorage.clear() // LI022 — voorkom dat bewaarde kaart-state tussen tests lekt
   api.landschapskaart.haalGrafdata.mockResolvedValue(GRAF())
 })
 afterEach(() => {
