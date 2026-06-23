@@ -1,4 +1,4 @@
-"""Tests — ADR-022 W1: tenant-vraag-CRUD + in-tenant fan-out (live cd_app-DB, skip
+"""Tests — ADR-022 W1: tenant-vraag-CRUD + in-tenant fan-out (live lk_app-DB, skip
 indien onbereikbaar).
 
 Gedekt:
@@ -11,7 +11,7 @@ Gedekt:
 - `impact_telling` geeft het aantal componenten van het type (in-tenant).
 
 De test herstelt de seed-staat (deactiveren brengt de applicaties terug op
-`migratieklaar`) en ruimt de wegwerp-vraag hard op als `cd_admin` (fixture-rol).
+`migratieklaar`) en ruimt de wegwerp-vraag hard op als `lk_admin` (fixture-rol).
 """
 import asyncio
 import uuid
@@ -24,8 +24,8 @@ import app.core.database  # noqa: F401 — registreert de tenant-context-hook
 from app.core.tenant_context import reset_tenant_context, zet_tenant_context
 
 _TID = "11111111-1111-1111-1111-111111111111"
-_CD_APP_URL = "postgresql+asyncpg://cd_app:changeme_dev@localhost:5432/complidata"
-_CD_ADMIN_URL = "postgresql+asyncpg://cd_admin:changeme_dev@localhost:5432/complidata"
+_CD_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
+_CD_ADMIN_URL = "postgresql+asyncpg://lk_admin:changeme_dev@localhost:5432/likara"
 
 
 def _db_bereikbaar() -> bool:
@@ -44,7 +44,7 @@ def _db_bereikbaar() -> bool:
         return False
 
 
-integratie = pytest.mark.skipif(not _db_bereikbaar(), reason="cd_app-DB niet bereikbaar (offline)")
+integratie = pytest.mark.skipif(not _db_bereikbaar(), reason="lk_app-DB niet bereikbaar (offline)")
 
 
 async def _sessie_run(fn):
@@ -114,5 +114,5 @@ def test_vraag_toevoegen_en_deactiveren_fan_out():
         return vraag["id"]
 
     vraag_id = asyncio.run(_sessie_run(_flow))
-    # Opruimen: de wegwerp-vraag hard verwijderen (fixture-rol cd_admin).
+    # Opruimen: de wegwerp-vraag hard verwijderen (fixture-rol lk_admin).
     asyncio.run(_admin_exec("DELETE FROM checklistvraag WHERE id = :i", {"i": vraag_id}))

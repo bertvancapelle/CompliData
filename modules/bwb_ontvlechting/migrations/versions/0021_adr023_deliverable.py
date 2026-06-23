@@ -45,8 +45,8 @@ def upgrade() -> None:
         "CREATE POLICY tenant_isolation ON deliverable "
         "USING (tenant_id = current_setting('app.tenant_id')::uuid)"
     )
-    op.execute("REVOKE ALL ON deliverable FROM cd_app")
-    op.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON deliverable TO cd_app")
+    op.execute("REVOKE ALL ON deliverable FROM lk_app")
+    op.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON deliverable TO lk_app")
 
 
 def downgrade() -> None:

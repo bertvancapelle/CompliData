@@ -1,7 +1,7 @@
 """Platform-modellen (ADR-012) — NIET tenant-scoped, GEEN RLS.
 
 De `tenant`-tabel is het platform-register van tenants. Hij wordt uitsluitend
-via het platform-domein (cd_platform) benaderd; tenant-accounts (cd_app) hebben
+via het platform-domein (lk_platform) benaderd; tenant-accounts (lk_app) hebben
 er geen toegang toe. Het aanmaken van een tenant-record raakt geen
 tenant-gescopete data — een nieuwe tenant start leeg.
 """

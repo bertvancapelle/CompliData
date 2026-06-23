@@ -1,7 +1,7 @@
 """Tests — ADR-022 Fase B: per-type vragenset-scoping + type-bewuste validatie.
 
 De pure beslisregel (lege vragenset → niet-groen) staat in `test_lifecycle.py`.
-Hier de live-integratie tegen de geseede cd_app-DB (skip indien onbereikbaar):
+Hier de live-integratie tegen de geseede lk_app-DB (skip indien onbereikbaar):
 
 - **Per-type scoping**: een `checklistvraag` van een ánder componenttype telt NIET
   mee voor de lifecycle van een applicatie (een volledig gescoorde applicatie blijft
@@ -9,9 +9,9 @@ Hier de live-integratie tegen de geseede cd_app-DB (skip indien onbereikbaar):
 - **Type-bewuste validatie**: een score op een applicatie die verwijst naar een
   `checklistvraag` van een ander type wordt geweigerd (`NietGevonden`).
 
-De tijdelijke vraag van het andere type wordt als `cd_admin` (fixture-rol)
-toegevoegd en opgeruimd — `cd_app` is SELECT-only op `checklistvraag` (Beslissing 8)
-en `cd_platform` mag niet DELETE'n.
+De tijdelijke vraag van het andere type wordt als `lk_admin` (fixture-rol)
+toegevoegd en opgeruimd — `lk_app` is SELECT-only op `checklistvraag` (Beslissing 8)
+en `lk_platform` mag niet DELETE'n.
 """
 import asyncio
 import uuid
@@ -24,8 +24,8 @@ import app.core.database  # noqa: F401 — registreert de tenant-context-hook
 from app.core.tenant_context import reset_tenant_context, zet_tenant_context
 
 _TID = "11111111-1111-1111-1111-111111111111"
-_CD_APP_URL = "postgresql+asyncpg://cd_app:changeme_dev@localhost:5432/complidata"
-_CD_ADMIN_URL = "postgresql+asyncpg://cd_admin:changeme_dev@localhost:5432/complidata"
+_CD_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
+_CD_ADMIN_URL = "postgresql+asyncpg://lk_admin:changeme_dev@localhost:5432/likara"
 
 
 def _db_bereikbaar() -> bool:
@@ -44,11 +44,11 @@ def _db_bereikbaar() -> bool:
         return False
 
 
-integratie = pytest.mark.skipif(not _db_bereikbaar(), reason="cd_app-DB niet bereikbaar (offline)")
+integratie = pytest.mark.skipif(not _db_bereikbaar(), reason="lk_app-DB niet bereikbaar (offline)")
 
 
 async def _app_sessie_run(fn):
-    """Draai `fn(session)` als cd_app onder RLS-/tenant-context."""
+    """Draai `fn(session)` als lk_app onder RLS-/tenant-context."""
     eng = create_async_engine(_CD_APP_URL)
     smf = async_sessionmaker(eng, class_=AsyncSession, expire_on_commit=False)
     tok = zet_tenant_context(_TID)
@@ -62,7 +62,7 @@ async def _app_sessie_run(fn):
 
 
 async def _admin_exec(sql: str, params: dict | None = None, *, fetch: bool = False):
-    """Voer DDL/DML uit als cd_admin (fixture-rol; buiten het app-rolmodel)."""
+    """Voer DDL/DML uit als lk_admin (fixture-rol; buiten het app-rolmodel)."""
     eng = create_async_engine(_CD_ADMIN_URL)
     try:
         async with eng.begin() as c:
@@ -73,7 +73,7 @@ async def _admin_exec(sql: str, params: dict | None = None, *, fetch: bool = Fal
 
 
 # ADR-022 W1: checklistvraag is tenant-scoped (tenant_id NOT NULL). De fixture-INSERT
-# (als cd_admin) zet expliciet de dev-tenant zodat de RLS-gescopete telling als cd_app
+# (als lk_admin) zet expliciet de dev-tenant zodat de RLS-gescopete telling als lk_app
 # binnen die tenant de rij ziet.
 _INSERT_VRAAG = (
     "INSERT INTO checklistvraag (tenant_id, componenttype, code, categorie_nr, categorie_naam, vraag, prioriteit) "

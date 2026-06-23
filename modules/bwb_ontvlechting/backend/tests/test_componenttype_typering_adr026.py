@@ -191,8 +191,8 @@ def test_f2_projectie_volledig_getypeerd_componenttype():
 
 # ── Live tests (skipped als de dev-DB niet bereikbaar is) ────────────────────────
 
-_CD_APP_URL = "postgresql+asyncpg://cd_app:changeme_dev@localhost:5432/complidata"
-_CD_PLATFORM_URL = "postgresql+asyncpg://cd_platform:changeme_dev@localhost:5432/complidata"
+_CD_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
+_CD_PLATFORM_URL = "postgresql+asyncpg://lk_platform:changeme_dev@localhost:5432/likara"
 
 
 def _db_bereikbaar(url: str, probe: str) -> bool:
@@ -213,11 +213,11 @@ def _db_bereikbaar(url: str, probe: str) -> bool:
 
 live_app = pytest.mark.skipif(
     not _db_bereikbaar(_CD_APP_URL, "SELECT to_regclass('componentconfig_optie')"),
-    reason="componentconfig_optie niet bereikbaar als cd_app (stack/migratie 0025 niet toegepast)",
+    reason="componentconfig_optie niet bereikbaar als lk_app (stack/migratie 0025 niet toegepast)",
 )
 live_platform = pytest.mark.skipif(
     not _db_bereikbaar(_CD_PLATFORM_URL, "SELECT to_regclass('componentconfig_optie')"),
-    reason="componentconfig_optie niet bereikbaar als cd_platform",
+    reason="componentconfig_optie niet bereikbaar als lk_platform",
 )
 
 
@@ -245,7 +245,7 @@ def test_live_geen_actief_componenttype_zonder_typering():
 @live_platform
 def test_live_db_check_weigert_ongetypeerd_componenttype():
     """DB-CHECK-backstop: een directe INSERT (buiten de app-laag, als de beheer-rol
-    cd_platform) van een componenttype zonder volledige typering wordt door de DB geweigerd."""
+    lk_platform) van een componenttype zonder volledige typering wordt door de DB geweigerd."""
     from sqlalchemy.exc import IntegrityError
     from sqlalchemy.ext.asyncio import create_async_engine
 

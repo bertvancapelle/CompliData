@@ -59,12 +59,12 @@ def upgrade() -> None:
         "CREATE POLICY tenant_isolation ON audit_log "
         "USING (tenant_id = current_setting('app.tenant_id')::uuid)"
     )
-    # Append-only (Besluit 5a): cd_app mag uitsluitend lezen + invoegen. REVOKE ALL is
+    # Append-only (Besluit 5a): lk_app mag uitsluitend lezen + invoegen. REVOKE ALL is
     # noodzakelijk omdat init-db `ALTER DEFAULT PRIVILEGES ... GRANT ALL ON TABLES TO
-    # cd_app` elke nieuwe tabel ALL geeft — inclusief TRUNCATE, dat de row-trigger (5b)
+    # lk_app` elke nieuwe tabel ALL geeft — inclusief TRUNCATE, dat de row-trigger (5b)
     # NIET vangt. Pas na REVOKE is de beperkte grant effectief.
-    op.execute("REVOKE ALL ON audit_log FROM cd_app")
-    op.execute("GRANT SELECT, INSERT ON audit_log TO cd_app")
+    op.execute("REVOKE ALL ON audit_log FROM lk_app")
+    op.execute("GRANT SELECT, INSERT ON audit_log TO lk_app")
 
     # --- platform-breed platform_audit_log (GEEN RLS, entiteit_id text) ---------
     op.create_table(
@@ -87,12 +87,12 @@ def upgrade() -> None:
     op.create_index("ix_platform_audit_log_correlatie", "platform_audit_log", ["correlatie_id"])
     op.create_index("ix_platform_audit_log_entiteit", "platform_audit_log",
                     ["entiteit_type", "entiteit_id"])
-    # Platform-endpoints (cd_platform) én de platform-init/seed (cd_app, geen RLS)
-    # schrijven hier — append-only. REVOKE ALL FROM cd_app eerst (default-ALL, zie boven);
-    # cd_app behoudt alleen INSERT (platform_init seedt als cd_app), cd_platform SELECT+INSERT.
-    op.execute("REVOKE ALL ON platform_audit_log FROM cd_app")
-    op.execute("GRANT SELECT, INSERT ON platform_audit_log TO cd_platform")
-    op.execute("GRANT INSERT ON platform_audit_log TO cd_app")
+    # Platform-endpoints (lk_platform) én de platform-init/seed (lk_app, geen RLS)
+    # schrijven hier — append-only. REVOKE ALL FROM lk_app eerst (default-ALL, zie boven);
+    # lk_app behoudt alleen INSERT (platform_init seedt als lk_app), lk_platform SELECT+INSERT.
+    op.execute("REVOKE ALL ON platform_audit_log FROM lk_app")
+    op.execute("GRANT SELECT, INSERT ON platform_audit_log TO lk_platform")
+    op.execute("GRANT INSERT ON platform_audit_log TO lk_app")
 
     # --- onwijzigbaarheids-backstop: trigger weigert UPDATE/DELETE (Besluit 5b) -
     op.execute(

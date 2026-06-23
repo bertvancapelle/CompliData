@@ -3,7 +3,7 @@
 
 ADR-022 W1: de vragenset is **tenant-eigendom**. Geautoriseerd via
 `vereist_permissie(CHECKLISTVRAAG, …)` (tenant-rollen) op `get_tenant_session`
-(`cd_app`, RLS-context). Vragen worden geadresseerd op hun `id`. Het toevoegen of
+(`lk_app`, RLS-context). Vragen worden geadresseerd op hun `id`. Het toevoegen of
 (de)activeren van een vraag herberekent in-tenant de lifecycle van componenten van
 dat type (atomair).
 

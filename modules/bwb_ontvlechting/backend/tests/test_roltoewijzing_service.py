@@ -301,7 +301,7 @@ def test_verwijderen_vereist_wijzigen(monkeypatch):
 
 # ── Live (na DB-reset / migratie 0029+0030) ──────────────────────────────────────
 
-_CD_APP_URL = "postgresql+asyncpg://cd_app:changeme_dev@localhost:5432/complidata"
+_CD_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
 _DEV_TENANT = "11111111-1111-1111-1111-111111111111"
 
 

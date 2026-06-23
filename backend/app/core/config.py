@@ -4,9 +4,9 @@ from pydantic import Field
 
 class Settings(BaseSettings):
     # Database — verplicht, geen default
-    database_url: str = Field(..., description="PostgreSQL async URL (cd_app)")
-    database_url_sync: str = Field(..., description="PostgreSQL sync URL (cd_app)")
-    platform_database_url: str = Field(..., description="PostgreSQL async URL (cd_platform) — platform-endpoints, ADR-012")
+    database_url: str = Field(..., description="PostgreSQL async URL (lk_app)")
+    database_url_sync: str = Field(..., description="PostgreSQL sync URL (lk_app)")
+    platform_database_url: str = Field(..., description="PostgreSQL async URL (lk_platform) — platform-endpoints, ADR-012")
 
     # Keycloak — verplicht, geen default
     keycloak_url: str = Field(..., description="Keycloak base URL")
@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     keycloak_admin_user: str = Field("admin", description="Keycloak admin gebruiker")
     keycloak_admin_password: str = Field("changeme_dev", description="Keycloak admin wachtwoord")
     # ADR-029 — dedicated service-account voor user-provisioning (client-credentials, least-privilege)
-    kilara_provisioning_secret: str = Field("changeme_dev", description="Secret van de likara-user-provisioning service-account")
+    likara_provisioning_secret: str = Field("changeme_dev", description="Secret van de likara-user-provisioning service-account")
 
     # RBAC (ADR-010) — optioneel voorvoegsel op Keycloak-rolnamen.
     # Leeg = canonieke namen (viewer/medewerker/beheerder/auditor) 1-op-1.

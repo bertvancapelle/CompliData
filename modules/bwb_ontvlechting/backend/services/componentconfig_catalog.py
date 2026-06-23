@@ -1,7 +1,7 @@
 """Catalogus-lookup/-validatie voor de componentcatalogus (ADR-021 Besluit 8).
 
 Spiegel van `contractconfig_catalog` voor `componentconfig_optie` (dimensies
-`componenttype` + `structuurrelatie_type`). De tenant-sessie (`cd_app`) mag de
+`componenttype` + `structuurrelatie_type`). De tenant-sessie (`lk_app`) mag de
 platform-brede catalogus LEZEN (SELECT-grant, CD051). Valideren tegen de **actieve**
 opties van de **juiste dimensie**; uitlezen resolvet ook gedeactiveerde sleutels.
 """

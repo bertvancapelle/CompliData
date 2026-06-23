@@ -9,7 +9,7 @@ Afgeleide sets (Besluit 12, single source): 2.1 ← `HostingModel` (7), 12.1 ←
 (aanpasbaar), `afgeleid_bron` gezet. 11.1 blijft vrij. Vragen zonder antwoordtype
 hier houden `geen` (server_default) en verschijnen niet in de catalogus.
 
-Draait UITSLUITEND via `platform_init` (init-container, cd_admin) — niet in het
+Draait UITSLUITEND via `platform_init` (init-container, lk_admin) — niet in het
 tenant-/app-pad. `bouw_antwoordconfig()` is puur (DB-vrij) en zo testbaar.
 """
 import re
@@ -121,7 +121,7 @@ def bouw_antwoordconfig() -> tuple[dict[str, AntwoordType], list[dict]]:
 
 async def seed_antwoordconfig(session, tenant_id) -> tuple[int, int]:
     """Zet antwoordtype per vraag + zaai de optie-catalogus (idempotent) **voor één
-    tenant** (ADR-022 W1: tenant-scoped). Draait onder de `cd_app`-RLS-context.
+    tenant** (ADR-022 W1: tenant-scoped). Draait onder de `lk_app`-RLS-context.
 
     Geeft (aantal geconfigureerde vragen, aantal optie-rijen) terug — vaste
     waarden, ook bij een tweede (idempotente) run.

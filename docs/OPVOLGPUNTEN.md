@@ -14,7 +14,7 @@ dev-gebruikers + kaart-edge-groepering/master-detail (ADR-023a Fase 3+4).
 
 **Nieuw (DC017):**
 1. **LIKARA Laag 2 rename** — technische identifiers: realm-ID `complidata` → `likara`,
-   container-namen `cd-*`, DB-rol `cd_app`, image `complidata-api:local`, ENV `KEYCLOAK_REALM`,
+   container-namen `cd-*`, DB-rol `lk_app`, image `complidata-api:local`, ENV `KEYCLOAK_REALM`,
    clientId `complidata-api`/`complidata-ui`. Bewuste keuze: **eigen sprint DC018** (raakt compose,
    .env, init-db, conftest, RLS-rol → reseed vereist).
 2. **`kilara_provisioning_secret`** identifier (config.py/keycloak.py) → `likara_provisioning_secret`
@@ -208,7 +208,7 @@ per-type readiness — losgekoppeld van `applicatie`.
    vóór, zodat de audit-trail het definitieve besturingsmodel logt (append-only, nooit verwijderen).
 2. **Tenant-onboarding (#16)**: automatische **baseline-kopie** van de vragenset bij `POST /tenants`
    (de #16-knip uit W1) — vandaag seedt alléén `dev_seed` per tenant; de platform-onboarding-hook
-   ontbreekt. De seed schrijft tenant-scoped data → `cd_app` met de nieuwe tenant-RLS-context.
+   ontbreekt. De seed schrijft tenant-scoped data → `lk_app` met de nieuwe tenant-RLS-context.
 
 **Bewust vastgelegde foutcode-keuzes (ADR-022)**: `SUBTYPE_HEEFT_DATA` = HTTP **422** (Fase C
 type-lock, via `OngeldigeRegistratie`; heroverweging naar 409 is open); checklistvraag type-mismatch
@@ -277,13 +277,13 @@ canonieke 401-envelope op een guarded tenant-route vastlegt.
 
 Het platform-permissiedomein (ADR-012) kent `Platforminstellingen` en
 `Platformmetadata`, maar alleen de `tenant`-tabel bestaat. Bij het bouwen van
-die endpoints: tabellen + migratie + `GRANT … TO cd_platform` /
-`REVOKE … FROM cd_app` (zelfde patroon als `tenant`).
+die endpoints: tabellen + migratie + `GRANT … TO lk_platform` /
+`REVOKE … FROM lk_app` (zelfde patroon als `tenant`).
 
 ### OP-14 — Dev-credentials vervangen vóór productie — OPEN
 
 `changeme_dev` staat als dev-default in realm (client-secret + testgebruikers)
-en DB-rollen (cd_app/cd_platform/cd_admin via `POSTGRES_PASSWORD`). Vóór
+en DB-rollen (lk_app/lk_platform/lk_admin via `POSTGRES_PASSWORD`). Vóór
 productie vervangen door secrets; testgebruikers verwijderen of scheiden van
 productie-realm.
 
@@ -436,7 +436,7 @@ gecontroleerde zoek-vervang-slice in een aparte sessie.
   protocol = vaste enum, `eigenaar_organisatie`/`organisatie` = vrije tekst,
   `checklist_compleet` transient (ADR-013 B4).
 - **OP-1** — platform_init-seed als deploystap → vervangen door de
-  init-container (ADR-011): `cd-migrate` migreert (cd_admin) → `platform_init`
+  init-container (ADR-011): `lk-migrate` migreert (lk_admin) → `platform_init`
   → sluit af, met gating vóór de app. CLAUDE.md Commands bijgewerkt.
 - **OP-2** — plantekst + skills bijgewerkt → §Architectuurcorrectie in
   `IMPLEMENTATIEPLAN.md` gecorrigeerd; `platform_init`/deploypatroon in
@@ -448,7 +448,7 @@ gecontroleerde zoek-vervang-slice in een aparte sessie.
 - **OP-9** — deploy-/migratiestrategie vastgelegd in **ADR-011** (init-container).
 - **OP-10** — OIDC `redirect_uri` gelijkgetrokken (realm ↔ backend) +
   realm-import (`--import-realm`); login-round-trip werkt.
-- **OP-11** — `cd_admin` volledig uit de app-laag; `cd_platform` (non-superuser)
+- **OP-11** — `lk_admin` volledig uit de app-laag; `lk_platform` (non-superuser)
   voor platform-endpoints (ADR-012).
 - **OP-12** — rol-mapping/tweelaags rollenmodel → opgegaan in **ADR-012**
   (realm-rollen → `realm_access.roles`, platform- + tenant-domein).

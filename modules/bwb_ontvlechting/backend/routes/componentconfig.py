@@ -1,7 +1,7 @@
 """Platform-beheer-endpoints — componentcatalogus (ADR-021 Besluit 8, ADR-012 Addendum C).
 
 Geautoriseerd via `vereist_platform_permissie(COMPONENTCONFIG, …)` (platform-rollen) op
-`get_platform_session` (cd_platform, géén tenant-/RLS-context). Beheert referentiedata
+`get_platform_session` (lk_platform, géén tenant-/RLS-context). Beheert referentiedata
 (`componentconfig_optie`); raakt de tenant-data NIET. Géén DELETE (Addendum C Besluit 3).
 """
 from fastapi import APIRouter, Depends, Query

@@ -167,7 +167,7 @@ modules/
     backend/         — module-specifieke routes, models, services
     frontend/        — module-specifieke views, stores
     migrations/      — module-specifieke Alembic migraties
-init-db/             — PostgreSQL init scripts (extensions, cd_app role)
+init-db/             — PostgreSQL init scripts (extensions, lk_app role)
 keycloak/realms/     — Keycloak realm JSON (complidata realm)
 rabbitmq/            — RabbitMQ config
 docs/
@@ -185,8 +185,8 @@ docs/
 ## Commands
 
 ```bash
-# Docker stack — de init-container (cd-migrate) migreert als cd_admin en seedt,
-# en moet succesvol afronden vóór cd-api (cd_app) start (ADR-011, gating via
+# Docker stack — de init-container (lk-migrate) migreert als lk_admin en seedt,
+# en moet succesvol afronden vóór lk-api (lk_app) start (ADR-011, gating via
 # service_completed_successfully). Migratie + platform-seed zijn dus deel van
 # de stack-start; geen losse handmatige stappen nodig.
 docker compose -f docker-compose.yml up -d
@@ -202,22 +202,22 @@ cd backend && COMPLIDATA_TEST_MODE=true python3 -m uvicorn app.main:app --port 8
 # Frontend
 cd frontend && npm run dev     # port 3000, proxy to :8000
 
-# Migratie + platform-seed: lopen via de init-container cd-migrate (ADR-011),
-# als cd_admin. De app (cd-api) draait als cd_app en bevat NOOIT cd_admin.
+# Migratie + platform-seed: lopen via de init-container lk-migrate (ADR-011),
+# als lk_admin. De app (lk-api) draait als lk_app en bevat NOOIT lk_admin.
 # Logs van de init-stap:
-docker compose -f docker-compose.yml logs cd-migrate
+docker compose -f docker-compose.yml logs lk-migrate
 
-# Alternatief (lokaal/CI, zonder stack) — migreer als cd_admin, daarna seed.
-# Migratie MOET als cd_admin draaien (cd_app heeft geen CREATE op schema public);
-# zet hiervoor DATABASE_URL_SYNC op de cd_admin-URL:
-cd backend && DATABASE_URL_SYNC=postgresql://cd_admin:changeme_dev@localhost:5432/complidata python3 -m alembic upgrade head
+# Alternatief (lokaal/CI, zonder stack) — migreer als lk_admin, daarna seed.
+# Migratie MOET als lk_admin draaien (lk_app heeft geen CREATE op schema public);
+# zet hiervoor DATABASE_URL_SYNC op de lk_admin-URL:
+cd backend && DATABASE_URL_SYNC=postgresql://lk_admin:changeme_dev@localhost:5432/complidata python3 -m alembic upgrade head
 cd backend && python3 -m app.platform_init   # referentiedata: 89 checklistvragen (idempotent)
 
 # Smoke test
 bash smoke_test.sh
 
 # PostgreSQL backup
-docker exec cd-postgres pg_dump -U cd_admin complidata > ~/complidata/backups/complidata_$(date +%Y%m%d_%H%M).sql
+docker exec lk-postgres pg_dump -U lk_admin complidata > ~/complidata/backups/complidata_$(date +%Y%m%d_%H%M).sql
 ```
 
 ---
@@ -247,7 +247,7 @@ Na elke wijziging, verificeer in deze volgorde:
 ### Multi-tenancy
 - PostgreSQL Row Level Security enforceert tenant-isolatie op databaseniveau
 - `FORCE ROW LEVEL SECURITY` op alle tenant-scoped tabellen
-- Applicatie verbindt als `cd_app` (non-superuser) — nooit `cd_admin` in app-code
+- Applicatie verbindt als `lk_app` (non-superuser) — nooit `lk_admin` in app-code
 - RLS-context instellen via `SELECT set_config('app.tenant_id', :tid, false)` per request
 - Elke query MOET tenant-context bevatten — geen uitzonderingen
 - Blob store: één S3-bucket per tenant, nooit gedeeld
@@ -281,9 +281,9 @@ CREATE POLICY tenant_isolation ON new_table
 ### Naamgeving
 - Platform-prefix: `cd_` (LIKARA) — niet `cm_`
 - Database: `complidata`
-- App-gebruiker: `cd_app`
-- Admin-gebruiker: `cd_admin`
-- Docker containers: `cd-postgres`, `cd-keycloak`, `cd-redis`, `cd-rabbitmq`, `cd-minio`
+- App-gebruiker: `lk_app`
+- Admin-gebruiker: `lk_admin`
+- Docker containers: `lk-postgres`, `lk-keycloak`, `lk-redis`, `lk-rabbitmq`, `lk-minio`
 
 ---
 
@@ -322,10 +322,10 @@ await session.execute(text("SET app.tenant_id = :tid"), {"tid": tid})
 # CORRECT:
 await session.execute(text("SELECT set_config('app.tenant_id', :tid, false)"), {"tid": tid})
 
-# NOOIT — cd_admin in applicatie-code (omzeilt RLS)
-DATABASE_URL = "postgresql://cd_admin:..."
+# NOOIT — lk_admin in applicatie-code (omzeilt RLS)
+DATABASE_URL = "postgresql://lk_admin:..."
 # CORRECT:
-DATABASE_URL = "postgresql://cd_app:..."
+DATABASE_URL = "postgresql://lk_app:..."
 
 # NOOIT — NIST-richtlijnen (gebruik NCSC voor Nederlandse overheid)
 
@@ -348,7 +348,7 @@ DATABASE_URL = "postgresql://cd_app:..."
 | ADR-008 | MinIO blob-opslag (bucket-per-tenant) |
 | ADR-009 | BWB-ontvlechtingsmodule scope en datamodel |
 | ADR-010 | RBAC en rollenstructuur Keycloak |
-| ADR-011 | Deploy-/migratiestrategie: aparte init-container (cd_admin) |
+| ADR-011 | Deploy-/migratiestrategie: aparte init-container (lk_admin) |
 | ADR-012 | Tweelaags rollenmodel: platform- + tenant-rollen, strikte scheiding |
 
 Alle ADRs staan in: `docs/adr/` (geschreven: ADR-001, 009, 011, 012)
@@ -464,7 +464,7 @@ Pas dan: klaar.
 6. git commit + git push
 7. (Backup loopt nu automatisch in stap 5 — geen losse handmatige pg_dump/iCloud-
    stap meer. Handmatig draaien kan nog via:
-   docker exec cd-postgres pg_dump -U cd_admin complidata \
+   docker exec lk-postgres pg_dump -U lk_admin complidata \
      > ~/complidata/backups/complidata_$(date +%Y%m%d_%H%M).sql )
 8. claude.ai memory bijwerken — bouwnummer, teststatus, top-5 prioriteiten
 

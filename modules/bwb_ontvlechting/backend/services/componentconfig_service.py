@@ -1,6 +1,6 @@
 """Service-laag — platform-beheer van de componentcatalogus (ADR-021 Besluit 8,
 ADR-012 Addendum C). Spiegel van `contractconfig_service` op `get_platform_session`
-(cd_platform). Geen hard delete (Addendum C + ontbrekende DB-grant — dubbele borging).
+(lk_platform). Geen hard delete (Addendum C + ontbrekende DB-grant — dubbele borging).
 
 Systeem-sleutel-bescherming (Addendum C Besluit 5): de rij `componenttype.applicatie`
 hangt aan het subtype-mechanisme (ADR-021) en kan NIET worden gedeactiveerd

@@ -28,7 +28,7 @@ from app.core.tenant_context import (
 )
 
 _TID = "11111111-1111-1111-1111-111111111111"
-_CD_APP_URL = "postgresql+asyncpg://cd_app:changeme_dev@localhost:5432/complidata"
+_CD_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
 
 _MIGRATIE = (
     pathlib.Path(__file__).resolve().parents[2]
@@ -190,7 +190,7 @@ def _db_bereikbaar() -> bool:
         return False
 
 
-integratie = pytest.mark.skipif(not _db_bereikbaar(), reason="cd_app-DB niet bereikbaar (offline)")
+integratie = pytest.mark.skipif(not _db_bereikbaar(), reason="lk_app-DB niet bereikbaar (offline)")
 
 
 async def _run_rls(tenant, actor, fn):
@@ -212,7 +212,7 @@ async def _run_rls(tenant, actor, fn):
 
 @integratie
 def test_catalogus_geseed_live():
-    """Borging #4-bron: de betekenis-catalogus is platform-breed geseed (cd_app mag lezen)."""
+    """Borging #4-bron: de betekenis-catalogus is platform-breed geseed (lk_app mag lezen)."""
     from services import vraagbetekenis_catalog as cat
 
     sleutels = asyncio.run(_run_rls(_TID, "test:bert", cat.actieve_sleutels))

@@ -71,8 +71,8 @@ def upgrade() -> None:
         "CREATE POLICY tenant_isolation ON plateau "
         "USING (tenant_id = current_setting('app.tenant_id')::uuid)"
     )
-    op.execute("REVOKE ALL ON plateau FROM cd_app")
-    op.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON plateau TO cd_app")
+    op.execute("REVOKE ALL ON plateau FROM lk_app")
+    op.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON plateau TO lk_app")
 
     # --- (b) relatie-kenmerk-vocabulaire-catalogus (platform-breed, GEEN RLS) -------
     dimensie = postgresql.ENUM("dispositie", name="relatiekenmerk_dimensie_enum", create_type=False)
@@ -87,11 +87,11 @@ def upgrade() -> None:
         sa.Column("actief", sa.Boolean(), nullable=False, server_default=sa.text("true")),
         sa.UniqueConstraint("dimensie", "optie_sleutel", name="uq_relatiekenmerk_optie"),
     )
-    # Grants identiek aan contractconfig_optie: cd_app SELECT (validatie), cd_platform beheer.
-    op.execute("REVOKE ALL ON relatiekenmerk_optie FROM cd_app")
-    op.execute("GRANT SELECT ON relatiekenmerk_optie TO cd_app")
-    op.execute("GRANT SELECT, INSERT, UPDATE ON relatiekenmerk_optie TO cd_platform")
-    op.execute("GRANT USAGE, SELECT ON SEQUENCE relatiekenmerk_optie_id_seq TO cd_platform")
+    # Grants identiek aan contractconfig_optie: lk_app SELECT (validatie), lk_platform beheer.
+    op.execute("REVOKE ALL ON relatiekenmerk_optie FROM lk_app")
+    op.execute("GRANT SELECT ON relatiekenmerk_optie TO lk_app")
+    op.execute("GRANT SELECT, INSERT, UPDATE ON relatiekenmerk_optie TO lk_platform")
+    op.execute("GRANT USAGE, SELECT ON SEQUENCE relatiekenmerk_optie_id_seq TO lk_platform")
     for volgorde, (sleutel, label) in enumerate(_DISPOSITIES):
         op.execute(
             sa.text(

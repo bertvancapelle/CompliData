@@ -158,7 +158,7 @@ empirisch geverifieerd tegen de draaiende stack (zie `docs/LOKAAL-TESTEN.md`).
 
 - **Tweeluik herbevestigd**: offline **structureel** (mocks/AsyncMock; FK-`ondelete`, schema-
   invarianten, allowlist-synctests, pure beslisregels) + een **eenmalige empirische live-
-  verificatie** tegen de geseede `cd_app`-DB (skip-if-onbereikbaar via een verbindings-probe).
+  verificatie** tegen de geseede `lk_app`-DB (skip-if-onbereikbaar via een verbindings-probe).
   Live-tests **ruimen hun eigen testdata op** (structuurrelaties vóór componenten — anders
   `IN_GEBRUIK`) zodat de baseline ongemoeid blijft. Cyclus-/graaftests bewijzen **terminatie**
   (maak A↔B en assert dat de traversal eindigt + correct telt). [CD052/CD056]
@@ -192,11 +192,11 @@ empirisch geverifieerd tegen de draaiende stack (zie `docs/LOKAAL-TESTEN.md`).
 - **Live-test-teardown structureel** (V009-follow-up a): live element-subtype-tests ruimen hun
   `element`-rijen op via `DELETE FROM element` (cascade subtype + relaties); bij een self-FK (RESTRICT)
   **leaf→root**. Residu-check ná de run = **0**. Harness: `zet_tenant_context` + `zet_audit_context` +
-  `session.info['rls']=True` op een verse async-sessie; `skipif` als de cd_app-DB onbereikbaar is
+  `session.info['rls']=True` op een verse async-sessie; `skipif` als de lk_app-DB onbereikbaar is
   (offline blijft alles groen via de offline-tests). Importeer `app.core.audit` zodat de capture-hook
   actief is bij een live audit-test.
-- **Nieuwe migratie ⇒ dev-DB bijwerken vóór de live-run**: pas de migratie als `cd_admin` toe
-  (`DATABASE_URL_SYNC=postgresql://cd_admin:changeme_dev@localhost:5432/complidata python3 -m alembic
+- **Nieuwe migratie ⇒ dev-DB bijwerken vóór de live-run**: pas de migratie als `lk_admin` toe
+  (`DATABASE_URL_SYNC=postgresql://lk_admin:changeme_dev@localhost:5432/complidata python3 -m alembic
   upgrade head`) zodat de skip-if-DB-tests de nieuwe tabellen/kolommen zien; ID ≤32 tekens. Een
   ORM-`SELECT` die een **nog niet gemigreerde** kolom noemt → "column does not exist" + aborted
   transaction in **alle** live-tests van dat bestand (signaal: migratie nog niet toegepast).
@@ -223,8 +223,8 @@ empirisch geverifieerd tegen de draaiende stack (zie `docs/LOKAAL-TESTEN.md`).
   herintroduceren. Bij een feature-commit hoort een OPVOLGPUNTEN-wijziging er niet stil in mee te liften:
   gebruik **gerichte staging** (`git add <expliciete feature-paden>` + `git diff --cached --stat` als
   bewijs); de afsluit-/parkeer-updates van OPVOLGPUNTEN landen in de **sessie-afsluit-commit**.
-- **Dev-ergonomie**: `psql` staat **niet** op de host → `docker exec cd-postgres psql -U cd_admin -d
-  complidata -At -F'|' -c "…"` voor read-only metingen als cd_admin (ziet álle tenants). `rm` is in de
+- **Dev-ergonomie**: `psql` staat **niet** op de host → `docker exec lk-postgres psql -U lk_admin -d
+  complidata -At -F'|' -c "…"` voor read-only metingen als lk_admin (ziet álle tenants). `rm` is in de
   sandbox geweigerd → ruim een per ongeluk aangemaakt stray-bestand op met `find <pad> -type f -delete`.
 - **Teardown MOET via het element-supertype (les uit V011 — wees-elementen).** Een live-test-teardown
   ruimt een element-subtype (component/contract/…) **uitsluitend** op met `DELETE FROM element WHERE id=…`

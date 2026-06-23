@@ -1,6 +1,6 @@
 """Service-laag — platform-beheer van de vraagbetekenis-catalogus.
 
-Spiegel van `relatiekenmerkconfig_service` op `get_platform_session` (cd_platform), maar
+Spiegel van `relatiekenmerkconfig_service` op `get_platform_session` (lk_platform), maar
 enkel-doel (geen `dimensie`). Beheert `vraagbetekenis_optie`. Geen hard delete (geen endpoint +
 ontbrekende DELETE-grant = dubbele borging); soft-deactivate via `actief`. Geen beschermde sleutel.
 """

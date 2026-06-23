@@ -2,7 +2,7 @@
 (ADR-019 fase 2D; ADR-022 Wijziging W1).
 
 ADR-022 W1: `checklistvraag`/`checklistvraag_optie` zijn **tenant-eigendom** (RLS).
-Deze service draait onder `get_tenant_session` (`cd_app`, tenant-RLS-context) — alle
+Deze service draait onder `get_tenant_session` (`lk_app`, tenant-RLS-context) — alle
 SELECT/UPDATE/DELETE auto-scopen op de tenant; INSERTs zetten `tenant_id` expliciet
 (RLS-`WITH CHECK`). Vragen worden geadresseerd op hun surrogate-`id` (`code` is alleen
 uniek binnen `(tenant_id, componenttype)`).
@@ -241,7 +241,7 @@ async def zet_actief(session: AsyncSession, tenant_id, checklistvraag_id, actief
     return _vraag_read(vraag, await _opties_van(session, vraag.id))
 
 
-# ── Antwoordconfiguratie (ADR-019) — nu tenant-facing (cd_app/RLS) ────────────
+# ── Antwoordconfiguratie (ADR-019) — nu tenant-facing (lk_app/RLS) ────────────
 
 async def zet_antwoordtype(
     session: AsyncSession, checklistvraag_id, data: AntwoordTypeUpdate

@@ -10,9 +10,9 @@ Volledig ADDITIEF (geen wijziging aan bestaande kolommen/logica):
   (b) nieuwe referentietabel `checklistvraag_optie` (optie-catalogus, GEEN RLS);
   (c) `antwoord_waarde` (jsonb, nullable) op `checklistscore`.
 
-Grants (R2, least-privilege): de catalogus is platform-beheerd. `cd_app` mag
-alleen LEZEN (validatie van het antwoord in het tenant-pad); `cd_platform` mag
-SELECT/INSERT/UPDATE (beheer + soft-deactivate, komt in fase 2D). `cd_platform`
+Grants (R2, least-privilege): de catalogus is platform-beheerd. `lk_app` mag
+alleen LEZEN (validatie van het antwoord in het tenant-pad); `lk_platform` mag
+SELECT/INSERT/UPDATE (beheer + soft-deactivate, komt in fase 2D). `lk_platform`
 mag `checklistvraag` lezen + bijwerken (antwoordtype/labels). De score-/blokkade-/
 lifecycle-engine wordt niet geraakt.
 """
@@ -57,21 +57,21 @@ def upgrade() -> None:
     )
     op.create_index("ix_checklistvraag_optie_vraag", "checklistvraag_optie", ["vraag_code"])
 
-    # (c) antwoord_waarde op checklistscore (tenant-tabel; erft RLS + cd_app-grants).
+    # (c) antwoord_waarde op checklistscore (tenant-tabel; erft RLS + lk_app-grants).
     op.add_column("checklistscore", sa.Column("antwoord_waarde", postgresql.JSONB(), nullable=True))
 
     # --- Grants (R2, least-privilege) ---
-    # Catalogus: cd_app LEEST alleen (validatie); cd_platform beheert.
-    op.execute("REVOKE ALL ON checklistvraag_optie FROM cd_app")
-    op.execute("GRANT SELECT ON checklistvraag_optie TO cd_app")
-    op.execute("GRANT SELECT, INSERT, UPDATE ON checklistvraag_optie TO cd_platform")
-    # checklistvraag: cd_platform mag antwoordtype/labels beheren (lezen + wijzigen).
-    op.execute("GRANT SELECT, UPDATE ON checklistvraag TO cd_platform")
+    # Catalogus: lk_app LEEST alleen (validatie); lk_platform beheert.
+    op.execute("REVOKE ALL ON checklistvraag_optie FROM lk_app")
+    op.execute("GRANT SELECT ON checklistvraag_optie TO lk_app")
+    op.execute("GRANT SELECT, INSERT, UPDATE ON checklistvraag_optie TO lk_platform")
+    # checklistvraag: lk_platform mag antwoordtype/labels beheren (lezen + wijzigen).
+    op.execute("GRANT SELECT, UPDATE ON checklistvraag TO lk_platform")
 
 
 def downgrade() -> None:
     bind = op.get_bind()
-    op.execute("REVOKE ALL ON checklistvraag FROM cd_platform")
+    op.execute("REVOKE ALL ON checklistvraag FROM lk_platform")
     op.drop_column("checklistscore", "antwoord_waarde")
     op.drop_index("ix_checklistvraag_optie_vraag", table_name="checklistvraag_optie")
     op.drop_table("checklistvraag_optie")

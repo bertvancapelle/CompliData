@@ -1,6 +1,6 @@
 """Service-laag — platform-beheer van de relatie-kenmerk-catalogus (ADR-023 Fase F / F-4).
 
-Spiegel van `componentconfig_service` op `get_platform_session` (cd_platform). Beheert de
+Spiegel van `componentconfig_service` op `get_platform_session` (lk_platform). Beheert de
 platform-brede referentiedata `relatiekenmerk_optie` (dimensies `dispositie`/`relatie_rol`).
 Geen hard delete (geen endpoint + ontbrekende DB-grant = dubbele borging).
 

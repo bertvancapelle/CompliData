@@ -136,13 +136,13 @@ def upgrade() -> None:
             f"CREATE POLICY tenant_isolation ON {tabel} "
             f"USING (tenant_id = current_setting('app.tenant_id')::uuid)"
         )
-        op.execute(f"GRANT SELECT, INSERT, UPDATE, DELETE ON {tabel} TO cd_app")
+        op.execute(f"GRANT SELECT, INSERT, UPDATE, DELETE ON {tabel} TO lk_app")
 
     # --- (j) catalogus-grants (identiek aan contractconfig_optie) ---
-    op.execute("REVOKE ALL ON componentconfig_optie FROM cd_app")
-    op.execute("GRANT SELECT ON componentconfig_optie TO cd_app")
-    op.execute("GRANT SELECT, INSERT, UPDATE ON componentconfig_optie TO cd_platform")
-    op.execute("GRANT USAGE, SELECT ON SEQUENCE componentconfig_optie_id_seq TO cd_platform")
+    op.execute("REVOKE ALL ON componentconfig_optie FROM lk_app")
+    op.execute("GRANT SELECT ON componentconfig_optie TO lk_app")
+    op.execute("GRANT SELECT, INSERT, UPDATE ON componentconfig_optie TO lk_platform")
+    op.execute("GRANT USAGE, SELECT ON SEQUENCE componentconfig_optie_id_seq TO lk_platform")
 
 
 def downgrade() -> None:
@@ -186,7 +186,7 @@ def downgrade() -> None:
     op.execute("ALTER TABLE applicatie_contract ENABLE ROW LEVEL SECURITY")
     op.execute("ALTER TABLE applicatie_contract FORCE ROW LEVEL SECURITY")
     op.execute("CREATE POLICY tenant_isolation ON applicatie_contract USING (tenant_id = current_setting('app.tenant_id')::uuid)")
-    op.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON applicatie_contract TO cd_app")
+    op.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON applicatie_contract TO lk_app")
 
     op.drop_table("component")
     op.drop_table("componentconfig_optie")

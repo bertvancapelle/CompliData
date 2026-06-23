@@ -2,14 +2,14 @@
 
 Voegt toe (additief):
 - platform-brede catalogus `vraagbetekenis_optie` (GEEN RLS) + de eerste betekenis
-  `technische_plaatsing`. Grants identiek aan `relatiekenmerk_optie` (cd_app SELECT,
-  cd_platform SELECT/INSERT/UPDATE — geen DELETE);
+  `technische_plaatsing`. Grants identiek aan `relatiekenmerk_optie` (lk_app SELECT,
+  lk_platform SELECT/INSERT/UPDATE — geen DELETE);
 - kolom `checklistvraag.betekenis` (nullable) + `UNIQUE(tenant_id, componenttype,
   betekenis)` — per (tenant, componenttype) hoogstens één vraag met een gegeven betekenis;
   NULL is distinct in Postgres → onbeperkt veel vragen zonder betekenis;
 - datamigratie (eenmalig, expand/contract): zet `betekenis='technische_plaatsing'` op de
   bestaande plaatsingsvraag (`code='2.2' AND componenttype='applicatie'`) **over álle
-  tenants**. De migratie draait als cd_admin (superuser) → bypasst FORCE RLS, dus de UPDATE
+  tenants**. De migratie draait als lk_admin (superuser) → bypasst FORCE RLS, dus de UPDATE
   raakt elke tenant. Fresh deploys krijgen dit via `seed.py` (de 2.2-baseline-rij draagt de
   betekenis al).
 
@@ -42,12 +42,12 @@ def upgrade() -> None:
         sa.Column("actief", sa.Boolean(), nullable=False, server_default=sa.text("true")),
         sa.UniqueConstraint("optie_sleutel", name="uq_vraagbetekenis_optie"),
     )
-    # Grants identiek aan relatiekenmerk_optie: cd_app SELECT (keuzeveld/validatie),
-    # cd_platform beheer (geen DELETE).
-    op.execute("REVOKE ALL ON vraagbetekenis_optie FROM cd_app")
-    op.execute("GRANT SELECT ON vraagbetekenis_optie TO cd_app")
-    op.execute("GRANT SELECT, INSERT, UPDATE ON vraagbetekenis_optie TO cd_platform")
-    op.execute("GRANT USAGE, SELECT ON SEQUENCE vraagbetekenis_optie_id_seq TO cd_platform")
+    # Grants identiek aan relatiekenmerk_optie: lk_app SELECT (keuzeveld/validatie),
+    # lk_platform beheer (geen DELETE).
+    op.execute("REVOKE ALL ON vraagbetekenis_optie FROM lk_app")
+    op.execute("GRANT SELECT ON vraagbetekenis_optie TO lk_app")
+    op.execute("GRANT SELECT, INSERT, UPDATE ON vraagbetekenis_optie TO lk_platform")
+    op.execute("GRANT USAGE, SELECT ON SEQUENCE vraagbetekenis_optie_id_seq TO lk_platform")
     for volgorde, (sleutel, label) in enumerate(_BETEKENISSEN):
         op.execute(
             sa.text(
@@ -64,7 +64,7 @@ def upgrade() -> None:
         ["tenant_id", "componenttype", "betekenis"],
     )
 
-    # --- (c) datamigratie over álle tenants (cd_admin → bypasst FORCE RLS) ----------
+    # --- (c) datamigratie over álle tenants (lk_admin → bypasst FORCE RLS) ----------
     op.execute(
         sa.text(
             "UPDATE checklistvraag SET betekenis = 'technische_plaatsing' "

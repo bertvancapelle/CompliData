@@ -19,8 +19,8 @@ from app.core.tenant_context import (
 engine = create_async_engine(settings.database_url, echo=False, pool_pre_ping=True)
 async_session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
-# Platform-engine op cd_platform (ADR-012) — voor platform-endpoints. Non-superuser,
-# géén RLS-/tenant-context, géén toegang tot tenant-tabellen. cd_admin komt NIET
+# Platform-engine op lk_platform (ADR-012) — voor platform-endpoints. Non-superuser,
+# géén RLS-/tenant-context, géén toegang tot tenant-tabellen. lk_admin komt NIET
 # meer in de app-laag voor (OP-11).
 platform_engine = create_async_engine(
     settings.platform_database_url, echo=False, pool_pre_ping=True
@@ -35,7 +35,7 @@ def _pas_tenant_context_toe(session, transaction, connection):
     """Zet `app.tenant_id` transactie-lokaal bij elke transactie van een RLS-sessie (CD048).
 
     Alleen sessies die expliciet als RLS-scoped gemarkeerd zijn (`session.info['rls']`)
-    krijgen tenant-context — platform-/init-sessies (cd_platform/cd_admin) blijven
+    krijgen tenant-context — platform-/init-sessies (lk_platform/lk_admin) blijven
     ongemoeid. `is_local=true` ⇒ context geldt alleen voor deze transactie en lekt niet
     naar de volgende pool-checkout. Ontbreekt de tenant-context op een RLS-sessie ⇒
     fail-fast (expliciete fout i.p.v. een cryptische `''::uuid` verderop).

@@ -1,7 +1,7 @@
 """Platform-endpoints (ADR-012) — tenant-provisioning.
 
 Geautoriseerd via `vereist_platform_permissie` (alleen platform-rollen) en
-uitgevoerd op `get_platform_session` (cd_platform, non-superuser, geen
+uitgevoerd op `get_platform_session` (lk_platform, non-superuser, geen
 tenant-/RLS-context). Een tenant aanmaken raakt geen tenant-gescopete data —
 de nieuwe tenant start leeg; RLS-isolatie blijft intact.
 """

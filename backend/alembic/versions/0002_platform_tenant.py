@@ -4,8 +4,8 @@ Revision ID: 0002_platform_tenant
 Revises: 0001_bwb_initial
 Create Date: 2026-06-06
 
-Platform-tabel (GEEN RLS, niet tenant-scoped). Alleen cd_platform mag CRUD;
-cd_app wordt expliciet ontzegd (domein-scheiding). Gechaind aan de bestaande
+Platform-tabel (GEEN RLS, niet tenant-scoped). Alleen lk_platform mag CRUD;
+lk_app wordt expliciet ontzegd (domein-scheiding). Gechaind aan de bestaande
 module-head zodat er één Alembic-head blijft.
 """
 from typing import Sequence, Union
@@ -38,12 +38,12 @@ def upgrade() -> None:
         sa.UniqueConstraint("slug", name="uq_tenant_slug"),
     )
 
-    # Platform-domein: uitsluitend cd_platform mag het register beheren.
-    op.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON tenant TO cd_platform")
-    # cd_app krijgt via ALTER DEFAULT PRIVILEGES standaard rechten op nieuwe
+    # Platform-domein: uitsluitend lk_platform mag het register beheren.
+    op.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON tenant TO lk_platform")
+    # lk_app krijgt via ALTER DEFAULT PRIVILEGES standaard rechten op nieuwe
     # tabellen; die hier expliciet intrekken — het platform-register valt buiten
     # het tenant-domein (least privilege, ADR-012).
-    op.execute("REVOKE ALL ON tenant FROM cd_app")
+    op.execute("REVOKE ALL ON tenant FROM lk_app")
 
 
 def downgrade() -> None:

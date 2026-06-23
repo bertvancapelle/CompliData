@@ -1,7 +1,7 @@
 """Catalogus-lookup/-validatie voor de checklistvraag-betekenissen (ADR-023 Fase F / F-3).
 
 Spiegel van `relatiekenmerk_catalog`, maar voor de platform-brede catalogus
-`vraagbetekenis_optie` (één doel, geen dimensie). De tenant-sessie (`cd_app`) mag deze
+`vraagbetekenis_optie` (één doel, geen dimensie). De tenant-sessie (`lk_app`) mag deze
 catalogus LEZEN (SELECT-grant) — voor het betekenis-keuzeveld én de validatie van een
 toegekende betekenis. Valideren tegen de **actieve** opties; uitlezen resolvet ook
 gedeactiveerde sleutels (historie). Voedt de engine NIET.

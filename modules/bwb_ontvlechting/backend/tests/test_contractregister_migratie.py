@@ -34,15 +34,15 @@ def test_rls_boilerplate_per_tenant_tabel():
     assert "FORCE ROW LEVEL SECURITY" in bron
     assert "CREATE POLICY tenant_isolation" in bron
     assert "current_setting('app.tenant_id')::uuid" in bron
-    assert "GRANT SELECT, INSERT, UPDATE, DELETE ON {tabel} TO cd_app" in bron
+    assert "GRANT SELECT, INSERT, UPDATE, DELETE ON {tabel} TO lk_app" in bron
 
 
 def test_catalogus_grants_least_privilege():
     bron = _bron()
-    assert "REVOKE ALL ON contractconfig_optie FROM cd_app" in bron
-    assert "GRANT SELECT ON contractconfig_optie TO cd_app" in bron
-    assert "GRANT SELECT, INSERT, UPDATE ON contractconfig_optie TO cd_platform" in bron
-    assert "GRANT USAGE, SELECT ON SEQUENCE contractconfig_optie_id_seq TO cd_platform" in bron
+    assert "REVOKE ALL ON contractconfig_optie FROM lk_app" in bron
+    assert "GRANT SELECT ON contractconfig_optie TO lk_app" in bron
+    assert "GRANT SELECT, INSERT, UPDATE ON contractconfig_optie TO lk_platform" in bron
+    assert "GRANT USAGE, SELECT ON SEQUENCE contractconfig_optie_id_seq TO lk_platform" in bron
     # géén DELETE-grant op de catalogus (soft-deactivate = UPDATE, Addendum B).
     assert "DELETE ON contractconfig_optie" not in bron
 

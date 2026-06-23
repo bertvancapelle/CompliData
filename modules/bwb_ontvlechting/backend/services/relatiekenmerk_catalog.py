@@ -2,7 +2,7 @@
 
 Spiegel van `contractconfig_catalog`, maar voor de platform-brede catalogus
 `relatiekenmerk_optie` — de algemene plek voor beheerbare relatie-kenmerk-waardenlijsten
-(nu `dispositie`), losgekoppeld van de contract-configuratie. De tenant-sessie (`cd_app`)
+(nu `dispositie`), losgekoppeld van de contract-configuratie. De tenant-sessie (`lk_app`)
 mag deze catalogus LEZEN (SELECT-grant). Valideren tegen de **actieve** opties van de
 **juiste dimensie**; uitlezen resolvet ook gedeactiveerde sleutels (historie).
 """

@@ -56,8 +56,8 @@ def _maak_tabel(naam: str, unieke_kolommen: list[str], extra_kolommen: list[sa.C
         f"CREATE POLICY tenant_isolation ON {naam} "
         "USING (tenant_id = current_setting('app.tenant_id')::uuid)"
     )
-    op.execute(f"REVOKE ALL ON {naam} FROM cd_app")
-    op.execute(f"GRANT SELECT, INSERT, UPDATE, DELETE ON {naam} TO cd_app")
+    op.execute(f"REVOKE ALL ON {naam} FROM lk_app")
+    op.execute(f"GRANT SELECT, INSERT, UPDATE, DELETE ON {naam} TO lk_app")
 
 
 def upgrade() -> None:

@@ -1,6 +1,6 @@
 """Tests — ADR-022 Fase C: toestand-gebaseerde type-lock + capability + "wat verdwijnt".
 
-Live-integratie tegen de cd_app-DB (skip indien onbereikbaar). Elke test maakt zijn
+Live-integratie tegen de lk_app-DB (skip indien onbereikbaar). Elke test maakt zijn
 eigen wegwerp-componenten (uniek achtervoegsel) en ruimt ze in `finally` op.
 
 Gedekt:
@@ -22,7 +22,7 @@ import app.core.database  # noqa: F401 — registreert de tenant-context-hook
 from app.core.tenant_context import reset_tenant_context, zet_tenant_context
 
 _TID = "11111111-1111-1111-1111-111111111111"
-_CD_APP_URL = "postgresql+asyncpg://cd_app:changeme_dev@localhost:5432/complidata"
+_CD_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
 
 
 def _db_bereikbaar() -> bool:
@@ -41,7 +41,7 @@ def _db_bereikbaar() -> bool:
         return False
 
 
-integratie = pytest.mark.skipif(not _db_bereikbaar(), reason="cd_app-DB niet bereikbaar (offline)")
+integratie = pytest.mark.skipif(not _db_bereikbaar(), reason="lk_app-DB niet bereikbaar (offline)")
 
 
 async def _sessie_run(fn):

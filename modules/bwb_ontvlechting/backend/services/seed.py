@@ -106,7 +106,7 @@ async def seed_checklist_vragen(session, tenant_id) -> int:
 
     ADR-022 W1: `checklistvraag` is tenant-scoped — de baseline wordt per tenant
     gekopieerd (`tenant_id` gezet, uniciteit `(tenant_id, componenttype, code)`).
-    Draait onder de `cd_app`-RLS-context van de tenant (INSERT-`WITH CHECK` eist
+    Draait onder de `lk_app`-RLS-context van de tenant (INSERT-`WITH CHECK` eist
     `tenant_id = app.tenant_id`). De surrogate-PK `id` wordt door de DB gegenereerd."""
     rows = [
         {

@@ -26,9 +26,9 @@ Drie problemen dwingen een expliciete beslissing af:
   aansluiten.
 - Tenant-aanmaak is een platform-handeling, maar er was geen rol/permissie-
   domein dat dit afdekt zonder tenant-context.
-- De applicatie gebruikte `cd_admin` (superuser) in de app-laag
+- De applicatie gebruikte `lk_admin` (superuser) in de app-laag
   (`get_admin_session`, OP-11) — een schending van least privilege, want
-  `cd_admin` omzeilt RLS.
+  `lk_admin` omzeilt RLS.
 
 ## Besluit
 
@@ -58,11 +58,11 @@ bedienen (kruis-toegang ⇒ 403).
 
 | Rol | Type | Gebruik |
 |---|---|---|
-| `cd_admin` | superuser | **Uitsluitend** de init-container (migratie + seed, ADR-011). |
-| `cd_platform` | non-superuser (NIEUW) | Platform-endpoints in de app (tenant-provisioning, platforminstellingen). Géén superuser, géén RLS-bypass-noodzaak. |
-| `cd_app` | non-superuser | Tenant-gescopet werk onder RLS. |
+| `lk_admin` | superuser | **Uitsluitend** de init-container (migratie + seed, ADR-011). |
+| `lk_platform` | non-superuser (NIEUW) | Platform-endpoints in de app (tenant-provisioning, platforminstellingen). Géén superuser, géén RLS-bypass-noodzaak. |
+| `lk_app` | non-superuser | Tenant-gescopet werk onder RLS. |
 
-Gevolg: **`cd_admin` verdwijnt volledig uit de app-laag** (OP-11 opgelost).
+Gevolg: **`lk_admin` verdwijnt volledig uit de app-laag** (OP-11 opgelost).
 
 ### B4 — Realm op LIKARA afstemmen
 
@@ -74,15 +74,15 @@ krijgt óf platform- óf tenant-rollen).
 
 ## Gevolgen
 
-- **Security/least privilege**: `cd_admin` heeft een minimaal blootstellings-
-  vlak (alleen init-container); de app draait met `cd_app` (RLS) en
-  `cd_platform` (platform, non-superuser). OP-11 is hiermee opgelost.
+- **Security/least privilege**: `lk_admin` heeft een minimaal blootstellings-
+  vlak (alleen init-container); de app draait met `lk_app` (RLS) en
+  `lk_platform` (platform, non-superuser). OP-11 is hiermee opgelost.
 - **Scheiding van zorg**: een platformoperator ziet metadata, nooit
   inhoudelijke tenantdata; tenant-isolatie (RLS) blijft volledig intact en
   staat náást de RBAC-laag.
 - **Realm-opschoning**: de realm weerspiegelt voortaan het LIKARA-model;
   CompliMan-rollen verdwijnen.
-- **Gefaseerde invoering**: ADR (dit), `cd_platform` + cd_admin-verwijdering,
+- **Gefaseerde invoering**: ADR (dit), `lk_platform` + lk_admin-verwijdering,
   realm, platform-permissiedomein/guard, en tenant-onboarding-endpoints
   worden in losse, afzonderlijk te valideren stappen ingevoerd.
 
@@ -95,7 +95,7 @@ krijgt óf platform- óf tenant-rollen).
 - **Één gedeelde permissietabel voor beide domeinen**: verworpen — koppelt de
   domeinen en maakt kruis-toegang mogelijk; twee losse bronnen sluiten dat
   structureel uit.
-- **`cd_admin` in de app-laag houden** (status quo): verworpen — superuser
+- **`lk_admin` in de app-laag houden** (status quo): verworpen — superuser
   omzeilt RLS; onaanvaardbaar blootstellingsvlak voor een langdraaiend proces
   (OP-11).
 - **Tenant-aanmaak als losse CLI/handmatige stap**: verworpen — onboarding is

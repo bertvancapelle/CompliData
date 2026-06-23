@@ -10,12 +10,12 @@ import pathlib
 import sys
 
 _DEFAULTS = {
-    "DATABASE_URL": "postgresql+asyncpg://cd_app:x@localhost/complidata",
-    "DATABASE_URL_SYNC": "postgresql://cd_app:x@localhost/complidata",
-    "PLATFORM_DATABASE_URL": "postgresql+asyncpg://cd_platform:x@localhost/complidata",
+    "DATABASE_URL": "postgresql+asyncpg://lk_app:x@localhost/likara",
+    "DATABASE_URL_SYNC": "postgresql://lk_app:x@localhost/likara",
+    "PLATFORM_DATABASE_URL": "postgresql+asyncpg://lk_platform:x@localhost/likara",
     "KEYCLOAK_URL": "http://localhost:8080",
-    "KEYCLOAK_REALM": "complidata",
-    "KEYCLOAK_CLIENT_ID": "complidata-app",
+    "KEYCLOAK_REALM": "likara",
+    "KEYCLOAK_CLIENT_ID": "likara-app",
     "KEYCLOAK_CLIENT_SECRET": "test-secret",
     "RABBITMQ_URL": "amqp://localhost",
     "COMPLIDATA_TEST_MODE": "true",

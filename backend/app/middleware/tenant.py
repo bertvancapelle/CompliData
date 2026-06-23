@@ -53,11 +53,11 @@ async def get_tenant_session(
 async def get_platform_session(
     user: PlatformUser = Depends(get_current_platform_user),
 ):
-    """Platform-sessie op cd_platform (ADR-012) — voor platform-endpoints
+    """Platform-sessie op lk_platform (ADR-012) — voor platform-endpoints
     (tenant-provisioning, platforminstellingen).
 
-    cd_platform is non-superuser, heeft GEEN RLS-/tenant-context en GEEN toegang
-    tot tenant-tabellen; cd_admin komt hier NIET aan te pas (OP-11). Geen
+    lk_platform is non-superuser, heeft GEEN RLS-/tenant-context en GEEN toegang
+    tot tenant-tabellen; lk_admin komt hier NIET aan te pas (OP-11). Geen
     tenant-scoped werk — dat loopt via `get_tenant_session` onder RLS. ADR-006: de
     platform-actor (Keycloak-`sub`) gaat mee voor het `platform_audit_log`-spoor.
     """

@@ -211,7 +211,7 @@ def test_engine_niet_geimporteerd_in_partij_paden():
 
 # ── Live (na DB-reset) ───────────────────────────────────────────────────────────
 
-_CD_APP_URL = "postgresql+asyncpg://cd_app:changeme_dev@localhost:5432/complidata"
+_CD_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
 _DEV_TENANT = "11111111-1111-1111-1111-111111111111"
 
 

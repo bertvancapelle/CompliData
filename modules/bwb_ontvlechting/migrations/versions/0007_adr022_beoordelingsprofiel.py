@@ -8,12 +8,12 @@ Fase A van ADR-022: brengt het datamodel in de doelvorm zonder engine-semantiek
 te wijzigen (per-type scoping volgt in Fase B).
 
 - Nieuwe tenant-tabel `component_profiel` (shared-PK met `component`): drager van
-  de engine-state (`lifecycle_status`); RLS + FORCE + cd_app-grants (CD040-stijl).
+  de engine-state (`lifecycle_status`); RLS + FORCE + lk_app-grants (CD040-stijl).
 - `lifecycle_status` VERHUIST van `applicatie` → `component_profiel`.
 - `checklistvraag` herstructureert naar een surrogate UUID-PK (`id`), met
   `componenttype`-discriminator (backfill `'applicatie'`) en `UNIQUE(componenttype,
   code)` i.p.v. de globale `UNIQUE(code)` (Knoop 3 Optie B). Grants → catalogus-
-  patroon: cd_app SELECT-only, cd_platform SELECT/INSERT/UPDATE (geen sequence: uuid).
+  patroon: lk_app SELECT-only, lk_platform SELECT/INSERT/UPDATE (geen sequence: uuid).
 - Kind-FK's retargeten naar `checklistvraag.id`: `checklistvraag_optie.vraag_code`
   en `checklistscore.vraag_code` → `checklistvraag_id`.
 - `checklistscore`/`blokkade` herankeren `applicatie_id` → `component_id`
@@ -61,7 +61,7 @@ def upgrade() -> None:
         "CREATE POLICY tenant_isolation ON component_profiel "
         "USING (tenant_id = current_setting('app.tenant_id')::uuid)"
     )
-    op.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON component_profiel TO cd_app")
+    op.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON component_profiel TO lk_app")
 
     # === (b) pre-prod: tenant-laag legen (cascadeert via component) ===
     # component CASCADE → applicatie, component_profiel, koppeling, component_structuur,
@@ -145,9 +145,9 @@ def upgrade() -> None:
     op.create_index("ix_checklistscore_tenant_app", "checklistscore", ["tenant_id", "component_id"])
 
     # === (j) checklistvraag-grants → catalogus-patroon (Beslissing 8) ===
-    op.execute("REVOKE ALL ON checklistvraag FROM cd_app")
-    op.execute("GRANT SELECT ON checklistvraag TO cd_app")
-    op.execute("GRANT SELECT, INSERT, UPDATE ON checklistvraag TO cd_platform")
+    op.execute("REVOKE ALL ON checklistvraag FROM lk_app")
+    op.execute("GRANT SELECT ON checklistvraag TO lk_app")
+    op.execute("GRANT SELECT, INSERT, UPDATE ON checklistvraag TO lk_platform")
 
 
 def downgrade() -> None:
@@ -155,10 +155,10 @@ def downgrade() -> None:
     integer_pk = "checklistvraag_id_seq"
 
     # grants terug
-    op.execute("REVOKE ALL ON checklistvraag FROM cd_platform")
-    op.execute("REVOKE ALL ON checklistvraag FROM cd_app")
-    op.execute("GRANT SELECT, INSERT, UPDATE ON checklistvraag TO cd_app")
-    op.execute("GRANT SELECT, UPDATE ON checklistvraag TO cd_platform")
+    op.execute("REVOKE ALL ON checklistvraag FROM lk_platform")
+    op.execute("REVOKE ALL ON checklistvraag FROM lk_app")
+    op.execute("GRANT SELECT, INSERT, UPDATE ON checklistvraag TO lk_app")
+    op.execute("GRANT SELECT, UPDATE ON checklistvraag TO lk_platform")
 
     op.execute("TRUNCATE component CASCADE")
 

@@ -35,7 +35,7 @@ function _stubFetch(impl) {
 
 describe('store.logout — RP-initiated', () => {
   it('navigeert naar de Keycloak end-session-URL en reset de auth-state', async () => {
-    const url = 'http://localhost:8080/realms/complidata/protocol/openid-connect/logout?client_id=x'
+    const url = 'http://localhost:8080/realms/likara/protocol/openid-connect/logout?client_id=x'
     const calls = []
     _stubFetch((u) => {
       calls.push(u)

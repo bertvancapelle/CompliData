@@ -10,9 +10,9 @@ vijf nieuwe tenant-scoped tabellen (RLS + FORCE) — `leverancier`, `contract`
 `contract_kostenmodel`, `applicatie_contract` — en één platform-brede
 classificatie-catalogus `contractconfig_optie` (GEEN RLS, dimensie-discriminator).
 
-Grants (least-privilege): tenant-tabellen volledige CRUD voor `cd_app` onder RLS;
-de catalogus SELECT-only voor `cd_app` en SELECT/INSERT/UPDATE (géén DELETE —
-soft-deactivate = UPDATE) voor `cd_platform`, identiek aan `checklistvraag_optie`
+Grants (least-privilege): tenant-tabellen volledige CRUD voor `lk_app` onder RLS;
+de catalogus SELECT-only voor `lk_app` en SELECT/INSERT/UPDATE (géén DELETE —
+soft-deactivate = UPDATE) voor `lk_platform`, identiek aan `checklistvraag_optie`
 (ADR-019 fase 2A). De cross-row-invarianten horen in de service-laag (Fase B).
 """
 from typing import Sequence, Union
@@ -146,14 +146,14 @@ def upgrade() -> None:
             f"CREATE POLICY tenant_isolation ON {tabel} "
             f"USING (tenant_id = current_setting('app.tenant_id')::uuid)"
         )
-        op.execute(f"GRANT SELECT, INSERT, UPDATE, DELETE ON {tabel} TO cd_app")
+        op.execute(f"GRANT SELECT, INSERT, UPDATE, DELETE ON {tabel} TO lk_app")
 
     # --- (e) Catalogus-grants (identiek aan checklistvraag_optie, ADR-019 fase 2A) ---
     #     géén DELETE op de catalogus: soft-deactivate = UPDATE (ADR-012 Addendum B).
-    op.execute("REVOKE ALL ON contractconfig_optie FROM cd_app")
-    op.execute("GRANT SELECT ON contractconfig_optie TO cd_app")
-    op.execute("GRANT SELECT, INSERT, UPDATE ON contractconfig_optie TO cd_platform")
-    op.execute("GRANT USAGE, SELECT ON SEQUENCE contractconfig_optie_id_seq TO cd_platform")
+    op.execute("REVOKE ALL ON contractconfig_optie FROM lk_app")
+    op.execute("GRANT SELECT ON contractconfig_optie TO lk_app")
+    op.execute("GRANT SELECT, INSERT, UPDATE ON contractconfig_optie TO lk_platform")
+    op.execute("GRANT USAGE, SELECT ON SEQUENCE contractconfig_optie_id_seq TO lk_platform")
 
 
 def downgrade() -> None:

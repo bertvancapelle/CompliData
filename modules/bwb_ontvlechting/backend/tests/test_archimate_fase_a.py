@@ -109,7 +109,7 @@ def test_ok3_resterende_type_mappings():
 
 # ── Live: element-RLS-isolatie ───────────────────────────────────────────────────
 
-_CD_APP_URL = "postgresql+asyncpg://cd_app:changeme_dev@localhost:5432/complidata"
+_CD_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
 
 
 def _element_tabel_bestaat() -> bool:

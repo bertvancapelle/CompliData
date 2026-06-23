@@ -250,13 +250,13 @@ ongedefinieerde methodes → 405.
   bij de vraag, is de optie `actief` en hoort die erbij) in de service tegen de catalogus →
   `OngeldigAntwoord` → **422-envelope**. De envelope-422 is gerechtvaardigd waar Pydantic niet kan
   (DB-lookup nodig); 422 blijft anders native. [CD028]
-- **Domeingrens-respecterende validatie op de platform-laag**: `cd_platform` mag tenant-tabellen
+- **Domeingrens-respecterende validatie op de platform-laag**: `lk_platform` mag tenant-tabellen
   (`checklistscore`) per ADR-012 **niet lezen** → een usage-based "blokkeer als in gebruik"-check
   kan niet cross-domain. Daarom **conservatief blokkeren**: antwoordtype alleen wijzigbaar vanuit
   `geen` (een `geen`-vraag kan per 2B-validatie geen `antwoord_waarde` hebben → bewijsbaar veilig);
   wisselen van een reeds-getypeerde vraag ⇒ `ConfiguratieConflict` (409). [CD031]
 - **Platform-config-endpoints**: module-routebestand (`routes/checklistconfig.py`) geguard met
-  `vereist_platform_permissie(CHECKLISTCONFIG, …)` op `get_platform_session` (cd_platform) —
+  `vereist_platform_permissie(CHECKLISTCONFIG, …)` op `get_platform_session` (lk_platform) —
   platform-rol-domein, raakt het score-/engine-pad niet (AST-guard in de test). [CD031]
 - **Platform-identiteit**: `GET /auth/platform/me` op `get_current_platform_user` (géén `tenant_id`);
   een sessie zonder platform-rol (tenant-account) ⇒ 403 (strikte scheiding). Additief naast
@@ -269,7 +269,7 @@ ongedefinieerde methodes → 405.
   een **stabiele `optie_sleutel`** (lowercase snake_case) + `label`/`volgorde`/`actief`.
   **Soft-deactivate** (`actief=false`), **nooit** hard verwijderen (sleutel blijft resolvebaar
   voor historische waarden); de tenant-leeszijde resolvet óók gedeactiveerde sleutels.
-  Dubbele borging tegen muteren: `cd_app` **SELECT-only** + `cd_platform` **zonder DELETE**
+  Dubbele borging tegen muteren: `lk_app` **SELECT-only** + `lk_platform` **zonder DELETE**
   (geen endpoint én geen grant). Eigen `PlatformEntiteit` (beheerder LAW, operator L, geen V).
   **Systeem-sleutels** (bv. `componenttype.applicatie`) zijn niet deactiveerbaar
   (`SYSTEEM_SLEUTEL_BESCHERMD`). Elke nieuwe configureerbare lijst volgt dit patroon. [CD053]

@@ -1,7 +1,7 @@
 """Service-laag — platform-beheer van de contract-classificatie-catalogus
 (ADR-020 Besluit 6, ADR-012 Addendum B).
 
-Draait op `get_platform_session` (cd_platform) — platform-brede referentiedata,
+Draait op `get_platform_session` (lk_platform) — platform-brede referentiedata,
 géén tenant-/RLS-context. Raakt de tenant-data (`contract*`) NIET; de tenant-leeszijde
 (CD041) resolvet óók inactieve sleutels naar hun label, dus soft-deactiveren verweest
 niets. Geen hard delete (Addendum B + ontbrekende DB-grant — dubbele borging).

@@ -1,7 +1,7 @@
 """Platform-RBAC — rollen, rechtenmatrix en check voor het PLATFORM-domein (ADR-012).
 
 Strikt gescheiden van het tenant-domein (`app.core.rbac`). Platform-endpoints
-draaien zonder tenant-context (cd_platform) en checken UITSLUITEND tegen deze
+draaien zonder tenant-context (lk_platform) en checken UITSLUITEND tegen deze
 matrix; een tenant-rol kan een platform-endpoint nooit bedienen en omgekeerd.
 
 Fail-secure: onbekende/lege rol/entiteit/actie ⇒ geen recht.

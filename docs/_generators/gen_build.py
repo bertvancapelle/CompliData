@@ -29,7 +29,7 @@ OUTPUT_DIR = REPO_ROOT / "docs" / "_output"
 # ── Backup (lokale dump + iCloud-kopie) ──────────────────────────────────────
 # De DB-backup loopt structureel mee als laatste afsluitstap, zodat de
 # iCloud-kopie nooit een vergeetbare handmatige stap is (CD013-A).
-PG_CONTAINER = "cd-postgres"
+PG_CONTAINER = "lk-postgres"
 BACKUPS_DIR = Path.home() / "complidata" / "backups"
 # Configureerbaar pad; default = lokaal gemounte iCloud-Drive-map.
 # (~/Library/Mobile Documents/com~apple~CloudDocs/LIKARA-backups/)
@@ -201,7 +201,7 @@ def roep_generator_aan(script_naam, extra_args=None):
 # ── Backup-stap ────────────────────────────────────────────────────────────────
 
 def maak_db_dump():
-    """Lokale PostgreSQL-dump via de cd-postgres container. Faalt ZACHT (warn).
+    """Lokale PostgreSQL-dump via de lk-postgres container. Faalt ZACHT (warn).
 
     Retourneert het pad naar de `.sql` of None als de dump niet gemaakt kon worden
     (docker/container afwezig) — de build breekt hier nooit op.
@@ -211,7 +211,7 @@ def maak_db_dump():
     try:
         with open(doel, "wb") as fh:
             r = subprocess.run(
-                ["docker", "exec", PG_CONTAINER, "pg_dump", "-U", "cd_admin", "complidata"],
+                ["docker", "exec", PG_CONTAINER, "pg_dump", "-U", "lk_admin", "likara"],
                 stdout=fh, stderr=subprocess.PIPE,
             )
         if r.returncode != 0:

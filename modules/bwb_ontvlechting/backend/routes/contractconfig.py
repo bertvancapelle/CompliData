@@ -2,7 +2,7 @@
 ADR-012 Addendum B).
 
 Geautoriseerd via `vereist_platform_permissie(CONTRACTCONFIG, …)` (platform-rollen) op
-`get_platform_session` (cd_platform, géén tenant-/RLS-context). Beheert referentiedata
+`get_platform_session` (lk_platform, géén tenant-/RLS-context). Beheert referentiedata
 (`contractconfig_optie`); raakt de tenant-data (`contract*`) NIET.
 
 Foutgedrag: 401 · 403 `ONVOLDOENDE_RECHTEN` · 404 `NIET_GEVONDEN` · 409

@@ -294,8 +294,8 @@ Alle andere catalogi zijn platform-breed. Dit is niet-onderhandelbaar.
 | Checklistvraag | `checklistvraag`, `checklistvraag_optie` | Ja | Per tenant (kopie bij onboarding) | Beoordelingsvragen per componenttype |
 
 ### Grants (platform-catalogi, alle gelijk)
-`cd_app` = SELECT only (validatie).
-`cd_platform` = SELECT / INSERT / UPDATE — **geen DELETE** (geen endpoint, geen grant).
+`lk_app` = SELECT only (validatie).
+`lk_platform` = SELECT / INSERT / UPDATE — **geen DELETE** (geen endpoint, geen grant).
 
 ### Soft-deactivatie
 Opties worden **nooit** hard verwijderd. Deactiveren via `actief = false`.

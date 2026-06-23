@@ -14,9 +14,9 @@
 ║    wordt volledig overgeslagen → een tweede run wijzigt de tellingen niet.║
 ╚══════════════════════════════════════════════════════════════════════════╝
 
-Draaien (binnen de draaiende stack, als cd_app onder RLS):
+Draaien (binnen de draaiende stack, als lk_app onder RLS):
 
-    docker compose exec cd-api python3 dev_seed_testdata.py
+    docker compose exec lk-api python3 dev_seed_testdata.py
 
 `TIEL`/gemeentenamen komen in deze seed NERGENS voor (de 89 checklistvragen zelf
 zijn bestaande platform-referentiedata en vallen buiten deze seed).
@@ -677,7 +677,7 @@ async def _seed_tweede_type(session) -> dict:
     dev-seed markeert het zélf checklist-dragend (duurzaam na reseed); `applicatieserver`
     en `database` blijven `false` (de structurele eindstand).
 
-    1. markeer het type platform-breed checklist-dragend (catalogus, als cd_platform);
+    1. markeer het type platform-breed checklist-dragend (catalogus, als lk_platform);
     2. enkele tenant-eigen vragen voor dat type;
     3. twee componenten van het type (krijgen een generiek profiel, start `concept`);
     4. één component gestart (`in_inventarisatie`) + volledig gescoord → `migratieklaar`;
@@ -694,7 +694,7 @@ async def _seed_tweede_type(session) -> dict:
     from services import lifecycle_service
 
     TYPE = "client_software"
-    # 1. Catalogus-vlag (platform; cd_platform mag componentconfig_optie UPDATEn).
+    # 1. Catalogus-vlag (platform; lk_platform mag componentconfig_optie UPDATEn).
     async with platform_session_factory() as ps:
         await ps.execute(
             _text(
@@ -1381,7 +1381,7 @@ async def _seed_bvowb_scenario(session, tenant_id) -> dict:
 
 async def _seed_dev_gebruikers(session, tenant_id) -> dict:
     """ADR-029 — koppel 3 dev-loginaccounts (Keycloak) aan hun persoon in het register.
-    De `keycloak_sub`'s zijn de VASTE Keycloak user-id's uit `complidata-realm.json`
+    De `keycloak_sub`'s zijn de VASTE Keycloak user-id's uit `likara-realm.json`
     (hardcoded — robuust, geen runtime-KC-afhankelijkheid in de seed). Idempotent op sub."""
     tid = tenant_id
     koppelingen = [
@@ -1417,7 +1417,7 @@ async def main() -> None:
     # ADR-006: vaste systeem-actor voor het audit-spoor van de dev-seed.
     async with get_worker_session(DEV_TENANT, actor_sub="system:dev_seed") as session:
         # ADR-022 W1: de vragenset is tenant-eigendom — kopieer de baseline (89 vragen
-        # + antwoordconfig) in de dev-tenant als cd_app onder RLS, vóór applicaties/scores.
+        # + antwoordconfig) in de dev-tenant als lk_app onder RLS, vóór applicaties/scores.
         await seed_checklist_vragen(session, DEV_TENANT)
         await seed_antwoordconfig(session, DEV_TENANT)
         print("  + baseline-vragenset (89) + antwoordconfig geseed voor de tenant")

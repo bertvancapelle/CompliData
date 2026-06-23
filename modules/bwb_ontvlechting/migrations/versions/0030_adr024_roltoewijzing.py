@@ -58,8 +58,8 @@ def upgrade() -> None:
         "CREATE POLICY tenant_isolation ON roltoewijzing "
         "USING (tenant_id = current_setting('app.tenant_id')::uuid)"
     )
-    op.execute("REVOKE ALL ON roltoewijzing FROM cd_app")
-    op.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON roltoewijzing TO cd_app")
+    op.execute("REVOKE ALL ON roltoewijzing FROM lk_app")
+    op.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON roltoewijzing TO lk_app")
 
 
 def downgrade() -> None:

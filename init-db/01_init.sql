@@ -7,17 +7,17 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 -- Applicatie-rol voor de FastAPI backend (non-superuser, onderworpen aan RLS)
 DO $$
 BEGIN
-    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'cd_app') THEN
-        CREATE ROLE cd_app LOGIN PASSWORD 'changeme_dev';
+    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'lk_app') THEN
+        CREATE ROLE lk_app LOGIN PASSWORD 'changeme_dev';
     END IF;
 END
 $$;
 
--- Geef cd_app toegang tot public schema
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO cd_app;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO cd_app;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO cd_app;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO cd_app;
+-- Geef lk_app toegang tot public schema
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO lk_app;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO lk_app;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO lk_app;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO lk_app;
 
 -- Platform-rol voor platform-endpoints (ADR-012): non-superuser, GEEN RLS-bypass,
 -- GEEN toegang tot tenant-tabellen. Tabel-specifieke rechten op de platform-
@@ -26,13 +26,13 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO cd_app;
 -- schema-USAGE; bewust GEEN ALTER DEFAULT PRIVILEGES (least privilege).
 DO $$
 BEGIN
-    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'cd_platform') THEN
-        CREATE ROLE cd_platform LOGIN PASSWORD 'changeme_dev';
+    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'lk_platform') THEN
+        CREATE ROLE lk_platform LOGIN PASSWORD 'changeme_dev';
     END IF;
 END
 $$;
 
-GRANT USAGE ON SCHEMA public TO cd_platform;
+GRANT USAGE ON SCHEMA public TO lk_platform;
 
 -- Row Level Security vereist dat deze session-variabele door de applicatie
 -- vóór elke transactie wordt gezet:

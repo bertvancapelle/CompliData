@@ -81,8 +81,8 @@ def upgrade() -> None:
         "CREATE POLICY tenant_isolation ON element "
         "USING (tenant_id = current_setting('app.tenant_id')::uuid)"
     )
-    op.execute("REVOKE ALL ON element FROM cd_app")
-    op.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON element TO cd_app")
+    op.execute("REVOKE ALL ON element FROM lk_app")
+    op.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON element TO lk_app")
 
     # --- (b) backfill: elk bestaand component krijgt een element-rij (zelfde id) -----
     op.execute(

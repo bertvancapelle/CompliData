@@ -158,11 +158,11 @@ def upgrade() -> None:
             f"CREATE POLICY tenant_isolation ON {tabel} "
             f"USING (tenant_id = current_setting('app.tenant_id')::uuid)"
         )
-        op.execute(f"GRANT SELECT, INSERT, UPDATE, DELETE ON {tabel} TO cd_app")
+        op.execute(f"GRANT SELECT, INSERT, UPDATE, DELETE ON {tabel} TO lk_app")
 
-    # checklistvraag: geen RLS; cd_app mag lezen + seeden
-    op.execute("GRANT SELECT, INSERT, UPDATE ON checklistvraag TO cd_app")
-    op.execute("GRANT USAGE, SELECT ON SEQUENCE checklistvraag_id_seq TO cd_app")
+    # checklistvraag: geen RLS; lk_app mag lezen + seeden
+    op.execute("GRANT SELECT, INSERT, UPDATE ON checklistvraag TO lk_app")
+    op.execute("GRANT USAGE, SELECT ON SEQUENCE checklistvraag_id_seq TO lk_app")
 
     # --- Indexen ---
     op.create_index("ix_applicatie_tenant", "applicatie", ["tenant_id"])

@@ -68,8 +68,8 @@ def upgrade() -> None:
         "CREATE POLICY tenant_isolation ON partij "
         "USING (tenant_id = current_setting('app.tenant_id')::uuid)"
     )
-    op.execute("REVOKE ALL ON partij FROM cd_app")
-    op.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON partij TO cd_app")
+    op.execute("REVOKE ALL ON partij FROM lk_app")
+    op.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON partij TO lk_app")
 
     # --- (c) platform-brede partijsoort-catalogus (GEEN RLS) + default-seed ---------
     op.create_table(
@@ -81,10 +81,10 @@ def upgrade() -> None:
         sa.Column("actief", sa.Boolean(), nullable=False, server_default=sa.text("true")),
         sa.UniqueConstraint("optie_sleutel", name="uq_partijsoort_optie"),
     )
-    op.execute("REVOKE ALL ON partijsoort_optie FROM cd_app")
-    op.execute("GRANT SELECT ON partijsoort_optie TO cd_app")
-    op.execute("GRANT SELECT, INSERT, UPDATE ON partijsoort_optie TO cd_platform")
-    op.execute("GRANT USAGE, SELECT ON SEQUENCE partijsoort_optie_id_seq TO cd_platform")
+    op.execute("REVOKE ALL ON partijsoort_optie FROM lk_app")
+    op.execute("GRANT SELECT ON partijsoort_optie TO lk_app")
+    op.execute("GRANT SELECT, INSERT, UPDATE ON partijsoort_optie TO lk_platform")
+    op.execute("GRANT USAGE, SELECT ON SEQUENCE partijsoort_optie_id_seq TO lk_platform")
     for volgorde, (sleutel, label) in enumerate(_PARTIJSOORTEN):
         op.execute(
             sa.text(
@@ -132,8 +132,8 @@ def downgrade() -> None:
         "CREATE POLICY tenant_isolation ON leverancier "
         "USING (tenant_id = current_setting('app.tenant_id')::uuid)"
     )
-    op.execute("REVOKE ALL ON leverancier FROM cd_app")
-    op.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON leverancier TO cd_app")
+    op.execute("REVOKE ALL ON leverancier FROM lk_app")
+    op.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON leverancier TO lk_app")
 
     # (d') contract-FK terug naar leverancier.
     op.drop_constraint("fk_contract_leverancier_partij", "contract", type_="foreignkey")

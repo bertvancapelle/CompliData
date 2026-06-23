@@ -1,7 +1,7 @@
 """Platform-beheer-endpoints — partijsoort-catalogus (platform-laag).
 
 Geautoriseerd via `vereist_platform_permissie(PARTIJSOORTCONFIG, …)` (platform-rollen) op
-`get_platform_session` (cd_platform). Beheert `partijsoort_optie`; raakt tenant-data NIET.
+`get_platform_session` (lk_platform). Beheert `partijsoort_optie`; raakt tenant-data NIET.
 Géén DELETE (soft-deactivate via `actief`). Spiegel van `routes/vraagbetekenisconfig`.
 """
 from fastapi import APIRouter, Depends

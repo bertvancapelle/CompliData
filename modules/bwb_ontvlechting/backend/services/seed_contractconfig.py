@@ -5,7 +5,7 @@ Idempotent via `ON CONFLICT (dimensie, optie_sleutel) DO NOTHING` — een tweede
 voegt niets toe en dempt door de platformbeheerder toegevoegde opties niet
 (geen prune; uitbreiden gebeurt later zonder migratie).
 
-Draait UITSLUITEND via `platform_init` (init-container, cd_admin) — niet in het
+Draait UITSLUITEND via `platform_init` (init-container, lk_admin) — niet in het
 tenant-/app-pad. `bouw_contractconfig()` is puur (DB-vrij) en zo testbaar. De
 sleutels zijn stabiel + lowercase snake_case; bewerken = soft-deactiveren (`actief`),
 nooit hard verwijderen/hernummeren (ADR-020 Besluit 6).

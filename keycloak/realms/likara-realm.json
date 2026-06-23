@@ -1,5 +1,5 @@
 {
-  "realm": "complidata",
+  "realm": "likara",
   "enabled": true,
   "displayName": "LIKARA",
   "loginTheme": "likara",
@@ -26,7 +26,7 @@
   },
   "clients": [
     {
-      "clientId": "complidata-api",
+      "clientId": "likara-api",
       "name": "LIKARA Backend API",
       "enabled": true,
       "clientAuthenticatorType": "client-secret",
@@ -68,11 +68,11 @@
           }
         },
         {
-          "name": "audience-complidata-api",
+          "name": "audience-likara-api",
           "protocol": "openid-connect",
           "protocolMapper": "oidc-audience-mapper",
           "config": {
-            "included.client.audience": "complidata-api",
+            "included.client.audience": "likara-api",
             "id.token.claim": "false",
             "access.token.claim": "true"
           }
@@ -80,7 +80,7 @@
       ]
     },
     {
-      "clientId": "complidata-ui",
+      "clientId": "likara-ui",
       "name": "LIKARA Frontend",
       "enabled": true,
       "publicClient": true,

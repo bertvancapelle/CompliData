@@ -62,8 +62,8 @@ def upgrade() -> None:
         "CREATE POLICY tenant_isolation ON categorie_klaarverklaring "
         "USING (tenant_id = current_setting('app.tenant_id')::uuid)"
     )
-    op.execute("REVOKE ALL ON categorie_klaarverklaring FROM cd_app")
-    op.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON categorie_klaarverklaring TO cd_app")
+    op.execute("REVOKE ALL ON categorie_klaarverklaring FROM lk_app")
+    op.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON categorie_klaarverklaring TO lk_app")
 
 
 def downgrade() -> None:

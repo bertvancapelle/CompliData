@@ -1,6 +1,6 @@
 """Catalogus-lookup voor de platform-brede partijsoort-catalogus (ADR-024 slice 1).
 
-De tenant-sessie (`cd_app`) mag de platform-brede catalogus LEZEN (SELECT-grant). `soort`
+De tenant-sessie (`lk_app`) mag de platform-brede catalogus LEZEN (SELECT-grant). `soort`
 op een partij is **optioneel** (registratiegat) — validatie alleen wanneer een soort is
 opgegeven. Spiegelt het bestaande catalogus-lookup-patroon (vraagbetekenis/componentconfig).
 """

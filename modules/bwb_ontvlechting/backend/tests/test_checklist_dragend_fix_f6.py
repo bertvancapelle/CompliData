@@ -21,7 +21,7 @@ from app.core.tenant_context import (
 )
 
 _TID = "11111111-1111-1111-1111-111111111111"
-_CD_APP_URL = "postgresql+asyncpg://cd_app:changeme_dev@localhost:5432/complidata"
+_CD_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
 
 # tests/ -> backend/ -> bwb_ontvlechting/ ; migraties onder bwb_ontvlechting/migrations/.
 _MIGRATIE = (
@@ -82,7 +82,7 @@ def _db_bereikbaar() -> bool:
         return False
 
 
-integratie = pytest.mark.skipif(not _db_bereikbaar(), reason="cd_app-DB niet bereikbaar (offline)")
+integratie = pytest.mark.skipif(not _db_bereikbaar(), reason="lk_app-DB niet bereikbaar (offline)")
 
 
 async def _run_rls(tenant, actor, fn):

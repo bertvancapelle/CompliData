@@ -6,11 +6,11 @@
         <div id="kc-form">
           <div id="kc-form-wrapper">
             <#-- LIKARA-huisstijl (boven het formulier, binnen het witte kaartje) -->
-            <div class="kilara-brand">
-              <div class="kilara-icon">L</div>
-              <span class="kilara-name">LIKARA</span>
+            <div class="likara-brand">
+              <div class="likara-icon">L</div>
+              <span class="likara-name">LIKARA</span>
             </div>
-            <p class="kilara-tagline">
+            <p class="likara-tagline">
               <b>L</b>ogische <b>I</b>CT <b>K</b>aart
               <b>A</b>fhankelijkheden <b>R</b>elaties <b>A</b>nalyse
             </p>

@@ -55,13 +55,13 @@ async def me(request: Request, user: AuthenticatedUser = Depends(get_current_use
 ## DB-rollen — driedeling (ADR-011/012)
 
 ```python
-# cd_app       — non-superuser, tenant-werk onder RLS (get_session / get_tenant_session)
-# cd_platform  — non-superuser, platform-endpoints (get_platform_session)
-# cd_admin     — superuser, UITSLUITEND init-container (migratie + platform_init); NOOIT in de app
+# lk_app       — non-superuser, tenant-werk onder RLS (get_session / get_tenant_session)
+# lk_platform  — non-superuser, platform-endpoints (get_platform_session)
+# lk_admin     — superuser, UITSLUITEND init-container (migratie + platform_init); NOOIT in de app
 ```
 
-`cd_admin` is volledig uit de app-laag (OP-11): geen `admin_database_url`, geen
-`get_admin_session`. Platform-werk loopt via `cd_platform`. Details + grants:
+`lk_admin` is volledig uit de app-laag (OP-11): geen `admin_database_url`, geen
+`get_admin_session`. Platform-werk loopt via `lk_platform`. Details + grants:
 zie complidata-db (DB-rollen / migratie-deploypatroon).
 
 ## Tweelaags rollenmodel + twee permissiedomeinen (ADR-012)
@@ -71,7 +71,7 @@ Een account is **óf platform óf tenant — nooit beide** (strikt gescheiden):
 | Domein | Rollen | Permissietabel | Guard | Sessie |
 |---|---|---|---|---|
 | Tenant | viewer · medewerker · beheerder · auditor | `core/rbac.py` `PERMISSIES` | `vereist_permissie` | `get_session` (RLS) |
-| Platform | platformbeheerder · platformoperator | `core/platform_rbac.py` `PLATFORM_PERMISSIES` | `vereist_platform_permissie` | `get_platform_session` (cd_platform) |
+| Platform | platformbeheerder · platformoperator | `core/platform_rbac.py` `PLATFORM_PERMISSIES` | `vereist_platform_permissie` | `get_platform_session` (lk_platform) |
 
 - Twee **onafhankelijke** barrières: een tenant-rol op een platform-endpoint ⇒
   **403**, en een platform-rol op een tenant-endpoint ⇒ **403** (kruis-scheiding).
@@ -215,8 +215,8 @@ is onjuist — openstaand vervolgpunt.)
 - **`PlatformEntiteit.CHECKLISTCONFIG`** (ADR-012 Addendum A): platformbeheerder `{L,A,W}`,
   platformoperator `{L}`, **geen `V`** — een optie wordt soft-gedeactiveerd (W), nooit hard
   verwijderd. De config-endpoints zijn geguard met `vereist_platform_permissie(CHECKLISTCONFIG, …)`
-  op `get_platform_session` (cd_platform). [CD031]
-- **Domeingrens als veiligheidsgrens, niet alleen scheiding**: `cd_platform` mag de tenant-tabel
+  op `get_platform_session` (lk_platform). [CD031]
+- **Domeingrens als veiligheidsgrens, niet alleen scheiding**: `lk_platform` mag de tenant-tabel
   `checklistscore` **niet lezen** → een cross-domain "is deze optie/dit type in gebruik?"-check is
   onmogelijk. Conservatief blokkeren (antwoordtype alleen vanuit `geen`) is hier de veilige keuze;
   `geen→type` is bewijsbaar antwoord-vrij. Soft-deactivate verweest niets (read levert inactieve
@@ -235,7 +235,7 @@ is onjuist — openstaand vervolgpunt.)
   Gebruikersaanmaak loopt via een eigen Keycloak-client `likara-user-provisioning`
   (`serviceAccountsEnabled`, client-credentials-grant), met **uitsluitend** de
   `realm-management`-rollen `manage-users` + `view-users` — niet de brede master-admin-creds.
-  Structureel consistent met de cd_app/cd_platform/cd_admin-least-privilege-driedeling.
+  Structureel consistent met de lk_app/lk_platform/lk_admin-least-privilege-driedeling.
   Realm-export-patroon (Keycloak 24): client + synthetische `users`-entry
   `{username:"service-account-<client>", serviceAccountClientId, clientRoles:{"realm-management":
   ["manage-users","view-users"]}}`. **Verplichte live-verificatie** na `down -v && up -d`:

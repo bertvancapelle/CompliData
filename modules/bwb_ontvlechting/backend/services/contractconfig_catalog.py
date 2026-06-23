@@ -1,6 +1,6 @@
 """Catalogus-lookup/-validatie voor het contractregister (ADR-020 Besluit 6/10).
 
-De tenant-sessie (`cd_app`) mag de platform-brede catalogus `contractconfig_optie`
+De tenant-sessie (`lk_app`) mag de platform-brede catalogus `contractconfig_optie`
 LEZEN (SELECT-grant, CD040 geverifieerd). Bij opslaan worden sleutels gevalideerd
 tegen de **actieve** opties van de **juiste dimensie**; bij uitlezen resolvet elke
 opgeslagen sleutel — ook een gedeactiveerde — naar zijn label, zodat historische

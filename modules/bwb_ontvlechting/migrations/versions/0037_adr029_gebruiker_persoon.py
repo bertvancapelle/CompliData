@@ -46,7 +46,7 @@ def upgrade() -> None:
         "USING (tenant_id = current_setting('app.tenant_id')::uuid)"
     )
     op.execute("REVOKE ALL ON gebruiker_persoon FROM PUBLIC")
-    op.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON gebruiker_persoon TO cd_app")
+    op.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON gebruiker_persoon TO lk_app")
 
 
 def downgrade() -> None:

@@ -1,7 +1,7 @@
 """Tests — ADR-022 Fase E: een tweede checklist-dragend componenttype end-to-end
-(live cd_app-DB, skip indien onbereikbaar).
+(live lk_app-DB, skip indien onbereikbaar).
 
-Gebruikt `saas_dienst` als wegwerp-type: de catalogus-vlag wordt als `cd_admin`
+Gebruikt `saas_dienst` als wegwerp-type: de catalogus-vlag wordt als `lk_admin`
 (fixture-rol) op true gezet en in `finally` weer op false; componenten/vragen worden
 opgeruimd. (`applicatieserver` is het persistente dev-seed-demotype; hier bewust een
 ánder ongebruikt type zodat de test onafhankelijk van de seed draait.)
@@ -24,8 +24,8 @@ import app.core.database  # noqa: F401 — registreert de tenant-context-hook
 from app.core.tenant_context import reset_tenant_context, zet_tenant_context
 
 _TID = "11111111-1111-1111-1111-111111111111"
-_CD_APP_URL = "postgresql+asyncpg://cd_app:changeme_dev@localhost:5432/complidata"
-_CD_ADMIN_URL = "postgresql+asyncpg://cd_admin:changeme_dev@localhost:5432/complidata"
+_CD_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
+_CD_ADMIN_URL = "postgresql+asyncpg://lk_admin:changeme_dev@localhost:5432/likara"
 _TYPE = "saas_dienst"
 
 
@@ -45,7 +45,7 @@ def _db_bereikbaar() -> bool:
         return False
 
 
-integratie = pytest.mark.skipif(not _db_bereikbaar(), reason="cd_app-DB niet bereikbaar (offline)")
+integratie = pytest.mark.skipif(not _db_bereikbaar(), reason="lk_app-DB niet bereikbaar (offline)")
 
 
 async def _sessie_run(fn):
@@ -151,7 +151,7 @@ def test_tweede_type_lifecycle_end_to_end():
             await s.commit()
 
     async def _run():
-        # Setup: markeer het wegwerp-type checklist-dragend (cd_admin-fixture).
+        # Setup: markeer het wegwerp-type checklist-dragend (lk_admin-fixture).
         await _admin_exec(
             "UPDATE componentconfig_optie SET checklist_dragend = true "
             "WHERE dimensie = 'componenttype' AND optie_sleutel = :t",

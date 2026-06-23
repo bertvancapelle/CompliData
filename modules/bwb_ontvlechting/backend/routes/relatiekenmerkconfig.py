@@ -1,7 +1,7 @@
 """Platform-beheer-endpoints — relatie-kenmerk-catalogus (ADR-023 Fase F / F-4).
 
 Geautoriseerd via `vereist_platform_permissie(RELATIEKENMERKCONFIG, …)` (platform-rollen) op
-`get_platform_session` (cd_platform, géén tenant-/RLS-context). Beheert referentiedata
+`get_platform_session` (lk_platform, géén tenant-/RLS-context). Beheert referentiedata
 (`relatiekenmerk_optie`, dimensies dispositie/relatie_rol); raakt de tenant-data NIET.
 Géén DELETE (soft-deactivate via `actief`). Spiegel van `routes/componentconfig`.
 """

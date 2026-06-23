@@ -15,8 +15,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Geen root in productie
-RUN useradd -m -u 1000 complidata && chown -R complidata:complidata /app
-USER complidata
+RUN useradd -m -u 1000 likara && chown -R likara:likara /app
+USER likara
 
 EXPOSE 8000
 

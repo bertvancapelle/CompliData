@@ -5,16 +5,16 @@ Revises: 0007_adr022_beoordelingsprofiel
 Create Date: 2026-06-13
 
 `checklistvraag` (+ `checklistvraag_optie`) worden **tenant-scoped** (RLS + FORCE),
-eigendom van de tenant met volledige CRUD via `cd_app`. Identiteit van een vraag:
+eigendom van de tenant met volledige CRUD via `lk_app`. Identiteit van een vraag:
 `UNIQUE(tenant_id, componenttype, code)`; `UNIQUE(tenant_id, id)` is het composiet-
 FK-target. Kind-FK's (`checklistscore`, `checklistvraag_optie`) worden composiet
 `(tenant_id, checklistvraag_id)` → `checklistvraag(tenant_id, id)` — het schema dwingt
 tenant-gelijkheid af (Knoop 1). `checklistvraag.actief` (default true) draagt de
-soft-deactivatie. Grants flippen van `cd_platform`-CRUD naar `cd_app`-CRUD onder RLS.
+soft-deactivatie. Grants flippen van `lk_platform`-CRUD naar `lk_app`-CRUD onder RLS.
 
 Pre-productie: de vragenset is tenant-data geworden → `TRUNCATE checklistvraag CASCADE`
 (wist opties/scores/blokkades) en `dev_seed_testdata.py` herseedt de baseline **per
-tenant** als `cd_app`. `platform_init` zaait deze tabellen niet meer.
+tenant** als `lk_app`. `platform_init` zaait deze tabellen niet meer.
 """
 from typing import Sequence, Union
 
@@ -74,8 +74,8 @@ def upgrade() -> None:
             f"CREATE POLICY tenant_isolation ON {tabel} "
             f"USING (tenant_id = current_setting('app.tenant_id')::uuid)"
         )
-        op.execute(f"REVOKE ALL ON {tabel} FROM cd_platform")
-        op.execute(f"GRANT SELECT, INSERT, UPDATE, DELETE ON {tabel} TO cd_app")
+        op.execute(f"REVOKE ALL ON {tabel} FROM lk_platform")
+        op.execute(f"GRANT SELECT, INSERT, UPDATE, DELETE ON {tabel} TO lk_app")
 
     op.create_index("ix_checklistvraag_tenant_type", "checklistvraag", ["tenant_id", "componenttype"])
 
@@ -89,8 +89,8 @@ def downgrade() -> None:
         op.execute(f"DROP POLICY IF EXISTS tenant_isolation ON {tabel}")
         op.execute(f"ALTER TABLE {tabel} NO FORCE ROW LEVEL SECURITY")
         op.execute(f"ALTER TABLE {tabel} DISABLE ROW LEVEL SECURITY")
-        op.execute(f"REVOKE INSERT, UPDATE, DELETE ON {tabel} FROM cd_app")
-        op.execute(f"GRANT SELECT, INSERT, UPDATE ON {tabel} TO cd_platform")
+        op.execute(f"REVOKE INSERT, UPDATE, DELETE ON {tabel} FROM lk_app")
+        op.execute(f"GRANT SELECT, INSERT, UPDATE ON {tabel} TO lk_platform")
 
     # checklistscore composiet-FK weg
     op.execute("ALTER TABLE checklistscore DROP CONSTRAINT IF EXISTS fk_checklistscore_vraag")

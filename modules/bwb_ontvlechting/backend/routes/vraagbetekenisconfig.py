@@ -1,7 +1,7 @@
 """Platform-beheer-endpoints — vraagbetekenis-catalogus.
 
 Geautoriseerd via `vereist_platform_permissie(VRAAGBETEKENISCONFIG, …)` (platform-rollen) op
-`get_platform_session` (cd_platform). Beheert `vraagbetekenis_optie`; raakt tenant-data NIET.
+`get_platform_session` (lk_platform). Beheert `vraagbetekenis_optie`; raakt tenant-data NIET.
 Géén DELETE (soft-deactivate via `actief`). Spiegel van `routes/relatiekenmerkconfig`.
 """
 from fastapi import APIRouter, Depends

@@ -148,7 +148,7 @@ async def get_provisioning_token() -> str:
             data={
                 "grant_type": "client_credentials",
                 "client_id": "likara-user-provisioning",
-                "client_secret": settings.kilara_provisioning_secret,
+                "client_secret": settings.likara_provisioning_secret,
             },
         )
         if resp.status_code != 200:

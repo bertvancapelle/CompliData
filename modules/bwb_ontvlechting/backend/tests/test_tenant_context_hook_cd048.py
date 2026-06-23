@@ -1,7 +1,7 @@
 """Tests — transactie-lokale tenant-context via after_begin-hook (CD048).
 
 Unit-tests (offline): de hook-logica (skip non-RLS, fail-fast, set_config-lokaal) + de
-ContextVar-helpers. Integratie-tests (live cd_app-DB, skip indien onbereikbaar): het
+ContextVar-helpers. Integratie-tests (live lk_app-DB, skip indien onbereikbaar): het
 CD047-mechanisme zelf — post-commit refresh op een verse verbinding, geen context-lek,
 en cross-tenant-isolatie onder hergebruik van dezelfde poolverbinding.
 """
@@ -20,7 +20,7 @@ from app.core import tenant_context as tc
 
 _TENANT_A = "11111111-1111-1111-1111-111111111111"
 _TENANT_B = "22222222-2222-2222-2222-222222222222"
-_CD_APP_URL = "postgresql+asyncpg://cd_app:changeme_dev@localhost:5432/complidata"
+_CD_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
 
 
 # ── Unit: hook-logica + ContextVar-helpers ──────────────────────────────────────
@@ -69,7 +69,7 @@ def test_hook_zet_set_config_transactie_lokaal_met_tid():
     assert args[1] == {"tid": _TENANT_A}
 
 
-# ── Integratie (live cd_app) ────────────────────────────────────────────────────
+# ── Integratie (live lk_app) ────────────────────────────────────────────────────
 
 def _db_bereikbaar() -> bool:
     async def _check():
@@ -87,7 +87,7 @@ def _db_bereikbaar() -> bool:
 
 
 _DB = _db_bereikbaar()
-integratie = pytest.mark.skipif(not _DB, reason="cd_app-DB niet bereikbaar (offline run)")
+integratie = pytest.mark.skipif(not _DB, reason="lk_app-DB niet bereikbaar (offline run)")
 
 
 def _smf(**engine_kwargs):

@@ -23,8 +23,8 @@ Wacht tot de init-container klaar is en de API healthy is:
 
 ```bash
 # init-container moet exit 0 hebben en de 89 checklistvragen hebben geseed:
-docker inspect cd-migrate --format '{{.State.ExitCode}}'        # → 0
-docker logs cd-migrate | tail -1                                # → platform_init: 89 checklistvragen geborgd ...
+docker inspect lk-migrate --format '{{.State.ExitCode}}'        # → 0
+docker logs lk-migrate | tail -1                                # → platform_init: 89 checklistvragen geborgd ...
 
 # API health:
 curl -s http://localhost:8000/api/v1/health                     # → {"status":"ok","db":"ok"}
@@ -51,7 +51,7 @@ init-container. De **dev-testdata** (12 applicaties, 14 componenten, register, s
 is een aparte, idempotente fixture — draai hem ná de reset handmatig:
 
 ```bash
-docker exec -w /app cd-api python3 dev_seed_testdata.py
+docker exec -w /app lk-api python3 dev_seed_testdata.py
 ```
 
 Schone baseline daarna: componenten **14** · structuur **3** · leveranciers **4** ·
@@ -105,7 +105,7 @@ is een *affordance*; de backend handhaaft de rechten hoe dan ook.
 ## Troubleshooting
 
 - **Health:** `curl -s http://localhost:8000/api/v1/health` → `{"status":"ok","db":"ok"}`.
-  `degraded`/`db:error` → postgres nog niet healthy of `cd-migrate` niet klaar.
+  `degraded`/`db:error` → postgres nog niet healthy of `lk-migrate` niet klaar.
 - **Lege Applicatie-lijst:** verwacht — maak er één aan via "Nieuwe applicatie".
 - **Wel ingelogd bij Keycloak maar de app blijft op login / `/auth/me` 401:**
   cookie-probleem. De `cd_session`-cookie is `Secure`; voor lokaal **http** staat
@@ -114,7 +114,7 @@ is een *affordance*; de backend handhaaft de rechten hoe dan ook.
   `COOKIE_SECURE=false` in je `.env`.
 - **Open `http://localhost:3000`**, niet `:8000` — anders matcht de redirect_uri/
   cookie-origin niet.
-- **Keycloak nog niet klaar:** `docker logs cd-keycloak | tail`; wacht tot healthy
+- **Keycloak nog niet klaar:** `docker logs lk-keycloak | tail`; wacht tot healthy
   (realm `complidata` wordt met `--import-realm` geladen).
 - **Stoppen:** dev-server met `pkill -f vite`; stack met `docker compose down`
   (data blijft in volumes; `down -v` wist ook de database).

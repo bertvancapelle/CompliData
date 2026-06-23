@@ -14,7 +14,7 @@ ALTER TABLE {tabel} ENABLE ROW LEVEL SECURITY;
 ALTER TABLE {tabel} FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation ON {tabel}
     USING (tenant_id = current_setting('app.tenant_id')::uuid);
-GRANT SELECT, INSERT, UPDATE, DELETE ON {tabel} TO cd_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON {tabel} TO lk_app;
 ```
 
 `FORCE` is verplicht — zonder FORCE omzeilen table-owners de policy.
@@ -23,11 +23,11 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON {tabel} TO cd_app;
 
 ```sql
 -- Tenant-tabel
-GRANT SELECT, INSERT, UPDATE, DELETE ON {tabel} TO cd_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON {tabel} TO lk_app;
 
 -- Referentietabel (geen RLS) — inclusief sequence voor de int-PK
-GRANT SELECT, INSERT, UPDATE ON checklistvraag TO cd_app;
-GRANT USAGE, SELECT ON SEQUENCE checklistvraag_id_seq TO cd_app;
+GRANT SELECT, INSERT, UPDATE ON checklistvraag TO lk_app;
+GRANT USAGE, SELECT ON SEQUENCE checklistvraag_id_seq TO lk_app;
 ```
 
 ## PostgreSQL enum-types in migraties
@@ -73,7 +73,7 @@ Plaats `tenant_id` als eerste kolom in composite indexen.
 
 `ChecklistVraag` heeft **geen** RLS en **geen** `tenant_id` — het is
 platform-brede seeddata die alle tenants delen (int-PK, `code` UNIQUE).
-Alleen `GRANT SELECT, INSERT, UPDATE` + sequence-grant voor `cd_app`.
+Alleen `GRANT SELECT, INSERT, UPDATE` + sequence-grant voor `lk_app`.
 
 ## Alembic multi-location (platform + modules)
 
@@ -90,28 +90,28 @@ zijn leeg in V001). Verificatie offline: `alembic heads`, `alembic history`,
 
 | Rol | Type | Waar | Gebruik |
 |---|---|---|---|
-| `cd_admin` | superuser | **uitsluitend** de init-container | migratie (`alembic upgrade head`) + `platform_init`. NOOIT in de app-runtime. |
-| `cd_platform` | non-superuser | app-laag | platform-endpoints (tenant-provisioning, platforminstellingen). Grants **per platform-tabel** (least privilege), GEEN `CREATE`/DDL, GEEN toegang tot tenant-tabellen. |
-| `cd_app` | non-superuser | app-laag | tenant-werk onder RLS. |
+| `lk_admin` | superuser | **uitsluitend** de init-container | migratie (`alembic upgrade head`) + `platform_init`. NOOIT in de app-runtime. |
+| `lk_platform` | non-superuser | app-laag | platform-endpoints (tenant-provisioning, platforminstellingen). Grants **per platform-tabel** (least privilege), GEEN `CREATE`/DDL, GEEN toegang tot tenant-tabellen. |
+| `lk_app` | non-superuser | app-laag | tenant-werk onder RLS. |
 
-- Migreren als `cd_app` **kan niet en mag niet**: `cd_app` heeft geen `CREATE`
-  op schema `public` (`has_schema_privilege('cd_app','public','CREATE')=false`),
-  dus DDL faalt; bovendien hoort migratie als `cd_admin` (superuser/owner).
-- `cd_platform` (init-db): `CREATE ROLE cd_platform LOGIN` + `GRANT USAGE ON
+- Migreren als `lk_app` **kan niet en mag niet**: `lk_app` heeft geen `CREATE`
+  op schema `public` (`has_schema_privilege('lk_app','public','CREATE')=false`),
+  dus DDL faalt; bovendien hoort migratie als `lk_admin` (superuser/owner).
+- `lk_platform` (init-db): `CREATE ROLE lk_platform LOGIN` + `GRANT USAGE ON
   SCHEMA public` — bewust **geen** `ALTER DEFAULT PRIVILEGES`. Per platform-tabel
-  in de migratie: `GRANT SELECT,INSERT,UPDATE,DELETE ON {tabel} TO cd_platform`
-  én `REVOKE ALL ON {tabel} FROM cd_app` (platform-register valt buiten het
-  tenant-domein). Verificatie: cd_platform op een tenant-/referentietabel →
+  in de migratie: `GRANT SELECT,INSERT,UPDATE,DELETE ON {tabel} TO lk_platform`
+  én `REVOKE ALL ON {tabel} FROM lk_app` (platform-register valt buiten het
+  tenant-domein). Verificatie: lk_platform op een tenant-/referentietabel →
   `permission denied`.
 
 ## Migratie + platform-seed (init-container, ADR-011)
 
 ```yaml
-# docker-compose.yml — cd-migrate draait als cd_admin, run-to-completion
+# docker-compose.yml — lk-migrate draait als lk_admin, run-to-completion
 migrate:
   image: complidata-api:local
   command: ["sh","-c","python3 -m alembic upgrade head && python3 -m app.platform_init"]
-  # DATABASE_URL(_SYNC) = cd_admin; ook ./modules gemount (seed-bron)
+  # DATABASE_URL(_SYNC) = lk_admin; ook ./modules gemount (seed-bron)
 api:
   depends_on:
     migrate: { condition: service_completed_successfully }   # gating vóór app-start
@@ -127,9 +127,9 @@ api:
 ## Naamgeving
 
 - Platform-prefix: `cd_` (database `complidata`, rollen, containers `cd-*`).
-- App-gebruiker: `cd_app` (non-superuser — omzeilt RLS NIET).
-- Platform-gebruiker: `cd_platform` (non-superuser — platform-endpoints, ADR-012).
-- Admin-gebruiker: `cd_admin` — superuser, UITSLUITEND in de init-container.
+- App-gebruiker: `lk_app` (non-superuser — omzeilt RLS NIET).
+- Platform-gebruiker: `lk_platform` (non-superuser — platform-endpoints, ADR-012).
+- Admin-gebruiker: `lk_admin` — superuser, UITSLUITEND in de init-container.
 - Enum-typenamen: lowercase snake_case eindigend op `_enum`
   (`hostingmodel_enum`, `lifecycle_status_enum`, `niveau_enum`).
 
@@ -217,7 +217,7 @@ op pagina 1). Filters/sortering zitten **niet** in de cursor — reset volstaat.
   seed via platform-init). Koppeling vanuit Checklistscore op `vraag_code` (string),
   niet op id. [CD004]
 - **Data-pass-discipline**: een ADR-die-bestaande-data-raakt (ADR-016) eerst tegen de
-  DB tellen (read-only, als cd_admin); bij gevulde DB een herbereken-pass voorstellen,
+  DB tellen (read-only, als lk_admin); bij gevulde DB een herbereken-pass voorstellen,
   niet zelf draaien vóór akkoord. [CD011]
 
 ## V006-patronen (CD025–CD038, ADR-019, geverifieerd)
@@ -241,8 +241,8 @@ op pagina 1). Filters/sortering zitten **niet** in de cursor — reset volstaat.
   `{"getal": int}`. Geen DB-FK naar de catalogus — het `optie_sleutel` is stabiel en wordt nooit hard
   verwijderd; integriteit wordt app-side gevalideerd (actief + hoort bij de vraag). [CD027/CD028]
 - **Additieve migratie + grants**: `0003_antwoordconfig` voegt kolom + tabel + jsonb toe (bestaande
-  tabellen ongemoeid). Grants least-privilege: `cd_app` **SELECT-only** op de catalogus (validatie),
-  `cd_platform` SELECT/INSERT/UPDATE (beheer); `cd_platform` SELECT/UPDATE op `checklistvraag`. [CD027]
+  tabellen ongemoeid). Grants least-privilege: `lk_app` **SELECT-only** op de catalogus (validatie),
+  `lk_platform` SELECT/INSERT/UPDATE (beheer); `lk_platform` SELECT/UPDATE op `checklistvraag`. [CD027]
 
 ## V007-patronen (CD039–CD056, geverifieerd)
 
@@ -294,7 +294,7 @@ Er is **uitsluitend testdata**, geen productiedata. Daaruit volgt:
 - **Element-subtype-bouwrecept (herhaalbaar — ADR-023 Besluit 9/12)** — elk nieuw subtype: eigen `id`
   PK `gen_random_uuid()`; **composiet-FK `(tenant_id,id)` → `element(tenant_id,id)` `ON DELETE
   CASCADE`** (`fk_<type>_element`); `ENABLE` + **`FORCE ROW LEVEL SECURITY`** + `tenant_isolation`-
-  policy + `REVOKE ALL`/`GRANT SELECT,INSERT,UPDATE,DELETE … TO cd_app`; **type-eigen velden alléén**
+  policy + `REVOKE ALL`/`GRANT SELECT,INSERT,UPDATE,DELETE … TO lk_app`; **type-eigen velden alléén**
   (subtype enkel als er type-eigen velden zijn — een "kaal" type blijft generiek `component`). Aanmaak
   in de service: `Element(element_type=…)` → `flush` → subtype-rij met **dezelfde `id`**; delete via
   het element-supertype (cascade element → subtype → relaties). Een nieuw migratielaag-subtype hoeft de
@@ -318,16 +318,16 @@ Er is **uitsluitend testdata**, geen productiedata. Daaruit volgt:
 
 ## V010 — Fase F (F-3): betekenis-marker + cross-tenant datamigratie (geverifieerd)
 
-- **Cross-tenant datamigratie op een FORCE-RLS-tabel**: `cd_admin` = `POSTGRES_USER` = **superuser** →
+- **Cross-tenant datamigratie op een FORCE-RLS-tabel**: `lk_admin` = `POSTGRES_USER` = **superuser** →
   bypasst FORCE RLS. Een migratie-`UPDATE` over een tenant-scoped tabel **zonder** tenant-filter raakt
   daarom **álle tenants** in één statement — precies wat een backfill nodig heeft. Voorbeeld `0024`:
   `UPDATE checklistvraag SET betekenis='technische_plaatsing' WHERE code='2.2' AND componenttype='applicatie'`
-  (geverifieerd als cd_admin: per tenant exact díé ene drager, 0 andere). `cd_app`/`cd_platform` bypassen
+  (geverifieerd als lk_admin: per tenant exact díé ene drager, 0 andere). `lk_app`/`lk_platform` bypassen
   RLS **niet** — alleen de migratierol. (Naast het bestaande "Data-pass-discipline": een ADR-die-data-
-  raakt eerst read-only tellen als cd_admin.)
+  raakt eerst read-only tellen als lk_admin.)
 - **Classificatie-marker-patroon (naast de catalogus-familie)**: een **enkel-doel** platform-catalogus
   (`vraagbetekenis_optie` — géén `dimensie`-discriminator, géén RLS; grants exact als `relatiekenmerk_optie`:
-  `cd_app` SELECT, `cd_platform` SELECT/INSERT/UPDATE + sequence, **geen DELETE**) + een **nullable
+  `lk_app` SELECT, `lk_platform` SELECT/INSERT/UPDATE + sequence, **geen DELETE**) + een **nullable
   marker-kolom** op de tenant-eigen entiteit (`checklistvraag.betekenis`, de stabiele `optie_sleutel`,
   app-side gevalideerd, **geen harde FK**). Gebruik dit waar één betekenis-as volstaat; gebruik de
   `dimensie`-catalogus-familie waar meerdere vocabulaires één tabel delen.

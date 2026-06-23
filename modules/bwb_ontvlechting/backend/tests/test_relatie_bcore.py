@@ -131,7 +131,7 @@ def test_rbac_matrix_relatie(monkeypatch, rol, actie, method, pad, body, ok_code
 
 # ── Live: CRUD + integriteit + validatie ─────────────────────────────────────────
 
-_CD_APP_URL = "postgresql+asyncpg://cd_app:changeme_dev@localhost:5432/complidata"
+_CD_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
 
 
 def _relatie_tabel_bestaat() -> bool:

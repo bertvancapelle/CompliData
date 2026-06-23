@@ -62,8 +62,8 @@ def upgrade() -> None:
         "CREATE POLICY tenant_isolation ON work_package "
         "USING (tenant_id = current_setting('app.tenant_id')::uuid)"
     )
-    op.execute("REVOKE ALL ON work_package FROM cd_app")
-    op.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON work_package TO cd_app")
+    op.execute("REVOKE ALL ON work_package FROM lk_app")
+    op.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON work_package TO lk_app")
 
 
 def downgrade() -> None:

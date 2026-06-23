@@ -1,11 +1,11 @@
-"""ADR-006 — audit-capture end-to-end (live cd_app/cd_platform-DB, skip indien onbereikbaar).
+"""ADR-006 — audit-capture end-to-end (live lk_app/lk_platform-DB, skip indien onbereikbaar).
 
 Vereist migratie `0010` (audit_log/platform_audit_log). Valideert wat de offline-grens
 niet dekt: de capture-hook schrijft bij een echte flush, actor/correlatie/hash worden
 gevuld, driver + afgeleide gevolgen delen één correlatie_id, de blokkade-classificatie
 splitst (derive bij score-driver, update bij handmatige wissel), RLS-isolatie +
 append-only (grant/trigger) gelden, en platform-mutaties landen in `platform_audit_log`
-met een string-`entiteit_id`. Eigen engines (echte cd_app/cd_platform-URL), net als de
+met een string-`entiteit_id`. Eigen engines (echte lk_app/lk_platform-URL), net als de
 CD048-tests — de app-engines draaien in tests op dummy-settings. Append-only: testresidu
 in de audit-tabellen is per ontwerp niet opruimbaar (de inhoud-entiteiten worden wél
 opgeruimd).
@@ -22,8 +22,8 @@ from app.core import tenant_context as tc
 from app.core.audit import verifieer_keten
 from app.core.database import _markeer_rls
 
-_CD_APP_URL = "postgresql+asyncpg://cd_app:changeme_dev@localhost:5432/complidata"
-_CD_PLATFORM_URL = "postgresql+asyncpg://cd_platform:changeme_dev@localhost:5432/complidata"
+_CD_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
+_CD_PLATFORM_URL = "postgresql+asyncpg://lk_platform:changeme_dev@localhost:5432/likara"
 DEV_TENANT = "11111111-1111-1111-1111-111111111111"
 TENANT_B = "22222222-2222-2222-2222-222222222222"
 
@@ -54,7 +54,7 @@ live = pytest.mark.skipif(
 
 @asynccontextmanager
 async def _worker(tenant, actor="system:dev_seed"):
-    """Tenant-RLS-sessie op de echte cd_app-DB + tenant/audit-context (zoals
+    """Tenant-RLS-sessie op de echte lk_app-DB + tenant/audit-context (zoals
     get_worker_session, maar op een eigen engine)."""
     eng = create_async_engine(_CD_APP_URL)
     smf = async_sessionmaker(eng, class_=AsyncSession, expire_on_commit=False)
@@ -76,7 +76,7 @@ async def _worker(tenant, actor="system:dev_seed"):
 
 @asynccontextmanager
 async def _platform(actor="system:platform_init"):
-    """Platform-sessie (cd_platform, GEEN RLS-marker) + audit-context → de hook
+    """Platform-sessie (lk_platform, GEEN RLS-marker) + audit-context → de hook
     routeert naar platform_audit_log."""
     eng = create_async_engine(_CD_PLATFORM_URL)
     smf = async_sessionmaker(eng, class_=AsyncSession, expire_on_commit=False)
@@ -276,7 +276,7 @@ def test_rls_isolatie_auditlog():
 
 @live
 def test_append_only_grant_en_trigger_weigeren_mutatie():
-    """cd_app mag audit_log niet UPDATE/DELETE/TRUNCATE (grant) en de trigger blokkeert
+    """lk_app mag audit_log niet UPDATE/DELETE/TRUNCATE (grant) en de trigger blokkeert
     UPDATE/DELETE bovendien — alle werpen een fout."""
     async def _probeer(sql):
         async with _worker(DEV_TENANT) as s:

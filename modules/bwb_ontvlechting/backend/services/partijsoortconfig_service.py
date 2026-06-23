@@ -1,6 +1,6 @@
 """Service-laag — platform-beheer van de partijsoort-catalogus.
 
-Spiegel van `vraagbetekenisconfig_service` op `get_platform_session` (cd_platform), enkel-doel
+Spiegel van `vraagbetekenisconfig_service` op `get_platform_session` (lk_platform), enkel-doel
 (geen `dimensie`). Beheert `partijsoort_optie`. Geen hard delete; soft-deactivate via `actief`.
 NB: platform-laag — tenant-eigen partijsoort blijft geparkeerd.
 """
