@@ -27,7 +27,17 @@ const LC_STYLE = {
 }
 const lcStyle = (s) => LC_STYLE[s] || LC_STYLE.null
 const LIFECYCLE_OPTIES = ['migratieklaar', 'in_inventarisatie', 'geblokkeerd', 'concept']
-const RINGEN = ['applicaties', 'beheerorganisatie', 'contracten', 'infrastructuur']
+const RINGEN = ['applicaties', 'rollen', 'gebruikers', 'contracten', 'infrastructuur']
+// ADR-031 — leesbare ring-namen. Backend levert ring='beheerorganisatie' → bij laden gemapt op 'rollen'.
+const RING_LABELS = {
+  applicaties: 'Applicaties',
+  rollen: 'Rollen & beheer',
+  gebruikers: 'Gebruikers',
+  contracten: 'Contracten',
+  infrastructuur: 'Infrastructuur',
+}
+// ADR-031 — gebruikersgroep-node-stijl (distinctief t.o.v. applicaties).
+const GG_STYLE = { bg: '#e0f2fe', border: '#0ea5e9' }
 const INSET = { bg: '#1e3a8a', border: '#1e3a8a' }
 const RAAKVLAK = { bg: '#fed7aa', border: '#ea580c' }
 // Deterministische domeinkleuren (border in "kleur op domein"-modus).
@@ -57,7 +67,50 @@ const diepte = ref(1) // 1 = directe buren (ego); 2 = ook indirecte applicatie-b
 const containerRef = ref(null)
 let cy = null
 
-const nodePerId = computed(() => Object.fromEntries(nodes.value.map((n) => [n.id, n])))
+// ADR-031 — sub-granulariteit Gebruikers-ring: groepeer gebruikersgroepen per organisatie.
+const groepeerPerOrg = ref(false)
+const _rawNaam = (id) => nodes.value.find((n) => n.id === id)?.naam
+// Effectieve graaf-nodes/-edges. Bij "groepeer per organisatie" vervangen we de individuele
+// gebruikersgroep-nodes door één aggregaat-node per organisatie (gesommeerd ledental) en hangen
+// de serving-edges aan dat aggregaat (gededupliceerd). Alle graaf-afgeleiden gebruiken deze.
+const grafNodes = computed(() => {
+  if (!groepeerPerOrg.value) return nodes.value
+  const overig = nodes.value.filter((n) => n.element_type !== 'gebruikersgroep')
+  const agg = new Map()
+  for (const g of nodes.value) {
+    if (g.element_type !== 'gebruikersgroep') continue
+    const key = g.organisatie_id || '__overig__'
+    const cur = agg.get(key) || {
+      id: `gg-org-${key}`, element_type: 'gebruikersgroep', laag: 'business',
+      naam: g.organisatie_id ? _rawNaam(g.organisatie_id) || 'Organisatie' : 'Overige groepen',
+      organisatie_id: g.organisatie_id || null, aantal_leden: 0,
+    }
+    cur.aantal_leden += g.aantal_leden || 0
+    agg.set(key, cur)
+  }
+  return [...overig, ...agg.values()]
+})
+const grafEdges = computed(() => {
+  if (!groepeerPerOrg.value) return edges.value
+  const naarAgg = new Map()
+  for (const n of nodes.value) {
+    if (n.element_type === 'gebruikersgroep') naarAgg.set(n.id, `gg-org-${n.organisatie_id || '__overig__'}`)
+  }
+  const out = []
+  const gezien = new Set()
+  for (const e of edges.value) {
+    if (e.ring === 'gebruikers' && naarAgg.has(e.doel_id)) {
+      const aggId = naarAgg.get(e.doel_id)
+      const k = `${e.bron_id}->${aggId}`
+      if (gezien.has(k)) continue
+      gezien.add(k)
+      out.push({ ...e, doel_id: aggId })
+    } else out.push(e)
+  }
+  return out
+})
+
+const nodePerId = computed(() => Object.fromEntries(grafNodes.value.map((n) => [n.id, n])))
 const heeftData = computed(() => nodes.value.length > 0)
 const isApplicatie = (n) => n?.element_type === 'applicatie'
 
@@ -68,7 +121,8 @@ async function laad() {
   try {
     const data = await api.landschapskaart.haalGrafdata({ diepte: diepte.value })
     nodes.value = data.nodes || []
-    edges.value = data.edges || []
+    // ADR-031 — map de backend-ring 'beheerorganisatie' op de UI-ringnaam 'rollen'.
+    edges.value = (data.edges || []).map((e) => (e.ring === 'beheerorganisatie' ? { ...e, ring: 'rollen' } : e))
     const eersteApp = nodes.value.find(isApplicatie)
     egoStartId.value = eersteApp ? eersteApp.id : null
   } catch (e) {
@@ -116,7 +170,7 @@ const gefilterdeNodes = computed(() => appNodes.value.filter(_matcht))
 // Directe buren van één node (via de actieve ringen).
 function _burenVan(id) {
   const ids = new Set()
-  for (const e of edges.value) {
+  for (const e of grafEdges.value) {
     if (!ringAan.value.has(e.ring)) continue
     if (e.bron_id === id) ids.add(e.doel_id)
     else if (e.doel_id === id) ids.add(e.bron_id)
@@ -144,24 +198,24 @@ const egoZichtbaarIds = computed(() => {
 })
 const zichtbareNodes = computed(() => {
   if (modus.value === 'ego') {
-    return nodes.value.filter((n) => egoZichtbaarIds.value.has(n.id))
+    return grafNodes.value.filter((n) => egoZichtbaarIds.value.has(n.id))
   }
-  if (modus.value === 'impact') return nodes.value.filter(isApplicatie)
+  if (modus.value === 'impact') return grafNodes.value.filter(isApplicatie)
   // Geheel model toont standaard het VOLLEDIGE landschap (Fix 1: gebruiker verwacht alles te zien).
   // Filters verfijnen: opbouw = alleen de match; afpel = alles behalve de match.
-  if (!filterActief.value) return nodes.value
+  if (!filterActief.value) return grafNodes.value
   const match = new Set(gefilterdeNodes.value.map((n) => n.id))
-  return nodes.value.filter((n) => (opbouwModus.value ? match.has(n.id) : !match.has(n.id)))
+  return grafNodes.value.filter((n) => (opbouwModus.value ? match.has(n.id) : !match.has(n.id)))
 })
 const zichtbareNodeIds = computed(() => new Set(zichtbareNodes.value.map((n) => n.id)))
 const zichtbareEdges = computed(() =>
-  edges.value.filter(
+  grafEdges.value.filter(
     (e) => zichtbareNodeIds.value.has(e.bron_id) && zichtbareNodeIds.value.has(e.doel_id) && (modus.value !== 'ego' && modus.value !== 'geheel' ? true : ringAan.value.has(e.ring)),
   ),
 )
 
 // ── Impact-berekening ───────────────────────────────────────────────────────────
-const flowEdges = computed(() => edges.value.filter((e) => e.ring === 'applicaties'))
+const flowEdges = computed(() => grafEdges.value.filter((e) => e.ring === 'applicaties'))
 const grensEdges = computed(() => flowEdges.value.filter((e) => actieveSet.value.has(e.bron_id) !== actieveSet.value.has(e.doel_id)))
 const raakvlakken = computed(() => {
   const s = new Set()
@@ -196,7 +250,7 @@ const detailNode = computed(() => (detailId.value ? nodePerId.value[detailId.val
 const detailKoppelingen = computed(() => {
   const id = detailId.value
   if (!id) return 0
-  return edges.value.filter((e) => e.bron_id === id || e.doel_id === id).length
+  return grafEdges.value.filter((e) => e.bron_id === id || e.doel_id === id).length
 })
 function selecteerNode(id) {
   detailId.value = id
@@ -323,6 +377,15 @@ async function openNodePopup(id) {
   popupSelId.value = null
   popupVelden.value = _nodePrefill(n)
   popupOpen.value = true
+  // ADR-031 — gebruikersgroep heeft geen detail-endpoint: toon ledental + organisatie uit node-data.
+  if (n.element_type === 'gebruikersgroep') {
+    popupVelden.value = _velden([
+      n.aantal_leden ? { label: 'Leden', waarde: String(n.aantal_leden) } : null,
+      _veld('Organisatie', n.organisatie_id ? nodePerId.value[n.organisatie_id]?.naam : null),
+    ])
+    popupLaden.value = false
+    return
+  }
   popupLaden.value = true
   try {
     const et = n.element_type
@@ -363,18 +426,41 @@ function _flowRij(r, edge) {
 // of meer flows bundelt. Haal ALLE flows van het ONGEORDENDE paar op, sorteer op naam, en toon
 // ze als master-detail (links lijst + richting-icoon, rechts detail). Geldt ook bij n=1.
 async function openEdgePopup(edge) {
-  if (!edge || edge.ring !== 'applicaties') return
+  if (!edge) return
   const bronNaam = nodePerId.value[edge.bron_id]?.naam || '?'
   const doelNaam = nodePerId.value[edge.doel_id]?.naam || '?'
   popupKind.value = 'edge'
   popupBadge.value = null
-  popupTitel.value = `Koppelingen: ${bronNaam} ↔ ${doelNaam}`
   popupActie.value = null
   popupMelding.value = null
   popupVelden.value = []
   popupFlows.value = []
   popupSelId.value = null
   popupOpen.value = true
+  // ADR-031 — niet-flow ringen: directe velden uit de edge + node-namen (geen API-call).
+  if (edge.ring !== 'applicaties') {
+    popupLaden.value = false
+    if (edge.ring === 'rollen') {
+      popupTitel.value = edge.label || 'Rol'
+      popupVelden.value = _velden([_veld('Partij', bronNaam), _veld('Object', doelNaam)])
+    } else if (edge.ring === 'contracten') {
+      popupTitel.value = 'Valt onder contract'
+      popupVelden.value = _velden([_veld('Component', bronNaam), _veld('Contract', doelNaam)])
+    } else if (edge.ring === 'infrastructuur') {
+      popupTitel.value = 'Draait op'
+      popupVelden.value = _velden([_veld('Component', doelNaam), _veld('Host', bronNaam)])
+    } else if (edge.ring === 'gebruikers') {
+      popupTitel.value = 'Gebruikt door'
+      const gg = nodePerId.value[edge.doel_id]
+      popupVelden.value = _velden([
+        _veld('Applicatie', bronNaam),
+        _veld('Gebruikersgroep', doelNaam),
+        gg?.aantal_leden ? { label: 'Leden', waarde: String(gg.aantal_leden) } : null,
+      ])
+    }
+    return
+  }
+  popupTitel.value = `Koppelingen: ${bronNaam} ↔ ${doelNaam}`
   popupLaden.value = true
   try {
     const p = await api.relaties.lijst({ paar_bron_id: edge.bron_id, paar_doel_id: edge.doel_id, relatietype: 'flow' })
@@ -435,13 +521,22 @@ function _opEscape(e) {
 const hostingIcoon = (h) => (h === 'saas' ? '☁' : '🏢')
 
 function _nodeData(n) {
-  let bg = lcStyle(n.lifecycle_status).bg
-  let border = kleurOpDomein.value && n.domein ? domeinKleur.value[n.domein] : lcStyle(n.lifecycle_status).border
-  if (modus.value === 'impact') {
+  const isGG = n.element_type === 'gebruikersgroep'
+  let bg = isGG ? GG_STYLE.bg : lcStyle(n.lifecycle_status).bg
+  let border = isGG
+    ? GG_STYLE.border
+    : kleurOpDomein.value && n.domein
+      ? domeinKleur.value[n.domein]
+      : lcStyle(n.lifecycle_status).border
+  if (modus.value === 'impact' && !isGG) {
     if (inSet(n.id)) ({ bg, border } = INSET)
     else if (raakvlakken.value.has(n.id)) ({ bg, border } = RAAKVLAK)
   }
-  return { id: n.id, label: (n.naam || '') + (n.blokkades_open > 0 ? ' ⚠' : ''), bg, border }
+  // ADR-031 — gebruikersgroep: ledental als tweede labelregel (alleen bij >0); anders blokkade-vlag.
+  const label = isGG
+    ? (n.naam || '') + (n.aantal_leden > 0 ? `\n(${n.aantal_leden})` : '')
+    : (n.naam || '') + (n.blokkades_open > 0 ? ' ⚠' : '')
+  return { id: n.id, label, bg, border, shape: isGG ? 'ellipse' : 'round-rectangle' }
 }
 function _edgeData(e, i) {
   let lc = '#cbd5e1'
@@ -459,8 +554,11 @@ function _edgeData(e, i) {
   if (e.ring === 'applicaties') {
     const pijl = e.richting === 'tweerichting' || e.richting === 'bidirectioneel' ? '↔' : '→'
     label = ['koppeling', e.protocol ? String(e.protocol).toUpperCase() : null, pijl, e.aantal >= 2 ? `${e.aantal}×` : null].filter(Boolean).join(' · ')
+  } else {
+    // ADR-031 — rol-naam / 'gebruikt door' / 'valt onder' / 'draait op' uit de edge-data.
+    label = e.label || ''
   }
-  return { id: `e${i}-${e.bron_id}-${e.doel_id}-${e.relatietype}`, source: e.bron_id, target: e.doel_id, lc, w, ls, label }
+  return { id: `e${i}-${e.bron_id}-${e.doel_id}-${e.relatietype}`, source: e.bron_id, target: e.doel_id, ring: e.ring, lc, w, ls, label }
 }
 function _elementen() {
   let zn = zichtbareNodes.value
@@ -476,7 +574,7 @@ function _elementen() {
   const znIds = new Set(zn.map((n) => n.id))
   ze = ze.filter((e) => znIds.has(e.bron_id) && znIds.has(e.doel_id))
   return [
-    ...zn.map((n) => ({ data: _nodeData(n) })),
+    ...zn.map((n) => ({ data: _nodeData(n), classes: n.element_type === 'gebruikersgroep' ? 'gg' : undefined })),
     ...ze.map((e, i) => ({ data: _edgeData(e, i) })),
   ]
 }
@@ -529,9 +627,11 @@ const CY_STYLE = [
     style: {
       'background-color': 'data(bg)', 'border-color': 'data(border)', 'border-width': 2,
       label: 'data(label)', 'font-size': 9, 'text-valign': 'center', 'text-halign': 'center',
-      width: 78, height: 28, shape: 'round-rectangle', 'text-wrap': 'ellipsis', 'text-max-width': 70,
+      width: 78, height: 28, shape: 'data(shape)', 'text-wrap': 'ellipsis', 'text-max-width': 70,
     },
   },
+  // ADR-031 — gebruikersgroep-nodes: ronde vorm + wrap (ledental op tweede regel).
+  { selector: 'node.gg', style: { shape: 'ellipse', 'text-wrap': 'wrap', width: 64, height: 64 } },
   {
     selector: 'edge',
     style: {
@@ -569,7 +669,8 @@ onMounted(async () => {
     cy.on('tap', 'edge', (evt) => {
       const src = evt.target.data('source')
       const tgt = evt.target.data('target')
-      const edge = edges.value.find((e) => e.bron_id === src && e.doel_id === tgt && e.ring === 'applicaties')
+      const ring = evt.target.data('ring')
+      const edge = grafEdges.value.find((e) => e.bron_id === src && e.doel_id === tgt && e.ring === ring)
       if (edge) openEdgePopup(edge)
     })
     // Tap op leeg canvas sluit een open popup.
@@ -593,11 +694,11 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', _opEscape)
 })
 
-defineExpose({ openNodePopup, openEdgePopup, selecteerFlow, onNodeTap, sluitPopup, toggleFullscreen, fullscreen, popupOpen, _edgeData })
+defineExpose({ openNodePopup, openEdgePopup, selecteerFlow, onNodeTap, sluitPopup, toggleFullscreen, fullscreen, popupOpen, _edgeData, groepeerPerOrg, grafNodes, grafEdges })
 
 // Hertekenen bij elke state die de graaf raakt.
 watch(
-  [modus, zichtbareNodes, zichtbareEdges, actieveSet, kleurOpDomein, verbergOnverbonden],
+  [modus, zichtbareNodes, zichtbareEdges, actieveSet, kleurOpDomein, verbergOnverbonden, groepeerPerOrg],
   () => tekenGraaf(),
   { deep: false },
 )
@@ -672,9 +773,15 @@ const typeLabel = (t) => humaniseer(t)
 
         <template v-if="modus === 'ego'">
           <p class="font-semibold text-[length:var(--cd-text-sm)]">Ringen</p>
-          <label v-for="r in RINGEN" :key="r" class="flex items-center gap-2 text-[length:var(--cd-text-sm)]">
-            <input type="checkbox" :checked="ringAan.has(r)" :data-testid="`lk-ring-${r}`" @change="toggleRing(r)" />{{ typeLabel(r) }}
-          </label>
+          <template v-for="r in RINGEN" :key="r">
+            <label class="flex items-center gap-2 text-[length:var(--cd-text-sm)]">
+              <input type="checkbox" :checked="ringAan.has(r)" :data-testid="`lk-ring-${r}`" @change="toggleRing(r)" />{{ RING_LABELS[r] || typeLabel(r) }}
+            </label>
+            <!-- ADR-031 — sub-granulariteit: alleen zichtbaar als de Gebruikers-ring aan staat. -->
+            <label v-if="r === 'gebruikers' && ringAan.has('gebruikers')" class="ml-5 flex items-center gap-2 text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">
+              <input type="checkbox" :checked="groepeerPerOrg" data-testid="lk-groepeer-org" @change="groepeerPerOrg = !groepeerPerOrg" />Groepeer per organisatie
+            </label>
+          </template>
         </template>
 
         <p class="mt-[var(--cd-space-sm)] font-semibold text-[length:var(--cd-text-sm)]">Resultaten ({{ gefilterdeNodes.length }})</p>

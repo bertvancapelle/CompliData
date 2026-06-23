@@ -48,6 +48,27 @@ def test_landschaps_v4_velden_in_schema():
     assert {"plateau_naam", "plateau_dispositie"} <= set(LandschapsNode.model_fields)
 
 
+def test_landschaps_adr031_velden_in_schema():
+    """ADR-031 — gebruikersgroep-node-velden (organisatie_id + aantal_leden) in het schema."""
+    from schemas.landschapskaart import LandschapsNode
+
+    velden = LandschapsNode.model_fields
+    assert {"organisatie_id", "aantal_leden"} <= set(velden)
+    n = LandschapsNode(id=uuid.uuid4(), naam="X", element_type="gebruikersgroep")
+    assert n.aantal_leden == 0 and n.organisatie_id is None
+
+
+def test_landschapskaart_serveert_gebruikers_ring():
+    """ADR-031 — de service projecteert gebruikersgroepen + de 'gebruikers'-serving-ring."""
+    import inspect
+
+    import services.landschapskaart_service as s
+
+    bron = inspect.getsource(s)
+    assert "ring=\"gebruikers\"" in bron and "Gebruikersgroep" in bron
+    assert "gebruikt door" in bron
+
+
 def test_landschapskaart_geen_schrijfpad_in_bron():
     """Read-only: de servicebron bevat geen schrijf-operaties op de sessie."""
     import inspect

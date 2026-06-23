@@ -25,6 +25,10 @@ class LandschapsNode(BaseModel):
     # ADR-025 v4 — migratieplaatsing (eerste plateau via aggregation-lidmaatschap, met dispositie).
     plateau_naam: str | None = None
     plateau_dispositie: str | None = None
+    # ADR-031 — gebruikersgroep-node (ring 'gebruikers'): organisatie voor de groepeer-toggle +
+    # ledental-badge. Alleen gevuld voor element_type='gebruikersgroep'.
+    organisatie_id: UUID | None = None
+    aantal_leden: int = 0
 
 
 class LandschapsEdge(BaseModel):

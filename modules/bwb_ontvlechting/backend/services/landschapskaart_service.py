@@ -20,6 +20,7 @@ from models.models import (
     Component,
     ComponentConfigDimensie,
     Contract,
+    Gebruikersgroep,
     Partij,
     PartijAard,
     Plateau,
@@ -162,6 +163,28 @@ async def haal_grafdata_op(session: AsyncSession, tenant_id, diepte: int = 1) ->
             archimate_element="contract",
         ))
 
+    # ── Gebruikersgroep-nodes (ADR-031, ring 'gebruikers') — business actor/role ──
+    # Naam: afdeling (bv. "Burgers") of anders de organisatie-naam; ledental uit `aantal_gebruikers`.
+    # `organisatie_id` reist mee voor de client-side "groepeer per organisatie"-toggle.
+    partij_naam = {r.id: r.naam for r in partij_rijen}
+    gebruikersgroep_ids: set[uuid.UUID] = set()
+    gg_rijen = (
+        await session.execute(
+            select(
+                Gebruikersgroep.id, Gebruikersgroep.organisatie_id,
+                Gebruikersgroep.afdeling, Gebruikersgroep.aantal_gebruikers,
+            ).where(Gebruikersgroep.tenant_id == tid)
+        )
+    ).all()
+    for r in gg_rijen:
+        gebruikersgroep_ids.add(r.id)
+        naam = r.afdeling or partij_naam.get(r.organisatie_id) or "Gebruikersgroep"
+        nodes.append(LandschapsNode(
+            id=r.id, naam=naam, element_type="gebruikersgroep", laag="business",
+            archimate_element="business_role",
+            organisatie_id=r.organisatie_id, aantal_leden=r.aantal_gebruikers or 0,
+        ))
+
     edges: list[LandschapsEdge] = []
 
     # ── Ringen 1–3 — uit het relatiemodel (membership-classificatie op de id-sets) ──
@@ -186,6 +209,10 @@ async def haal_grafdata_op(session: AsyncSession, tenant_id, diepte: int = 1) ->
         elif rt == "association" and r.doel_id in contract_ids:
             edges.append(LandschapsEdge(bron_id=r.bron_id, doel_id=r.doel_id,
                                         relatietype="association", label="valt onder", ring="contracten"))
+        elif rt == "serving" and r.bron_id in component_ids and r.doel_id in gebruikersgroep_ids:
+            # ADR-031 — applicatie → gebruikersgroep (wie gebruikt deze applicatie).
+            edges.append(LandschapsEdge(bron_id=r.bron_id, doel_id=r.doel_id,
+                                        relatietype="serving", label="gebruikt door", ring="gebruikers"))
 
     for (bron_id, doel_id), groep in flow_groepen.items():
         # Richting/protocol van de eerste flow; niet-uniform in de groep → fallback
