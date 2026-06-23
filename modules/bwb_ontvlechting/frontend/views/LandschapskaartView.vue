@@ -68,7 +68,7 @@ const containerRef = ref(null)
 let cy = null
 
 // ADR-031 — sub-granulariteit Gebruikers-ring: groepeer gebruikersgroepen per organisatie.
-const groepeerPerOrg = ref(false)
+const groepeerPerOrg = ref(true)
 const _rawNaam = (id) => nodes.value.find((n) => n.id === id)?.naam
 // Effectieve graaf-nodes/-edges. Bij "groepeer per organisatie" vervangen we de individuele
 // gebruikersgroep-nodes door één aggregaat-node per organisatie (gesommeerd ledental) en hangen
