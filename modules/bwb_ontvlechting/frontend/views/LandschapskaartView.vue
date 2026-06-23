@@ -570,34 +570,38 @@ function _edgeData(e, i) {
   if (modus.value === 'geheel') label = ''
   return { id: `e${i}-${e.bron_id}-${e.doel_id}-${e.relatietype}`, source: e.bron_id, target: e.doel_id, ring: e.ring, lc, w, ls, label }
 }
-function _elementen() {
-  let zn = zichtbareNodes.value
-  let ze = zichtbareEdges.value
-  if (verbergOnverbonden.value) {
-    const verbonden = new Set()
-    ze.forEach((e) => {
-      verbonden.add(e.bron_id)
-      verbonden.add(e.doel_id)
-    })
-    zn = zn.filter((n) => verbonden.has(n.id))
+// LI019 — definitieve node-set voor het canvas. Een node is zichtbaar als:
+//  • het ego-centrum (ego-modus), OF
+//  • hij raakt minstens één ZICHTBARE (ring-aan) edge, OF
+//  • hij is volledig edge-loos én 'Verberg los' staat uit.
+// Gevolg: een node waarvan ALLE edges in uitgevinkte ringen zitten verdwijnt mét die edges
+// (ring-node-filter, altijd actief); 'Verberg los' verwijdert daarbovenop de écht geïsoleerde
+// nodes. Dedup op id (defensief — voorkomt dubbele Cytoscape-node-ids).
+const getekendeNodes = computed(() => {
+  const metZichtbareEdge = new Set()
+  zichtbareEdges.value.forEach((e) => { metZichtbareEdge.add(e.bron_id); metZichtbareEdge.add(e.doel_id) })
+  const heeftEdge = new Set()
+  grafEdges.value.forEach((e) => { heeftEdge.add(e.bron_id); heeftEdge.add(e.doel_id) })
+  const uniek = new Map()
+  for (const n of zichtbareNodes.value) {
+    if (uniek.has(n.id)) continue
+    const egoCentrum = modus.value === 'ego' && n.id === egoStartId.value
+    const toon = egoCentrum || metZichtbareEdge.has(n.id) || (!heeftEdge.has(n.id) && !verbergOnverbonden.value)
+    if (toon) uniek.set(n.id, n)
   }
+  return [...uniek.values()]
+})
+
+function _elementen() {
+  const zn = getekendeNodes.value
   const znIds = new Set(zn.map((n) => n.id))
-  ze = ze.filter((e) => znIds.has(e.bron_id) && znIds.has(e.doel_id))
+  const ze = zichtbareEdges.value.filter((e) => znIds.has(e.bron_id) && znIds.has(e.doel_id))
   return [
     ...zn.map((n) => ({ data: _nodeData(n), classes: n.element_type === 'gebruikersgroep' ? 'gg' : undefined })),
     ...ze.map((e, i) => ({ data: _edgeData(e, i) })),
   ]
 }
-const zichtbaarAantal = computed(() => {
-  // Telling die het canvas toont (na evt. verberg-onverbonden) — testbaar zonder cy.
-  if (!verbergOnverbonden.value) return zichtbareNodes.value.length
-  const verbonden = new Set()
-  zichtbareEdges.value.forEach((e) => {
-    verbonden.add(e.bron_id)
-    verbonden.add(e.doel_id)
-  })
-  return zichtbareNodes.value.filter((n) => verbonden.has(n.id)).length
-})
+const zichtbaarAantal = computed(() => getekendeNodes.value.length)
 
 function _layout() {
   if (modus.value === 'ego') {

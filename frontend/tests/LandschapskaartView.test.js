@@ -83,6 +83,28 @@ describe('LandschapskaartView v3', () => {
     expect(alleRingenZichtbaar(w)).toBe(true) // geheel
   })
 
+  it('ring uitvinken verbergt ook de nodes van die ring (LI019 Fix 2)', async () => {
+    api.landschapskaart.haalGrafdata.mockResolvedValue({
+      nodes: [
+        { id: 'a1', naam: 'App1', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0 },
+        { id: 'a2', naam: 'App2', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0 },
+        { id: 'g1', naam: 'Groep', element_type: 'gebruikersgroep', laag: 'business', aantal_leden: 10, organisatie_id: null },
+      ],
+      edges: [
+        { bron_id: 'a1', doel_id: 'a2', relatietype: 'flow', label: 'koppeling', ring: 'applicaties', richting: 'eenrichting', protocol: 'rest' },
+        { bron_id: 'a1', doel_id: 'g1', relatietype: 'serving', label: 'gebruikt door', ring: 'gebruikers' },
+      ],
+    })
+    const { w } = await mountView()
+    await w.find('[data-testid="lk-modus-geheel"]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-testid="lk-zichtbaar-aantal"]').text()).toContain('3 nodes') // a1, a2, g1
+    // ring 'gebruikers' uit → g1 (alleen via die ring verbonden) verdwijnt; apps blijven via de flow
+    await w.find('[data-testid="lk-ring-gebruikers"]').trigger('change')
+    await flushPromises()
+    expect(w.find('[data-testid="lk-zichtbaar-aantal"]').text()).toContain('2 nodes')
+  })
+
   it('zoekfilter vermindert de zichtbare resultaten', async () => {
     const { w } = await mountView()
     await w.find('[data-testid="lk-zoek"]').setValue('zaak')
