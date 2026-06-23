@@ -595,8 +595,7 @@ function _edgeData(e, i) {
     // ADR-031 — rol-naam / 'gebruikt door' / 'valt onder' / 'draait op' uit de edge-data.
     label = e.label || ''
   }
-  // Fix 2 — geheel-model: geen edge-labels (te druk). Ego/impact: wel; zoom-drempel via _pasEdgeLabels().
-  if (modus.value === 'geheel') label = ''
+  // LI023 — labels staan default verborgen (text-opacity:0) en verschijnen bij hover (alle modi).
   return { id: `e${i}-${e.bron_id}-${e.doel_id}-${e.relatietype}`, source: e.bron_id, target: e.doel_id, ring: e.ring, lc, w, ls, label }
 }
 // LI020 — definitieve node-set voor het canvas. Een node is zichtbaar als:
@@ -634,24 +633,14 @@ function _layout() {
       minNodeSpacing: 60, padding: 60, animate: true, animationDuration: 400, // Fix 2: meer ruimte
     }
   }
-  // Fix 2: ruimere cose-spreiding → leesbaardere labels/relaties (impact + geheel).
-  // Fix 3 — agressievere spreiding tegen node-overlap bij grotere grafen.
+  // LI023 — Geheel model / Impact-view: dagre hiërarchische layout (afhankelijkheidsrichting per laag).
   return {
-    name: 'cose', idealEdgeLength: 150, edgeElasticity: 100,
-    nodeRepulsion: modus.value === 'geheel' ? 14000 : 9000,
-    nodeOverlap: 20, componentSpacing: 100, gravity: 0.25, numIter: 1000,
-    initialTemp: 200, coolingFactor: 0.99, minTemp: 1.0,
-    padding: 60, randomize: false, animate: true, animationDuration: 600, fit: true,
+    name: 'dagre', rankDir: 'TB', align: 'UL',
+    nodeSep: 60, rankSep: 80, edgeSep: 10, ranker: 'network-simplex',
+    animate: false, fit: true, padding: 40,
   }
 }
 
-// Fix 2 — edge-labels alleen boven de zoom-drempel én buiten geheel-model (anti-overlap).
-const _LABEL_ZOOM = 0.6
-function _pasEdgeLabels() {
-  if (!cy) return
-  const toon = modus.value !== 'geheel' && (cy.zoom?.() ?? 1) > _LABEL_ZOOM
-  cy.edges?.().style?.('text-opacity', toon ? 1 : 0)
-}
 async function tekenGraaf() {
   if (!cy) return
   await nextTick()
@@ -667,7 +656,6 @@ async function tekenGraaf() {
   setTimeout(() => {
     cy?.resize?.()
     cy?.fit?.(undefined, 50)
-    _pasEdgeLabels()
   }, 100)
 }
 
@@ -677,7 +665,7 @@ const CY_STYLE = [
     style: {
       'background-color': 'data(bg)', 'border-color': 'data(border)', 'border-width': 2,
       label: 'data(label)', 'font-size': 11, color: 'data(txt)', 'text-valign': 'center', 'text-halign': 'center',
-      width: 78, height: 28, shape: 'data(shape)', 'text-wrap': 'ellipsis', 'text-max-width': 70,
+      width: 'label', 'padding-left': 12, 'padding-right': 12, height: 28, shape: 'data(shape)', 'text-wrap': 'ellipsis', 'text-max-width': 150,
     },
   },
   // ADR-031 — gebruikersgroep-nodes: ronde vorm + wrap (ledental op tweede regel).
@@ -689,6 +677,7 @@ const CY_STYLE = [
       'target-arrow-shape': 'triangle', 'target-arrow-color': 'data(lc)', 'curve-style': 'bezier',
       // Koppelingsdetail-label (flow-edges): protocol + richting.
       label: 'data(label)', 'font-size': 8, color: 'var(--cd-color-text-muted)', 'text-wrap': 'none',
+      'text-opacity': 0, // LI023 — default verborgen; zichtbaar bij hover (mouseover-handler)
       'text-rotation': 'autorotate', 'text-background-color': '#fff', 'text-background-opacity': 0.8,
     },
   },
@@ -761,8 +750,9 @@ onMounted(async () => {
     })
     // Tap op leeg canvas sluit een open popup.
     cy.on('tap', (evt) => { if (evt.target === cy) sluitPopup() })
-    // Fix 2 — edge-labels tonen/verbergen op zoomniveau (anti-overlap).
-    cy.on('zoom', _pasEdgeLabels)
+    // LI023 — edge-labels verschijnen bij hover (en blijven zichtbaar bij een geselecteerde edge).
+    cy.on('mouseover', 'edge', (evt) => evt.target.style('text-opacity', 1))
+    cy.on('mouseout', 'edge', (evt) => { if (!evt.target.hasClass('sel-edge')) evt.target.style('text-opacity', 0) })
     tekenGraaf()
     // Her-meten + passend maken bij containerwijzigingen (modus-wissel, sidebar, venster-resize).
     if (typeof ResizeObserver !== 'undefined') {
