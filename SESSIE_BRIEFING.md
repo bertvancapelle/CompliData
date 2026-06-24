@@ -1,6 +1,6 @@
-# SESSIE_BRIEFING.md — LIKARA V019
+# SESSIE_BRIEFING.md — LIKARA V020
 
-**Gegenereerd**: 2026-06-23
+**Gegenereerd**: 2026-06-24
 
 ---
 
@@ -10,11 +10,11 @@
 
 | Veld | Waarde |
 |------|--------|
-| Build | V019 |
+| Build | V020 |
 | Datum | June 2026 |
-| Commit | a15acc3 |
-| Tests | zie TST-rapport |
-| TST-rapport | TST-V019-Validatierapport.md |
+| Commit | 04e3332 |
+| Tests | 595 groen |
+| TST-rapport | TST-V020-Validatierapport.md |
 | Kritieke bevindingen | 0 |
 
 ---
@@ -22,11 +22,11 @@
 ## Recente commits
 
 ```
-a15acc3 feat(landschapskaart): zoek in resultaten + wis-alles set + focus op actieve set
-e456c40 fix(contracten): deelcontract-links navigeren correct vanuit mantelcontract-detail
-c6b0b20 fix(contracten): mantelcontract-link toont de mantelnaam als linktekst
-9a38b11 feat(contracten): hiërarchie-navigatie — mantelcontract<->deelcontracten<->applicaties
-5aa9577 feat(architectuur): visuele ArchiMate-lagenweergave + partij-naam-fix
+04e3332 docs(claude): bouwstatus naar V020 — LI019
+e75cceb chore(release): V020 — build-bump + changelog + OPVOLGPUNTEN (LI019)
+46d516f docs(adr): ADR-033 Impact-verkenner — besloten, klaar voor bouw — LI019
+27eb916 docs(skills): LI019-frontendpatronen in complidata-frontend SKILL.md — LI019
+e9142b2 feat(landschapskaart): swimlane-layout geparkeerd — Radiaal is de enige UI-layout — LI019
 ```
 
 ---
@@ -112,5 +112,5 @@ vraag/advies tegelijk; functioneel beschrijven vanuit de gebruiker is de norm. R
 
 1. Lees deze briefing volledig
 2. Lees CLAUDE.md (sessiestart-protocol)
-3. Bevestig: "Sessie-briefing geladen — LIKARA V019"
+3. Bevestig: "Sessie-briefing geladen — LIKARA V020"
 4. Wacht op START: [naam] van Bert

@@ -489,9 +489,9 @@ Pas dan: klaar.
 |------|--------|
 | Build | V020 |
 | Datum | June 2026 |
-| Commit | e75cceb |
-| Tests | frontend 595 groen |
-| TST-rapport | TST-V019-Validatierapport.md (laatste volledige TST-run; LI019-closeout was een lite-closeout zonder aparte TST-V020) |
+| Commit | 04e3332 |
+| Tests | 595 groen |
+| TST-rapport | TST-V020-Validatierapport.md |
 | Kritieke bevindingen | 0 |
 
 <!-- BOUWSTATUS_END -->
