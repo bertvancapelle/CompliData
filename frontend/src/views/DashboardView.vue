@@ -234,7 +234,7 @@ onMounted(laad)
           </li>
         </ul>
         <p v-else data-testid="recent-leeg" class="text-[var(--cd-color-text-muted)]">
-          Er zijn nog geen applicaties in deze tenant.
+          Er zijn nog geen componenten in deze tenant.
         </p>
       </div>
     </div>

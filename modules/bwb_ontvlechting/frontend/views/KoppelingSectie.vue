@@ -208,8 +208,8 @@ function onHide() {
 function valideer() {
   Object.keys(fouten).forEach((k) => delete fouten[k])
   if (!form.naam.trim()) fouten.naam = 'Geef de koppeling een naam.'
-  if (!form.bron_applicatie_id) fouten.bron_applicatie_id = 'Kies een bron-applicatie.'
-  if (!form.doel_applicatie_id) fouten.doel_applicatie_id = 'Kies een doel-applicatie.'
+  if (!form.bron_applicatie_id) fouten.bron_applicatie_id = 'Kies een bron-component.'
+  if (!form.doel_applicatie_id) fouten.doel_applicatie_id = 'Kies een doel-component.'
   if (form.bron_applicatie_id && form.bron_applicatie_id === form.doel_applicatie_id)
     fouten.doel_applicatie_id = 'Bron en doel moeten verschillen.'
   for (const v of ['richting', 'protocol', 'impact_bij_verbreking']) if (!form[v]) fouten[v] = 'Maak een keuze.'
@@ -332,7 +332,7 @@ laadBeide()
     <p v-if="fout" role="alert" data-testid="kp-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ fout }}</p>
 
     <!-- Uitgaand: deze applicatie = bron -->
-    <h3 class="font-semibold mt-[var(--cd-space-sm)]">Uitgaand (deze applicatie is bron)</h3>
+    <h3 class="font-semibold mt-[var(--cd-space-sm)]">Uitgaand (dit component is bron)</h3>
     <DataTable
       :value="uitgaand.items"
       lazy
@@ -360,7 +360,7 @@ laadBeide()
     <Button v-if="uitgaand.cursor" label="Meer laden" severity="secondary" data-testid="kp-meer-uitgaand" :disabled="uitgaand.laden" class="mt-[var(--cd-space-sm)]" @click="laadUitgaand()" />
 
     <!-- Inkomend: deze applicatie = doel -->
-    <h3 class="font-semibold mt-[var(--cd-space-md)]">Inkomend (deze applicatie is doel)</h3>
+    <h3 class="font-semibold mt-[var(--cd-space-md)]">Inkomend (dit component is doel)</h3>
     <DataTable
       :value="inkomend.items"
       lazy
@@ -404,7 +404,7 @@ laadBeide()
           <span v-if="fouten.naam" id="kp-fout-naam" role="alert" data-testid="kp-fout-naam" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.naam }}</span>
         </div>
         <div class="flex flex-col gap-[var(--cd-space-xs)]">
-          <label for="kp-bron" class="font-semibold">Bron-applicatie *</label>
+          <label for="kp-bron" class="font-semibold">Bron-component *</label>
           <ZoekSelect
             id="kp-bron"
             testid="kp-veld-bron"
@@ -413,12 +413,12 @@ laadBeide()
             :initieel-weergave="bronInitieel"
             :disabled="!!bewerkenId"
             :invalid="!!fouten.bron_applicatie_id"
-            placeholder="Zoek een applicatie…"
+            placeholder="Zoek een component…"
           />
           <span v-if="fouten.bron_applicatie_id" role="alert" data-testid="kp-fout-bron" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.bron_applicatie_id }}</span>
         </div>
         <div class="flex flex-col gap-[var(--cd-space-xs)]">
-          <label for="kp-doel" class="font-semibold">Doel-applicatie *</label>
+          <label for="kp-doel" class="font-semibold">Doel-component *</label>
           <ZoekSelect
             id="kp-doel"
             testid="kp-veld-doel"
@@ -428,7 +428,7 @@ laadBeide()
             :disabled="!!bewerkenId"
             :invalid="!!fouten.doel_applicatie_id"
             aria-describedby="kp-fout-doel"
-            placeholder="Zoek een applicatie…"
+            placeholder="Zoek een component…"
           />
           <span v-if="fouten.doel_applicatie_id" id="kp-fout-doel" role="alert" data-testid="kp-fout-doel" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.doel_applicatie_id }}</span>
         </div>
@@ -462,7 +462,7 @@ laadBeide()
     <!-- KOPPELING_DUBBEL: bevestig een tweede vergelijkbare koppeling (ADR-023a). Het
          aanmaakformulier blijft open (data behouden) zodat Annuleren terugvalt op bewerken. -->
     <Dialog v-model:visible="dubbelOpen" modal header="Vergelijkbare koppeling bestaat al" data-testid="kp-dubbel-dialog">
-      <p class="mb-[var(--cd-space-md)] max-w-prose">Er bestaat al een koppeling van dit type tussen deze applicaties. Wil je toch een tweede aanmaken?</p>
+      <p class="mb-[var(--cd-space-md)] max-w-prose">Er bestaat al een koppeling van dit type tussen deze componenten. Wil je toch een tweede aanmaken?</p>
       <div class="flex justify-end gap-[var(--cd-space-md)]">
         <Button label="Annuleren" severity="secondary" data-testid="kp-dubbel-annuleren" @click="dubbelOpen = false" />
         <Button label="Toch aanmaken" data-testid="kp-dubbel-bevestig" :disabled="bezig" @click="bevestigDubbel" />

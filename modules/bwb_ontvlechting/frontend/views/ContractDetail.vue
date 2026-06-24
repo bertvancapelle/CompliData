@@ -194,7 +194,7 @@ const typeLabel = (c) => label(CONTRACTTYPE, c)
               </span>
             </template>
           </Column>
-          <Column header="Applicaties">
+          <Column header="Componenten">
             <template #body="{ data }">
               <span class="flex flex-wrap gap-x-[var(--cd-space-sm)]">
                 <router-link v-for="a in data.applicaties" :key="a.id" :to="{ name: 'applicatie-detail', params: { id: a.id } }" :data-testid="`deel-app-${a.id}`" class="text-[var(--cd-color-primary)] hover:underline">{{ a.naam }}</router-link>
@@ -213,10 +213,10 @@ const typeLabel = (c) => label(CONTRACTTYPE, c)
         data-testid="gekoppelde-apps-sectie"
       >
         <h2 id="sectie-gekoppelde-apps" class="text-[length:var(--cd-text-lg)] font-semibold mb-[var(--cd-space-sm)]">
-          Gekoppelde applicaties
+          Gekoppelde componenten
         </h2>
         <DataTable :value="gekoppeldeApps" data-testid="gekoppelde-apps-tabel">
-          <Column header="Applicatie">
+          <Column header="Component">
             <template #body="{ data }">
               <router-link :to="{ name: 'applicatie-detail', params: { id: data.applicatie_id } }" data-testid="app-link" class="text-[var(--cd-color-primary)] hover:underline">{{ data.applicatie_naam }}</router-link>
             </template>
@@ -225,7 +225,7 @@ const typeLabel = (c) => label(CONTRACTTYPE, c)
           <Column header="Status">
             <template #body="{ data }"><Tag :value="label(LIFECYCLE, data.lifecycle_status)" :severity="LIFECYCLE_SEVERITY[data.lifecycle_status] || 'info'" /></template>
           </Column>
-          <template #empty><span data-testid="gekoppelde-apps-leeg">Geen gekoppelde applicaties.</span></template>
+          <template #empty><span data-testid="gekoppelde-apps-leeg">Geen gekoppelde componenten.</span></template>
         </DataTable>
       </section>
 
@@ -238,7 +238,7 @@ const typeLabel = (c) => label(CONTRACTTYPE, c)
     <Dialog v-model:visible="verwijderDialog" modal header="Contract verwijderen" data-testid="verwijder-dialog">
       <p class="mb-[var(--cd-space-md)] max-w-prose">
         Weet je zeker dat je <strong>{{ contract?.contractnaam }}</strong> wilt verwijderen? Een
-        mantelcontract met deelcontracten of een aan applicaties gekoppeld contract kan niet
+        mantelcontract met deelcontracten of een aan componenten gekoppeld contract kan niet
         worden verwijderd.
       </p>
       <div class="flex justify-end gap-[var(--cd-space-md)]">

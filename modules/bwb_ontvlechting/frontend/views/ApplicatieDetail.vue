@@ -83,7 +83,7 @@ const gereedheidLabel = computed(() => (gereedheidSectie.value?.status === 'klaa
 function _toastFout(e) {
   const perStatus = {
     403: 'Je hebt geen rechten voor deze actie.',
-    404: 'De applicatie is niet (meer) gevonden.',
+    404: 'Het component is niet (meer) gevonden.',
     409: e?.message || 'Deze actie is in de huidige status niet toegestaan.',
   }
   toast.add({
@@ -101,7 +101,7 @@ async function laad() {
     applicatie.value = await api.applicaties.haal(props.id)
   } catch (e) {
     fout.value =
-      e?.status === 404 ? 'Deze applicatie bestaat niet (meer).' : e?.message || 'Er ging iets mis.'
+      e?.status === 404 ? 'Dit component bestaat niet (meer).' : e?.message || 'Er ging iets mis.'
     _toastFout(e)
   } finally {
     laden.value = false
@@ -125,7 +125,7 @@ async function bevestigVerwijderen() {
   try {
     await api.applicaties.verwijder(props.id)
     verwijderDialog.value = false
-    toast.add({ severity: 'success', summary: 'Applicatie verwijderd', life: 3000 })
+    toast.add({ severity: 'success', summary: 'Component verwijderd', life: 3000 })
     router.push({ name: 'applicatie-lijst' })
   } catch (e) {
     _toastFout(e)
@@ -273,7 +273,7 @@ watch(() => props.id, async () => { await laad(); _initVanafQuery() }, { immedia
       <AppTabs
         v-model="activeTop"
         :tabs="TOP_TABS"
-        aria-label="Applicatie-detail onderdelen"
+        aria-label="Component-detail onderdelen"
         id-prefix="detailtabs"
         class="mt-[var(--cd-space-lg)] mb-[var(--cd-space-md)]"
       />
@@ -381,7 +381,7 @@ watch(() => props.id, async () => { await laad(); _initVanafQuery() }, { immedia
           <aside
             v-if="actieveCategorieNr === 8"
             role="complementary"
-            aria-label="Geregistreerde contracten bij deze applicatie"
+            aria-label="Geregistreerde contracten bij dit component"
             data-testid="context-paneel-cat8"
             class="card mb-[var(--cd-space-md)] border-l-4 border-[var(--cd-color-primary)]"
           >
@@ -500,7 +500,7 @@ watch(() => props.id, async () => { await laad(); _initVanafQuery() }, { immedia
     <Dialog
       v-model:visible="verwijderDialog"
       modal
-      header="Applicatie verwijderen"
+      header="Component verwijderen"
       data-testid="verwijder-dialog"
     >
       <p class="mb-[var(--cd-space-md)] max-w-prose">

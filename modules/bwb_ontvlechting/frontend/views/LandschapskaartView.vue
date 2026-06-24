@@ -30,7 +30,7 @@ const LIFECYCLE_OPTIES = ['migratieklaar', 'in_inventarisatie', 'geblokkeerd', '
 const RINGEN = ['applicaties', 'rollen', 'gebruikers', 'contracten', 'infrastructuur']
 // ADR-031 — leesbare ring-namen. Backend levert ring='beheerorganisatie' → bij laden gemapt op 'rollen'.
 const RING_LABELS = {
-  applicaties: 'Applicaties',
+  applicaties: 'Componenten',
   rollen: 'Rollen & beheer',
   gebruikers: 'Gebruikers',
   contracten: 'Contracten',
@@ -307,7 +307,7 @@ function _detailLink(node) {
   if (!node) return null
   const id = node.id
   switch (node.element_type) {
-    case 'applicatie': return { label: 'Open applicatie →', fn: () => router.push({ name: 'applicatie-detail', params: { id } }) }
+    case 'applicatie': return { label: 'Open component →', fn: () => router.push({ name: 'applicatie-detail', params: { id } }) }
     case 'partij': return { label: 'Open partij →', fn: () => router.push({ name: 'partij-detail', params: { id } }) }
     case 'contract': return { label: 'Open contract →', fn: () => router.push({ name: 'contract-detail', params: { id } }) }
     case 'gebruikersgroep': return null
@@ -494,7 +494,7 @@ async function openEdgePopup(edge) {
       popupTitel.value = 'Gebruikt door'
       const gg = nodePerId.value[edge.doel_id]
       popupVelden.value = _velden([
-        _veld('Applicatie', bronNaam),
+        _veld('Component', bronNaam),
         _veld('Gebruikersgroep', doelNaam),
         gg?.aantal_leden ? { label: 'Leden', waarde: String(gg.aantal_leden) } : null,
       ])
@@ -571,6 +571,10 @@ function _txtColor(bg) {
   const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16)
   return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.55 ? '#ffffff' : '#1a1a2e'
 }
+// LI019 Taak 3 — element_types die géén componenttype zijn: hiervoor verschijnt geen type-regel
+// onder de node-naam (partij/contract zijn geen componenten; gebruikersgroep toont al ledental).
+const GEEN_COMPONENTTYPE = new Set(['partij', 'gebruikersgroep', 'contract'])
+const _heeftTypeLabel = (n) => !!n.element_type && !GEEN_COMPONENTTYPE.has(n.element_type)
 function _nodeData(n) {
   const isGG = n.element_type === 'gebruikersgroep'
   let bg = isGG ? GG_STYLE.bg : lcStyle(n.lifecycle_status).bg
@@ -584,9 +588,11 @@ function _nodeData(n) {
     else if (raakvlakken.value.has(n.id)) ({ bg, border } = RAAKVLAK)
   }
   // ADR-031 — gebruikersgroep: ledental als tweede labelregel (alleen bij >0); anders blokkade-vlag.
+  // LI019 Taak 3 — componenttype als tweede labelregel onder de naam (bij component-nodes).
+  const typeRegel = _heeftTypeLabel(n) ? `\n${typeLabel(n.element_type)}` : ''
   const label = isGG
     ? (n.naam || '') + (n.aantal_leden > 0 ? `\n(${n.aantal_leden})` : '')
-    : (n.naam || '') + (n.blokkades_open > 0 ? ' ⚠' : '')
+    : (n.naam || '') + (n.blokkades_open > 0 ? ' ⚠' : '') + typeRegel
   return { id: n.id, label, bg, border, txt: _txtColor(bg), shape: isGG ? 'ellipse' : 'round-rectangle' }
 }
 function _edgeData(e, i) {
@@ -647,7 +653,7 @@ function _elementen() {
   const znIds = new Set(zn.map((n) => n.id))
   const ze = zichtbareEdges.value.filter((e) => znIds.has(e.bron_id) && znIds.has(e.doel_id))
   return [
-    ...zn.map((n) => ({ data: _nodeData(n), classes: n.element_type === 'gebruikersgroep' ? 'gg' : undefined })),
+    ...zn.map((n) => ({ data: _nodeData(n), classes: n.element_type === 'gebruikersgroep' ? 'gg' : _heeftTypeLabel(n) ? 'cmp' : undefined })),
     ...ze.map((e, i) => ({ data: _edgeData(e, i) })),
   ]
 }
@@ -697,6 +703,9 @@ const CY_STYLE = [
   },
   // ADR-031 — gebruikersgroep-nodes: ronde vorm + wrap (ledental op tweede regel).
   { selector: 'node.gg', style: { shape: 'ellipse', 'text-wrap': 'wrap', width: 64, height: 64 } },
+  // LI019 Taak 3 — component-nodes met componenttype op een tweede labelregel: wrap aan en
+  // hoogte volgt het (nu tweeregelige) label, zodat de type-regel onder de naam past.
+  { selector: 'node.cmp', style: { 'text-wrap': 'wrap', height: 'label', 'padding-top': 6, 'padding-bottom': 6 } },
   {
     selector: 'edge',
     style: {
@@ -890,7 +899,7 @@ const typeLabel = (t) => humaniseer(t)
         </template>
 
         <p class="mt-[var(--cd-space-sm)] font-semibold text-[length:var(--cd-text-sm)]">
-          Resultaten ({{ zoekResultaten.trim() ? `${gefilterdeResultaten.length} van ${gefilterdeNodes.length}` : gefilterdeNodes.length }})
+          Componenten ({{ zoekResultaten.trim() ? `${gefilterdeResultaten.length} van ${gefilterdeNodes.length}` : gefilterdeNodes.length }})
         </p>
         <input
           v-model="zoekResultaten"
@@ -1032,7 +1041,7 @@ const typeLabel = (t) => humaniseer(t)
             <p v-if="detailNode.plateau_naam" data-testid="lk-detail-plateau">
               <span class="text-[var(--cd-color-text-muted)]">Plateau:</span> {{ detailNode.plateau_naam }}<template v-if="detailNode.plateau_dispositie"> · Dispositie: {{ detailNode.plateau_dispositie }}</template>
             </p>
-            <button v-if="isApplicatie(detailNode)" type="button" data-testid="lk-detail-open" class="mt-1 rounded-[var(--cd-radius-btn)] bg-[var(--cd-color-primary)] px-[var(--cd-space-sm)] py-1 text-white" @click="openApplicatie">Open applicatie →</button>
+            <button v-if="isApplicatie(detailNode)" type="button" data-testid="lk-detail-open" class="mt-1 rounded-[var(--cd-radius-btn)] bg-[var(--cd-color-primary)] px-[var(--cd-space-sm)] py-1 text-white" @click="openApplicatie">Open component →</button>
             <button type="button" :data-testid="`lk-detail-set`" class="rounded-[var(--cd-radius-btn)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-1" @click="toggleSet(detailNode.id)">{{ inSet(detailNode.id) ? '× Verwijder uit set' : '+ Voeg toe aan set' }}</button>
           </div>
           <p v-else class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]" data-testid="lk-detail-leeg">Klik een node voor detail.</p>

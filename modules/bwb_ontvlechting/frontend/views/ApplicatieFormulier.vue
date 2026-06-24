@@ -136,7 +136,7 @@ async function opslaan() {
       : await api.applicaties.maak(data)
     toast.add({
       severity: 'success',
-      summary: bewerken.value ? 'Wijzigingen opgeslagen' : 'Applicatie aangemaakt',
+      summary: bewerken.value ? 'Wijzigingen opgeslagen' : 'Component aangemaakt',
       life: 3000,
     })
     router.push({ name: 'applicatie-detail', params: { id: resultaat.id } })
@@ -161,7 +161,7 @@ onMounted(init)
       id="form-titel"
       class="text-[length:var(--cd-text-2xl)] font-semibold text-[var(--cd-color-primary)] mb-[var(--cd-space-lg)]"
     >
-      {{ bewerken ? 'Applicatie bewerken' : 'Nieuwe applicatie' }}
+      {{ bewerken ? 'Component bewerken' : 'Nieuw component' }}
     </h1>
 
     <form class="card flex flex-col gap-[var(--cd-space-md)] max-w-2xl" data-testid="applicatie-form" @submit.prevent="opslaan">
