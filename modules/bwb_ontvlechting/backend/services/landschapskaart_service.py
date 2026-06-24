@@ -76,10 +76,12 @@ async def haal_grafdata_op(session: AsyncSession, tenant_id, diepte: int = 1) ->
             )
         ).all()
     }
-    lev_map: dict[uuid.UUID, str] = {}
+    # (partij_id, naam) van de eerste gevonden externe partij — id voor eenduidige UI-filtering
+    # (gelijknamige partijen), naam voor weergave.
+    lev_map: dict[uuid.UUID, tuple[uuid.UUID, str]] = {}
     for r in (
         await session.execute(
-            select(Roltoewijzing.object_id, Partij.naam)
+            select(Roltoewijzing.object_id, Partij.id.label("partij_id"), Partij.naam)
             .join(Partij, Partij.id == Roltoewijzing.partij_id)
             .where(
                 Roltoewijzing.tenant_id == tid,
@@ -88,7 +90,7 @@ async def haal_grafdata_op(session: AsyncSession, tenant_id, diepte: int = 1) ->
             )
         )
     ).all():
-        lev_map.setdefault(r.object_id, r.naam)  # eerste gevonden externe partij
+        lev_map.setdefault(r.object_id, (r.partij_id, r.naam))  # eerste gevonden externe partij
 
     # Migratieplaatsing: eerste plateau per component via aggregation-lidmaatschap (bron=plateau →
     # doel=component); dispositie uit de relatie-kenmerken. Read-only.
@@ -131,7 +133,8 @@ async def haal_grafdata_op(session: AsyncSession, tenant_id, diepte: int = 1) ->
             laag=t.get("laag"), archimate_element=t.get("archimate_element"),
             lifecycle_status=_val(r.lifecycle_status),
             domein=comp_catalog.resolveer_een(r.componenttype, type_labels),
-            leverancier_naam=lev_map.get(r.id),
+            leverancier_naam=lev_map.get(r.id, (None, None))[1],
+            leverancier_id=lev_map.get(r.id, (None, None))[0],
             hosting_model=_val(r.hostingmodel),
             blokkades_open=blok_map.get(r.id, 0),
             plateau_naam=plaatsing.get("naam"),

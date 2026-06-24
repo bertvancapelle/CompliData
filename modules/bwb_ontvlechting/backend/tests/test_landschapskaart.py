@@ -33,7 +33,7 @@ def test_landschapsnode_heeft_v3_velden():
     from schemas.landschapskaart import LandschapsNode
 
     velden = LandschapsNode.model_fields
-    for veld in ("domein", "leverancier_naam", "hosting_model", "blokkades_open"):
+    for veld in ("domein", "leverancier_naam", "leverancier_id", "hosting_model", "blokkades_open"):
         assert veld in velden, f"LandschapsNode mist het v3-veld {veld!r}"
     # blokkades_open is een int met default 0 (geen open blokkades → 0).
     n = LandschapsNode(id=uuid.uuid4(), naam="X", element_type="applicatie")

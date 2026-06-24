@@ -13,6 +13,7 @@ import { onBeforeRouteLeave, useRoute, useRouter } from '@/composables/router'
 import cytoscape from '@/composables/cytoscape'
 import { api } from '@/api'
 import { humaniseer } from '../labels'
+import ZoekMultiSelect from './ZoekMultiSelect.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -51,10 +52,10 @@ const fout = ref(null)
 
 const modus = ref('ego') // 'ego' | 'impact' | 'geheel'
 const zoekterm = ref('')
-const filterDomein = ref('')
-const filterLeverancier = ref('')
-const filterHosting = ref('')
-const filterLifecycle = ref('')
+const filterTypes = ref([]) // LI019 1b — componenttype-multiselect (optie_sleutels)
+const filterLeveranciers = ref([]) // LI019 1b-v2 — leverancier-multiselect (partij-ids)
+const filterHosting = ref([]) // LI019 1b-v2 — hostingmodel-multiselect (enum-sleutels)
+const filterLifecycle = ref([]) // LI019 1b-v2 — lifecycle-multiselect (status-sleutels)
 const ringAan = ref(new Set(RINGEN))
 const actieveSet = ref(new Set())
 const egoStartId = ref(null)
@@ -146,22 +147,58 @@ const appNodes = computed(() => nodes.value.filter(_isApp))
 // ── Filter-opties (datagedreven; alleen uit de applicaties) ──────────────────────
 const _uniek = (sel) => [...new Set(appNodes.value.map(sel).filter(Boolean))].sort()
 const domeinOpties = computed(() => _uniek((n) => n.domein))
-const leverancierOpties = computed(() => _uniek((n) => n.leverancier_naam))
 const hostingOpties = computed(() => _uniek((n) => n.hosting_model))
 const domeinKleur = computed(() => Object.fromEntries(domeinOpties.value.map((d, i) => [d, DOMEIN_PALET[i % DOMEIN_PALET.length]])))
 
+// LI019 1b — type-filter: volledige componenttype-catalogus (tenant) i.p.v. alleen de
+// in de graaf voorkomende typen. Client-side doorzoekbaar (kleine, vaste lijst).
+const typeCatalogus = ref([]) // [{ optie_sleutel, label }]
+const typeLabelMap = computed(() => Object.fromEntries(typeCatalogus.value.map((o) => [o.optie_sleutel, o.label])))
+const zoekComponenttypes = ({ zoek } = {}) => {
+  const q = (zoek || '').toLowerCase()
+  return typeCatalogus.value.filter((o) => !q || (o.label || '').toLowerCase().includes(q))
+}
+// LI019 1b-v2 — leverancier-filter: server-side zoeken in externe partijen (de bron van de
+// leverancier-verrijking). idVeld=id → eenduidige match op n.leverancier_id (geen naam-ambiguïteit).
+const zoekLeveranciers = (params) => api.partijen.lijst({ ...params, aard: 'externe_partij' })
+
+// LI019 1b-v2 — hosting/lifecycle als doorzoekbare multi-select uit de bestaande opties
+// (hostingOpties = in de graaf aanwezige hostingmodellen; LIFECYCLE_OPTIES = vaste statusset).
+const _zoekUitLijst = (opties) => ({ zoek } = {}) => {
+  const q = (zoek || '').toLowerCase()
+  return opties.value.filter((o) => !q || o.label.toLowerCase().includes(q))
+}
+const hostingFilterOpties = computed(() => hostingOpties.value.map((h) => ({ sleutel: h, label: typeLabel(h) })))
+const lifecycleFilterOpties = computed(() => LIFECYCLE_OPTIES.map((lc) => ({ sleutel: lc, label: typeLabel(lc) })))
+const zoekHosting = _zoekUitLijst(hostingFilterOpties)
+const zoekLifecycle = _zoekUitLijst(lifecycleFilterOpties)
+
 // ── Zoeken + filteren ─────────────────────────────────────────────────────────
 const filterActief = computed(
-  () => !!(zoekterm.value.trim() || filterDomein.value || filterLeverancier.value || filterHosting.value || filterLifecycle.value),
+  () =>
+    !!(
+      zoekterm.value.trim() ||
+      filterTypes.value.length ||
+      filterLeveranciers.value.length ||
+      filterHosting.value.length ||
+      filterLifecycle.value.length
+    ),
 )
+// LI019 1b-v2 — attribuut-multifilters: OR binnen één filter, AND tussen filters. Geldt voor de
+// VOLLEDIGE node-set (alle ringen). Het type-filter laat type-loze nodes (contract/partij/groep)
+// ongemoeid (correctie 1); leverancier/hosting/lifecycle matchen strikt (een node zonder de
+// gevraagde waarde valt weg), zoals de oorspronkelijke enkelvoudige filters.
+function _filterMatch(n) {
+  if (filterTypes.value.length && _heeftTypeLabel(n) && !filterTypes.value.includes(n.element_type)) return false
+  if (filterLeveranciers.value.length && !filterLeveranciers.value.includes(n.leverancier_id)) return false
+  if (filterHosting.value.length && !filterHosting.value.includes(n.hosting_model)) return false
+  if (filterLifecycle.value.length && !filterLifecycle.value.includes(n.lifecycle_status)) return false
+  return true
+}
 function _matcht(n) {
   const q = zoekterm.value.trim().toLowerCase()
   if (q && !`${n.naam || ''} ${n.domein || ''} ${n.leverancier_naam || ''}`.toLowerCase().includes(q)) return false
-  if (filterDomein.value && n.domein !== filterDomein.value) return false
-  if (filterLeverancier.value && n.leverancier_naam !== filterLeverancier.value) return false
-  if (filterHosting.value && n.hosting_model !== filterHosting.value) return false
-  if (filterLifecycle.value && n.lifecycle_status !== filterLifecycle.value) return false
-  return true
+  return _filterMatch(n)
 }
 const gefilterdeNodes = computed(() => appNodes.value.filter(_matcht))
 // LI027 — vrije zoekterm in de resultatenlijst (client-side, op naam, case-insensitive).
@@ -207,10 +244,10 @@ const zichtbareNodes = computed(() => {
   }
   if (modus.value === 'impact') return grafNodes.value.filter(isApplicatie)
   // Geheel model toont standaard het VOLLEDIGE landschap (Fix 1: gebruiker verwacht alles te zien).
-  // Filters verfijnen: opbouw = alleen de match; afpel = alles behalve de match.
+  // Filters verfijnen de VOLLEDIGE node-set (alle ringen, LI019 1b-v2): opbouw = alleen de match;
+  // afpel = alles behalve de match. Type-loze nodes blijven (zie _filterMatch).
   if (!filterActief.value) return grafNodes.value
-  const match = new Set(gefilterdeNodes.value.map((n) => n.id))
-  return grafNodes.value.filter((n) => (opbouwModus.value ? match.has(n.id) : !match.has(n.id)))
+  return grafNodes.value.filter((n) => (opbouwModus.value ? _matcht(n) : !_matcht(n)))
 })
 const zichtbareNodeIds = computed(() => new Set(zichtbareNodes.value.map((n) => n.id)))
 const zichtbareEdges = computed(() =>
@@ -751,6 +788,12 @@ onBeforeRouteLeave(_bewaarKaartState)
 
 onMounted(async () => {
   await laad()
+  // LI019 1b — componenttype-catalogus voor het type-filter (faalt zacht: leeg → niets te kiezen).
+  try {
+    typeCatalogus.value = (await api.componenten.opties())?.componenttype || []
+  } catch {
+    typeCatalogus.value = []
+  }
   // ADR-025 deep-link: ?center=<applicatie-id>&modus=<ego|impact|geheel> (vanuit het applicatie-detail).
   // De center-applicatie wordt het ego-middelpunt + de actieve set, zodat de kaart erop centreert.
   const qModus = route.query?.modus ? String(route.query.modus) : null
@@ -808,7 +851,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', _opEscape)
 })
 
-defineExpose({ openNodePopup, openEdgePopup, selecteerFlow, onNodeTap, sluitPopup, toggleFullscreen, fullscreen, popupOpen, _edgeData, groepeerPerOrg, grafNodes, grafEdges })
+defineExpose({ openNodePopup, openEdgePopup, selecteerFlow, onNodeTap, sluitPopup, toggleFullscreen, fullscreen, popupOpen, _edgeData, groepeerPerOrg, grafNodes, grafEdges, zichtbareNodes })
 
 // Hertekenen bij elke state die de graaf raakt.
 watch(
@@ -855,22 +898,53 @@ const typeLabel = (t) => humaniseer(t)
       <aside class="flex w-60 flex-shrink-0 flex-col gap-[var(--cd-space-sm)] overflow-y-auto border-r border-[var(--cd-color-border)] bg-white p-[var(--cd-space-md)]" data-testid="lk-links">
         <input v-model="zoekterm" type="search" data-testid="lk-zoek" placeholder="🔍 Zoek naam/domein/leverancier…" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-1 text-[length:var(--cd-text-sm)]" />
 
-        <select v-model="filterDomein" data-testid="lk-filter-domein" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-1 text-[length:var(--cd-text-sm)]">
-          <option value="">Alle domeinen</option>
-          <option v-for="d in domeinOpties" :key="d" :value="d">{{ typeLabel(d) }}</option>
-        </select>
-        <select v-model="filterLeverancier" data-testid="lk-filter-leverancier" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-1 text-[length:var(--cd-text-sm)]">
-          <option value="">Alle leveranciers</option>
-          <option v-for="l in leverancierOpties" :key="l" :value="l">{{ l }}</option>
-        </select>
-        <select v-model="filterHosting" data-testid="lk-filter-hosting" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-1 text-[length:var(--cd-text-sm)]">
-          <option value="">Alle hosting</option>
-          <option v-for="h in hostingOpties" :key="h" :value="h">{{ typeLabel(h) }}</option>
-        </select>
-        <select v-model="filterLifecycle" data-testid="lk-filter-lifecycle" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-1 text-[length:var(--cd-text-sm)]">
-          <option value="">Alle lifecycle</option>
-          <option v-for="lc in LIFECYCLE_OPTIES" :key="lc" :value="lc">{{ typeLabel(lc) }}</option>
-        </select>
+        <label class="flex flex-col gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
+          <span class="font-semibold">Type</span>
+          <ZoekMultiSelect
+            v-model="filterTypes"
+            :zoek-functie="zoekComponenttypes"
+            :weergave="(o) => o.label"
+            id-veld="optie_sleutel"
+            :chip-label="(v) => typeLabelMap[v] || v"
+            placeholder="Zoek type…"
+            testid="lk-filter-type"
+          />
+        </label>
+        <label class="flex flex-col gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
+          <span class="font-semibold">Leverancier</span>
+          <ZoekMultiSelect
+            v-model="filterLeveranciers"
+            :zoek-functie="zoekLeveranciers"
+            :weergave="(o) => o.naam"
+            id-veld="id"
+            placeholder="Zoek leverancier…"
+            testid="lk-filter-leverancier"
+          />
+        </label>
+        <label class="flex flex-col gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
+          <span class="font-semibold">Hosting</span>
+          <ZoekMultiSelect
+            v-model="filterHosting"
+            :zoek-functie="zoekHosting"
+            :weergave="(o) => o.label"
+            id-veld="sleutel"
+            :chip-label="(v) => typeLabel(v)"
+            placeholder="Zoek hosting…"
+            testid="lk-filter-hosting"
+          />
+        </label>
+        <label class="flex flex-col gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
+          <span class="font-semibold">Lifecycle</span>
+          <ZoekMultiSelect
+            v-model="filterLifecycle"
+            :zoek-functie="zoekLifecycle"
+            :weergave="(o) => o.label"
+            id-veld="sleutel"
+            :chip-label="(v) => typeLabel(v)"
+            placeholder="Zoek lifecycle…"
+            testid="lk-filter-lifecycle"
+          />
+        </label>
 
         <label v-if="modus === 'geheel'" class="flex items-center gap-2 text-[length:var(--cd-text-sm)]">
           <input type="checkbox" :checked="!opbouwModus" data-testid="lk-afpel-toggle" @change="opbouwModus = !opbouwModus" />Afpel-modus (begint vol)

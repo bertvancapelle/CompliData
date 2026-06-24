@@ -19,7 +19,13 @@ vi.mock('@/composables/cytoscape', () => ({
     destroy: vi.fn(),
   })),
 }))
-vi.mock('@/api', () => ({ api: { landschapskaart: { haalGrafdata: vi.fn() } } }))
+vi.mock('@/api', () => ({
+  api: {
+    landschapskaart: { haalGrafdata: vi.fn() },
+    componenten: { opties: vi.fn() }, // LI019 1b — componenttype-catalogus voor het type-filter
+    partijen: { lijst: vi.fn() }, // LI019 1b — leverancier-zoek (externe partijen)
+  },
+}))
 
 import cytoscape from '@/composables/cytoscape'
 import { api } from '@/api'
@@ -27,8 +33,9 @@ import LandschapskaartView from '@modules/bwb_ontvlechting/frontend/views/Landsc
 
 const GRAF = () => ({
   nodes: [
-    { id: 'a1', naam: 'Zaaksysteem', element_type: 'applicatie', laag: 'application', lifecycle_status: 'migratieklaar', domein: 'applicatie', hosting_model: 'saas', leverancier_naam: 'SaaS BV', blokkades_open: 0 },
-    { id: 'a2', naam: 'Documentbeheer', element_type: 'applicatie', laag: 'application', lifecycle_status: 'geblokkeerd', domein: 'applicatie', hosting_model: 'on_premise', leverancier_naam: null, blokkades_open: 1, plateau_naam: 'Plateau 2026', plateau_dispositie: 'Migreren' },
+    { id: 'a1', naam: 'Zaaksysteem', element_type: 'applicatie', laag: 'application', lifecycle_status: 'migratieklaar', domein: 'applicatie', hosting_model: 'saas', leverancier_naam: 'SaaS BV', leverancier_id: 'l1', blokkades_open: 0 },
+    { id: 'a2', naam: 'Documentbeheer', element_type: 'applicatie', laag: 'application', lifecycle_status: 'geblokkeerd', domein: 'applicatie', hosting_model: 'on_premise', leverancier_naam: null, leverancier_id: null, blokkades_open: 1, plateau_naam: 'Plateau 2026', plateau_dispositie: 'Migreren' },
+    { id: 'd1', naam: 'Klantdatabank', element_type: 'database', laag: 'technology', lifecycle_status: 'concept', domein: 'Database', hosting_model: 'on_premise', blokkades_open: 0 },
     { id: 'p1', naam: 'Org', element_type: 'partij', laag: 'business', soort: 'organisatie', blokkades_open: 0 },
     { id: 'k1', naam: 'Contract X', element_type: 'contract', laag: 'business', blokkades_open: 0 },
   ],
@@ -56,6 +63,14 @@ beforeEach(() => {
   vi.clearAllMocks()
   sessionStorage.clear() // LI022 — voorkom dat bewaarde kaart-state tussen tests lekt
   api.landschapskaart.haalGrafdata.mockResolvedValue(GRAF())
+  // LI019 1b — type-catalogus + leverancier-zoek defaults.
+  api.componenten.opties.mockResolvedValue({
+    componenttype: [
+      { optie_sleutel: 'applicatie', label: 'Applicatie' },
+      { optie_sleutel: 'database', label: 'Database' },
+    ],
+  })
+  api.partijen.lijst.mockResolvedValue({ items: [{ id: 'l1', naam: 'SaaS BV', aard: 'externe_partij' }] })
 })
 afterEach(() => vi.restoreAllMocks())
 
@@ -69,6 +84,69 @@ describe('LandschapskaartView v3', () => {
     expect(w.findAll('[data-testid^="lk-res-naam-"]').length).toBe(2)
     expect(w.find('[data-testid="lk-res-naam-p1"]').exists()).toBe(false)
     expect(w.find('[data-testid="lk-res-naam-k1"]').exists()).toBe(false)
+  })
+
+  it('LI019 1b — type-filter laadt de componenttype-catalogus als doorzoekbare multi-select', async () => {
+    const { w } = await mountView()
+    expect(api.componenten.opties).toHaveBeenCalled()
+    // Nieuwe multi-select aanwezig; oude enkele dropdowns weg.
+    expect(w.find('[data-testid="lk-filter-type-input"]').exists()).toBe(true)
+    expect(w.find('[data-testid="lk-filter-leverancier-input"]').exists()).toBe(true)
+    expect(w.find('[data-testid="lk-filter-domein"]').exists()).toBe(false)
+    // De volledige catalogus (incl. Database) is kiesbaar, niet alleen de in de graaf aanwezige typen.
+    await w.find('[data-testid="lk-filter-type-input"]').trigger('focus')
+    await flushPromises()
+    expect(w.find('[data-testid="lk-filter-type-optie-database"]').exists()).toBe(true)
+  })
+
+  it('LI019 1b-v2 — leverancier-multiselect matcht op id en toont de naam als chip', async () => {
+    const { w } = await mountView()
+    await w.find('[data-testid="lk-filter-leverancier-input"]').trigger('focus')
+    await flushPromises()
+    await w.find('[data-testid="lk-filter-leverancier-optie-l1"]').trigger('mousedown')
+    await flushPromises()
+    // Chip toont de naam (gevangen bij selectie), filtert op id; alleen a1 (l1) blijft over.
+    expect(w.find('[data-testid="lk-filter-leverancier-chip-l1"]').text()).toContain('SaaS BV')
+    expect(w.find('[data-testid="lk-res-naam-a1"]').exists()).toBe(true)
+    expect(w.find('[data-testid="lk-res-naam-a2"]').exists()).toBe(false)
+    // Chip verwijderen herstelt de volledige lijst.
+    await w.find('[data-testid="lk-filter-leverancier-chip-verwijder-l1"]').trigger('click')
+    await flushPromises()
+    expect(w.findAll('[data-testid^="lk-res-naam-"]').length).toBe(2)
+  })
+
+  it('LI019 1b-v2 — hosting- en lifecycle-multiselect versmallen de lijst', async () => {
+    const { w } = await mountView()
+    await w.find('[data-testid="lk-filter-hosting-input"]').trigger('focus')
+    await flushPromises()
+    await w.find('[data-testid="lk-filter-hosting-optie-saas"]').trigger('mousedown')
+    await flushPromises()
+    expect(w.find('[data-testid="lk-res-naam-a1"]').exists()).toBe(true) // saas
+    expect(w.find('[data-testid="lk-res-naam-a2"]').exists()).toBe(false) // on_premise
+    // Hosting-chip verwijderen, daarna op lifecycle filteren.
+    await w.find('[data-testid="lk-filter-hosting-chip-verwijder-saas"]').trigger('click')
+    await flushPromises()
+    await w.find('[data-testid="lk-filter-lifecycle-input"]').trigger('focus')
+    await flushPromises()
+    await w.find('[data-testid="lk-filter-lifecycle-optie-migratieklaar"]').trigger('mousedown')
+    await flushPromises()
+    expect(w.find('[data-testid="lk-res-naam-a1"]').exists()).toBe(true) // migratieklaar
+    expect(w.find('[data-testid="lk-res-naam-a2"]').exists()).toBe(false) // geblokkeerd
+  })
+
+  it('LI019 1b-v2 — type-filter werkt over alle ringen; type-loze nodes blijven (geheel-modus)', async () => {
+    const { w } = await mountView()
+    await w.find('[data-testid="lk-modus-geheel"]').trigger('click')
+    await flushPromises()
+    await w.find('[data-testid="lk-filter-type-input"]').trigger('focus')
+    await flushPromises()
+    await w.find('[data-testid="lk-filter-type-optie-applicatie"]').trigger('mousedown')
+    await flushPromises()
+    const ids = w.vm.zichtbareNodes.map((n) => n.id)
+    expect(ids).toContain('a1') // applicatie — matcht
+    expect(ids).not.toContain('d1') // database — ander type, weggefilterd
+    expect(ids).toContain('p1') // partij — type-loos, blijft
+    expect(ids).toContain('k1') // contract — type-loos, blijft
   })
 
   it('toont de ring-checkboxes in ALLE modi (regressie LI018)', async () => {

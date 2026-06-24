@@ -20,6 +20,7 @@ class LandschapsNode(BaseModel):
     # ADR-025 v3 — verrijking voor zoeken/filteren/detail in de UI.
     domein: str | None = None               # componenttype-label (proxy voor functioneel domein)
     leverancier_naam: str | None = None     # externe partij via roltoewijzing (technisch/contractbeheer)
+    leverancier_id: UUID | None = None       # partij-id van die externe partij (eenduidige UI-filtering)
     hosting_model: str | None = None        # hostingmodel van de component (enum-waarde)
     blokkades_open: int = 0                 # aantal niet-opgeloste blokkades (read-only telling)
     # ADR-025 v4 — migratieplaatsing (eerste plateau via aggregation-lidmaatschap, met dispositie).

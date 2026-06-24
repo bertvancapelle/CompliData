@@ -31,8 +31,11 @@ const props = defineProps({
   id: { type: String, default: null },
   // data-testid-prefix (uniek per instantie wanneer meerdere ZoekSelects in één form staan).
   testid: { type: String, default: 'zs' },
+  // Multi-select-modus (ZoekMultiSelect): na een keuze het veld leegmaken en open houden i.p.v.
+  // sluiten, zodat snel meerdere keuzes achter elkaar kunnen. Sluiten gebeurt dan via blur/Escape.
+  heropenNaKeuze: { type: Boolean, default: false },
 })
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue', 'keuze'])
 
 const inputRef = ref(null)
 const query = ref('')
@@ -96,10 +99,19 @@ function sluiten() {
 }
 
 function selecteer(item) {
-  gekozenLabel.value = _label(item)
-  query.value = gekozenLabel.value
   emit('update:modelValue', item[props.idVeld])
-  open.value = false
+  emit('keuze', item)
+  if (props.heropenNaKeuze) {
+    // Multi-select: veld leegmaken en lijst open houden voor de volgende keuze.
+    gekozenLabel.value = ''
+    query.value = ''
+    actieveIndex.value = -1
+    zoek()
+  } else {
+    gekozenLabel.value = _label(item)
+    query.value = gekozenLabel.value
+    open.value = false
+  }
 }
 
 function onInput() {
