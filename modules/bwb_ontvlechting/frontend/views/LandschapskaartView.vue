@@ -52,7 +52,14 @@ const LANE_DEF = {
   contracten: { label: 'Contracten', bg: '#faf5ff' },
 }
 const DEFAULT_LANE_VOLGORDE = ['rollen', 'gebruikers', 'componenten', 'infrastructuur', 'overig', 'contracten']
-const LANE_H = 170 // vaste model-hoogte per lane (band) — rustig, regelmatig beeld
+// LI019 1d-v6 — swimlane-grid: nodes wrappen per lane binnen een BEGRENSDE breedte, zodat één grote
+// lane (bv. 58 partijen) de andere lanes niet uitrekt en cy.fit() niet extreem uitzoomt (kernoorzaak B).
+const MAX_LANE_W = 1200 // max model-breedte voor het node-grid per lane
+const NODE_W = 190 // horizontale spreiding tussen nodes
+const NODE_H = 72 // verticale spreiding per rij
+const LANE_PAD = 30 // verticale padding binnen een lane (ruimte voor de header)
+const LANE_MIN_H = 110 // min lane-hoogte — lege/kleine lane blijft zichtbaar met placeholder
+const LANE_COLS = Math.max(1, Math.floor(MAX_LANE_W / NODE_W)) // kolommen per lane (= 6)
 // ADR-031 — gebruikersgroep-node-stijl (distinctief t.o.v. applicaties).
 const GG_STYLE = { bg: '#e0f2fe', border: '#0ea5e9' }
 const INSET = { bg: '#1e3a8a', border: '#1e3a8a' }
@@ -712,14 +719,17 @@ function _txtColor(bg) {
 const GEEN_COMPONENTTYPE = new Set(['partij', 'gebruikersgroep', 'contract'])
 const _heeftTypeLabel = (n) => !!n.element_type && !GEEN_COMPONENTTYPE.has(n.element_type)
 
-// LI019 1d — swimlane-indeling, afgeleid uit bestaande node-velden.
+// LI019 1d-v5 — swimlane-indeling, afgeleid uit bestaande node-velden. Robuust voor de werkelijke
+// data: ÉLK element_type dat geen partij/contract/gebruikersgroep is, is een componenttype →
+// componenten (technology-laag → infrastructuur). Zo belanden application-componenten nóóit meer in
+// "Overig", ook als `laag` ontbreekt of een componenttype geen application-laag-typing heeft (bug 1).
 function _laneVan(n) {
-  if (n.element_type === 'gebruikersgroep') return 'gebruikers'
-  if (n.element_type === 'contract') return 'contracten'
-  if (n.element_type === 'partij') return 'rollen'
-  if (n.element_type === 'applicatie' || n.laag === 'application') return 'componenten'
-  if (n.laag === 'technology') return 'infrastructuur'
-  return 'overig'
+  const et = n.element_type
+  if (et === 'gebruikersgroep') return 'gebruikers'
+  if (et === 'contract') return 'contracten'
+  if (et === 'partij') return 'rollen'
+  if (!et) return 'overig'
+  return n.laag === 'technology' ? 'infrastructuur' : 'componenten'
 }
 // Aantal zichtbare nodes per lane (voor lege-lane-detectie en x-spreiding).
 const _laneTelling = computed(() => {
@@ -734,8 +744,26 @@ const zichtbareLanes = computed(() =>
     .map((key) => ({ key, label: LANE_DEF[key].label, bg: LANE_DEF[key].bg, aantal: _laneTelling.value[key] || 0 }))
     .filter((l) => !verbergLegeLanes.value || l.aantal > 0),
 )
-// Banden voor de overlay (model-laag): key/label/kleur/leeg + display-index.
-const laneBanden = computed(() => zichtbareLanes.value.map((l, i) => ({ ...l, index: i, leeg: l.aantal === 0 })))
+// LI019 1d-v6 — per lane: de nodes (gesorteerd) + grid-afmetingen. Lane-hoogte schaalt met het
+// aantal rijen (nodes wrappen over LANE_COLS kolommen); lanes worden cumulatief gestapeld (`top`).
+const laneLayout = computed(() => {
+  const perLane = {}
+  for (const n of getekendeNodes.value) {
+    const key = _laneVan(n)
+    ;(perLane[key] ||= []).push(n)
+  }
+  let top = 0
+  return zichtbareLanes.value.map((l, index) => {
+    const nodes = (perLane[l.key] || []).slice().sort((a, b) => (a.naam || '').localeCompare(b.naam || ''))
+    const rows = Math.max(1, Math.ceil(nodes.length / LANE_COLS))
+    const height = Math.max(LANE_MIN_H, rows * NODE_H + 2 * LANE_PAD)
+    const band = { key: l.key, label: l.label, bg: l.bg, aantal: l.aantal, leeg: nodes.length === 0, index, top, height, nodes }
+    top += height
+    return band
+  })
+})
+// Banden voor de overlay = de lane-layout (key/label/kleur/leeg + display-index + model top/height).
+const laneBanden = computed(() => laneLayout.value)
 function _nodeData(n) {
   const isGG = n.element_type === 'gebruikersgroep'
   let bg = isGG ? GG_STYLE.bg : lcStyle(n.lifecycle_status).bg
@@ -757,7 +785,7 @@ function _nodeData(n) {
   return { id: n.id, label, bg, border, txt: _txtColor(bg), shape: isGG ? 'ellipse' : 'round-rectangle' }
 }
 function _edgeData(e, i) {
-  let lc = '#cbd5e1'
+  let lc = '#94a3b8' // LI019 1d-v5 — iets donkerder default zodat edges tussen lanes goed zichtbaar zijn
   let w = 1.5
   let ls = 'solid'
   if (modus.value === 'impact' && e.ring === 'applicaties') {
@@ -843,35 +871,33 @@ function _naLayout() {
   cy.fit?.(undefined, 50)
   updateBands()
 }
-// LI019 1d-v2 (Taak 2/4) — swimlane-posities: nodes op de band-center (y = display-index van de lane)
-// en gelijkmatig over de breedte (x, alfabetisch). Alle zichtbare lanes krijgen dezelfde spreidings-
-// breedte W zodat lanes uitlijnen. Object-map {nodeId:{x,y}} (Cytoscape lookt id zelf op).
+// LI019 1d-v6 — swimlane-posities: nodes in een GRID per lane (LANE_COLS kolommen, wrappend over
+// meerdere rijen), gecentreerd per rij. Begrensde breedte → geen extreme uitzoom (kernoorzaak B).
+// Object-map {nodeId:{x,y}} (Cytoscape lookt id zelf op).
 function _swimlanePositions() {
-  const idxVan = {}
-  zichtbareLanes.value.forEach((l, i) => { idxVan[l.key] = i })
-  const perLane = {}
-  for (const n of getekendeNodes.value) {
-    const key = _laneVan(n)
-    if (!(key in idxVan)) continue
-    ;(perLane[key] ||= []).push(n)
-  }
-  const maxCount = Math.max(1, ...Object.values(perLane).map((a) => a.length))
-  const W = Math.max(800, maxCount * 180)
   const pos = {}
-  for (const key of Object.keys(perLane)) {
-    const arr = perLane[key].slice().sort((a, b) => (a.naam || '').localeCompare(b.naam || ''))
-    const y = idxVan[key] * LANE_H + LANE_H / 2
-    arr.forEach((n, xi) => { pos[n.id] = { x: ((xi + 0.5) / arr.length) * W - W / 2, y } })
+  for (const lane of laneLayout.value) {
+    const { nodes, top } = lane
+    const count = nodes.length
+    nodes.forEach((n, xi) => {
+      const row = Math.floor(xi / LANE_COLS)
+      const rowStart = row * LANE_COLS
+      const rowCount = Math.min(LANE_COLS, count - rowStart) // nodes op deze (mogelijk laatste) rij
+      const colInRow = xi - rowStart
+      const x = (colInRow - (rowCount - 1) / 2) * NODE_W // rij horizontaal gecentreerd rond 0
+      const y = top + LANE_PAD + row * NODE_H + NODE_H / 2
+      pos[n.id] = { x, y }
+    })
   }
   return pos
 }
-// LI019 1d-v2 — sync de HTML-band-overlay met cy's pan/zoom: model-y-band → schermpixels. Banden
-// zijn altijd volledige canvasbreedte (CSS); alleen verticale positie/hoogte volgen pan/zoom.
+// LI019 1d-v6 — sync de HTML-band-overlay met cy's pan/zoom: per-lane model-top/-hoogte → schermpixels.
+// Banden zijn altijd volledige canvasbreedte (CSS); alleen verticale positie/hoogte volgen pan/zoom.
 function updateBands() {
   if (!cy || layoutModus.value !== 'swimlane') { bandPx.value = []; return }
   const zoom = cy.zoom?.() || 1
   const pan = cy.pan?.() || { x: 0, y: 0 }
-  bandPx.value = laneBanden.value.map((b) => ({ top: b.index * LANE_H * zoom + pan.y, height: LANE_H * zoom }))
+  bandPx.value = laneBanden.value.map((b) => ({ top: b.top * zoom + pan.y, height: b.height * zoom }))
 }
 // LI019 1d-v3 — lanevolgorde herschikken door de lane-header op het canvas te verslepen.
 // `_herschikLane` is de pure reorder: verplaats `bron` naar de positie van `doel`, persisteer

@@ -211,16 +211,21 @@ describe('LandschapskaartView v3', () => {
     expect(ids).toContain('k1') // contract (geen lifecycle) → context van a1 via de contracten-ring → blijft
   })
 
-  it('LI019 1d — node→lane-toewijzing uit element_type/laag', async () => {
+  it('LI019 1d-v5 — node→lane-toewijzing robuust voor de werkelijke data', async () => {
     const { w } = await mountView()
     const lane = w.vm._laneVan
     expect(lane({ element_type: 'applicatie', laag: 'application' })).toBe('componenten')
-    expect(lane({ element_type: 'component', laag: 'application' })).toBe('componenten')
     expect(lane({ element_type: 'database', laag: 'technology' })).toBe('infrastructuur')
     expect(lane({ element_type: 'gebruikersgroep', laag: 'business' })).toBe('gebruikers')
     expect(lane({ element_type: 'partij', laag: 'business' })).toBe('rollen')
     expect(lane({ element_type: 'contract', laag: 'business' })).toBe('contracten')
-    expect(lane({ element_type: 'onbekend' })).toBe('overig')
+    // Bug 1: een componenttype zónder application-laag-typing (laag null/ontbrekend) → tóch componenten,
+    // niet "Overig". Alleen technology-laag wijkt af (infrastructuur).
+    expect(lane({ element_type: 'zaaksysteem_suite', laag: null })).toBe('componenten')
+    expect(lane({ element_type: 'webservice' })).toBe('componenten')
+    expect(lane({ element_type: 'fileshare', laag: 'technology' })).toBe('infrastructuur')
+    // Alleen een node zónder element_type valt in Overig.
+    expect(lane({})).toBe('overig')
   })
 
   it('LI019 1d — layout-wisselaar schakelt tussen Radiaal en Swimlanes', async () => {
@@ -270,6 +275,28 @@ describe('LandschapskaartView v3', () => {
     expect(typeof cfg.positions).toBe('object')
     expect(cfg.positions.app).toBeDefined()
     expect(cfg.fit).toBe(true)
+  })
+
+  it('LI019 1d-v6 — nodes wrappen per lane in een grid; breedte begrensd, lane-hoogte schaalt', async () => {
+    const nodes = []
+    for (let i = 0; i < 8; i++) {
+      nodes.push({ id: `c${i}`, naam: `Comp ${i}`, element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0 })
+    }
+    api.landschapskaart.haalGrafdata.mockResolvedValue({ nodes, edges: [] })
+    const { w } = await mountView()
+    await w.find('[data-testid="lk-modus-geheel"]').trigger('click')
+    await flushPromises()
+    await w.find('[data-testid="lk-layout-swimlane"]').trigger('click')
+    await flushPromises()
+    const pos = w.vm._swimlanePositions()
+    const xs = Object.values(pos).map((p) => p.x)
+    const ys = new Set(Object.values(pos).map((p) => p.y))
+    // 8 nodes, 6 kolommen → 2 rijen (2 distinct y); x begrensd (geen ~10.000px-spreiding).
+    expect(ys.size).toBe(2)
+    expect(Math.max(...xs.map((x) => Math.abs(x)))).toBeLessThan(600)
+    // Lane-hoogte schaalt met het aantal rijen (2 rijen → ruim boven de min-hoogte).
+    const comp = w.vm.laneBanden.find((b) => b.key === 'componenten')
+    expect(comp.height).toBeGreaterThan(150)
   })
 
   it('LI019 1d-v4 — banden in twee lagen rond het canvas: achtergronden niet-interactief, header interactief', async () => {
