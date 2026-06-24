@@ -634,3 +634,165 @@ Kleurschema laagbands:
 - implementation_migration: `#993C1D`
 
 Pill-stijl per aspect: active=solid border, passive=dashed border, behavior=ronde pill (border-radius:99px).
+
+---
+
+## ZoekMultiSelect-patroon (LI019)
+
+Doorzoekbare multi-select bovenop ZoekSelect. Gebruik voor alle Landschapskaart-filters
+én elke andere multi-select behoefte met server-side zoeken.
+
+**Component:** `modules/.../frontend/views/ZoekMultiSelect.vue`
+
+Kenmerken:
+- Chips per geselecteerde waarde, elk verwijderbaar met ×
+- "× Wis"-knopje verschijnt alleen bij ≥1 chip (wist alle chips in één klik)
+- Blijft open na elke keuze (heropenNaKeuze=true op de onderliggende ZoekSelect)
+- Vaste onderste optie mogelijk via `vasteOptie`-prop (bijv. "Zonder leverancier")
+- Geen selectie = lege array = alles tonen (nooit een "Alle X"-optie toevoegen)
+
+```vue
+<ZoekMultiSelect
+  v-model="geselecteerdeIds"
+  :zoek-functie="zoekLeveranciers"
+  :weergave="(p) => p.naam"
+  :id-veld="'id'"
+  :vaste-optie="{ label: 'Zonder leverancier', waarde: '__zonder__' }"
+  placeholder="Zoek leverancier…"
+  testid="lk-filter-leverancier"
+/>
+```
+
+---
+
+## Landschapskaart filter-patronen (LI019)
+
+### Filter-exemptie regel (niet-onderhandelbaar)
+Context-nodes (contracten, partijen, gebruikersgroepen) hebben geen attribuut-kenmerken
+(geen leverancier, hosting, lifecycle). Ze worden NOOIT weggefilterd bij een attribuut-filter —
+alleen nodes mét het kenmerk én niet in de selectie vallen weg.
+
+```javascript
+// CORRECT
+if (filterLeveranciers.value.length && n.leverancier_id && !filterLeveranciers.value.includes(n.leverancier_id)) return false
+// n.leverancier_id falsy → node heeft geen leverancier → niet wegfilteren
+
+// FOUT
+if (filterLeveranciers.value.length && !filterLeveranciers.value.includes(n.leverancier_id)) return false
+// filtert ook nodes weg zonder leverancier_id
+```
+
+### "Zonder [X]" als expliciete filteroptie
+Voeg aan elke attribuut-filter een vaste onderste optie "Zonder [X]" toe.
+- Geen filter actief → alles tonen (kenmerkloze nodes zichtbaar)
+- Filter actief, "Zonder [X]" niet gekozen → kenmerkloze nodes wegfilteren
+- Filter actief, "Zonder [X]" gekozen → kenmerkloze nodes meenemen
+- Sentinel-waarde: `'__zonder__'`
+
+### Ego-centrum bevestigingsdialoog
+Bij een filterwijziging die het ego-centrum zou verbergen: toon een bevestigingsdialoog
+"Het geselecteerde filter verbergt het huidige centrum-component. Wil je doorgaan?"
+- Doorgaan → filter toegepast
+- Annuleren → filter teruggedraaid (snapshot-revert via guard-flag)
+- Alleen in Ego-view (geen centrum-concept in andere modi)
+
+---
+
+## Landschapskaart auto-herpositionering (LI019)
+
+Na elke relevante wijziging (filter, ring, selectie, view) herpositioneert de kaart automatisch.
+
+```javascript
+// _naLayout als stop-callback op ELKE layout
+function _naLayout() {
+  if (modus.value === 'ego' && _recenterPending) {
+    _recenterPending = false
+    const c = cy.getElementById(String(egoStartId.value))
+    if (c?.length) cy.center(c)
+  } else {
+    cy.fit(undefined, 60)
+  }
+}
+// _recenterPending alleen zetten bij expliciete hercentrering (dubbelklik/selecteerNode)
+// Alle andere wijzigingen → cy.fit() via _naLayout
+// maxZoom: 1.6 op Cytoscape-init voorkomt extreme inzoom bij kleine node-sets
+```
+
+---
+
+## Landschapskaart getekendeNodes-regel (LI019, kritiek)
+
+`getekendeNodes` filtert op `metZichtbareEdge.has(n.id)` — nodes zonder zichtbare edge
+worden verborgen (losse nodes zweven anders in de radiaal). Dit is correct voor radiaal.
+
+**Swimlane-uitzondering (v8):** in swimlane-modus vervalt de edge-aanwezigheidseis —
+elke node hoort in een lane ongeacht of hij een edge heeft:
+
+```javascript
+if (layoutModus.value === 'swimlane' || toonRegistratiegaps.value || egoCentrum || metZichtbareEdge.has(n.id))
+  uniek.set(n.id, n)
+```
+
+**toonRegistratiegaps-toggle:** standaard UIT. AAN = losse nodes (zonder edges) ook
+tonen in radiaal. In swimlane zijn ze altijd zichtbaar (swimlane-conditie evalueert eerst).
+
+---
+
+## Auditlog UI-patronen (LI019)
+
+### Actor-weergave fallback-keten
+```javascript
+// labels.js — actorWeergave(record)
+actor_naam → actor_email → actor_sub → "—"
+```
+
+Systeem-actor labels (SYSTEEM_ACTOR-map in labels.js):
+- `system:dev_seed` → "Systeem (seed)"
+- `system:worker` → "Systeem (worker)"
+- `system:platform_init` → "Systeem (initialisatie)"
+- Overige `system:`-prefixes → "Systeem"
+
+### Entiteit_naam batch-resolver (backend)
+Backend levert `entiteit_naam` op AuditRecordRead via een read-only N+1-vrije
+batch-resolver (`entiteit_resolutie.py`). Frontend toont:
+`"[Entiteit-type] — [entiteit_naam || entiteit_id]"`
+
+### Uitklapbare diff in AuditTrailView
+Per rij een chevron-toggle → uitklapbaar detailpaneel met diff:
+- update: "veld: oud → nieuw"
+- create: "Aangemaakt met: veld = waarde"
+- delete: "Verwijderd: veld was waarde"
+Hergebruik VELD_LABELS + humanize-fallback uit ObjectHistoriePaneel. Standaard ingeklapt.
+
+---
+
+## Leverancier via contract-keten (LI019)
+
+`leverancier_id` op Landschapskaart-nodes wordt afgeleid via twee paden:
+1. Roltoewijzing (externe_partij) — leidend
+2. Component → association-relatie → contract → contract.leverancier_id — vult gaten
+
+Roltoewijzing-leverancier wint van contract-leverancier (setdefault-patroon in service).
+Dit zorgt dat de leverancier-filter werkt voor alle componenten, ook zonder directe
+leverancier-koppeling.
+
+LeverancierDetail (PartijDetail) toont een "Componenten"-sectie voor externe partijen
+via endpoint `GET /partijen/{id}/componenten` (keten: contract.leverancier_id == partij
+→ association-relatie component→contract → component).
+
+---
+
+## Swimlane geparkeerd (LI019)
+
+De swimlane-layout is geparkeerd wegens technische complexiteit met Cytoscape.js
+(compound-nodes, edge-rendering tussen lanes, pointer-events-conflicten).
+
+**Huidige staat:**
+- Layout-toggle verborgen via `v-if="false"` in LandschapskaartView.vue
+- `layoutModus` vast op `'radiaal'` (niet opgeslagen in sessionStorage)
+- Swimlane-code bewaard voor toekomstige herwrite
+- `setLayoutModus()` exposed voor programmatische toegang in tests
+
+**Toekomstige herwrite (ADR-034):** pure HTML/CSS div-lanes + SVG-overlay voor edges,
+NIET Cytoscape compound-nodes. Dit is de enige bewezen architectuur voor echte swimlanes
+met interactieve drag en edge-rendering.
