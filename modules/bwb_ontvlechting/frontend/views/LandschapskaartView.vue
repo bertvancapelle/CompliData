@@ -832,7 +832,10 @@ const getekendeNodes = computed(() => {
       continue
     }
     const egoCentrum = modus.value === 'ego' && n.id === egoStartId.value
-    if (toonRegistratiegaps.value || egoCentrum || metZichtbareEdge.has(n.id)) uniek.set(n.id, n)
+    // LI019 1d-v8 — in SWIMLANE valt de edge-aanwezigheidseis weg: elke node hoort in een lane, dus
+    // toon álle nodes uit zichtbareNodes (de radiaal-data). De edge-filter is enkel voor radiaal
+    // (losse nodes zweven daar rond). `toonRegistratiegaps` doet dit ook in radiaal.
+    if (layoutModus.value === 'swimlane' || toonRegistratiegaps.value || egoCentrum || metZichtbareEdge.has(n.id)) uniek.set(n.id, n)
   }
   return [...uniek.values()]
 })
