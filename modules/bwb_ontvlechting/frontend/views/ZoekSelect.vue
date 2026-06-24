@@ -34,6 +34,9 @@ const props = defineProps({
   // Multi-select-modus (ZoekMultiSelect): na een keuze het veld leegmaken en open houden i.p.v.
   // sluiten, zodat snel meerdere keuzes achter elkaar kunnen. Sluiten gebeurt dan via blur/Escape.
   heropenNaKeuze: { type: Boolean, default: false },
+  // Vaste optie onderaan de dropdown (gescheiden van de zoekresultaten met een lijn). Een item
+  // zoals { [idVeld]: '…', <weergaveveld>: '…' }; selecteert net als een gewoon resultaat.
+  vasteOptie: { type: Object, default: null },
 })
 const emit = defineEmits(['update:modelValue', 'keuze'])
 
@@ -51,6 +54,8 @@ const fout = ref(null)
 const actieveIndex = ref(-1)
 const listboxId = computed(() => `${props.id || 'zs'}-listbox`)
 const optieId = (i) => `${props.id || 'zs'}-optie-${i}`
+// Navigeerbare items = zoekresultaten + (optioneel) de vaste onderste optie.
+const navItems = computed(() => (props.vasteOptie ? [...resultaten.value, props.vasteOptie] : resultaten.value))
 
 function _label(item) {
   return props.weergave(item)
@@ -133,14 +138,14 @@ function onKeydown(e) {
     return
   }
   if (e.key === 'ArrowDown') {
-    actieveIndex.value = Math.min(actieveIndex.value + 1, resultaten.value.length - 1)
+    actieveIndex.value = Math.min(actieveIndex.value + 1, navItems.value.length - 1)
     e.preventDefault()
   } else if (e.key === 'ArrowUp') {
     actieveIndex.value = Math.max(actieveIndex.value - 1, 0)
     e.preventDefault()
   } else if (e.key === 'Enter') {
-    if (open.value && actieveIndex.value >= 0 && resultaten.value[actieveIndex.value]) {
-      selecteer(resultaten.value[actieveIndex.value])
+    if (open.value && actieveIndex.value >= 0 && navItems.value[actieveIndex.value]) {
+      selecteer(navItems.value[actieveIndex.value])
       e.preventDefault()
     }
   } else if (e.key === 'Escape') {
@@ -236,6 +241,21 @@ watch(
         </li>
         <li v-if="meer" :data-testid="`${props.testid}-meer`" class="border-t border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] text-[var(--cd-color-text-muted)] text-[length:var(--cd-text-xs)]">
           Meer resultaten — verfijn je zoekopdracht.
+        </li>
+        <li
+          v-if="vasteOptie"
+          :id="optieId(resultaten.length)"
+          role="option"
+          :aria-selected="vasteOptie[props.idVeld] === props.modelValue ? 'true' : 'false'"
+          :data-testid="`${props.testid}-optie-${vasteOptie[props.idVeld]}`"
+          :class="[
+            'cursor-pointer border-t border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)] italic',
+            resultaten.length === actieveIndex ? 'bg-[var(--cd-color-accent)]' : 'hover:bg-[var(--cd-color-accent)]',
+          ]"
+          @mousedown.prevent="selecteer(vasteOptie)"
+          @mousemove="actieveIndex = resultaten.length"
+        >
+          {{ _label(vasteOptie) }}
         </li>
       </template>
     </ul>

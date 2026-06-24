@@ -78,6 +78,17 @@ describe('ZoekMultiSelect', () => {
     expect(w.find('[data-testid="ms-chip-database"]').text()).toContain('Database')
   })
 
+  it('rendert de vaste optie onderaan en toont bij selectie haar eigen label als chip', async () => {
+    const w = await mountMS({ vasteOptie: { optie_sleutel: '__zonder__', label: 'Zonder X' } })
+    await w.find('[data-testid="ms-input"]').trigger('focus')
+    await flushPromises()
+    expect(w.find('[data-testid="ms-optie-__zonder__"]').exists()).toBe(true)
+    await w.find('[data-testid="ms-optie-__zonder__"]').trigger('mousedown')
+    await flushPromises()
+    await w.setProps({ modelValue: w.emitted('update:modelValue').at(-1)[0] })
+    expect(w.find('[data-testid="ms-chip-__zonder__"]').text()).toContain('Zonder X')
+  })
+
   it('"× Wis" verschijnt alleen bij ≥1 chip en wist de hele selectie', async () => {
     const leeg = await mountMS()
     expect(leeg.find('[data-testid="ms-wis"]').exists()).toBe(false)

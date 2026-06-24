@@ -184,16 +184,29 @@ const filterActief = computed(
       filterLifecycle.value.length
     ),
 )
-// LI019 1b-v2 — attribuut-multifilters: OR binnen één filter, AND tussen filters. Geldt voor de
-// VOLLEDIGE node-set (alle ringen). Het type-filter laat type-loze nodes (contract/partij/groep)
-// ongemoeid (correctie 1); leverancier/hosting/lifecycle matchen strikt (een node zonder de
-// gevraagde waarde valt weg), zoals de oorspronkelijke enkelvoudige filters.
-function _filterMatch(n) {
-  if (filterTypes.value.length && _heeftTypeLabel(n) && !filterTypes.value.includes(n.element_type)) return false
-  if (filterLeveranciers.value.length && !filterLeveranciers.value.includes(n.leverancier_id)) return false
-  if (filterHosting.value.length && !filterHosting.value.includes(n.hosting_model)) return false
-  if (filterLifecycle.value.length && !filterLifecycle.value.includes(n.lifecycle_status)) return false
+// LI019 1c-v2 — attribuut-multifilters: OR binnen één filter, AND tussen filters, op de VOLLEDIGE
+// node-set (alle ringen). Per attribuut-filter (leverancier/hosting/lifecycle) bepaalt de gebruiker
+// kenmerkloze nodes via de vaste optie "Zonder [X]" (sentinel ZONDER): zonder die chip vallen
+// kenmerkloze nodes weg, mét die chip blijven ze. Het type-filter houdt type-loze nodes (contracten/
+// partijen/groepen) altijd vrij (geen "Zonder type"-optie).
+const ZONDER = '__zonder__'
+function _matchAttr(selectie, waarde) {
+  if (!selectie.length) return true
+  if (waarde == null || waarde === '') return selectie.includes(ZONDER)
+  return selectie.includes(waarde)
+}
+function _nodeVoldoet(n, f) {
+  if (f.types.length && _heeftTypeLabel(n) && !f.types.includes(n.element_type)) return false
+  if (!_matchAttr(f.lev, n.leverancier_id)) return false
+  if (!_matchAttr(f.host, n.hosting_model)) return false
+  if (!_matchAttr(f.life, n.lifecycle_status)) return false
   return true
+}
+const _huidigeFilters = () => ({
+  types: filterTypes.value, lev: filterLeveranciers.value, host: filterHosting.value, life: filterLifecycle.value,
+})
+function _filterMatch(n) {
+  return _nodeVoldoet(n, _huidigeFilters())
 }
 function _matcht(n) {
   const q = zoekterm.value.trim().toLowerCase()
@@ -201,6 +214,42 @@ function _matcht(n) {
   return _filterMatch(n)
 }
 const gefilterdeNodes = computed(() => appNodes.value.filter(_matcht))
+
+// LI019 1c-v2 — Ego-bevestiging: een filterwijziging die het centrum-component zou verbergen vraagt
+// eerst om bevestiging. Annuleren herstelt de vorige filterstaat (snapshot); doorgaan bevestigt 'm.
+const egoFilterDialog = ref(false)
+let _filterRevert = false
+let _filterSnap = { types: [], lev: [], host: [], life: [] }
+function _commitFilterSnap() {
+  _filterSnap = {
+    types: [...filterTypes.value], lev: [...filterLeveranciers.value],
+    host: [...filterHosting.value], life: [...filterLifecycle.value],
+  }
+}
+watch([filterTypes, filterLeveranciers, filterHosting, filterLifecycle], () => {
+  if (_filterRevert) return
+  const centrum = egoStartId.value ? nodePerId.value[egoStartId.value] : null
+  if (modus.value !== 'ego' || !centrum) { _commitFilterSnap(); return }
+  // Alleen vragen bij de overgang zichtbaar → verborgen van het centrum.
+  if (_nodeVoldoet(centrum, _filterSnap) && !_nodeVoldoet(centrum, _huidigeFilters())) {
+    egoFilterDialog.value = true
+  } else {
+    _commitFilterSnap()
+  }
+})
+function egoFilterDoorgaan() {
+  _commitFilterSnap()
+  egoFilterDialog.value = false
+}
+function egoFilterAnnuleer() {
+  _filterRevert = true
+  filterTypes.value = [..._filterSnap.types]
+  filterLeveranciers.value = [..._filterSnap.lev]
+  filterHosting.value = [..._filterSnap.host]
+  filterLifecycle.value = [..._filterSnap.life]
+  egoFilterDialog.value = false
+  nextTick(() => { _filterRevert = false })
+}
 // LI027 — vrije zoekterm in de resultatenlijst (client-side, op naam, case-insensitive).
 const zoekResultaten = ref('')
 const gefilterdeResultaten = computed(() => {
@@ -239,13 +288,16 @@ const egoZichtbaarIds = computed(() => {
   return ids
 })
 const zichtbareNodes = computed(() => {
+  // LI019 1c — de filterselects gelden in ALLE modi: ego/impact passen _filterMatch toe op hun
+  // eigen node-set (no-op zonder actieve selectie). De vrije zoekterm blijft modusgebonden
+  // (alleen de geheel-modus opbouw/afpel-verfijning, via _matcht).
   if (modus.value === 'ego') {
-    return grafNodes.value.filter((n) => egoZichtbaarIds.value.has(n.id))
+    return grafNodes.value.filter((n) => egoZichtbaarIds.value.has(n.id) && _filterMatch(n))
   }
-  if (modus.value === 'impact') return grafNodes.value.filter(isApplicatie)
+  if (modus.value === 'impact') return grafNodes.value.filter((n) => isApplicatie(n) && _filterMatch(n))
   // Geheel model toont standaard het VOLLEDIGE landschap (Fix 1: gebruiker verwacht alles te zien).
-  // Filters verfijnen de VOLLEDIGE node-set (alle ringen, LI019 1b-v2): opbouw = alleen de match;
-  // afpel = alles behalve de match. Type-loze nodes blijven (zie _filterMatch).
+  // Filters verfijnen de VOLLEDIGE node-set (alle ringen): opbouw = alleen de match; afpel = alles
+  // behalve de match. Context-nodes (zonder het gefilterde kenmerk) blijven (zie _filterMatch).
   if (!filterActief.value) return grafNodes.value
   return grafNodes.value.filter((n) => (opbouwModus.value ? _matcht(n) : !_matcht(n)))
 })
@@ -696,11 +748,19 @@ function _elementen() {
 }
 const zichtbaarAantal = computed(() => getekendeNodes.value.length)
 
+// LI019 — centreer ná de ego-layout(-animatie) op de (eventueel net via dubbelklik gewijzigde)
+// centrum-node, zodat die automatisch in beeld komt zonder handmatig "Centreer".
+function _centreerEgo() {
+  if (!cy || modus.value !== 'ego' || !egoStartId.value) return
+  const c = cy.getElementById?.(String(egoStartId.value))
+  if (c && c.length) cy.center?.(c)
+}
 function _layout() {
   if (modus.value === 'ego') {
     return {
       name: 'concentric', concentric: (n) => (n.id() === egoStartId.value ? 10 : 5), levelWidth: () => 1,
       minNodeSpacing: 60, padding: 60, animate: true, animationDuration: 400, // Fix 2: meer ruimte
+      stop: _centreerEgo, // centreren ná de animatie op de nieuwe centrum-node
     }
   }
   // LI023 — Geheel model / Impact-view: dagre hiërarchische layout (afhankelijkheidsrichting per laag).
@@ -917,6 +977,7 @@ const typeLabel = (t) => humaniseer(t)
             :zoek-functie="zoekLeveranciers"
             :weergave="(o) => o.naam"
             id-veld="id"
+            :vaste-optie="{ id: ZONDER, naam: 'Zonder leverancier' }"
             placeholder="Zoek leverancier…"
             testid="lk-filter-leverancier"
           />
@@ -929,6 +990,7 @@ const typeLabel = (t) => humaniseer(t)
             :weergave="(o) => o.label"
             id-veld="sleutel"
             :chip-label="(v) => typeLabel(v)"
+            :vaste-optie="{ sleutel: ZONDER, label: 'Zonder hosting' }"
             placeholder="Zoek hosting…"
             testid="lk-filter-hosting"
           />
@@ -941,6 +1003,7 @@ const typeLabel = (t) => humaniseer(t)
             :weergave="(o) => o.label"
             id-veld="sleutel"
             :chip-label="(v) => typeLabel(v)"
+            :vaste-optie="{ sleutel: ZONDER, label: 'Zonder lifecycle' }"
             placeholder="Zoek lifecycle…"
             testid="lk-filter-lifecycle"
           />
@@ -1132,6 +1195,23 @@ const typeLabel = (t) => humaniseer(t)
           </div>
         </div>
       </aside>
+    </div>
+
+    <!-- LI019 1c-v2 — Ego-bevestiging: filter zou het centrum-component verbergen. -->
+    <div
+      v-if="egoFilterDialog"
+      data-testid="lk-ego-filter-dialog"
+      role="dialog"
+      aria-modal="true"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+    >
+      <div class="card flex max-w-sm flex-col gap-[var(--cd-space-md)] bg-white p-[var(--cd-space-lg)]">
+        <p>Het geselecteerde filter verbergt het huidige centrum-component. Wil je doorgaan?</p>
+        <div class="flex justify-end gap-[var(--cd-space-sm)]">
+          <button type="button" data-testid="lk-ego-filter-annuleer" class="rounded-[var(--cd-radius-btn)] border border-[var(--cd-color-border)] px-[var(--cd-space-md)] py-1" @click="egoFilterAnnuleer">Annuleren</button>
+          <button type="button" data-testid="lk-ego-filter-doorgaan" class="rounded-[var(--cd-radius-btn)] bg-[var(--cd-color-primary)] px-[var(--cd-space-md)] py-1 text-white" @click="egoFilterDoorgaan">Doorgaan</button>
+        </div>
+      </div>
     </div>
   </div>
 </template>

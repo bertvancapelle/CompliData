@@ -99,20 +99,96 @@ describe('LandschapskaartView v3', () => {
     expect(w.find('[data-testid="lk-filter-type-optie-database"]').exists()).toBe(true)
   })
 
-  it('LI019 1b-v2 — leverancier-multiselect matcht op id en toont de naam als chip', async () => {
+  it('LI019 1c-v2 — leverancier-filter: andere leverancier weg, kenmerkloos pas mee met "Zonder leverancier"', async () => {
+    // Eigen graf: a1 (l1), a3 (andere leverancier l2), a2 (geen leverancier).
+    api.landschapskaart.haalGrafdata.mockResolvedValue({
+      nodes: [
+        { id: 'a1', naam: 'App1', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', leverancier_naam: 'SaaS BV', leverancier_id: 'l1', blokkades_open: 0 },
+        { id: 'a3', naam: 'App3', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', leverancier_naam: 'Andere BV', leverancier_id: 'l2', blokkades_open: 0 },
+        { id: 'a2', naam: 'App2', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', leverancier_naam: null, leverancier_id: null, blokkades_open: 0 },
+      ],
+      edges: [],
+    })
     const { w } = await mountView()
     await w.find('[data-testid="lk-filter-leverancier-input"]').trigger('focus')
     await flushPromises()
     await w.find('[data-testid="lk-filter-leverancier-optie-l1"]').trigger('mousedown')
     await flushPromises()
-    // Chip toont de naam (gevangen bij selectie), filtert op id; alleen a1 (l1) blijft over.
     expect(w.find('[data-testid="lk-filter-leverancier-chip-l1"]').text()).toContain('SaaS BV')
-    expect(w.find('[data-testid="lk-res-naam-a1"]').exists()).toBe(true)
-    expect(w.find('[data-testid="lk-res-naam-a2"]').exists()).toBe(false)
-    // Chip verwijderen herstelt de volledige lijst.
-    await w.find('[data-testid="lk-filter-leverancier-chip-verwijder-l1"]').trigger('click')
+    expect(w.find('[data-testid="lk-res-naam-a1"]').exists()).toBe(true) // l1 → matcht
+    expect(w.find('[data-testid="lk-res-naam-a3"]').exists()).toBe(false) // l2 → andere leverancier, weg
+    expect(w.find('[data-testid="lk-res-naam-a2"]').exists()).toBe(false) // geen leverancier → standaard weg
+    // "Zonder leverancier" (vaste optie) neemt kenmerkloze nodes weer mee.
+    await w.find('[data-testid="lk-filter-leverancier-input"]').trigger('focus')
     await flushPromises()
-    expect(w.findAll('[data-testid^="lk-res-naam-"]').length).toBe(2)
+    await w.find('[data-testid="lk-filter-leverancier-optie-__zonder__"]').trigger('mousedown')
+    await flushPromises()
+    expect(w.find('[data-testid="lk-filter-leverancier-chip-__zonder__"]').text()).toContain('Zonder leverancier')
+    expect(w.find('[data-testid="lk-res-naam-a2"]').exists()).toBe(true) // nu mee
+    expect(w.find('[data-testid="lk-res-naam-a3"]').exists()).toBe(false) // l2 blijft weg
+  })
+
+  it('LI019 1c-v2 — "Zonder lifecycle" neemt kenmerkloze context-nodes weer mee (geheel-modus)', async () => {
+    const { w } = await mountView()
+    await w.find('[data-testid="lk-modus-geheel"]').trigger('click')
+    await flushPromises()
+    await w.find('[data-testid="lk-filter-lifecycle-input"]').trigger('focus')
+    await flushPromises()
+    await w.find('[data-testid="lk-filter-lifecycle-optie-migratieklaar"]').trigger('mousedown')
+    await flushPromises()
+    let ids = w.vm.zichtbareNodes.map((n) => n.id)
+    expect(ids).toContain('a1') // migratieklaar — matcht
+    expect(ids).not.toContain('a2') // geblokkeerd → weg
+    expect(ids).not.toContain('p1') // partij (geen lifecycle) → standaard weg
+    expect(ids).not.toContain('k1') // contract (geen lifecycle) → standaard weg
+    // "Zonder lifecycle" toevoegen → kenmerkloze nodes terug.
+    await w.find('[data-testid="lk-filter-lifecycle-input"]').trigger('focus')
+    await flushPromises()
+    await w.find('[data-testid="lk-filter-lifecycle-optie-__zonder__"]').trigger('mousedown')
+    await flushPromises()
+    ids = w.vm.zichtbareNodes.map((n) => n.id)
+    expect(ids).toContain('a1')
+    expect(ids).toContain('p1') // geen lifecycle → nu mee
+    expect(ids).toContain('k1') // geen lifecycle → nu mee
+    expect(ids).not.toContain('a2') // geblokkeerd heeft wél lifecycle, niet geselecteerd → blijft weg
+  })
+
+  it('LI019 1c-v2 — Ego: filter dat het centrum verbergt vraagt bevestiging (annuleren herstelt, doorgaan past toe)', async () => {
+    const { w } = await mountView() // ego-modus, centrum = a1 (hosting saas)
+    // Filter hosting=on_premise zou a1 (saas) verbergen → bevestigingsdialoog.
+    await w.find('[data-testid="lk-filter-hosting-input"]').trigger('focus')
+    await flushPromises()
+    await w.find('[data-testid="lk-filter-hosting-optie-on_premise"]').trigger('mousedown')
+    await flushPromises()
+    expect(w.find('[data-testid="lk-ego-filter-dialog"]').exists()).toBe(true)
+    // Annuleren → filter teruggedraaid (geen hosting-chip).
+    await w.find('[data-testid="lk-ego-filter-annuleer"]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-testid="lk-ego-filter-dialog"]').exists()).toBe(false)
+    expect(w.find('[data-testid="lk-filter-hosting-chip-on_premise"]').exists()).toBe(false)
+    // Opnieuw kiezen, nu doorgaan → filter toegepast, centrum (a1) verdwijnt uit de kaart.
+    await w.find('[data-testid="lk-filter-hosting-input"]').trigger('focus')
+    await flushPromises()
+    await w.find('[data-testid="lk-filter-hosting-optie-on_premise"]').trigger('mousedown')
+    await flushPromises()
+    await w.find('[data-testid="lk-ego-filter-doorgaan"]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-testid="lk-ego-filter-dialog"]').exists()).toBe(false)
+    expect(w.find('[data-testid="lk-filter-hosting-chip-on_premise"]').exists()).toBe(true)
+    expect(w.vm.zichtbareNodes.map((n) => n.id)).not.toContain('a1')
+  })
+
+  it('LI019 1c — filterselects werken óók in Impact-modus', async () => {
+    const { w } = await mountView()
+    await w.find('[data-testid="lk-modus-impact"]').trigger('click')
+    await flushPromises()
+    await w.find('[data-testid="lk-filter-lifecycle-input"]').trigger('focus')
+    await flushPromises()
+    await w.find('[data-testid="lk-filter-lifecycle-optie-migratieklaar"]').trigger('mousedown')
+    await flushPromises()
+    const ids = w.vm.zichtbareNodes.map((n) => n.id)
+    expect(ids).toContain('a1') // migratieklaar
+    expect(ids).not.toContain('a2') // geblokkeerd — gefilterd, ook in impact-modus
   })
 
   it('LI019 1b-v2 — hosting- en lifecycle-multiselect versmallen de lijst', async () => {

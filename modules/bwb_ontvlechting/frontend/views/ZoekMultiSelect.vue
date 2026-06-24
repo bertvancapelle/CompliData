@@ -21,6 +21,8 @@ const props = defineProps({
   placeholder: { type: String, default: 'Zoeken…' },
   id: { type: String, default: null },
   testid: { type: String, default: 'zms' },
+  // Vaste onderste optie in de dropdown (bv. "Zonder leverancier"); doorgegeven aan ZoekSelect.
+  vasteOptie: { type: Object, default: null },
 })
 const emit = defineEmits(['update:modelValue'])
 
@@ -40,9 +42,11 @@ function onKeuze(item) {
   gevangenLabels.value = { ...gevangenLabels.value, [item[props.idVeld]]: props.weergave(item) }
 }
 
-const toonChip = computed(() => (v) =>
-  props.chipLabel ? props.chipLabel(v) : (gevangenLabels.value[v] ?? String(v)),
-)
+const toonChip = computed(() => (v) => {
+  // De vaste optie (sentinel) toont altijd haar eigen label, ongeacht chipLabel.
+  if (props.vasteOptie && v === props.vasteOptie[props.idVeld]) return props.weergave(props.vasteOptie)
+  return props.chipLabel ? props.chipLabel(v) : (gevangenLabels.value[v] ?? String(v))
+})
 
 function verwijder(v) {
   emit('update:modelValue', props.modelValue.filter((x) => x !== v))
@@ -88,6 +92,7 @@ function wisAlles() {
       :placeholder="placeholder"
       :id="id"
       :testid="testid"
+      :vaste-optie="vasteOptie"
       heropen-na-keuze
       @keuze="onKeuze"
     />
