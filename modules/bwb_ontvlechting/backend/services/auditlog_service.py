@@ -18,7 +18,7 @@ from sqlalchemy import Text, and_, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.models import AuditLog
-from services import actor_resolutie
+from services import actor_resolutie, entiteit_resolutie
 
 _STANDAARD_LIMIT = 25
 _MAX_LIMIT = 100
@@ -158,6 +158,14 @@ async def lijst(
     naam_map = await actor_resolutie.resolveer_namen(session, tid, {rec.actor_sub for rec in recs})
     for rec in recs:
         rec.actor_naam = naam_map.get(rec.actor_sub) or rec.actor_email
+
+    # LI019 — objectnaam-verrijking: ÉÉN batch-resolutie van (entiteit_type, entiteit_id) → naam
+    # (N+1-vrij). Transient `entiteit_naam`; None bij verwijderde/naamloze objecten → UI valt terug op id.
+    ent_map = await entiteit_resolutie.resolveer_namen(
+        session, tid, {(rec.entiteit_type, rec.entiteit_id) for rec in recs}
+    )
+    for rec in recs:
+        rec.entiteit_naam = ent_map.get((rec.entiteit_type, str(rec.entiteit_id)))
 
     gebeurtenissen: list[dict] = []
     for r in pagina:

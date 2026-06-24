@@ -13,6 +13,7 @@ vi.mock('@/api', () => ({
 }))
 
 import { api } from '@/api'
+import { actorWeergave, diffWeergave } from '@modules/bwb_ontvlechting/frontend/labels'
 import AuditTrailView from '@modules/bwb_ontvlechting/frontend/views/AuditTrailView.vue'
 
 const _pagina = (over = {}) => ({
@@ -74,5 +75,65 @@ describe('AuditTrailView', () => {
     const laatste = api.auditlog.lijst.mock.calls.at(-1)[0]
     expect(laatste.after).toBeUndefined()
     expect(laatste.actie).toBe('update')
+  })
+
+  it('LI019 — "Wie": systeem-actor leesbaar + actor_sub-fallback', async () => {
+    api.auditlog.lijst.mockResolvedValue({
+      items: [
+        { correlatie_id: 's1', tijdstip: '2026-06-19T10:00:00Z', actor_naam: null, actor_email: null, actor_sub: 'system:dev_seed',
+          records: [{ id: 'r', entiteit_type: 'component', entiteit_id: 'x', actie: 'create' }] },
+        { correlatie_id: 's2', tijdstip: '2026-06-19T09:00:00Z', actor_naam: null, actor_email: null, actor_sub: 'kc|abc',
+          records: [{ id: 'r2', entiteit_type: 'component', entiteit_id: 'y', actie: 'update' }] },
+      ],
+      volgende_cursor: null,
+    })
+    const w = await mountView()
+    const wies = w.findAll('[data-testid="audit-wie"]').map((n) => n.text())
+    expect(wies).toContain('Systeem (seed)') // system: → leesbaar label
+    expect(wies).toContain('kc|abc') // geen naam/email → sub-fallback
+  })
+
+  it('LI019 — Onderdeel toont objectnaam, met entiteit_id-fallback', async () => {
+    api.auditlog.lijst.mockResolvedValue({
+      items: [
+        { correlatie_id: 'o1', tijdstip: '2026-06-19T10:00:00Z', actor_naam: 'Jan',
+          records: [{ id: 'r', entiteit_type: 'component', entiteit_id: 'comp-1', entiteit_naam: 'Zaaksysteem', actie: 'update' }] },
+        { correlatie_id: 'o2', tijdstip: '2026-06-19T09:00:00Z', actor_naam: 'Jan',
+          records: [{ id: 'r2', entiteit_type: 'component', entiteit_id: 'comp-2', entiteit_naam: null, actie: 'delete' }] },
+      ],
+      volgende_cursor: null,
+    })
+    const w = await mountView()
+    const ond = w.findAll('[data-testid="audit-onderdeel"]').map((n) => n.text())
+    expect(ond).toContain('Component — Zaaksysteem')
+    expect(ond.some((t) => t.includes('comp-2'))).toBe(true) // naam null → fallback naar id
+  })
+
+  it('LI019 — diff standaard ingeklapt; uitklappen toont "veld: oud → nieuw"', async () => {
+    api.auditlog.lijst.mockResolvedValue({
+      items: [
+        { correlatie_id: 'd1', tijdstip: '2026-06-19T10:00:00Z', actor_naam: 'Jan',
+          records: [{ id: 'r', entiteit_type: 'component', entiteit_id: 'c', entiteit_naam: 'Zaaksysteem', actie: 'update',
+            wijziging: { naam: { oud: 'Oud', nieuw: 'Nieuw' } } }] },
+      ],
+      volgende_cursor: null,
+    })
+    const w = await mountView()
+    expect(w.find('[data-testid="audit-diff"]').exists()).toBe(false) // standaard ingeklapt
+    await w.find('[data-testid="audit-toggle-d1"]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-testid="audit-diff"]').exists()).toBe(true)
+    const regel = w.find('[data-testid="audit-diff-regel"]').text()
+    expect(regel).toBe('Naam: Oud → Nieuw')
+  })
+
+  it('LI019 — diffWeergave/actorWeergave hulpfuncties (create/delete-varianten)', () => {
+    expect(actorWeergave({ actor_naam: 'Jan', actor_email: 'j@x', actor_sub: 's' })).toBe('Jan')
+    expect(actorWeergave({ actor_email: 'j@x' })).toBe('j@x')
+    expect(actorWeergave({ actor_sub: 'system:worker' })).toBe('Systeem (worker)')
+    expect(actorWeergave({ actor_sub: 'system:onbekend' })).toBe('Systeem')
+    expect(actorWeergave({})).toBe('—')
+    expect(diffWeergave({ actie: 'create', wijziging: { naam: { nieuw: 'B' } } })).toEqual({ intro: 'Aangemaakt met:', regels: ['Naam = B'] })
+    expect(diffWeergave({ actie: 'delete', wijziging: { naam: { oud: 'A' } } })).toEqual({ intro: 'Verwijderd:', regels: ['Naam was A'] })
   })
 })

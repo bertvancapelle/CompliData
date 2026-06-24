@@ -22,6 +22,7 @@ class AuditRecordRead(BaseModel):
     actor_naam: str | None = None  # ADR-029 Fase 3a — sub → persoon.naam, anders e-mail-fallback (transient)
     entiteit_type: str
     entiteit_id: uuid.UUID
+    entiteit_naam: str | None = None  # LI019 — geresolveerde objectnaam (transient; None = verwijderd/naamloos)
     actie: str
     wijziging: dict | None = None
     correlatie_id: uuid.UUID

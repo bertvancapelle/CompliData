@@ -94,6 +94,9 @@ def test_auditlog_naam_verrijking_en_filters():
                 gek, _ = await svc.lijst(s, tid, actor_naam=naam)
                 assert gek and all(g["actor_naam"] == naam for g in gek)
                 assert all(r.actor_naam == naam for g in gek for r in g["records"])
+                # LI019 — objectnaam-verrijking: een record draagt de geresolveerde objectnaam
+                # (component-PK → component.naam); naamloze sub-records (profiel) blijven None.
+                assert any(r.entiteit_naam == f"AudApp-gek-{merk}" for g in gek for r in g["records"])
 
                 ong, _ = await svc.lijst(s, tid, actor="" + sub_ong)
                 assert ong and all(g["actor_naam"] == "beheerder@audit" for g in ong)  # geen koppeling → e-mail

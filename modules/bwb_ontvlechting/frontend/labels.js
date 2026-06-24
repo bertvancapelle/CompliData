@@ -46,6 +46,39 @@ export const AUDIT_ENTITEIT = {
   gap: 'Gap',
 }
 
+// LI019 — leesbare labels voor systeem-actoren (actor_sub met "system:"-prefix).
+export const SYSTEEM_ACTOR = {
+  'system:dev_seed': 'Systeem (seed)',
+  'system:worker': 'Systeem (worker)',
+  'system:platform_init': 'Systeem (initialisatie)',
+}
+
+// LI019 — "Wie": naam → e-mail → leesbare systeem-actor / sub → "—". `a` = object met
+// actor_naam / actor_email / actor_sub (gebeurtenis óf record). Gedeeld door audit-views.
+export function actorWeergave(a) {
+  if (a?.actor_naam) return a.actor_naam
+  if (a?.actor_email) return a.actor_email
+  const sub = a?.actor_sub
+  if (sub) return sub.startsWith('system:') ? (SYSTEEM_ACTOR[sub] ?? 'Systeem') : sub
+  return '—'
+}
+
+// LI019 — wijziging-diff van één record → { intro, regels }. update: "veld: oud → nieuw";
+// create: "veld = nieuw" (intro "Aangemaakt met:"); delete: "veld was oud" (intro "Verwijderd:").
+export function diffWeergave(record) {
+  const actie = record?.actie
+  const regels = Object.entries(record?.wijziging || {}).map(([veld, w]) => {
+    const naam = VELD_LABELS[veld] ?? humaniseer(veld)
+    const oud = w?.oud ?? '—'
+    const nieuw = w?.nieuw ?? '—'
+    if (actie === 'create') return `${naam} = ${nieuw}`
+    if (actie === 'delete') return `${naam} was ${oud}`
+    return `${naam}: ${oud} → ${nieuw}`
+  })
+  const intro = actie === 'create' ? 'Aangemaakt met:' : actie === 'delete' ? 'Verwijderd:' : ''
+  return { intro, regels }
+}
+
 // ADR-029 objecthistorie — NL-labels voor de veldnamen die in de `wijziging`-diff voorkomen.
 // Pragmatisch (de gangbare gelogde kolommen); een onbekend veld valt terug op `humaniseer`.
 // `*_id`-verwijzingen tonen een leesbaar label; de WAARDE blijft de gelogde id (geen id→naam-
