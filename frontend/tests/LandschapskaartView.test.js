@@ -527,8 +527,9 @@ describe('LandschapskaartView v3', () => {
     expect(w.findAll('[data-testid^="lk-res-naam-"]').length).toBe(1)
   })
 
-  it('ADR-033 — Impact-verkenner: topbalk = actieve set; keten = transitieve koppelingen', async () => {
-    // Keten a1 → a2 → a3 (flows); b1 staat los (geen flow naar de set).
+  it('ADR-033 1b — toont alleen de DIRECTE impact (één laag), niet de hele transitieve keten', async () => {
+    // a1 → a2 → a3 (flows); b1 staat los. Vanaf {a1,b1}: directe impact = alleen a2 (één hop);
+    // a3 (twee hops) verschijnt NIET vóór doorklikken (geen vooraf-uitgerekende BFS meer).
     api.landschapskaart.haalGrafdata.mockResolvedValue({
       nodes: [
         { id: 'a1', naam: 'Zaaksysteem', element_type: 'applicatie', laag: 'application', lifecycle_status: 'migratieklaar', blokkades_open: 0 },
@@ -549,12 +550,11 @@ describe('LandschapskaartView v3', () => {
     // Topbalk = de twee geselecteerde componenten.
     expect(w.find('[data-testid="lk-impact-top-a1"]').exists()).toBe(true)
     expect(w.find('[data-testid="lk-impact-top-b1"]').exists()).toBe(true)
-    // Transitieve keten vanaf {a1,b1}: a2 (afstand 1 via a1), a3 (afstand 2). b1 heeft geen flow.
-    expect(w.vm.impactNiveaus.map((niv) => niv.map((n) => n.id))).toEqual([['a2'], ['a3']])
+    // Directe impact vanaf {a1,b1}: alléén a2 (één hop). a3 is transitief → NIET getoond.
+    expect(w.vm.impactDirect.map((n) => n.id)).toEqual(['a2'])
     expect(w.find('[data-testid="lk-impact-node-a2"]').exists()).toBe(true)
-    expect(w.find('[data-testid="lk-impact-node-a3"]').exists()).toBe(true)
-    // a1/b1 zelf (de focus) verschijnen niet in de keten.
-    expect(w.find('[data-testid="lk-impact-node-a1"]').exists()).toBe(false)
+    expect(w.find('[data-testid="lk-impact-node-a3"]').exists()).toBe(false) // transitief → pas na doorklikken
+    expect(w.find('[data-testid="lk-impact-node-a1"]').exists()).toBe(false) // focus zelf niet
   })
 
   it('ADR-033 — Impact-verkenner drill-down: node schuift naar topbalk; "← terug" gaat een stap terug', async () => {
@@ -581,14 +581,92 @@ describe('LandschapskaartView v3', () => {
     expect(w.vm.drillPad).toEqual(['a2'])
     expect(w.find('[data-testid="lk-impact-top-a2"]').exists()).toBe(true) // a2 nu in de topbalk
     expect(w.find('[data-testid="lk-impact-top-a1"]').exists()).toBe(false) // focus verschoven
-    // a2's buren (a1, a3) verschijnen als nieuwe afhankelijkheden.
-    expect(w.vm.impactNiveaus.flat().map((n) => n.id).sort()).toEqual(['a1', 'a3'])
+    // a2's directe buren (a1, a3) verschijnen als nieuwe afhankelijkheden.
+    expect(w.vm.impactDirect.map((n) => n.id).sort()).toEqual(['a1', 'a3'])
     // "← terug" gaat één stap terug naar de oorspronkelijke selectie.
     await w.find('[data-testid="lk-impact-terug"]').trigger('click')
     await flushPromises()
     expect(w.vm.drillPad).toEqual([])
     expect(w.find('[data-testid="lk-impact-top-a1"]').exists()).toBe(true)
     expect(w.find('[data-testid="lk-impact-top-a3"]').exists()).toBe(true)
+  })
+
+  it('ADR-033 1b — directe impact volgt alle vier relaties (flow/draait-op/gebruikt-door/samenstelling); contract is context', async () => {
+    api.landschapskaart.haalGrafdata.mockResolvedValue({
+      nodes: [
+        { id: 'a1', naam: 'App', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0 },
+        { id: 'sel', naam: 'Sel', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0 },
+        { id: 'peer', naam: 'Peer', element_type: 'applicatie', laag: 'application', lifecycle_status: 'migratieklaar', blokkades_open: 0 },
+        { id: 'host', naam: 'Host', element_type: 'database', laag: 'technology', lifecycle_status: 'concept', blokkades_open: 0 },
+        { id: 'grp', naam: 'Burgers', element_type: 'gebruikersgroep', laag: 'business', aantal_leden: 1200, organisatie_id: null },
+        { id: 'deel', naam: 'Deel', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0 },
+        { id: 'contract', naam: 'Contract', element_type: 'contract', laag: 'business', blokkades_open: 0 },
+      ],
+      edges: [
+        { bron_id: 'a1', doel_id: 'peer', relatietype: 'flow', label: 'koppeling', ring: 'applicaties' }, // koppelt met
+        { bron_id: 'host', doel_id: 'a1', relatietype: 'assignment', label: 'draait op', ring: 'infrastructuur' }, // draait op
+        { bron_id: 'a1', doel_id: 'grp', relatietype: 'serving', label: 'gebruikt door', ring: 'gebruikers' }, // gebruikt door
+        { bron_id: 'a1', doel_id: 'deel', relatietype: 'aggregation', label: 'bestaat uit', ring: 'samenstelling' }, // onderdeel van
+        { bron_id: 'a1', doel_id: 'contract', relatietype: 'association', label: 'valt onder', ring: 'contracten' }, // context
+      ],
+    })
+    const { w } = await mountView()
+    await w.find('[data-testid="lk-groepeer-org"]').trigger('change') // groepering uit → individuele groep-node
+    await kies(w, 'a1')
+    await kies(w, 'sel') // focus {a1, sel} → impact-verkenner (sel heeft geen edges)
+    expect(w.vm.modus).toBe('impact')
+    // Alle vier de relaties leveren een geraakte node; het contract (association) propageert NIET.
+    expect(w.vm.impactDirect.map((n) => n.id).sort()).toEqual(['deel', 'grp', 'host', 'peer'])
+    expect(w.find('[data-testid="lk-impact-node-peer"]').exists()).toBe(true) // flow
+    expect(w.find('[data-testid="lk-impact-node-host"]').exists()).toBe(true) // assignment (draait op)
+    expect(w.find('[data-testid="lk-impact-node-grp"]').exists()).toBe(true) // serving (gebruikt door)
+    expect(w.find('[data-testid="lk-impact-node-deel"]').exists()).toBe(true) // samenstelling (onderdeel van)
+    expect(w.find('[data-testid="lk-impact-node-contract"]').exists()).toBe(false) // context, geen impact
+    // De gebruikersgroep toont herkenbaar z'n type + ledental.
+    expect(w.find('[data-testid="lk-impact-type-grp"]').text()).toContain('1200')
+  })
+
+  it('ADR-033 1b — gebruikersgroep is een aanklikbare geraakte node; drill-down toont wie hem gebruikt', async () => {
+    api.landschapskaart.haalGrafdata.mockResolvedValue({
+      nodes: [
+        { id: 'a1', naam: 'App1', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0 },
+        { id: 'a2', naam: 'App2', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0 },
+        { id: 'grp', naam: 'Burgers', element_type: 'gebruikersgroep', laag: 'business', aantal_leden: 500, organisatie_id: null },
+      ],
+      edges: [
+        { bron_id: 'a1', doel_id: 'grp', relatietype: 'serving', label: 'gebruikt door', ring: 'gebruikers' },
+        { bron_id: 'a2', doel_id: 'grp', relatietype: 'serving', label: 'gebruikt door', ring: 'gebruikers' },
+      ],
+    })
+    const { w } = await mountView()
+    await w.find('[data-testid="lk-groepeer-org"]').trigger('change') // groepering uit → individuele groep-node
+    await kies(w, 'a1')
+    await kies(w, 'a2') // focus {a1, a2} → impact
+    expect(w.find('[data-testid="lk-impact-node-grp"]').exists()).toBe(true) // geraakt + aanklikbaar
+    await w.find('[data-testid="lk-impact-node-grp"]').trigger('click') // drill-down op de groep (zelfde belofte als elk type)
+    await flushPromises()
+    expect(w.vm.drillPad).toEqual(['grp'])
+    expect(w.find('[data-testid="lk-impact-top-grp"]').exists()).toBe(true) // groep in de topbalk
+    // De directe impact van de groep = de componenten die hem gebruiken (a1, a2).
+    expect(w.vm.impactDirect.map((n) => n.id).sort()).toEqual(['a1', 'a2'])
+  })
+
+  it('ADR-033 1b — geraakte nodes tonen lifecycle-kleur + blokkade-indicatie', async () => {
+    api.landschapskaart.haalGrafdata.mockResolvedValue({
+      nodes: [
+        { id: 'a1', naam: 'App', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0 },
+        { id: 'sel', naam: 'Sel', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0 },
+        { id: 'geblok', naam: 'Geblokkeerd', element_type: 'applicatie', laag: 'application', lifecycle_status: 'geblokkeerd', blokkades_open: 2 },
+      ],
+      edges: [{ bron_id: 'a1', doel_id: 'geblok', relatietype: 'flow', label: 'koppeling', ring: 'applicaties' }],
+    })
+    const { w } = await mountView()
+    await kies(w, 'a1')
+    await kies(w, 'sel') // impact (a1 → geblok directe impact)
+    const node = w.find('[data-testid="lk-impact-node-geblok"]')
+    expect(node.exists()).toBe(true)
+    expect(node.attributes('style')).toContain('background') // lifecycle-kleur als achtergrond
+    expect(node.text()).toContain('⚠') // open blokkade-indicatie
   })
 
   it('ADR-033 — drill-down-staat reset zodra de actieve set wijzigt (niet bewaard)', async () => {

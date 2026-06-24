@@ -427,43 +427,38 @@ const huidigeFocus = computed(() =>
   drillPad.value.length ? [drillPad.value[drillPad.value.length - 1]] : [...actieveSet.value],
 )
 const topbalkNodes = computed(() => huidigeFocus.value.map((id) => nodePerId.value[id]).filter(Boolean))
-// Directe flow-buren (koppelingen) van een component — ongericht, uitsluitend EXPLICIET
-// geregistreerde flow-relaties (ADR-023 besluit 7: niets afleiden).
-function _flowBuren(id) {
+// ADR-033 1b — impact volgt de VIER migratie-relaties (koppelt-met / draait-op / gebruikt-door /
+// onderdeel-van), uitsluitend uit de expliciet geregistreerde kaart-edges (ADR-023 besluit 7).
+// Contract (association), beheerrol (roltoewijzing) en datatype propageren NIET — die blijven
+// louter zichtbare context in de graph en tellen niet als "geraakt bij migratie".
+const IMPACT_RINGEN = new Set(['applicaties', 'infrastructuur', 'gebruikers', 'samenstelling'])
+// Directe buren van een node langs de vier impact-relaties — ongericht (beide kanten), zodat
+// host↔gehoste, geheel↔onderdeel en koppelt-met in beide richtingen meekomen.
+function _impactBuren(id) {
   const s = new Set()
-  for (const e of flowEdges.value) {
+  for (const e of grafEdges.value) {
+    if (!IMPACT_RINGEN.has(e.ring)) continue
     if (e.bron_id === id) s.add(e.doel_id)
     else if (e.doel_id === id) s.add(e.bron_id)
   }
   return s
 }
-// Transitieve keten vanaf de huidige focus, per afstand (BFS-niveaus). Cyclus-veilig via een
-// visited-set (de focus zelf valt buiten de niveaus); elk niveau op naam gesorteerd.
-const impactNiveaus = computed(() => {
-  const start = huidigeFocus.value.filter((id) => nodePerId.value[id])
-  const bezocht = new Set(start)
-  let rand = new Set(start)
-  const niveaus = []
-  while (rand.size) {
-    const volgende = new Set()
-    for (const id of rand) {
-      for (const buur of _flowBuren(id)) {
-        if (!bezocht.has(buur)) {
-          bezocht.add(buur)
-          volgende.add(buur)
-        }
-      }
+// Directe impact: ÉÉN laag rond de huidige focus (geen transitieve BFS meer). Dieper kijken
+// gebeurt door te klikken (drill-down). De focus zelf valt buiten de lijst; op naam gesorteerd.
+const impactDirect = computed(() => {
+  const focus = new Set(huidigeFocus.value)
+  const geraakt = new Set()
+  for (const id of focus) {
+    for (const buur of _impactBuren(id)) {
+      if (!focus.has(buur)) geraakt.add(buur)
     }
-    const nodesNiv = [...volgende].map((id) => nodePerId.value[id]).filter(Boolean)
-    if (nodesNiv.length) {
-      nodesNiv.sort((a, b) => (a.naam || '').localeCompare(b.naam || '', 'nl'))
-      niveaus.push(nodesNiv)
-    }
-    rand = volgende
   }
-  return niveaus
+  return [...geraakt]
+    .map((id) => nodePerId.value[id])
+    .filter(Boolean)
+    .sort((a, b) => (a.naam || '').localeCompare(b.naam || '', 'nl'))
 })
-const impactGeraaktAantal = computed(() => impactNiveaus.value.reduce((s, n) => s + n.length, 0))
+const impactGeraaktAantal = computed(() => impactDirect.value.length)
 function drillNaar(id) {
   if (!nodePerId.value[id]) return
   drillPad.value = [...drillPad.value, id]
@@ -1197,7 +1192,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', _opEscape)
 })
 
-defineExpose({ openNodePopup, openEdgePopup, selecteerFlow, onNodeTap, sluitPopup, toggleFullscreen, fullscreen, popupOpen, _edgeData, groepeerPerOrg, grafNodes, grafEdges, zichtbareNodes, zichtbareEdges, layoutModus, _laneVan, _swimlanePositions, _layout, laneVolgorde, verbergLegeLanes, laneBanden, getekendeNodes, _herschikLane, toonRegistratiegaps, setLayoutModus, modus, actieveSet, toggleSet, kiesComponent, drillPad, drillNaar, stapTerug, huidigeFocus, topbalkNodes, impactNiveaus, impactGeraaktAantal })
+defineExpose({ openNodePopup, openEdgePopup, selecteerFlow, onNodeTap, sluitPopup, toggleFullscreen, fullscreen, popupOpen, _edgeData, groepeerPerOrg, grafNodes, grafEdges, zichtbareNodes, zichtbareEdges, layoutModus, _laneVan, _swimlanePositions, _layout, laneVolgorde, verbergLegeLanes, laneBanden, getekendeNodes, _herschikLane, toonRegistratiegaps, setLayoutModus, modus, actieveSet, toggleSet, kiesComponent, drillPad, drillNaar, stapTerug, huidigeFocus, topbalkNodes, impactDirect, impactGeraaktAantal })
 
 // Hertekenen bij elke state die de graaf raakt.
 watch(
@@ -1397,28 +1392,30 @@ const typeLabel = (t) => humaniseer(t)
               @click="selecteerNode(n.id)"
             >{{ n.naam }}<span v-if="n.blokkades_open > 0" title="Open blokkade(s)">⚠</span></button>
           </div>
-          <!-- Transitieve keten, gegroepeerd per afstand (BFS-niveaus). Klik = inzoomen. -->
-          <div v-if="impactNiveaus.length" class="flex flex-col gap-[var(--cd-space-md)]" data-testid="lk-impact-keten">
-            <div v-for="(niveau, i) in impactNiveaus" :key="i" class="flex flex-col gap-1">
-              <p class="text-[length:var(--cd-text-xs)] font-semibold uppercase text-[var(--cd-color-text-muted)]">Afstand {{ i + 1 }}</p>
-              <div class="flex flex-wrap gap-[var(--cd-space-sm)]">
-                <button
-                  v-for="n in niveau"
-                  :key="n.id"
-                  type="button"
-                  :data-testid="`lk-impact-node-${n.id}`"
-                  class="flex items-center gap-1 rounded-[var(--cd-radius-btn)] border border-[var(--cd-color-border)] px-[var(--cd-space-md)] py-1 text-[length:var(--cd-text-sm)] hover:bg-[var(--cd-color-accent)]"
-                  :style="{ background: lcStyle(n.lifecycle_status).bg }"
-                  title="Klik om verder in te zoomen"
-                  @click="drillNaar(n.id)"
-                >
-                  <span class="inline-block h-2.5 w-2.5 shrink-0 rounded-full" :style="{ border: `1px solid ${lcStyle(n.lifecycle_status).border}` }"></span>
-                  {{ n.naam }}<span v-if="n.blokkades_open > 0" title="Open blokkade(s)">⚠</span>
-                </button>
-              </div>
+          <!-- ADR-033 1b — DIRECTE impact (één laag) langs de vier migratie-relaties. Geen vooraf-
+               uitgerekende transitieve keten: dieper kijken = klikken op een node (drill-down,
+               uniform voor elk nodetype). Lifecycle-kleur + ⚠-blokkade + type-aanduiding per node. -->
+          <div v-if="impactDirect.length" class="flex flex-col gap-1" data-testid="lk-impact-keten">
+            <p class="text-[length:var(--cd-text-xs)] font-semibold uppercase text-[var(--cd-color-text-muted)]">Direct geraakt — klik om dieper te kijken</p>
+            <div class="flex flex-wrap gap-[var(--cd-space-sm)]">
+              <button
+                v-for="n in impactDirect"
+                :key="n.id"
+                type="button"
+                :data-testid="`lk-impact-node-${n.id}`"
+                class="flex items-center gap-1 rounded-[var(--cd-radius-btn)] border border-[var(--cd-color-border)] px-[var(--cd-space-md)] py-1 text-[length:var(--cd-text-sm)] hover:bg-[var(--cd-color-accent)]"
+                :style="{ background: lcStyle(n.lifecycle_status).bg }"
+                title="Klik om verder in te zoomen"
+                @click="drillNaar(n.id)"
+              >
+                <span class="inline-block h-2.5 w-2.5 shrink-0 rounded-full" :style="{ border: `1px solid ${lcStyle(n.lifecycle_status).border}` }"></span>
+                <span>{{ n.naam }}</span>
+                <span v-if="n.blokkades_open > 0" title="Open blokkade(s)">⚠</span>
+                <span class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]" :data-testid="`lk-impact-type-${n.id}`">· {{ typeLabel(n.element_type) }}<template v-if="n.element_type === 'gebruikersgroep' && n.aantal_leden"> ({{ n.aantal_leden }})</template></span>
+              </button>
             </div>
           </div>
-          <p v-else data-testid="lk-impact-leeg" class="text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]">Geen geregistreerde koppelingen vanaf deze selectie.</p>
+          <p v-else data-testid="lk-impact-leeg" class="text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]">Geen direct geraakte componenten vanaf deze selectie.</p>
         </div>
         <!-- (2) lane-HEADERS BOVEN het canvas (z-[5]). De container is pointer-events-none → node-
              clicks gaan ongehinderd naar het canvas; alleen de header-span vangt pointer-events af
