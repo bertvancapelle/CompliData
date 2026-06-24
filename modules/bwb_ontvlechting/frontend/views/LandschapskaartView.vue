@@ -37,6 +37,18 @@ const RING_LABELS = {
   contracten: 'Contracten',
   infrastructuur: 'Infrastructuur',
 }
+// LI019 1d-v2 — swimlane-lanes: definitie (label + bandkleur) + default-volgorde (van boven naar
+// beneden). De volgorde is gebruiker-herschikbaar (drag-drop) en wordt in sessionStorage bewaard.
+const LANE_DEF = {
+  rollen: { label: 'Rollen & beheer', bg: '#fef9c3' },
+  gebruikers: { label: 'Gebruikers', bg: '#f0fdf4' },
+  componenten: { label: 'Componenten', bg: '#eff6ff' },
+  infrastructuur: { label: 'Infrastructuur', bg: '#f0f9ff' },
+  overig: { label: 'Overig', bg: '#f8fafc' },
+  contracten: { label: 'Contracten', bg: '#faf5ff' },
+}
+const DEFAULT_LANE_VOLGORDE = ['rollen', 'gebruikers', 'componenten', 'infrastructuur', 'overig', 'contracten']
+const LANE_H = 170 // vaste model-hoogte per lane (band) — rustig, regelmatig beeld
 // ADR-031 — gebruikersgroep-node-stijl (distinctief t.o.v. applicaties).
 const GG_STYLE = { bg: '#e0f2fe', border: '#0ea5e9' }
 const INSET = { bg: '#1e3a8a', border: '#1e3a8a' }
@@ -51,6 +63,11 @@ const laden = ref(true)
 const fout = ref(null)
 
 const modus = ref('ego') // 'ego' | 'impact' | 'geheel'
+const layoutModus = ref('radiaal') // LI019 1d — 'radiaal' (concentric) | 'swimlane' (preset lanes)
+const laneVolgorde = ref([...DEFAULT_LANE_VOLGORDE]) // LI019 1d-v2 — gebruiker-herschikbare lanevolgorde
+const verbergLegeLanes = ref(false) // LI019 1d-v2 — lege lanes verbergen voor een compactere weergave
+const bandPx = ref([]) // schermposities van de lane-banden (top/height px), gesynct met cy pan/zoom
+let _dragLane = null // sleepbron tijdens lanevolgorde-drag
 const zoekterm = ref('')
 const filterTypes = ref([]) // LI019 1b — componenttype-multiselect (optie_sleutels)
 const filterLeveranciers = ref([]) // LI019 1b-v2 — leverancier-multiselect (partij-ids)
@@ -664,6 +681,31 @@ function _txtColor(bg) {
 // onder de node-naam (partij/contract zijn geen componenten; gebruikersgroep toont al ledental).
 const GEEN_COMPONENTTYPE = new Set(['partij', 'gebruikersgroep', 'contract'])
 const _heeftTypeLabel = (n) => !!n.element_type && !GEEN_COMPONENTTYPE.has(n.element_type)
+
+// LI019 1d — swimlane-indeling, afgeleid uit bestaande node-velden.
+function _laneVan(n) {
+  if (n.element_type === 'gebruikersgroep') return 'gebruikers'
+  if (n.element_type === 'contract') return 'contracten'
+  if (n.element_type === 'partij') return 'rollen'
+  if (n.element_type === 'applicatie' || n.laag === 'application') return 'componenten'
+  if (n.laag === 'technology') return 'infrastructuur'
+  return 'overig'
+}
+// Aantal zichtbare nodes per lane (voor lege-lane-detectie en x-spreiding).
+const _laneTelling = computed(() => {
+  const c = {}
+  for (const n of getekendeNodes.value) { const l = _laneVan(n); c[l] = (c[l] || 0) + 1 }
+  return c
+})
+// Zichtbare lanes in gebruikersvolgorde; lege lanes alleen weg als "Verberg lege lanes" aan staat.
+const zichtbareLanes = computed(() =>
+  laneVolgorde.value
+    .filter((k) => LANE_DEF[k])
+    .map((key) => ({ key, label: LANE_DEF[key].label, bg: LANE_DEF[key].bg, aantal: _laneTelling.value[key] || 0 }))
+    .filter((l) => !verbergLegeLanes.value || l.aantal > 0),
+)
+// Banden voor de overlay (model-laag): key/label/kleur/leeg + display-index.
+const laneBanden = computed(() => zichtbareLanes.value.map((l, i) => ({ ...l, index: i, leeg: l.aantal === 0 })))
 function _nodeData(n) {
   const isGG = n.element_type === 'gebruikersgroep'
   let bg = isGG ? GG_STYLE.bg : lcStyle(n.lifecycle_status).bg
@@ -737,6 +779,8 @@ const getekendeNodes = computed(() => {
   return [...uniek.values()]
 })
 
+// LI019 1d-v2 — geen compound-parents meer: lanes zijn een HTML-overlay (zie laneBanden/bandPx),
+// niet langer cytoscape-nodes. Daardoor renderen edges tussen lanes weer normaal (correctie 3).
 function _elementen() {
   const zn = getekendeNodes.value
   const znIds = new Set(zn.map((n) => n.id))
@@ -748,26 +792,80 @@ function _elementen() {
 }
 const zichtbaarAantal = computed(() => getekendeNodes.value.length)
 
-// LI019 — centreer ná de ego-layout(-animatie) op de (eventueel net via dubbelklik gewijzigde)
-// centrum-node, zodat die automatisch in beeld komt zonder handmatig "Centreer".
-function _centreerEgo() {
-  if (!cy || modus.value !== 'ego' || !egoStartId.value) return
-  const c = cy.getElementById?.(String(egoStartId.value))
-  if (c && c.length) cy.center?.(c)
+// LI019 1d (Taak 4) — ná de layout(-animatie): bij radiaal-Ego centreren op het centrum-component,
+// anders fit op het geheel. Wordt als layout-`stop`-callback gebruikt voor élke layout, zodat een
+// wijziging (filter/ring/selectie/view/layout) automatisch herpositioneert + centreert. Raakt geen
+// reactieve state aan → geen layout-her-trigger-loop. Respecteert de fullscreen-viewport-behoud-vlag.
+function _naLayout() {
+  if (!cy || _behoudViewport) return
+  if (layoutModus.value === 'radiaal' && modus.value === 'ego' && egoStartId.value) {
+    const c = cy.getElementById?.(String(egoStartId.value))
+    if (c && c.length) { cy.center?.(c); return }
+  }
+  cy.fit?.(undefined, 50)
+  updateBands()
 }
+// LI019 1d-v2 (Taak 2/4) — swimlane-posities: nodes op de band-center (y = display-index van de lane)
+// en gelijkmatig over de breedte (x, alfabetisch). Alle zichtbare lanes krijgen dezelfde spreidings-
+// breedte W zodat lanes uitlijnen. Object-map {nodeId:{x,y}} (Cytoscape lookt id zelf op).
+function _swimlanePositions() {
+  const idxVan = {}
+  zichtbareLanes.value.forEach((l, i) => { idxVan[l.key] = i })
+  const perLane = {}
+  for (const n of getekendeNodes.value) {
+    const key = _laneVan(n)
+    if (!(key in idxVan)) continue
+    ;(perLane[key] ||= []).push(n)
+  }
+  const maxCount = Math.max(1, ...Object.values(perLane).map((a) => a.length))
+  const W = Math.max(800, maxCount * 180)
+  const pos = {}
+  for (const key of Object.keys(perLane)) {
+    const arr = perLane[key].slice().sort((a, b) => (a.naam || '').localeCompare(b.naam || ''))
+    const y = idxVan[key] * LANE_H + LANE_H / 2
+    arr.forEach((n, xi) => { pos[n.id] = { x: ((xi + 0.5) / arr.length) * W - W / 2, y } })
+  }
+  return pos
+}
+// LI019 1d-v2 — sync de HTML-band-overlay met cy's pan/zoom: model-y-band → schermpixels. Banden
+// zijn altijd volledige canvasbreedte (CSS); alleen verticale positie/hoogte volgen pan/zoom.
+function updateBands() {
+  if (!cy || layoutModus.value !== 'swimlane') { bandPx.value = []; return }
+  const zoom = cy.zoom?.() || 1
+  const pan = cy.pan?.() || { x: 0, y: 0 }
+  bandPx.value = laneBanden.value.map((b) => ({ top: b.index * LANE_H * zoom + pan.y, height: LANE_H * zoom }))
+}
+// LI019 1d-v2 (Taak 5) — lanevolgorde herschikken via drag-drop op de lanenamen (zijbalk).
+function onLaneDragStart(key) { _dragLane = key }
+function onLaneDrop(doelKey) {
+  const bron = _dragLane
+  _dragLane = null
+  if (!bron || bron === doelKey) return
+  const order = laneVolgorde.value.filter((k) => k !== bron)
+  order.splice(order.indexOf(doelKey), 0, bron)
+  laneVolgorde.value = order
+}
+function resetLaneVolgorde() { laneVolgorde.value = [...DEFAULT_LANE_VOLGORDE] }
 function _layout() {
+  // LI019 1d (Taak 2) — Swimlanes: custom preset-posities per lane (0 nieuwe dependencies).
+  // `positions` als object-map {nodeId: {x,y}} (Cytoscape doet de id-lookup zelf) — géén callback
+  // met `node.id` (= de id-METHODE, niet de string). animate:false + fit:true geeft een direct,
+  // correct geplaatst raster; de stop-callback fit + sync't de overlay als vangrail.
+  if (layoutModus.value === 'swimlane') {
+    return { name: 'preset', positions: _swimlanePositions(), animate: false, fit: true, padding: 60, stop: _naLayout }
+  }
+  // LI019 1d (Taak 3) — Radiaal/Ego: concentric met het geselecteerde component centraal.
   if (modus.value === 'ego') {
     return {
       name: 'concentric', concentric: (n) => (n.id() === egoStartId.value ? 10 : 5), levelWidth: () => 1,
-      minNodeSpacing: 60, padding: 60, animate: true, animationDuration: 400, // Fix 2: meer ruimte
-      stop: _centreerEgo, // centreren ná de animatie op de nieuwe centrum-node
+      minNodeSpacing: 60, padding: 60, animate: true, animationDuration: 400, stop: _naLayout,
     }
   }
-  // LI023 — Geheel model / Impact-view: dagre hiërarchische layout (afhankelijkheidsrichting per laag).
+  // LI019 1d (Taak 3) — Radiaal/Geheel+Impact: concentric op koppelingsdichtheid (meer koppelingen
+  // → dichter bij het centrum).
   return {
-    name: 'dagre', rankDir: 'TB', align: 'UL',
-    nodeSep: 60, rankSep: 80, edgeSep: 10, ranker: 'network-simplex',
-    animate: false, fit: true, padding: 40,
+    name: 'concentric', concentric: (n) => n.degree(false), levelWidth: () => 2,
+    minNodeSpacing: 50, padding: 50, animate: true, animationDuration: 400, stop: _naLayout,
   }
 }
 
@@ -786,6 +884,7 @@ async function tekenGraaf() {
   setTimeout(() => {
     cy?.resize?.()
     cy?.fit?.(undefined, 50)
+    updateBands()
   }, 100)
 }
 
@@ -828,6 +927,9 @@ function _bewaarKaartState() {
   try {
     sessionStorage.setItem(_LK_STATE_KEY, JSON.stringify({
       modus: modus.value,
+      layoutModus: layoutModus.value,
+      laneVolgorde: laneVolgorde.value,
+      verbergLegeLanes: verbergLegeLanes.value,
       egoStartId: egoStartId.value,
       ringAan: [...ringAan.value],
       groepeerPerOrg: groepeerPerOrg.value,
@@ -839,6 +941,13 @@ function _herstelKaartState() {
   try { s = JSON.parse(sessionStorage.getItem(_LK_STATE_KEY) || 'null') } catch { s = null }
   if (!s) return
   if (['ego', 'impact', 'geheel'].includes(s.modus)) modus.value = s.modus
+  if (['radiaal', 'swimlane'].includes(s.layoutModus)) layoutModus.value = s.layoutModus
+  // Lanevolgorde herstellen mits een geldige permutatie van de bekende lanes (anders default).
+  if (Array.isArray(s.laneVolgorde)) {
+    const geldig = s.laneVolgorde.filter((k) => LANE_DEF[k])
+    if (DEFAULT_LANE_VOLGORDE.every((k) => geldig.includes(k))) laneVolgorde.value = geldig
+  }
+  if (typeof s.verbergLegeLanes === 'boolean') verbergLegeLanes.value = s.verbergLegeLanes
   if (Array.isArray(s.ringAan)) ringAan.value = new Set(s.ringAan.filter((r) => RINGEN.includes(r)))
   if (typeof s.groepeerPerOrg === 'boolean') groepeerPerOrg.value = s.groepeerPerOrg
   // egoStartId alleen herstellen als die node nog bestaat (anders het default-centrum behouden).
@@ -874,6 +983,8 @@ onMounted(async () => {
     cy = cytoscape({ container: containerRef.value, elements: [], style: CY_STYLE })
     // Enkele tap = popup (uitgesteld), dubbele tap = hercentreren — zie onNodeTap.
     cy.on('tap', 'node', (evt) => onNodeTap(evt.target.id()))
+    // LI019 1d-v2 — houd de swimlane-band-overlay synchroon met pan/zoom/resize.
+    cy.on('pan zoom resize', updateBands)
     // Tap op een koppeling (flow-edge) opent de koppeling-popup.
     cy.on('tap', 'edge', (evt) => {
       const src = evt.target.data('source')
@@ -911,15 +1022,18 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', _opEscape)
 })
 
-defineExpose({ openNodePopup, openEdgePopup, selecteerFlow, onNodeTap, sluitPopup, toggleFullscreen, fullscreen, popupOpen, _edgeData, groepeerPerOrg, grafNodes, grafEdges, zichtbareNodes })
+defineExpose({ openNodePopup, openEdgePopup, selecteerFlow, onNodeTap, sluitPopup, toggleFullscreen, fullscreen, popupOpen, _edgeData, groepeerPerOrg, grafNodes, grafEdges, zichtbareNodes, layoutModus, _laneVan, _swimlanePositions, _layout, laneVolgorde, verbergLegeLanes, laneBanden, onLaneDragStart, onLaneDrop, resetLaneVolgorde })
 
 // Hertekenen bij elke state die de graaf raakt.
 watch(
-  [modus, zichtbareNodes, zichtbareEdges, actieveSet, kleurOpDomein, groepeerPerOrg],
+  [modus, layoutModus, verbergLegeLanes, laneVolgorde, zichtbareNodes, zichtbareEdges, actieveSet, kleurOpDomein, groepeerPerOrg],
   () => tekenGraaf(),
   { deep: false },
 )
 
+function setLayoutModus(m) {
+  layoutModus.value = m // de teken-watch herpositioneert + centreert (Taak 4)
+}
 function setModus(m) {
   modus.value = m
   // Fix 1: Geheel model vult de actieve set met álle applicaties (de gebruiker ziet meteen
@@ -1035,6 +1149,31 @@ const typeLabel = (t) => humaniseer(t)
           </label>
         </template>
 
+        <!-- LI019 1d-v2 — swimlane-opties: lege lanes verbergen + lanevolgorde (drag-drop) + reset. -->
+        <template v-if="layoutModus === 'swimlane'">
+          <label class="mt-[var(--cd-space-sm)] flex items-center gap-2 text-[length:var(--cd-text-sm)]">
+            <input type="checkbox" v-model="verbergLegeLanes" data-testid="lk-verberg-lege" />Verberg lege lanes
+          </label>
+          <div class="flex items-center justify-between">
+            <p class="font-semibold text-[length:var(--cd-text-sm)]">Lanevolgorde</p>
+            <button type="button" data-testid="lk-lane-reset" class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)] hover:underline" @click="resetLaneVolgorde">Reset</button>
+          </div>
+          <ul class="flex flex-col gap-0.5" data-testid="lk-lane-volgorde">
+            <li
+              v-for="key in laneVolgorde"
+              :key="key"
+              :data-testid="`lk-lane-order-${key}`"
+              draggable="true"
+              class="flex cursor-grab items-center gap-1 rounded border border-[var(--cd-color-border)] bg-white px-2 py-1 text-[length:var(--cd-text-sm)]"
+              @dragstart="onLaneDragStart(key)"
+              @dragover.prevent
+              @drop="onLaneDrop(key)"
+            >
+              <span aria-hidden="true" class="text-[var(--cd-color-text-muted)]">⠿</span>{{ LANE_DEF[key].label }}
+            </li>
+          </ul>
+        </template>
+
         <p class="mt-[var(--cd-space-sm)] font-semibold text-[length:var(--cd-text-sm)]">
           Componenten ({{ zoekResultaten.trim() ? `${gefilterdeResultaten.length} van ${gefilterdeNodes.length}` : gefilterdeNodes.length }})
         </p>
@@ -1062,12 +1201,32 @@ const typeLabel = (t) => humaniseer(t)
       <!-- Canvas — min-h-0 is kritiek: zonder negeert een flex-child de height:100% van de parent,
            waardoor Cytoscape op hoogte 0 initialiseert en de graaf leeg/onzichtbaar blijft. -->
       <div class="relative min-h-0 min-w-0 flex-1 bg-[var(--cd-color-surface)]">
+        <!-- LI019 1d-v2 — swimlane lane-banden: HTML-overlay ACHTER het (transparante) cytoscape-
+             canvas. Banden altijd volledige breedte; verticale positie/hoogte volgen pan/zoom.
+             Niet-interactief (pointer-events-none) zodat alle muisacties naar het canvas gaan. -->
+        <div v-if="layoutModus === 'swimlane'" class="pointer-events-none absolute inset-0 z-[1] overflow-hidden" data-testid="lk-lanes" aria-hidden="true">
+          <div
+            v-for="b in laneBanden"
+            :key="b.key"
+            :data-testid="`lk-lane-${b.key}`"
+            class="absolute left-0 right-0 border-b border-[var(--cd-color-border)]"
+            :style="{ top: (bandPx[b.index]?.top ?? 0) + 'px', height: (bandPx[b.index]?.height ?? 0) + 'px', background: b.bg }"
+          >
+            <span class="absolute left-2 top-1 text-[length:var(--cd-text-sm)] font-semibold text-[var(--cd-color-text-muted)]">{{ b.label }}</span>
+            <span v-if="b.leeg" :data-testid="`lk-lane-leeg-${b.key}`" class="absolute inset-0 flex items-center justify-center text-[length:var(--cd-text-xs)] italic text-[var(--cd-color-text-muted)]">Geen objecten geregistreerd</span>
+          </div>
+        </div>
         <!-- Inline min-height als harde vangrail: zelfs als de flex-hoogteketen faalt, krijgt
              Cytoscape een meetbare hoogte op het init-moment (anders blijft de graaf leeg). -->
-        <div ref="containerRef" data-testid="lk-canvas" class="h-full w-full" style="min-height: 500px"></div>
+        <div ref="containerRef" data-testid="lk-canvas" class="relative z-[2] h-full w-full" style="min-height: 500px"></div>
 
         <!-- Tools (rechtsboven) -->
         <div class="absolute right-3 top-3 z-10 flex gap-1">
+          <!-- LI019 1d — layout-wisselaar: Radiaal (concentric) ↔ Swimlanes (lane-banden). -->
+          <div class="flex gap-0.5 rounded-[var(--cd-radius-btn)] bg-white/90 p-0.5 shadow-[var(--cd-shadow-sm)]" data-testid="lk-layout-toggle">
+            <button type="button" data-testid="lk-layout-radiaal" :aria-pressed="layoutModus === 'radiaal'" :class="['rounded-[var(--cd-radius-btn)] px-2 py-1 text-[length:var(--cd-text-sm)]', layoutModus === 'radiaal' ? 'bg-[var(--cd-color-primary)] text-white' : '']" @click="setLayoutModus('radiaal')">Radiaal</button>
+            <button type="button" data-testid="lk-layout-swimlane" :aria-pressed="layoutModus === 'swimlane'" :class="['rounded-[var(--cd-radius-btn)] px-2 py-1 text-[length:var(--cd-text-sm)]', layoutModus === 'swimlane' ? 'bg-[var(--cd-color-primary)] text-white' : '']" @click="setLayoutModus('swimlane')">Swimlanes</button>
+          </div>
           <button type="button" data-testid="lk-centreer" class="rounded-[var(--cd-radius-btn)] bg-white/90 px-2 py-1 text-[length:var(--cd-text-sm)] shadow-[var(--cd-shadow-sm)]" @click="centreer">⊡ Centreer</button>
           <button type="button" data-testid="lk-kleur-domein" :aria-pressed="kleurOpDomein" :class="['rounded-[var(--cd-radius-btn)] px-2 py-1 text-[length:var(--cd-text-sm)] shadow-[var(--cd-shadow-sm)]', kleurOpDomein ? 'bg-[var(--cd-color-primary)] text-white' : 'bg-white/90']" @click="kleurOpDomein = !kleurOpDomein">Kleur op domein</button>
           <!-- Fullscreen-overlay (in-app): één toggle — vergroten ingebed, verkleinen in de overlay. -->

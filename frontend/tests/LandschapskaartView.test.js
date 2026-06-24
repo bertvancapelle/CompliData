@@ -191,6 +191,103 @@ describe('LandschapskaartView v3', () => {
     expect(ids).not.toContain('a2') // geblokkeerd — gefilterd, ook in impact-modus
   })
 
+  it('LI019 1d — node→lane-toewijzing uit element_type/laag', async () => {
+    const { w } = await mountView()
+    const lane = w.vm._laneVan
+    expect(lane({ element_type: 'applicatie', laag: 'application' })).toBe('componenten')
+    expect(lane({ element_type: 'component', laag: 'application' })).toBe('componenten')
+    expect(lane({ element_type: 'database', laag: 'technology' })).toBe('infrastructuur')
+    expect(lane({ element_type: 'gebruikersgroep', laag: 'business' })).toBe('gebruikers')
+    expect(lane({ element_type: 'partij', laag: 'business' })).toBe('rollen')
+    expect(lane({ element_type: 'contract', laag: 'business' })).toBe('contracten')
+    expect(lane({ element_type: 'onbekend' })).toBe('overig')
+  })
+
+  it('LI019 1d — layout-wisselaar schakelt tussen Radiaal en Swimlanes', async () => {
+    const { w } = await mountView()
+    // Default = Radiaal.
+    expect(w.vm.layoutModus).toBe('radiaal')
+    expect(w.find('[data-testid="lk-layout-radiaal"]').attributes('aria-pressed')).toBe('true')
+    expect(w.find('[data-testid="lk-layout-swimlane"]').attributes('aria-pressed')).toBe('false')
+    await w.find('[data-testid="lk-layout-swimlane"]').trigger('click')
+    await flushPromises()
+    expect(w.vm.layoutModus).toBe('swimlane')
+    expect(w.find('[data-testid="lk-layout-swimlane"]').attributes('aria-pressed')).toBe('true')
+  })
+
+  it('LI019 1d — bewaarde layoutModus wordt hersteld uit sessionStorage', async () => {
+    sessionStorage.setItem('lk-state', JSON.stringify({ layoutModus: 'swimlane' }))
+    const { w } = await mountView()
+    expect(w.vm.layoutModus).toBe('swimlane')
+    expect(w.find('[data-testid="lk-layout-swimlane"]').attributes('aria-pressed')).toBe('true')
+  })
+
+  const SWIM_GRAF = {
+    nodes: [
+      { id: 'app', naam: 'App', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0 },
+      { id: 'db', naam: 'DB', element_type: 'database', laag: 'technology', lifecycle_status: 'concept', blokkades_open: 0 },
+    ],
+    edges: [{ bron_id: 'app', doel_id: 'db', relatietype: 'assignment', label: 'draait op', ring: 'infrastructuur' }],
+  }
+  async function mountSwimlane() {
+    api.landschapskaart.haalGrafdata.mockResolvedValue(SWIM_GRAF)
+    const { w } = await mountView()
+    await w.find('[data-testid="lk-modus-geheel"]').trigger('click')
+    await flushPromises()
+    await w.find('[data-testid="lk-layout-swimlane"]').trigger('click')
+    await flushPromises()
+    return w
+  }
+
+  it('LI019 1d-v2 — swimlane-posities: componenten boven infrastructuur, x-gecentreerd, object-map', async () => {
+    const w = await mountSwimlane()
+    const pos = w.vm._swimlanePositions()
+    expect(pos.app.y).toBeLessThan(pos.db.y) // "Componenten" (index 2) boven "Infrastructuur" (index 3)
+    expect(pos.app.x).toBe(0) // enige node in de lane → gecentreerd
+    // Regressie-guard: `positions` is een OBJECT-MAP gekeyed op node-id (string), géén callback.
+    const cfg = w.vm._layout()
+    expect(cfg.name).toBe('preset')
+    expect(typeof cfg.positions).toBe('object')
+    expect(cfg.positions.app).toBeDefined()
+    expect(cfg.fit).toBe(true)
+  })
+
+  it('LI019 1d-v2 — alle lanes tonen; "Verberg lege lanes" houdt alleen gevulde lanes', async () => {
+    const w = await mountSwimlane()
+    // Default: alle 6 lanes (incl. lege) zichtbaar; alleen componenten + infrastructuur gevuld.
+    expect(w.vm.laneBanden.length).toBe(6)
+    expect(w.vm.laneBanden.find((b) => b.key === 'rollen').leeg).toBe(true)
+    expect(w.vm.laneBanden.find((b) => b.key === 'componenten').leeg).toBe(false)
+    // "Verberg lege lanes" → alleen de gevulde lanes.
+    await w.find('[data-testid="lk-verberg-lege"]').setValue(true)
+    await flushPromises()
+    expect(w.vm.laneBanden.map((b) => b.key).sort()).toEqual(['componenten', 'infrastructuur'])
+  })
+
+  it('LI019 1d-v2 — lanevolgorde herschikken via drag-drop + reset', async () => {
+    const w = await mountSwimlane()
+    expect(w.vm.laneVolgorde).toEqual(['rollen', 'gebruikers', 'componenten', 'infrastructuur', 'overig', 'contracten'])
+    w.vm.onLaneDragStart('contracten')
+    w.vm.onLaneDrop('rollen') // contracten vóór rollen
+    await flushPromises()
+    expect(w.vm.laneVolgorde[0]).toBe('contracten')
+    expect(w.vm.laneVolgorde[1]).toBe('rollen')
+    w.vm.resetLaneVolgorde()
+    await flushPromises()
+    expect(w.vm.laneVolgorde).toEqual(['rollen', 'gebruikers', 'componenten', 'infrastructuur', 'overig', 'contracten'])
+  })
+
+  it('LI019 1d-v2 — lanevolgorde + verberg-lege hersteld uit sessionStorage', async () => {
+    sessionStorage.setItem('lk-state', JSON.stringify({
+      layoutModus: 'swimlane',
+      laneVolgorde: ['contracten', 'rollen', 'gebruikers', 'componenten', 'infrastructuur', 'overig'],
+      verbergLegeLanes: true,
+    }))
+    const { w } = await mountView()
+    expect(w.vm.laneVolgorde[0]).toBe('contracten')
+    expect(w.vm.verbergLegeLanes).toBe(true)
+  })
+
   it('LI019 1b-v2 — hosting- en lifecycle-multiselect versmallen de lijst', async () => {
     const { w } = await mountView()
     await w.find('[data-testid="lk-filter-hosting-input"]').trigger('focus')
