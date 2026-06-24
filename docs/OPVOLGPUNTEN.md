@@ -7,6 +7,26 @@ Bron: sessie 2–3 (P1–P5, OP-9 t/m OP-12). Status per punt expliciet vermeld.
 
 ## OPEN
 
+### Stand V020 (sessie-afsluiting LI019, 2026-06-24)
+
+Build **V020**. LI019 = Landschapskaart-filters/UI, auditlog-UI, leverancier via contract-keten,
+radiaal-layout + swimlane geparkeerd.
+
+**Nieuw in LI019:**
+- **ADR-034 Swimlane herwrite** — pure HTML/CSS div-lanes + SVG-overlay voor edges (NIET Cytoscape
+  compound-nodes). Lane-drag, edges tussen lanes, nodes aanklikbaar.
+- **ADR-033 Impact-verkenner bouwen** — besloten, klaar voor bouw (zie `ADR-033_Impact_verkenner.md`).
+- **Codebase cleanup** (inventarisatie klaar) — frontend 11 items + backend 28 items (zie
+  LI019-cleanup-inventarisatie rapport).
+- **8 pre-existing live-test failures skip-robuust maken** — seed-afhankelijk.
+- **dagre dependency opruimen** — ongebruikt na de radiaal-overstap.
+- **Per-tenant catalog optie-zichtbaarheid** (ADR-026 edge case) — geparkeerd.
+- **Tenant-eigen partijsoort** — geparkeerd.
+- **Contract-leverancier verbreding** — `aard=externe_partij`-constraint verbreden.
+- **Signalerings-ADR registratiegaten** — object zonder rol, lege eigenaar-organisatie, contract
+  zonder leverancier, lege eigenaar-blokkadelijst.
+- **Browser-verificatie radiaal auto-centrering na dubbelklik** (commit 0cf8559).
+
 ### Stand V018 (sessie-afsluiting DC017, 2026-06-22)
 
 Build **V018**. DC017 = LIKARA-rebranding (Laag 1) + canoniek BvoWB-seed + Keycloak login-theme +
