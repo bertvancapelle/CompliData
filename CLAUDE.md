@@ -487,11 +487,11 @@ Pas dan: klaar.
 
 | Veld | Waarde |
 |------|--------|
-| Build | V019 |
+| Build | V020 |
 | Datum | June 2026 |
-| Commit | a15acc3 |
-| Tests | zie TST-rapport |
-| TST-rapport | TST-V019-Validatierapport.md |
+| Commit | e75cceb |
+| Tests | frontend 595 groen |
+| TST-rapport | TST-V019-Validatierapport.md (laatste volledige TST-run; LI019-closeout was een lite-closeout zonder aparte TST-V020) |
 | Kritieke bevindingen | 0 |
 
 <!-- BOUWSTATUS_END -->
