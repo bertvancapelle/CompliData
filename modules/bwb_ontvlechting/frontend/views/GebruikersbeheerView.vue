@@ -9,11 +9,14 @@
  * GEBRUIKERSBEHEER). `--cd-`-tokens, geen `<style>`.
  */
 import { computed, onMounted, reactive, ref } from 'vue'
-import { Button, DataTable, Column, Dialog, InputText, useToast } from '@/primevue'
+import { Button, DataTable, Column, Dialog, InputText, Tag, useToast } from '@/primevue'
 import { useAuthStore } from '@/store/auth'
 import { api } from '@/api'
 import { GEBRUIKER_ROL, label } from '@modules/bwb_ontvlechting/frontend/labels'
 import ZoekSelect from './ZoekSelect.vue'
+
+// ADR-029 Fase 2b — de vier toewijsbare tenant-rollen (rol-wijziging).
+const ROL_OPTIES = ['viewer', 'medewerker', 'beheerder', 'auditor']
 
 const auth = useAuthStore()
 const toast = useToast()
@@ -135,6 +138,141 @@ async function klaar() {
   await laad()
 }
 
+// ── ADR-029 Fase 2b — beheer-paneel per bestaande gebruiker ─────────────────────────
+const rolLabel = (r) => (r ? label(GEBRUIKER_ROL, r) : 'Onbekend')
+
+const beheerOpen = ref(false)
+const geselecteerd = ref(null) // de rij waarop beheerd wordt
+const beheerRol = ref('')
+const beheerNaam = ref('')
+const beheerEmail = ref('')
+const beheerFouten = reactive({})
+const resetWachtwoord = ref(null) // het eenmalige wachtwoord na een reset (niet gepersisteerd)
+const bevestigUit = ref(false)    // inline bevestiging vóór uitschakelen
+const beheerBezig = ref(false)
+let beheerTrigger = null
+
+// Eigen account: het account van de ingelogde beheerder zelf (de backend weigert hier
+// uitschakelen/de-beheerrollen; de UI verbergt die affordances om de dode klik te voorkomen).
+const isEigenAccount = computed(() => !!geselecteerd.value && geselecteerd.value.keycloak_sub === auth.user?.sub)
+const isBeheerderRij = computed(() => geselecteerd.value?.rol === 'beheerder')
+
+function openBeheer(rij, event) {
+  beheerTrigger = event?.currentTarget ?? document.activeElement
+  geselecteerd.value = rij
+  beheerRol.value = rij.rol || ''
+  beheerNaam.value = rij.naam || ''
+  beheerEmail.value = rij.email || ''
+  Object.keys(beheerFouten).forEach((k) => delete beheerFouten[k])
+  resetWachtwoord.value = null
+  bevestigUit.value = false
+  beheerOpen.value = true
+}
+function sluitBeheer() {
+  beheerOpen.value = false
+  if (beheerTrigger?.focus) setTimeout(() => beheerTrigger.focus(), 0)
+}
+
+const _GUARD = {
+  LAATSTE_BEHEERDER: 'Dit is de laatste beheerder en kan niet worden uitgeschakeld of gewijzigd.',
+  EIGEN_ACCOUNT: 'Je kunt je eigen account niet uitschakelen.',
+  EIGEN_BEHEERROL: 'Je kunt jezelf niet de beheerrol ontnemen.',
+}
+function _mapBeheerFout(e, { veld = false } = {}) {
+  if (veld && e?.status === 422 && Array.isArray(e.detail)) {
+    let raak = false
+    for (const d of e.detail) {
+      const v = Array.isArray(d.loc) ? d.loc[d.loc.length - 1] : null
+      if (['naam', 'email'].includes(v)) { beheerFouten[v] = d.msg || 'Ongeldige waarde.'; raak = true }
+    }
+    if (raak) return
+  }
+  if (e?.code === 'EMAIL_AL_IN_GEBRUIK') { beheerFouten.email = 'Dit e-mailadres is al in gebruik.'; return }
+  if (e?.code && _GUARD[e.code]) { toast.add({ severity: 'warn', summary: 'Niet toegestaan', detail: _GUARD[e.code], life: 6000 }); return }
+  const detail =
+    e?.status === 403 ? 'Je hebt geen rechten voor deze actie.'
+    : e?.status === 404 ? 'Deze gebruiker bestaat niet (meer).'
+    : e?.status === 503 ? 'Het account-systeem is even niet bereikbaar; probeer het later opnieuw.'
+    : (e?.message || 'Er ging iets mis.')
+  toast.add({ severity: 'error', summary: 'Fout', detail, life: 6000 })
+}
+
+async function _herlaadEnSelecteer() {
+  await laad()
+  if (geselecteerd.value) {
+    const ververst = gebruikers.value.find((g) => g.id === geselecteerd.value.id)
+    if (ververst) geselecteerd.value = ververst
+  }
+}
+
+async function doeWachtwoordReset() {
+  beheerBezig.value = true
+  try {
+    const resp = await api.gebruikers.wachtwoordReset(geselecteerd.value.id)
+    resetWachtwoord.value = resp.tijdelijk_wachtwoord // eenmalig getoond
+  } catch (e) {
+    _mapBeheerFout(e)
+  } finally {
+    beheerBezig.value = false
+  }
+}
+
+async function kopieerReset() {
+  try {
+    await navigator.clipboard.writeText(resetWachtwoord.value)
+    toast.add({ severity: 'success', summary: 'Gekopieerd', detail: 'Wachtwoord gekopieerd.', life: 2500 })
+  } catch {
+    toast.add({ severity: 'warn', summary: 'Kopiëren mislukt', detail: 'Selecteer en kopieer handmatig.', life: 4000 })
+  }
+}
+
+async function doeRolWijzigen() {
+  if (!beheerRol.value || beheerRol.value === geselecteerd.value.rol) return
+  beheerBezig.value = true
+  try {
+    await api.gebruikers.wijzigRol(geselecteerd.value.id, beheerRol.value)
+    toast.add({ severity: 'success', summary: 'Rol gewijzigd', life: 2500 })
+    await _herlaadEnSelecteer()
+  } catch (e) {
+    _mapBeheerFout(e)
+  } finally {
+    beheerBezig.value = false
+  }
+}
+
+async function doeStatus(actief) {
+  if (!actief && !bevestigUit.value) { bevestigUit.value = true; return } // eerst bevestigen
+  beheerBezig.value = true
+  try {
+    await api.gebruikers.wijzigStatus(geselecteerd.value.id, actief)
+    bevestigUit.value = false
+    toast.add({ severity: 'success', summary: actief ? 'Ingeschakeld' : 'Uitgeschakeld', life: 2500 })
+    await _herlaadEnSelecteer()
+  } catch (e) {
+    _mapBeheerFout(e)
+  } finally {
+    beheerBezig.value = false
+  }
+}
+
+async function doeCorrectie() {
+  Object.keys(beheerFouten).forEach((k) => delete beheerFouten[k])
+  if (!beheerNaam.value.trim()) beheerFouten.naam = 'Naam is verplicht.'
+  if (!beheerEmail.value.trim()) beheerFouten.email = 'E-mail is verplicht.'
+  else if (!_EMAIL.test(beheerEmail.value.trim())) beheerFouten.email = 'Geef een geldig e-mailadres op.'
+  if (Object.keys(beheerFouten).length) return
+  beheerBezig.value = true
+  try {
+    await api.gebruikers.corrigeer(geselecteerd.value.id, { naam: beheerNaam.value.trim(), email: beheerEmail.value.trim() })
+    toast.add({ severity: 'success', summary: 'Gegevens bijgewerkt', life: 2500 })
+    await _herlaadEnSelecteer()
+  } catch (e) {
+    _mapBeheerFout(e, { veld: true })
+  } finally {
+    beheerBezig.value = false
+  }
+}
+
 onMounted(laad)
 </script>
 
@@ -160,7 +298,40 @@ onMounted(laad)
       </template>
       <Column header="Naam"><template #body="{ data }">{{ data.naam }}</template></Column>
       <Column header="E-mail"><template #body="{ data }">{{ data.email || '—' }}</template></Column>
-      <Column header="Aangemaakt op"><template #body="{ data }">{{ _datum(data.aangemaakt_op) }}</template></Column>
+      <Column header="Rol">
+        <template #body="{ data }">
+          <span :data-testid="`gebr-rol-${data.id}`">{{ rolLabel(data.rol) }}</span>
+        </template>
+      </Column>
+      <Column header="Status">
+        <template #body="{ data }">
+          <!-- enabled true → Actief, false → Uitgeschakeld, null/None → Onbekend (neutraal, geen fout). -->
+          <Tag
+            v-if="data.enabled === true"
+            :data-testid="`gebr-status-${data.id}`"
+            severity="success"
+            value="Actief"
+          />
+          <Tag
+            v-else-if="data.enabled === false"
+            :data-testid="`gebr-status-${data.id}`"
+            severity="danger"
+            value="Uitgeschakeld"
+          />
+          <Tag v-else :data-testid="`gebr-status-${data.id}`" severity="secondary" value="Onbekend" />
+        </template>
+      </Column>
+      <Column header="">
+        <template #body="{ data }">
+          <Button
+            v-if="magBeheren"
+            label="Beheren"
+            severity="secondary"
+            :data-testid="`gebr-beheren-${data.id}`"
+            @click="openBeheer(data, $event)"
+          />
+        </template>
+      </Column>
     </DataTable>
 
     <!-- Aanmaak-dialog: twee staten (formulier → eenmalig wachtwoord). -->
@@ -223,6 +394,91 @@ onMounted(laad)
         </div>
         <div class="flex justify-end">
           <Button label="Klaar" data-testid="gebr-klaar" @click="klaar" />
+        </div>
+      </div>
+    </Dialog>
+
+    <!-- ADR-029 Fase 2b — beheer-paneel: vier acties op een bestaande gebruiker. -->
+    <Dialog
+      v-model:visible="beheerOpen"
+      modal
+      :closable="false"
+      :header="geselecteerd ? `Beheer — ${geselecteerd.naam}` : 'Beheer'"
+      data-testid="gebr-beheer-dialog"
+      @hide="sluitBeheer"
+    >
+      <div v-if="geselecteerd" class="flex flex-col gap-[var(--cd-space-lg)] min-w-[26rem]">
+        <!-- 1. Wachtwoord opnieuw instellen -->
+        <section class="flex flex-col gap-[var(--cd-space-sm)]" data-testid="gebr-beheer-wachtwoord">
+          <h2 class="font-semibold">Wachtwoord opnieuw instellen</h2>
+          <template v-if="!resetWachtwoord">
+            <p class="text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)] max-w-prose">
+              Genereert een nieuw eenmalig wachtwoord; de gebruiker wijzigt het verplicht bij de eerstvolgende login.
+            </p>
+            <Button label="Wachtwoord opnieuw instellen" severity="secondary" :disabled="beheerBezig" data-testid="gebr-wachtwoord-reset" class="self-start" @click="doeWachtwoordReset" />
+          </template>
+          <template v-else>
+            <p class="text-[length:var(--cd-text-sm)] max-w-prose">
+              Dit tijdelijke wachtwoord wordt <strong>eenmalig</strong> getoond. Geef het door; bij de eerste login moet het worden gewijzigd.
+            </p>
+            <div class="flex items-center gap-[var(--cd-space-sm)]">
+              <code data-testid="gebr-reset-wachtwoord" class="flex-1 rounded-[var(--cd-radius-input)] bg-[var(--cd-color-accent)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] font-mono select-all">{{ resetWachtwoord }}</code>
+              <Button label="Kopiëren" severity="secondary" data-testid="gebr-reset-kopieer" @click="kopieerReset" />
+            </div>
+          </template>
+        </section>
+
+        <!-- 2. Rol wijzigen -->
+        <section class="flex flex-col gap-[var(--cd-space-sm)] border-t border-[var(--cd-color-border)] pt-[var(--cd-space-md)]" data-testid="gebr-beheer-rol">
+          <h2 class="font-semibold">Rol</h2>
+          <template v-if="isEigenAccount && isBeheerderRij">
+            <p class="text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]" data-testid="gebr-rol-eigen-note">Je kunt jezelf niet de beheerrol ontnemen.</p>
+          </template>
+          <template v-else>
+            <div class="flex items-center gap-[var(--cd-space-sm)]">
+              <label for="gebr-beheer-rol-select" class="sr-only">Rol</label>
+              <select id="gebr-beheer-rol-select" v-model="beheerRol" data-testid="gebr-beheer-rol-select" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white">
+                <option v-for="r in ROL_OPTIES" :key="r" :value="r">{{ label(GEBRUIKER_ROL, r) }}</option>
+              </select>
+              <Button label="Rol wijzigen" severity="secondary" :disabled="beheerBezig || beheerRol === geselecteerd.rol" data-testid="gebr-rol-opslaan" @click="doeRolWijzigen" />
+            </div>
+          </template>
+        </section>
+
+        <!-- 3. Uit-/inschakelen -->
+        <section v-if="!isEigenAccount" class="flex flex-col gap-[var(--cd-space-sm)] border-t border-[var(--cd-color-border)] pt-[var(--cd-space-md)]" data-testid="gebr-beheer-status">
+          <h2 class="font-semibold">Toegang</h2>
+          <template v-if="geselecteerd.enabled === false">
+            <Button label="Inschakelen" severity="secondary" :disabled="beheerBezig" data-testid="gebr-inschakelen" class="self-start" @click="doeStatus(true)" />
+          </template>
+          <template v-else>
+            <p v-if="bevestigUit" class="text-[length:var(--cd-text-sm)] text-[var(--cd-color-danger)]" data-testid="gebr-uit-bevestig">Toegang wordt per direct ingetrokken. Doorgaan?</p>
+            <div class="flex gap-[var(--cd-space-sm)]">
+              <Button :label="bevestigUit ? 'Ja, uitschakelen' : 'Uitschakelen'" severity="danger" :disabled="beheerBezig" data-testid="gebr-uitschakelen" class="self-start" @click="doeStatus(false)" />
+              <Button v-if="bevestigUit" label="Annuleren" severity="secondary" data-testid="gebr-uit-annuleer" @click="bevestigUit = false" />
+            </div>
+          </template>
+        </section>
+        <p v-else class="text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)] border-t border-[var(--cd-color-border)] pt-[var(--cd-space-md)]" data-testid="gebr-status-eigen-note">Je kunt je eigen account niet uitschakelen.</p>
+
+        <!-- 4. Gegevens corrigeren -->
+        <section class="flex flex-col gap-[var(--cd-space-sm)] border-t border-[var(--cd-color-border)] pt-[var(--cd-space-md)]" data-testid="gebr-beheer-gegevens">
+          <h2 class="font-semibold">Gegevens</h2>
+          <div class="flex flex-col gap-[var(--cd-space-xs)]">
+            <label for="gebr-beheer-naam" class="font-semibold">Naam *</label>
+            <InputText id="gebr-beheer-naam" v-model="beheerNaam" data-testid="gebr-beheer-naam" :aria-invalid="!!beheerFouten.naam" aria-describedby="gebr-beheer-fout-naam" />
+            <span v-if="beheerFouten.naam" id="gebr-beheer-fout-naam" role="alert" data-testid="gebr-beheer-fout-naam" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ beheerFouten.naam }}</span>
+          </div>
+          <div class="flex flex-col gap-[var(--cd-space-xs)]">
+            <label for="gebr-beheer-email" class="font-semibold">E-mail *</label>
+            <InputText id="gebr-beheer-email" v-model="beheerEmail" type="email" data-testid="gebr-beheer-email" :aria-invalid="!!beheerFouten.email" aria-describedby="gebr-beheer-fout-email" />
+            <span v-if="beheerFouten.email" id="gebr-beheer-fout-email" role="alert" data-testid="gebr-beheer-fout-email" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ beheerFouten.email }}</span>
+          </div>
+          <Button label="Gegevens opslaan" severity="secondary" :disabled="beheerBezig" data-testid="gebr-gegevens-opslaan" class="self-start" @click="doeCorrectie" />
+        </section>
+
+        <div class="flex justify-end border-t border-[var(--cd-color-border)] pt-[var(--cd-space-md)]">
+          <Button label="Sluiten" data-testid="gebr-beheer-sluit" @click="sluitBeheer" />
         </div>
       </div>
     </Dialog>

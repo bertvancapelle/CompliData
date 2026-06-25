@@ -7,7 +7,10 @@ import ToastService from 'primevue/toastservice'
 
 vi.mock('@/api', () => ({
   api: {
-    gebruikers: { lijst: vi.fn(), maak: vi.fn() },
+    gebruikers: {
+      lijst: vi.fn(), maak: vi.fn(),
+      wachtwoordReset: vi.fn(), wijzigRol: vi.fn(), wijzigStatus: vi.fn(), corrigeer: vi.fn(),
+    },
     partijen: { lijst: vi.fn(() => Promise.resolve({ items: [] })) },
   },
 }))
@@ -143,5 +146,147 @@ describe('GebruikersbeheerView — aanmaak-dialog', () => {
     await w.find('[data-testid="gebr-klaar"]').trigger('click')
     await flushPromises()
     expect(api.gebruikers.lijst).toHaveBeenCalledTimes(2) // herladen na Klaar
+  })
+})
+
+// ── ADR-029 Fase 2b — beheer-paneel (rol/status + vier acties) ─────────────────────
+describe('GebruikersbeheerView — beheer-paneel', () => {
+  // s1 = een andere gebruiker (beheerder, actief); s = het eigen account (medewerker, actief).
+  const _met_rol_status = () => [
+    { id: 'g1', keycloak_sub: 's1', persoon_id: 'p1', naam: 'Jan de Vries', email: 'jan@org.nl', aangemaakt_op: '2026-06-20T10:00:00Z', rol: 'beheerder', enabled: true },
+    { id: 'g2', keycloak_sub: 's2', persoon_id: 'p2', naam: 'Piet Paulusma', email: 'piet@org.nl', aangemaakt_op: '2026-06-20T11:00:00Z', rol: 'medewerker', enabled: false },
+    { id: 'g3', keycloak_sub: 's3', persoon_id: 'p3', naam: 'Onbekend Account', email: 'x@org.nl', aangemaakt_op: '2026-06-20T11:00:00Z', rol: null, enabled: null },
+  ]
+
+  async function _openBeheer(w, id) {
+    await w.find(`[data-testid="gebr-beheren-${id}"]`).trigger('click')
+    await flushPromises()
+  }
+
+  it('lijst toont rol + status; uitgeschakeld herkenbaar; ontbrekend → Onbekend (geen fout)', async () => {
+    api.gebruikers.lijst.mockResolvedValue(_met_rol_status())
+    const w = await mountView()
+    expect(w.find('[data-testid="gebr-rol-g1"]').text()).toBe('Beheerder')
+    expect(w.find('[data-testid="gebr-status-g1"]').text()).toContain('Actief')
+    expect(w.find('[data-testid="gebr-status-g2"]').text()).toContain('Uitgeschakeld')
+    expect(w.find('[data-testid="gebr-rol-g3"]').text()).toBe('Onbekend')
+    expect(w.find('[data-testid="gebr-status-g3"]').text()).toContain('Onbekend')
+    expect(w.find('[data-testid="gebr-fout"]').exists()).toBe(false) // ontbrekend ≠ fout
+  })
+
+  it('acties verborgen voor een niet-beheerder', async () => {
+    api.gebruikers.lijst.mockResolvedValue(_met_rol_status())
+    const w = await mountView({ rollen: ['medewerker'] })
+    expect(w.find('[data-testid="gebr-beheren-g1"]').exists()).toBe(false)
+    expect(w.find('[data-testid="gebr-toevoegen"]').exists()).toBe(false)
+  })
+
+  it('wachtwoord opnieuw instellen toont het eenmalige wachtwoord één keer', async () => {
+    api.gebruikers.lijst.mockResolvedValue(_met_rol_status())
+    api.gebruikers.wachtwoordReset.mockResolvedValue({ tijdelijk_wachtwoord: 'NieuwTijdelijk!7Q' })
+    const w = await mountView()
+    await _openBeheer(w, 'g1')
+    await w.find('[data-testid="gebr-wachtwoord-reset"]').trigger('click')
+    await flushPromises()
+    expect(api.gebruikers.wachtwoordReset).toHaveBeenCalledWith('g1')
+    expect(w.find('[data-testid="gebr-reset-wachtwoord"]').text()).toBe('NieuwTijdelijk!7Q')
+    // De reset-knop is weg (eenmalige weergave); er is geen tweede ophaalpad.
+    expect(w.find('[data-testid="gebr-wachtwoord-reset"]').exists()).toBe(false)
+  })
+
+  it('rol wijzigen → PATCH rol met de gekozen rol', async () => {
+    api.gebruikers.lijst.mockResolvedValue(_met_rol_status())
+    api.gebruikers.wijzigRol.mockResolvedValue(null)
+    const w = await mountView()
+    await _openBeheer(w, 'g2') // medewerker (niet eigen account)
+    await w.find('[data-testid="gebr-beheer-rol-select"]').setValue('auditor')
+    await w.find('[data-testid="gebr-rol-opslaan"]').trigger('click')
+    await flushPromises()
+    expect(api.gebruikers.wijzigRol).toHaveBeenCalledWith('g2', 'auditor')
+  })
+
+  it('uitschakelen vraagt eerst bevestiging, daarna PATCH status=false', async () => {
+    api.gebruikers.lijst.mockResolvedValue(_met_rol_status())
+    api.gebruikers.wijzigStatus.mockResolvedValue(null)
+    const w = await mountView()
+    await _openBeheer(w, 'g1') // actief beheerder, niet eigen account
+    await w.find('[data-testid="gebr-uitschakelen"]').trigger('click') // 1e klik = bevestiging
+    await flushPromises()
+    expect(api.gebruikers.wijzigStatus).not.toHaveBeenCalled()
+    expect(w.find('[data-testid="gebr-uit-bevestig"]').exists()).toBe(true)
+    await w.find('[data-testid="gebr-uitschakelen"]').trigger('click') // 2e klik = doorzetten
+    await flushPromises()
+    expect(api.gebruikers.wijzigStatus).toHaveBeenCalledWith('g1', false)
+  })
+
+  it('inschakelen bij een uitgeschakeld account → PATCH status=true', async () => {
+    api.gebruikers.lijst.mockResolvedValue(_met_rol_status())
+    api.gebruikers.wijzigStatus.mockResolvedValue(null)
+    const w = await mountView()
+    await _openBeheer(w, 'g2') // enabled=false
+    await w.find('[data-testid="gebr-inschakelen"]').trigger('click')
+    await flushPromises()
+    expect(api.gebruikers.wijzigStatus).toHaveBeenCalledWith('g2', true)
+  })
+
+  it('gegevens corrigeren → PATCH naam/e-mail', async () => {
+    api.gebruikers.lijst.mockResolvedValue(_met_rol_status())
+    api.gebruikers.corrigeer.mockResolvedValue({ id: 'g1', naam: 'Jan Nieuw', email: 'jan.nieuw@org.nl' })
+    const w = await mountView()
+    await _openBeheer(w, 'g1')
+    await w.find('[data-testid="gebr-beheer-naam"]').setValue('Jan Nieuw')
+    await w.find('[data-testid="gebr-beheer-email"]').setValue('jan.nieuw@org.nl')
+    await w.find('[data-testid="gebr-gegevens-opslaan"]').trigger('click')
+    await flushPromises()
+    expect(api.gebruikers.corrigeer).toHaveBeenCalledWith('g1', { naam: 'Jan Nieuw', email: 'jan.nieuw@org.nl' })
+  })
+
+  it('geen zinloze affordances op het eigen account (uitschakelen + de-beheerrol verborgen)', async () => {
+    // Eigen account (sub 's') als beheerder.
+    api.gebruikers.lijst.mockResolvedValue([
+      { id: 'me', keycloak_sub: 's', persoon_id: 'pm', naam: 'Ik Zelf', email: 'ik@org.nl', aangemaakt_op: '2026-06-20T10:00:00Z', rol: 'beheerder', enabled: true },
+    ])
+    const w = await mountView() // rollen ['beheerder'], sub 's'
+    await _openBeheer(w, 'me')
+    expect(w.find('[data-testid="gebr-uitschakelen"]').exists()).toBe(false) // niet je eigen account uitschakelen
+    expect(w.find('[data-testid="gebr-status-eigen-note"]').exists()).toBe(true)
+    expect(w.find('[data-testid="gebr-beheer-rol-select"]').exists()).toBe(false) // niet jezelf de-beheerrollen
+    expect(w.find('[data-testid="gebr-rol-eigen-note"]').exists()).toBe(true)
+  })
+
+  it('foutmapping: 409 laatste-beheerder → begrijpelijke melding, dialog blijft open', async () => {
+    api.gebruikers.lijst.mockResolvedValue(_met_rol_status())
+    api.gebruikers.wijzigStatus.mockRejectedValue(Object.assign(new Error('x'), { status: 409, code: 'LAATSTE_BEHEERDER' }))
+    const w = await mountView()
+    await _openBeheer(w, 'g1')
+    await w.find('[data-testid="gebr-uitschakelen"]').trigger('click')
+    await w.find('[data-testid="gebr-uitschakelen"]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-testid="gebr-beheer-dialog"]').exists()).toBe(true) // dialog blijft open
+  })
+
+  it('foutmapping: 422 op correctie → inline veldfout op e-mail; dialog blijft open', async () => {
+    api.gebruikers.lijst.mockResolvedValue(_met_rol_status())
+    api.gebruikers.corrigeer.mockRejectedValue(Object.assign(new Error('x'), { status: 422, detail: [{ loc: ['body', 'email'], msg: 'Geef een geldig e-mailadres op.' }] }))
+    const w = await mountView()
+    await _openBeheer(w, 'g1')
+    // Geldige client-side waarden zodat de server-422 (niet de client-check) de fout levert.
+    await w.find('[data-testid="gebr-beheer-naam"]').setValue('Jan')
+    await w.find('[data-testid="gebr-beheer-email"]').setValue('jan@org.nl')
+    await w.find('[data-testid="gebr-gegevens-opslaan"]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-testid="gebr-beheer-fout-email"]').exists()).toBe(true)
+    expect(w.find('[data-testid="gebr-beheer-dialog"]').exists()).toBe(true)
+  })
+
+  it('foutmapping: 503 → begrijpelijke melding zonder technische termen (dialog open)', async () => {
+    api.gebruikers.lijst.mockResolvedValue(_met_rol_status())
+    api.gebruikers.wachtwoordReset.mockRejectedValue(Object.assign(new Error('x'), { status: 503 }))
+    const w = await mountView()
+    await _openBeheer(w, 'g1')
+    await w.find('[data-testid="gebr-wachtwoord-reset"]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-testid="gebr-beheer-dialog"]').exists()).toBe(true)
+    expect(w.find('[data-testid="gebr-reset-wachtwoord"]').exists()).toBe(false) // geen wachtwoord getoond bij fout
   })
 })

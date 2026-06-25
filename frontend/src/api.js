@@ -100,6 +100,12 @@ export const api = {
   gebruikers: {
     lijst: (params = {}) => request(`/gebruikers${_filterQuery('gebruikers.lijst', params, ['limit', 'after'])}`),
     maak: (data) => request('/gebruikers', { method: 'POST', body: JSON.stringify(data) }),
+    // ADR-029 Fase 2b — beheeracties op een bestaande gebruiker (alleen Beheerder; backend handhaaft).
+    // `wachtwoordReset` retourneert { tijdelijk_wachtwoord } (eenmalig).
+    wachtwoordReset: (id) => request(`/gebruikers/${id}/wachtwoord-reset`, { method: 'POST' }),
+    wijzigRol: (id, rol) => request(`/gebruikers/${id}/rol`, { method: 'PATCH', body: JSON.stringify({ rol }) }),
+    wijzigStatus: (id, actief) => request(`/gebruikers/${id}/status`, { method: 'PATCH', body: JSON.stringify({ actief }) }),
+    corrigeer: (id, data) => request(`/gebruikers/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   },
 
   // ADR-029 Fase 3a — audit-spoor lezen (AUDITLOG, beheerder/auditor; backend handhaaft).

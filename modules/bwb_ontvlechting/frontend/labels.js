@@ -17,6 +17,10 @@ export function label(map, code) {
 export const GEBRUIKER_ROL = {
   medewerker: 'Medewerker',
   viewer: 'Viewer',
+  // ADR-029 Fase 2b — rol-wijziging kan alle vier tenant-rollen toewijzen (aanmaak blijft
+  // medewerker/viewer). Labels voor weergave in de lijst + het rol-keuzemenu.
+  beheerder: 'Beheerder',
+  auditor: 'Auditor',
 }
 
 // ADR-029 Fase 3a — audit-spoor: leesbare labels voor handeling + entiteit-type (humanize-fallback
