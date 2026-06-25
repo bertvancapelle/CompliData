@@ -295,3 +295,23 @@ empirisch geverifieerd tegen de draaiende stack (zie `docs/LOKAAL-TESTEN.md`).
 - **Bij twijfel over vreemde data in de dev-DB: meet de SEED-functie, niet de live-DB-staat.** De
   live-DB kan test-residu bevatten; tel/inspecteer `_seed_bvowb_scenario` (of query mét de
   artefact-prefixen — `CD052-*`/`AUDIT-SRV-*` — uitgesloten) om de échte dekking te beoordelen.
+
+## LI021-patronen (reset + live-DB-test-drift)
+
+- **Na elke `docker compose down -v` moet de dev-seed HANDMATIG.** De init-container draait
+  `alembic upgrade head` + `platform_init` (referentiedata), maar **niet** de dev-seed
+  (`_seed_bvowb_scenario`). Na een reset dus expliciet:
+  `docker compose exec <api-service> python dev_seed_testdata.py` (of lokaal
+  `cd backend && python3 dev_seed_testdata.py`). Vergeten = lege scenario-data → veel live-DB-
+  tests falen. (Of de seed automatisch mee zou moeten draaien is een open vraag; voor nu:
+  handmatige stap.)
+- **Live-DB-tests kunnen "drift" vertonen t.o.v. de seed.** Symptoom: een test asserteert op
+  rijen die de huidige `_seed_bvowb_scenario` níét (meer) maakt (bv. namen uit dode seed-paden
+  als `_seed_technische_laag`). De `finally`-hygiëne (LI020) lost het *lekken* op, maar niet de
+  *drift*: een falende test die zijn fixtures netjes opruimt blijft falen tot óf de seed de
+  verwachte rijen levert óf de test herijkt is op de canonieke seed. Diagnose: vergelijk de
+  test-verwachting met wat `main()`/`_seed_bvowb_scenario` daadwerkelijk aanmaakt.
+- **Nieuwe live-DB-tests altijd self-contained:** maak je eigen `WT-*`-fixtures aan + ruim ze
+  in `finally` op, en asserteer alléén op je eigen data — dan ben je immuun voor seed-drift en
+  residu. (Let op: `applicatie_service.maak_aan` geeft een **object** terug (`.id`),
+  `component_service.maak_aan` een **dict** (`["id"]`).)

@@ -7,6 +7,51 @@ Bron: sessie 2–3 (P1–P5, OP-9 t/m OP-12). Status per punt expliciet vermeld.
 
 ## OPEN
 
+### Stand V022 (sessie-afsluiting LI021, 2026-06-25)
+
+Build **V022**. LI021 = test-hygiëne + seed-verrijking + Landschapskaart-vertrekpunt **fase A** (achterkant-kern).
+
+**Geland in LI021:**
+- **Test-hygiëne** (`0c4371b`) — twee live-DB-tests zelf-opruimend via `finally`
+  (`test_component_contract_op_niet_applicatie_component`, `test_score_write_driver_plus_afgeleide_delen_correlatie`);
+  cleanup draait ook bij falen → geen residu-lek meer (vervuilings-cirkel gebroken).
+- **Seed-verrijking** (`ae905c1`, data-only/idempotent in `_seed_bvowb_scenario`): infrastructuur
+  (technology-laag: Shared DB-server/fileshare/extern SaaS-platform) + draait-op-relaties;
+  component-samenstelling (Burgerzaken-suite → Aangiften/Reisdocumenten/Verkiezingen); bewuste
+  scope-gaten (Archiefbeheer zonder eigenaar; Klantportaal uitsluitend organisatieloos gebruikt).
+- **Kaart-vertrekpunt fase A** (`fec08d5`, additief/read-only): POST `/landschapskaart/subgraaf`
+  (set-scoped S+1-hop; `component_ids=None` = volledige graaf, back-compat); leverancier-filter op
+  `/componenten` (afgeleide EXISTS, beide paden); eigenaar-edge "is eigendom van" (context, **niet**
+  in `IMPACT_RINGEN`).
+- **Geparkeerd "scopebalk-tekent-organisaties"-spoor is AFGEDEKT** door de eigenaar-edge (zelfde
+  "is eigendom van"-projectie) — geen apart vervolgpunt meer nodig.
+
+**Vervolg LI022 (in deze volgorde, leunt op elkaar):**
+1. **Reset + seed-herijking** — de 8 pre-existing live-DB-failures groen krijgen in CC's omgeving:
+   `docker compose down -v` → reseed (**handmatige dev-seed!** — `docker compose exec <api> python dev_seed_testdata.py`)
+   + de stale tests herijken op `_seed_bvowb_scenario` (ze verwachten dode-seed-rijen — `GeoWorks
+   Licentieovereenkomst`/`Oracle FIN-DB`/3 `client_software`-vragen — die de verrijkte seed niet maakt).
+2. **Kaart-vertrekpunt fase B** — leeg openen + zoek-vertrekpunt via `/componenten`
+   (naam/type/laag/hosting/eigenaar/leverancier) → set-opbouw → POST subgraaf, met accumulerende
+   sub-graaf-cache. **Besloten keuzes:** selectie = alléén component-ids (org/leverancier = criterium +
+   context); **cache weggooien** bij "begin opnieuw"; **1-hop norm, dieper alleen via doorklikken**;
+   endpoint = POST.
+3. **Fase C** — defaults omdraaien (leeg openen consistent: scopebalk niets-aan→alles + startscherm
+   geen-views→hele model wég) + "zoek-erop-dan-toon-het" (auto-ring-activering op zoek, handmatig wint).
+4. **Fase D** — opgeslagen views permanent náást het zoekveld (hoofdingang).
+
+**8 pre-existing live-DB-failures — seed-drift (NIET als opgelost markeren):**
+architectuur_f2, audit_capture, 4× component_fase_b_cd052, lifecycle_pertype, vraagbeheer. De
+`finally`-hygiëne (`0c4371b`) brak de residu-cirkel, maar de 8 blijven rood door **seed-drift** (tests
+asserteren op rijen die `_seed_bvowb_scenario` niet maakt). Opgelost door vervolgstap 1. Zie
+`docs/TST-V022-Validatierapport.md`.
+
+**Overige open punten (ongewijzigd):** ADR-034 open subknopen; interactieve legenda als type-filter;
+ADR-030 contract-dekking; ADR-029 Fase 5; klaarverklaring-blok op ComponentDetail; signalerings-ADR;
+dode-code-opschoning (frontend/backend); cytoscape-dagre opruimen.
+
+---
+
 ### Stand V021 (sessie-afsluiting LI020, 2026-06-25)
 
 Build **V021**. LI020 = ADR-033 (volledig), gebruikersbeheer-acties (ADR-029 Fase 2b),

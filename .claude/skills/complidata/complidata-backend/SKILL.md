@@ -480,3 +480,27 @@ zorg dat de `partij_self`-join aanwezig is in de query.
   extra query); organisatiestructuur-edges uit `partij.organisatie_id`/`afdeling_id`.
 - **Gaten meeleveren, niet verbergen.** Een afgeleide scope laat de buiten-scope-gevallen
   herkenbaar (None/lege set + expliciete flag), zodat de voorkant ze eerlijk kan tonen.
+
+## LI021-patronen (kaart-schaalarchitectuur — set-scoped, geverifieerd)
+
+- **De Landschapskaart laadt NOOIT de volledige graaf bij schaal.** Bij 300+ componenten is
+  "het hele model" een onleesbare plaat + zware render. Architectuur: de kaart laadt
+  **set + 1-hop**.
+  - `haal_grafdata_op(session, tenant, *, component_ids=None, diepte=1)` — `None` = volledige
+    graaf (back-compat/tests), anders **set-scoped** via een discovery-pass
+    (`scope_ids = S ∪ 1-hop-buren ∪ org-hiërarchie ∪ eigenaar-orgs`) + een `_sc(col)`-filter
+    (`col.in_(scope_ids)` of `true()`) op de tenant-brede where-clausules. Werkte omdat de
+    ring-classificatie al `bron/doel ∈ id-set` was (geen transitieve afleiding) → set-scoping
+    = enkel een where-filter toevoegen.
+  - Endpoint **POST `/landschapskaart/subgraaf`** `{component_ids, diepte}` (POST i.v.m. lange
+    id-lijst; GET-volledige-graaf blijft voor back-compat). De **organisatiestructuur-ring
+    drijft op de rol-personen ván S**, niet álle (anders lekt de hele hiërarchie binnen).
+- **Leverancier-zoek = afgeleide EXISTS-filter op `/componenten`** (geen Component-kolom):
+  via roltoewijzing `technisch_beheer`/`contractbeheer`→externe_partij OF
+  association→`contract.leverancier_id` — exact de keten van `landschapskaart_service.lev_map`.
+  EXISTS-subqueries i.p.v. extra join → keyset-paginering intact.
+- **Eigenaar-edge "is eigendom van"** = afgeleide read-only context-projectie uit
+  `Component.eigenaar_organisatie_id` (organisatie→component), alleen als de organisatie als
+  knoop meekomt (geen dangling endpoint). **Context, NIET in `IMPACT_RINGEN`.** Dekt het
+  "scopebalk-tekent-organisaties"-spoor af (zelfde projectie). Dezelfde dubbele engine-borging
+  als LI020 (import-afwezigheid + read-only bronscan) blijft per slice verplicht.

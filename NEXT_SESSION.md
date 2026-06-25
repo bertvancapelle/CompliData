@@ -1,58 +1,66 @@
-# NEXT_SESSION.md — LIKARA V021
+# NEXT_SESSION.md — LIKARA V022
 
-**Gegenereerd**: 2026-06-25 (sessie-afsluiting LI020)
-**Build**: V020 → **V021**
-**Migratie head**: `0042` (`0042_adr033_opgeslagen_view`) — geen schema-/migratiewijziging in LI020
-**Tests**: frontend **654 groen (62 files)** + `vite build` ok + `test:css-build` ok; backend **890 passed / 2 skipped / 8 pre-existing live-DB-failures** (oorzaak getraceerd: test-residu — zie TST-rapport). Zie `docs/TST-V021-Validatierapport.md`.
-
----
-
-## Stand van zaken (V021) — ADR-033 volledig + gebruikersbeheer-acties + Landschapskaart-reeks
-
-Deze sessie (LI020):
-
-- **ADR-033 (volledig)** — adaptieve Landschapskaart + Impact-verkenner als graph op het canvas;
-  samenstelling-edge ("onderdeel van"); opgeslagen & deelbare views (entiteit + rechten + API + voorkant + startscherm).
-- **Gebruikersbeheer-acties (ADR-029 Fase 2b, achter+voorkant)** — wachtwoord opnieuw instellen, rol wijzigen,
-  in-/uitschakelen (sessie-afkap), gegevens corrigeren; self-lockout-guards; expliciete audit; beheer-paneel.
-- **Landschapskaart-reeks** (frontend, engine onaangeroerd): selectie-highlight (enkelklik = incidente lijnen oranje;
-  dubbelklik = dieper); organisatiestructuur-ring (persoon-met-rol → afdeling → organisatie, context, buiten impact);
-  toestand-geschiedenis (terug/vooruit) + hang-fix + auto-centreren; vorm-per-type + uitklapbare legenda;
-  organisatie-scopebalk slice 1 (backend read-projectie: eigenaar + gebruikt-door-orgs) + slice 2 (balk: biedt aan / gebruikt).
-- **ADR-034 (swimlane-herwrite)** — vastgelegd als **Voorstel** (nog niet gebouwd).
-- **Feitenchecks** — samenstelling, organisatiestructuur, eigenaar-organisatie, artefact-herkomst, seed-dekking.
+**Gegenereerd**: 2026-06-25 (sessie-afsluiting LI021)
+**Build**: V021 → **V022**
+**Migratie head**: `0042` (`0042_adr033_opgeslagen_view`) — geen schema-/migratiewijziging in LI021 (test-hygiëne = test-only; seed-verrijking = data-only; fase A = additieve read-only projecties/filter)
+**Tests**: frontend **654 groen (62 files)** + `vite build` ok + `test:css-build` ok; backend **896 passed / 2 skipped / 8 pre-existing live-DB-failures** (seed-drift — zie TST-rapport). Zie `docs/TST-V022-Validatierapport.md`.
 
 ---
 
-## Top-5 prioriteiten volgende sessie (LI021) — eerste blok, in volgorde (leunt op elkaar)
+## Stand van zaken (V022) — test-hygiëne + seed-verrijking + kaart-vertrekpunt fase A
 
-1. **Test-hygiëne-fix** — de twee lekkende live-DB-tests zelf-opruimend maken via `finally`/teardown:
-   `test_component_contract_op_niet_applicatie_component` (test_component_fase_b_cd052) en
-   `test_score_write_driver_plus_afgeleide_delen_correlatie` (test_audit_capture_live). Breekt de
-   vervuilings-cirkel; maakt de 8 falers vermoedelijk groen.
-2. **Schone reset** — `docker compose down -v` → reseed → de 32 artefacten (`CD052-db-*`/`AUDIT-SRV-*`) weg.
-3. **Gerichte seed-verrijking** (geen "meer data", drie ontbrekende variaties):
-   - **infrastructuur** (technology-laag) onder componenten → barrel-vorm + "draait-op"/assignment-impactrelatie zichtbaar;
-   - **component-samenstelling** (component↔component, onderdeel-van) → samenstelling-ring + "onderdeel-van"-impactrelatie zichtbaar;
-   - **bewuste scope-gaten** — ≥1 component zonder eigenaar + ≥1 app die uitsluitend door de organisatieloze "Burgers"-groep geserved wordt → gap-tellers van de scopebalk aantoonbaar.
-4. **ADR-034 swimlane-herwrite** (open subknopen) of interactieve legenda als type-filter (besproken vervolg).
-5. **Codebase cleanup** (frontend/backend dode code; cytoscape-dagre opruimen) + ADR-030 contract-dekking.
+Deze sessie (LI021):
 
-Volledige backlog: `docs/OPVOLGPUNTEN.md` (sectie "Stand V021 (LI020)").
+- **Test-hygiëne** (`0c4371b`) — twee live-DB-tests zelf-opruimend via `finally` (cleanup draait ook bij
+  falen → geen residu-lek meer; vervuilings-cirkel gebroken).
+- **Seed-verrijking** (`ae905c1`, data-only/idempotent in `_seed_bvowb_scenario`): infrastructuur
+  (technology-laag) + draait-op-relaties; component-samenstelling (Burgerzaken-suite); bewuste scope-gaten
+  (Archiefbeheer zonder eigenaar; Klantportaal uitsluitend organisatieloos gebruikt).
+- **Kaart-vertrekpunt fase A** (`fec08d5`, additief/read-only): POST `/landschapskaart/subgraaf` (set-scoped
+  S+1-hop; `component_ids=None` = volledige graaf, back-compat); leverancier-filter op `/componenten`
+  (afgeleide EXISTS, beide paden); eigenaar-edge "is eigendom van" (context, **niet** in `IMPACT_RINGEN`).
+  Dekt meteen het geparkeerde "scopebalk-tekent-organisaties"-spoor af.
+
+---
+
+## Top-5 prioriteiten volgende sessie (LI022) — in volgorde (leunt op elkaar)
+
+1. **Reset + seed-herijking (EERST)** — de 8 pre-existing live-DB-failures groen krijgen in CC's omgeving:
+   `docker compose down -v` → reseed (**handmatige dev-seed!** — `docker compose exec <api> python dev_seed_testdata.py`)
+   + de stale tests herijken op `_seed_bvowb_scenario` (ze verwachten dode-seed-rijen — `GeoWorks
+   Licentieovereenkomst`/`Oracle FIN-DB`/3 `client_software`-vragen — die de verrijkte seed niet maakt).
+2. **Kaart-vertrekpunt fase B** — leeg openen + zoek-vertrekpunt via `/componenten`
+   (naam/type/laag/hosting/eigenaar/leverancier) → set-opbouw → POST subgraaf, met accumulerende
+   sub-graaf-cache. Besloten: selectie = alléén component-ids (org/leverancier = criterium + context);
+   **cache weggooien** bij "begin opnieuw"; **1-hop norm, dieper alleen via doorklikken**; endpoint = POST.
+3. **Fase C** — defaults omdraaien (leeg openen consistent: scopebalk niets-aan→alles + startscherm
+   geen-views→hele model wég) + "zoek-erop-dan-toon-het" (auto-ring-activering op zoek, handmatig wint).
+4. **Fase D** — opgeslagen views permanent náást het zoekveld (hoofdingang).
+5. **Overige open punten** (ongewijzigd): ADR-034 open subknopen; interactieve legenda als type-filter;
+   ADR-030 contract-dekking; ADR-029 Fase 5; klaarverklaring-blok op ComponentDetail; signalerings-ADR;
+   dode-code-opschoning; cytoscape-dagre opruimen.
+
+Volledige backlog: `docs/OPVOLGPUNTEN.md` (sectie "Stand V022 (LI021)").
 
 ---
 
 ## Bekende risico's en aandachtspunten
 
-- **8 pre-existing live-DB-failures** — oorzaak getraceerd (test-residu, niet-zelf-opruimende live-DB-tests);
-  wordt door LI021-startpunt 1 structureel opgelost. NIET als opgelost markeren tot dan.
+- **8 pre-existing live-DB-failures** — **seed-drift** (tests asserteren op rijen die `_seed_bvowb_scenario`
+  niet maakt). De `finally`-hygiëne brak de residu-cirkel, maar de drift blijft → wordt door LI022-stap 1
+  opgelost. NIET als opgelost markeren tot ze in CC's omgeving groen zijn.
+- **Na elke `docker compose down -v` moet de dev-seed handmatig** (de init-container draait alleen
+  `alembic upgrade head` + `platform_init`, niet de dev-seed). Vergeten = lege scenario-data.
 - Worktree is **schoon**, niets ongecommit.
 
 ---
 
 ## Geleerde patronen deze sessie
 
-Verwerkt in de complidata-skills (frontend, tests, backend) + CONTRIBUTING.md: adaptieve één-graph-pipeline;
-selectie-highlight via runtime-klassen (geen relayout); toestand-geschiedenis zonder relayout-thrash;
-vorm-per-type via één gedeelde bron met luminantie-contrast; context-ringen buiten de impact-keten;
-scope = scope-keuze; feitencheck-buckets vóór bouw; live-DB-tests zelf-opruimend (`finally`); één-slice-één-commit.
+Verwerkt in de complidata-skills (backend, frontend, ux, tests): kaart laadt nooit de volledige graaf bij
+schaal (set + 1-hop via POST `/landschapskaart/subgraaf`; set-scoping = where-filter omdat de
+ring-classificatie al `bron/doel ∈ id-set` was); vertrekpunt = zoeken, niet "alles tonen" (leeg openen,
+selectie bevat componenten, org/leverancier = criteria); accumulerende sub-graaf-cache + incrementeel
+bijladen; "zoek-erop-dan-toon-het" (handmatige ring-vink wint); eigenaar-edge als context (niet in impact);
+leverancier = afgeleide EXISTS-filter; geen betuttelende scenario-regels (vrijheid + schone "begin opnieuw");
+na `down -v` dev-seed handmatig; live-DB-tests self-contained + drift ≠ residu.

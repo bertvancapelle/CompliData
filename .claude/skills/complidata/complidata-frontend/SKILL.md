@@ -835,3 +835,30 @@ met interactieve drag en edge-rendering.
 - **Uitklapbare legenda** (canvas-overlay): standaard ingeklapt, secties "Vorm = type" +
   "Kleur = status", voorkeur in sessionStorage (try/catch). Glyphs zijn CSS-benaderingen
   van de Cytoscape-vormen — herkenbaar volstaat.
+
+## Kaart-vertrekpunt = zoeken, niet "alles tonen" (LI021, schaalarchitectuur)
+
+- **De kaart laadt NOOIT de volledige graaf bij schaal.** Bij 300+ componenten is "het hele
+  model" onbruikbaar. De kaart laadt **set + 1-hop** via de set-scoped backend (POST
+  `/landschapskaart/subgraaf` `{component_ids, diepte}`; zie complidata-backend).
+- **Accumulerende sub-graaf-cache.** `nodes`/`edges` zijn niet meer de volledige graaf maar de
+  **unie van geladen sub-grafen** binnen de sessie. Ego/impact/drill = **incrementeel bijladen**
+  (klik → buren van die node ophalen → mergen). De terug/vooruit-geschiedenis werkt **zonder
+  her-fetch** want de cache is een superset van bezochte sets. "Begin opnieuw" = set leegmaken →
+  terug naar de lege zoek-staat én **cache weggooien** (vers zoeken).
+- **Vertrekpunt = zoeken.** De kaart opent **leeg** (zoekveld + opgeslagen views); de gebruiker
+  bouwt een set op via het server-side component-zoekendpoint (`/componenten`, gepagineerd:
+  naam/type/laag/hosting/eigenaar-organisatie/leverancier). De **selectie bevat altijd
+  componenten** (component-ids); organisatie/leverancier zijn **filtercriteria** die de set
+  inperken, geen set-leden.
+- **"Zoek-erop-dan-toon-het" (algemeen principe).** Zoek je op een dimensie met een
+  corresponderende ring/knoop (leverancier, eigenaar-organisatie), dan verschijnt dat ding ook
+  als **context-knoop**; zoek je er niet op, dan alleen via de bewuste ring-vink. **Handmatige
+  ring-vink wint altijd**: auto-zichtbaarheid verdwijnt bij een leeg zoekcriterium, een handmatig
+  aangezette ring blijft staan.
+- **Eigenaar-edge "is eigendom van"** is context, **niet** in `IMPACT_RINGEN` (= `{applicaties,
+  infrastructuur, gebruikers, samenstelling}`). Dit vervangt het oude "scopebalk-tekent-
+  organisaties"-spoor.
+- **NB — de oude "val terug op alles"-defaults schalen niet** en worden in fase B/C omgedraaid:
+  scopebalk "niets-aan → alles" en startscherm "geen-views → hele model" gaan naar **leeg openen**
+  (de gebruiker kiest). Laat dit niet per ongeluk terugkeren.

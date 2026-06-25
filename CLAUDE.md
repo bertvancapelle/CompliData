@@ -488,11 +488,11 @@ Pas dan: klaar.
 
 | Veld | Waarde |
 |------|--------|
-| Build | V021 |
+| Build | V022 |
 | Datum | June 2026 |
-| Commit | 026ac92 |
-| Tests | 654 frontend + 890 backend groen (8 pre-existing live-DB) |
-| TST-rapport | TST-V021-Validatierapport.md |
+| Commit | fec08d5 |
+| Tests | 896 backend + 654 frontend groen (2 skipped; 8 pre-existing seed-drift) |
+| TST-rapport | TST-V022-Validatierapport.md |
 | Kritieke bevindingen | 0 |
 
 <!-- BOUWSTATUS_END -->

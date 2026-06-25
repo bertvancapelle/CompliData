@@ -177,6 +177,22 @@ detail-paneel (alleen voor applicatie-nodes); conditioneel "+ Voeg toe / × Verw
 "1 stap (direct)" / "2 stappen" (ego + geheel). Diepte 2 voegt de indirecte applicatie-buren
 toe (partijen/contracten/infra blijven op diepte 1); client-side op de geladen graaf.
 
+## Vertrekpunt bij schaal — leeg openen, geen betutteling (LI021, niet-onderhandelbaar)
+
+- **Geen scenario-afhankelijke beschermregels.** De gebruiker is geen kleuter: geef de vrijheid
+  om alles aan te zetten en desnoods een gigantisch model op te roepen — hij komt zélf tot het
+  inzicht weer dingen uit te zetten. Bied een schone **"begin opnieuw"** (set leegmaken → terug
+  naar de lege zoek-staat, cache weggooien, vers zoeken) i.p.v. preventieve regels die "in
+  scenario X wel, in Y niet" werken. Vrijheid + een goede reset > betuttelende vangrails.
+- **Bij schaal opent de kaart leeg, niet op "alles".** De "val terug op alles"-defaults
+  (scopebalk niets-aan→alles; startscherm geen-views→hele model) schalen niet — bij 300+
+  componenten is het hele model geen rustige beginstand maar de drukte zélf. Vertrekpunt = de
+  gebruiker kiest (zoeken/opgeslagen views), niet "hier is alles, filter maar weg".
+- **Zoeken op betekenis, niet scrollen.** De set bouw je op via betekenis-zoek
+  (naam/type/domein/leverancier/eigenaar-organisatie), zodat "alle zaaksystemen" / "alles van
+  Tiel" / "alles van leverancier X" één zoekactie is — niet honderden namen scrollen. (De
+  selectie bevat componenten; organisatie/leverancier zijn criteria — zie complidata-frontend.)
+
 ## Verhouding tot andere skills
 
 - `complidata-frontend` = hoe je bouwt (Vue/PrimeVue/Tailwind, tokens, presets). Stijl en techniek.
