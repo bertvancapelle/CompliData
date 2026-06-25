@@ -58,6 +58,17 @@ def test_landschaps_adr031_velden_in_schema():
     assert n.aantal_leden == 0 and n.organisatie_id is None
 
 
+def test_landschaps_adr024_organisatie_scope_velden_in_schema():
+    """ADR-024 organisatie-scope — bezit/gebruik-velden op de node + lege/None-defaults."""
+    from schemas.landschapskaart import LandschapsNode
+
+    velden = LandschapsNode.model_fields
+    assert {"eigenaar_organisatie_id", "gebruikt_door_organisaties", "gebruikt_door_organisatieloos"} <= set(velden)
+    n = LandschapsNode(id=uuid.uuid4(), naam="X", element_type="applicatie")
+    assert n.eigenaar_organisatie_id is None  # zonder eigenaar herkenbaar
+    assert n.gebruikt_door_organisaties == [] and n.gebruikt_door_organisatieloos is False
+
+
 def test_landschapskaart_serveert_gebruikers_ring():
     """ADR-031 — de service projecteert gebruikersgroepen + de 'gebruikers'-serving-ring."""
     import inspect
@@ -431,6 +442,80 @@ def test_landschapskaart_organisatiestructuur_edges_live():
     assert not any(e.bron_id in leeg or e.doel_id in leeg for e in os_edges)
     # Geregistreerd, niet afgeleid: relatietype/label exact.
     assert all(e.relatietype == "hoort_bij" and e.label == "hoort bij" for e in os_edges)
+
+
+@integratie
+def test_landschapskaart_organisatie_scope_live():
+    """ADR-024 organisatie-scope (read-projectie): bezit via eigenaar_organisatie_id, gebruik via
+    serving × gebruikersgroep-organisatie; gaten (zonder eigenaar / organisatieloze groep) herkenbaar;
+    aard=organisatie-partijen identificeerbaar voor de frontend."""
+    from sqlalchemy import text as _text
+
+    from models.models import (
+        Component, Element, ElementType, Gebruikersgroep, Partij, PartijAard, Relatie,
+    )
+    from services import landschapskaart_service as svc
+
+    tid = uuid.UUID(_TID)
+
+    async def _comp(s, naam, *, eigenaar=None):
+        elem = Element(tenant_id=tid, element_type=ElementType.component); s.add(elem); await s.flush()
+        s.add(Component(id=elem.id, tenant_id=tid, naam=naam, componenttype="middleware",
+                        hostingmodel="on_premise", eigenaar_organisatie_id=eigenaar)); await s.flush()
+        return elem.id
+
+    async def _groep(s, *, naam, organisatie_id):
+        elem = Element(tenant_id=tid, element_type=ElementType.gebruikersgroep); s.add(elem); await s.flush()
+        s.add(Gebruikersgroep(id=elem.id, tenant_id=tid, organisatie_id=organisatie_id,
+                              afdeling=naam, aantal_gebruikers=10)); await s.flush()
+        return elem.id
+
+    async def _flow(s):
+        ids = []
+        try:
+            # Organisatie-partij (aard=organisatie) — de "eigen organisatie".
+            oe = Element(tenant_id=tid, element_type=ElementType.partij); s.add(oe); await s.flush()
+            s.add(Partij(id=oe.id, tenant_id=tid, aard=PartijAard.organisatie, naam="WT-OS-Org-Scope")); await s.flush()
+            # Bezit: component MET eigenaar vs ZONDER eigenaar.
+            c_bezit = await _comp(s, "WT-OS-Bezit", eigenaar=oe.id)
+            c_geen_eig = await _comp(s, "WT-OS-GeenEig")
+            # Gebruik: component via een groep MET organisatie; component via een organisatieLOZE groep.
+            c_gebruik = await _comp(s, "WT-OS-Gebruik")
+            c_loos = await _comp(s, "WT-OS-Loos")
+            g_org = await _groep(s, naam="WT-OS-Groep", organisatie_id=oe.id)
+            g_loos = await _groep(s, naam="WT-OS-Burgers", organisatie_id=None)
+            s.add(Relatie(tenant_id=tid, bron_id=c_gebruik, doel_id=g_org, relatietype="serving"))
+            s.add(Relatie(tenant_id=tid, bron_id=c_loos, doel_id=g_loos, relatietype="serving"))
+            await s.commit()
+            ids += [c_bezit, c_geen_eig, c_gebruik, c_loos, g_org, g_loos, oe.id]
+            graf = await svc.haal_grafdata_op(s, _TID)
+            return graf, {"org": oe.id, "bezit": c_bezit, "geen_eig": c_geen_eig,
+                          "gebruik": c_gebruik, "loos": c_loos}
+        finally:
+            for eid in ids:
+                await s.execute(_text("DELETE FROM element WHERE id=:i"), {"i": str(eid)})
+            await s.commit()
+
+    graf, X = asyncio.run(_run_rls(_flow))
+    per_id = {n.id: n for n in graf.nodes}
+
+    # 1. Bezit: eigenaar_organisatie_id meegeleverd; zonder eigenaar = None (herkenbaar gat).
+    assert per_id[X["bezit"]].eigenaar_organisatie_id == X["org"]
+    assert per_id[X["geen_eig"]].eigenaar_organisatie_id is None
+
+    # 2. Gebruik: component via een org-groep → die organisatie in de set; niet org-loos.
+    assert X["org"] in per_id[X["gebruik"]].gebruikt_door_organisaties
+    assert per_id[X["gebruik"]].gebruikt_door_organisatieloos is False
+    # Component dat ALLEEN via een organisatieloze groep gebruikt wordt → buiten elke org-scope,
+    # maar herkenbaar als organisatieloos gebruikt (gat niet verborgen).
+    assert per_id[X["loos"]].gebruikt_door_organisaties == []
+    assert per_id[X["loos"]].gebruikt_door_organisatieloos is True
+    # Een component zonder serving heeft geen gebruik-toerekening.
+    assert per_id[X["bezit"]].gebruikt_door_organisaties == [] and per_id[X["bezit"]].gebruikt_door_organisatieloos is False
+
+    # 3. De aard=organisatie-partij is identificeerbaar voor de frontend (soort='organisatie').
+    org_node = per_id[X["org"]]
+    assert org_node.element_type == "partij" and org_node.soort == "organisatie" and org_node.naam == "WT-OS-Org-Scope"
 
 
 @integratie

@@ -30,6 +30,15 @@ class LandschapsNode(BaseModel):
     # ledental-badge. Alleen gevuld voor element_type='gebruikersgroep'.
     organisatie_id: UUID | None = None
     aantal_leden: int = 0
+    # ADR-024 organisatie-scope (read-projectie, alleen op component-nodes):
+    # - eigenaar_organisatie_id: de eigenaar-organisatie (bezit/aanbieden); None = zonder eigenaar.
+    # - gebruikt_door_organisaties: organisatie-ids die dit component gebruiken (via serving aan hun
+    #   gebruikersgroepen); leeg = door geen enkele organisatie.
+    # - gebruikt_door_organisatieloos: True als ≥1 gebruikende groep géén organisatie heeft
+    #   (bv. "Burgers") — zo blijft dat "gat" zichtbaar i.p.v. verborgen.
+    eigenaar_organisatie_id: UUID | None = None
+    gebruikt_door_organisaties: list[UUID] = []
+    gebruikt_door_organisatieloos: bool = False
 
 
 class LandschapsEdge(BaseModel):

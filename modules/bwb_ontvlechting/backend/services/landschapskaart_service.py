@@ -133,17 +133,20 @@ async def haal_grafdata_op(session: AsyncSession, tenant_id, diepte: int = 1) ->
         await session.execute(
             select(
                 Component.id, Component.naam, Component.componenttype, Component.hostingmodel,
+                Component.eigenaar_organisatie_id,
                 _profiel.c.lifecycle_status.label("lifecycle_status"),
             )
             .outerjoin(_profiel, and_(_profiel.c.id == Component.id, _profiel.c.tenant_id == tid))
             .where(Component.tenant_id == tid)
         )
     ).all()
+    # ADR-024 organisatie-scope: per component de gebruik-afleiding na de relatie-pass invullen.
+    comp_node: dict[uuid.UUID, LandschapsNode] = {}
     for r in comp_rijen:
         component_ids.add(r.id)
         t = typing.get(r.componenttype, {})
         plaatsing = plateau_map.get(r.id, {})
-        nodes.append(LandschapsNode(
+        node = LandschapsNode(
             id=r.id, naam=r.naam, element_type=r.componenttype,
             laag=t.get("laag"), archimate_element=t.get("archimate_element"),
             lifecycle_status=_val(r.lifecycle_status),
@@ -154,7 +157,11 @@ async def haal_grafdata_op(session: AsyncSession, tenant_id, diepte: int = 1) ->
             blokkades_open=blok_map.get(r.id, 0),
             plateau_naam=plaatsing.get("naam"),
             plateau_dispositie=plaatsing.get("dispositie"),
-        ))
+            # Bezit/aanbieden: het bestaande directe veld (None = component zonder eigenaar → buiten scope).
+            eigenaar_organisatie_id=r.eigenaar_organisatie_id,
+        )
+        nodes.append(node)
+        comp_node[r.id] = node
 
     # ── Partij-nodes — business-laag, aard als `soort` ──
     # `organisatie_id`/`afdeling_id` (ADR-024 "hoort bij") worden meegelezen voor de
@@ -199,8 +206,10 @@ async def haal_grafdata_op(session: AsyncSession, tenant_id, diepte: int = 1) ->
             ).where(Gebruikersgroep.tenant_id == tid)
         )
     ).all()
+    gg_org: dict[uuid.UUID, uuid.UUID | None] = {}  # gebruikersgroep-id → organisatie-id (of None)
     for r in gg_rijen:
         gebruikersgroep_ids.add(r.id)
+        gg_org[r.id] = r.organisatie_id
         naam = r.afdeling or partij_naam.get(r.organisatie_id) or "Gebruikersgroep"
         nodes.append(LandschapsNode(
             id=r.id, naam=naam, element_type="gebruikersgroep", laag="business",
@@ -221,6 +230,11 @@ async def haal_grafdata_op(session: AsyncSession, tenant_id, diepte: int = 1) ->
     # ADR-023a Fase 3 — flows per gericht paar (bron,doel) samentrekken tot één edge met `aantal`.
     # Volgorde-stabiel (eerste-gezien paar eerst); assignment/association blijven één-per-rij.
     flow_groepen: dict[tuple, list[dict]] = {}
+    # ADR-024 organisatie-scope (gebruik-kant): per component de gebruikende organisaties afleiden
+    # uit serving (component → gebruikersgroep) × de organisatie van die groep. Groep zonder
+    # organisatie → het component is "organisatieloos gebruikt" (zichtbaar gat, geen toerekening).
+    comp_gebruik_orgs: dict[uuid.UUID, set[uuid.UUID]] = {}
+    comp_gebruik_orgloos: set[uuid.UUID] = set()
     for r in rel_rijen:
         rt = _val(r.relatietype)
         if rt == "flow" and r.bron_id in component_ids and r.doel_id in component_ids:
@@ -236,6 +250,12 @@ async def haal_grafdata_op(session: AsyncSession, tenant_id, diepte: int = 1) ->
             # ADR-031 — applicatie → gebruikersgroep (wie gebruikt deze applicatie).
             edges.append(LandschapsEdge(bron_id=r.bron_id, doel_id=r.doel_id,
                                         relatietype="serving", label="gebruikt door", ring="gebruikers"))
+            # ADR-024 organisatie-scope: org van de gebruikende groep toerekenen aan het component.
+            org = gg_org.get(r.doel_id)
+            if org is not None:
+                comp_gebruik_orgs.setdefault(r.bron_id, set()).add(org)
+            else:
+                comp_gebruik_orgloos.add(r.bron_id)
         elif rt == "aggregation" and r.bron_id in component_ids and r.doel_id in component_ids:
             # ADR-033 1b — samenstelling: component↔component aggregatie (bron=geheel → doel=onderdeel).
             # Bewust géén afleiding (ADR-023 besluit 7): exact de geregistreerde structuurrelatie, dezelfde
@@ -255,6 +275,12 @@ async def haal_grafdata_op(session: AsyncSession, tenant_id, diepte: int = 1) ->
         edges.append(LandschapsEdge(bron_id=bron_id, doel_id=doel_id,
                                     relatietype="flow", label="koppeling", ring="applicaties",
                                     richting=richting, protocol=protocol, aantal=len(groep)))
+
+    # ADR-024 organisatie-scope: de afgeleide gebruik-data per component-node invullen (read-only;
+    # geen extra query — uit de al gelezen serving-relaties × gebruikersgroep-organisatie).
+    for cid, node in comp_node.items():
+        node.gebruikt_door_organisaties = sorted(comp_gebruik_orgs.get(cid, set()), key=str)
+        node.gebruikt_door_organisatieloos = cid in comp_gebruik_orgloos
 
     # ── Ring 4 — beheerorganisatie uit de roltoewijzingen (label = rol-naam) ──
     rol_labels = await rk_catalog.labels(session, _RK_BEHEERROL)
