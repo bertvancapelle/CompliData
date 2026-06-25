@@ -280,3 +280,18 @@ empirisch geverifieerd tegen de draaiende stack (zie `docs/LOKAAL-TESTEN.md`).
 - **Sorteer-allowlist-synchroon-test breidt mee uit**: voeg je een sorteerveld toe (bv. `aard`), borg
   dan in één test `set(_SORTEERBARE_KOLOMMEN) == {e.value for e in *Sorteerveld} == set(_WAARDE_PARSERS)`
   (enum ⟺ kolommen ⟺ parsers), zodat een half toegevoegde kolom faalt.
+
+## LI020-patronen (test-hygiëne live-DB)
+
+- **Live-DB-tests moeten zelf-opruimend zijn via `finally`/teardown, NIET inline.** Een test die de
+  rijen pas aan het eind van de happy-flow opruimt, lekt bij een fout (een falende assert vóór dat
+  punt) zijn rijen naar de dev-DB. Bewezen mechanisme (LI020): `CD052-db-*`
+  (test_component_fase_b_cd052) + `AUDIT-SRV-*` (test_audit_capture_live) ruimden inline op, faalden,
+  en stapelden **32 wees-componenten** op → die vervuilden de lijst-/sort-asserts van *ándere* tests →
+  die faalden → hun opruiming werd overgeslagen → **vicieuze cirkel** (verklaart "8 pre-existing falers
+  + reseed lost het op"). Regel: cleanup van live-DB-fixtures in `finally`/teardown, zodat falen niet
+  vervuilt. Patroon-anker: de bestaande `try/finally`-DELETE-blokken in de landschapskaart-/gebruiker-
+  livetests (`for eid in ids: DELETE FROM element ...` in `finally`) zijn de juiste vorm.
+- **Bij twijfel over vreemde data in de dev-DB: meet de SEED-functie, niet de live-DB-staat.** De
+  live-DB kan test-residu bevatten; tel/inspecteer `_seed_bvowb_scenario` (of query mét de
+  artefact-prefixen — `CD052-*`/`AUDIT-SRV-*` — uitgesloten) om de échte dekking te beoordelen.

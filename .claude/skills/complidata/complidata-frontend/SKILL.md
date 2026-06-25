@@ -796,3 +796,42 @@ De swimlane-layout is geparkeerd wegens technische complexiteit met Cytoscape.js
 **Toekomstige herwrite (ADR-034):** pure HTML/CSS div-lanes + SVG-overlay voor edges,
 NIET Cytoscape compound-nodes. Dit is de enige bewezen architectuur voor echte swimlanes
 met interactieve drag en edge-rendering.
+
+## LI020-patronen (Landschapskaart — adaptief, highlight, geschiedenis, vorm, scope)
+
+- **Eén adaptieve weergave, één graph-pipeline.** De modus volgt de actieve set (leeg →
+  geheel, 1 → ego, ≥2 → Impact-verkenner); ego/geheel/impact gebruiken dezelfde Cytoscape-
+  pipeline (`zichtbareNodes → _elementen → _layout`). Geen tweede graph-mechanisme, geen
+  view-tabs.
+- **Selectie-highlight via runtime cytoscape-klassen, nooit via relayout.** Enkelklik =
+  inspecteren (detail + alléén de incidente lijnen in `SELECTIE_RAND`-oranje via
+  `hl-node`/`hl-edge`); dubbelklik = dieper (impact-drill / ego-hercentreren). Lijnen
+  standaard neutraal; oranje = "verbindingen van dít component" (één gedeelde kleurbron).
+- **Toestand-geschiedenis (terug/vooruit) = browser-model, maar herstel mag NOOIT een
+  geforceerde geanimeerde relayout triggeren** (de hang-les). Regels: vergelijk inhoud
+  vóór reassignment (Set/array-gelijkheid) zodat een gelijk-blijvende toestand nul
+  (re)tekeningen geeft; `animate:false` tijdens herstel; centreer via het bestaande
+  layout-stop-pad (`_naLayout`), géén losse extra `fit`; begrens de history (~50) en
+  ont-reactiveer (`shallowRef` + bevroren snapshots); scherm álle afgeleide watchers
+  (incl. de filter-watch) af met de `_herstellen`-guard. Zoom/pan blijven buiten de
+  geschiedenis; een scope-/filter-/selectie-wijziging is wél een toestand.
+- **Vorm-per-type via één gedeelde knoop-stijlbron.** Vorm = wat het is, kleur = status.
+  `_vormVoorType` (op element_type + partij-aard + infra-laag) voedt `_nodeData.shape`,
+  gelezen door alle modi én de toekomstige swimlane — geen tweede definitie. **Harde
+  contrast-eis:** tekstkleur altijd via luminantie (`_txtColor`) op de werkelijke
+  vulkleur; introduceer geen nieuwe donkere vullingen; test elke vorm × elke status.
+  Type-label voor álle typen als tweede signaal. Native, labelvriendelijke vormen;
+  near-dubbele paren krijgen een echt ander silhouet.
+- **Context-ringen blijven buiten de impact-keten.** Een relatie die geen migratie-impact
+  is (organisatiestructuur "hoort bij", samenstelling als context) krijgt een eigen ring,
+  **standaard uit**, en staat NIET in `IMPACT_RINGEN`. Organisatiestructuur opgebouwd
+  vanaf rol-vervullende personen omhoog (geen lege takken); afdeling-NULL → directe
+  persoon→organisatie-edge.
+- **Scope-balk (organisatie) = scope-keuze, niet zomaar een filter.** De balk bepaalt
+  wélke application-componenten in beeld komen (bezit = `eigenaar_organisatie_id` ∈
+  selectie; gebruik = `gebruikt_door_organisaties` overlapt); niets aangevinkt → alles
+  (nooit leeg). Gewone filters/ringen werken daarbinnen door. Registratiegaten (component
+  zonder eigenaar; gebruik via organisatieloze groep) eerlijk tonen, niet wegpoetsen.
+- **Uitklapbare legenda** (canvas-overlay): standaard ingeklapt, secties "Vorm = type" +
+  "Kleur = status", voorkeur in sessionStorage (try/catch). Glyphs zijn CSS-benaderingen
+  van de Cytoscape-vormen — herkenbaar volstaat.

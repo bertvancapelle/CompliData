@@ -95,6 +95,12 @@ opdracht start (CLAUDE.md → Commit-discipline). Raakt de werktree tóch verstr
 3. Commit opdracht A; daarna is al het resterende per definitie opdracht B → `git add -A` + commit.
 4. Schone tree + hertest + push; bevestig met `git log` dat de commits gescheiden zijn.
 
+**Les LI020 — stapel geen "even niet committen".** Bij een tussendoor-bug (bv. de
+Landschapskaart-hang) niet meerdere slices ongecommit op elkaar laten lopen in **dezelfde
+bestanden**: dat maakt hunk-niveau-splitsen onbetrouwbaar (de 4-slice-accumulatie in commit
+`ad5ee97` was de bewuste uitzondering, geen norm). Commit de werkende slice eerst — push
+bevestigd — vóór de volgende `START:`.
+
 ## Sectie 8 — Verificatie-eerst & herstelcheck (les uit V006)
 
 8.1 **Verificatie-eerst tegen backlog-drift.** Verifieer een OPVOLGPUNT (of een aanname uit een

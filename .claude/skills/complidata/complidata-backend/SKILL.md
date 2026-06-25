@@ -463,3 +463,20 @@ zorg dat de `partij_self`-join aanwezig is in de query.
   `mantelcontract_naam` toe via een `mantel = aliased(Contract)` zelf-join (bottom-up
   contractketen App → Contract → Mantelcontract).
 - Engine onaangeroerd; afgeleide read-only velden, geen schema/migratie.
+
+## LI020-patronen (kaart-projectie naast de engine)
+
+- **"Bestaat de relatie/het verband al?" → altijd eerst een feitencheck tegen de code, nooit
+  gokken.** Verdict in drie buckets: **werkt al / kleine fix / registratie ontbreekt**. Deze
+  sessie herhaald bevestigd (samenstelling, organisatiestructuur, eigenaar-organisatie,
+  artefact-herkomst): vaak bleek de relatie al geregistreerd (FK-kolom of relatie-rij) en was
+  alleen de **kaart-projectie** de ontbrekende schakel — geen schema/registratie nodig.
+- **Kaart-projectie is additief & read-only.** Afgeleid uit BESTAANDE relaties/kolommen (geen
+  verzonnen relaties, ADR-023 besluit 7); dubbele engine-borging per slice: offline
+  import-afwezigheidstest (géén `lifecycle_service`/`herbereken_lifecycle`/`bepaal_lifecycle`/
+  `ComponentProfiel`/`Blokkade`) **én** read-only bronscan (géén `session.add/commit/flush/delete`).
+  Voorbeelden LI020: `eigenaar_organisatie_id` als node-attribuut; "gebruikt door organisatie(s)"
+  afgeleid uit serving × `gebruikersgroep.organisatie_id` (set + org-loos-flag, één pass, geen
+  extra query); organisatiestructuur-edges uit `partij.organisatie_id`/`afdeling_id`.
+- **Gaten meeleveren, niet verbergen.** Een afgeleide scope laat de buiten-scope-gevallen
+  herkenbaar (None/lege set + expliciete flag), zodat de voorkant ze eerlijk kan tonen.

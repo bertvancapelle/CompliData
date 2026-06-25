@@ -7,6 +7,48 @@ Bron: sessie 2–3 (P1–P5, OP-9 t/m OP-12). Status per punt expliciet vermeld.
 
 ## OPEN
 
+### Stand V021 (sessie-afsluiting LI020, 2026-06-25)
+
+Build **V021**. LI020 = ADR-033 (volledig), gebruikersbeheer-acties (ADR-029 Fase 2b),
+en de Landschapskaart-reeks.
+
+**Geland in LI020:**
+- **ADR-033 (volledig)** — adaptieve Landschapskaart + Impact-verkenner (graph op canvas),
+  samenstelling-edge, opgeslagen & deelbare views (entiteit + rechten + API + voorkant + startscherm).
+- **Gebruikersbeheer-acties (ADR-029 Fase 2b, achter + voorkant)** — wachtwoord opnieuw instellen,
+  rol wijzigen, in-/uitschakelen (sessie-afkap), gegevens corrigeren; self-lockout-guards; expliciete audit; beheer-paneel.
+- **Landschapskaart-reeks** (frontend, engine onaangeroerd): selectie-highlight (enkelklik = incidente
+  lijnen oranje; dubbelklik = dieper); organisatiestructuur-ring (persoon-met-rol → afdeling → organisatie,
+  context, buiten `IMPACT_RINGEN`); toestand-geschiedenis (terug/vooruit) + hang-fix + auto-centreren;
+  vorm-per-type + uitklapbare legenda; organisatie-scopebalk slice 1 (backend read-projectie) + slice 2 (balk).
+- **ADR-034 (swimlane-herwrite)** — staat als **Voorstel** (nog niet gebouwd).
+
+**Eerste blok LI021 (in volgorde, leunt op elkaar):**
+1. **Test-hygiëne-fix** — twee lekkende live-DB-tests zelf-opruimend maken (`finally`):
+   `test_component_contract_op_niet_applicatie_component` (test_component_fase_b_cd052) en
+   `test_score_write_driver_plus_afgeleide_delen_correlatie` (test_audit_capture_live). Breekt de
+   vervuilings-cirkel → maakt de 8 falers vermoedelijk groen.
+2. **Schone reset** — `docker compose down -v` → reseed → 32 artefacten (`CD052-db-*`/`AUDIT-SRV-*`) weg.
+3. **Gerichte seed-verrijking** (geen "meer data" — drie ontbrekende variaties):
+   - **infrastructuur** (technology-laag) onder componenten → barrel-vorm + "draait-op"/assignment-impactrelatie zichtbaar;
+   - **component-samenstelling** (component↔component, onderdeel-van) → samenstelling-ring + "onderdeel-van"-impactrelatie zichtbaar;
+   - **bewuste scope-gaten** — ≥1 component zonder eigenaar + ≥1 app uitsluitend door de organisatieloze "Burgers"-groep geserved → scopebalk-gap-tellers aantoonbaar.
+
+**8 pre-existing live-DB-failures — oorzaak nu bekend (NIET als opgelost markeren):**
+Test-residu van niet-zelf-opruimende live-DB-tests (inline cleanup i.p.v. `finally`) → 32 wees-componenten
+(`CD052-db-*`/`AUDIT-SRV-*`) vervuilen lijst-/sort-asserts van ándere tests → vicieuze cirkel (verklaart
+"reseed lost het op"). Structureel opgelost door LI021-startpunt 1 + reseed. Zie `docs/TST-V021-Validatierapport.md`.
+
+**Overige open punten (ongewijzigd):** ADR-034 open subknopen; interactieve legenda als type-filter
+(besproken vervolg); ADR-030 contract-dekking; ADR-029 Fase 5; klaarverklaring-blok op ComponentDetail;
+signalerings-ADR; dode-code-opschoning (frontend/backend); cytoscape-dagre opruimen.
+
+**Parkeer-items (ongemoeid):** gebruikersbeheer-vervolg (self-service / MFA / AVG-anonimisering /
+inactieve accounts); contract-leverancier verbreding; soort-catalogus; per-tenant catalogus-zichtbaarheid;
+tenant-eigen partijsoort; friendly STATE_ONGELDIG; child-section-staleness.
+
+---
+
 ### Stand V020 (sessie-afsluiting LI019, 2026-06-24)
 
 Build **V020**. LI019 = Landschapskaart-filters/UI, auditlog-UI, leverancier via contract-keten,

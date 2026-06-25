@@ -1,6 +1,6 @@
-# SESSIESTART — LIKARA V020
+# SESSIESTART — LIKARA V021
 
-**Datum**: 2026-06-24
+**Datum**: 2026-06-25
 **Platform**: LIKARA — een product van G. van Capelle Beheer B.V.
 
 ---
@@ -13,7 +13,7 @@
    - Zo ja: normale modus — lees alle complidata-skills + engineering/security
    - Zo nee: bootstrap-modus — lees alleen engineering/security
 3. Lees SESSIE_BRIEFING.md voor de actuele projectstatus
-4. Bevestig: "Sessiestart compleet — LIKARA V020 — [N] skills geladen"
+4. Bevestig: "Sessiestart compleet — LIKARA V021 — [N] skills geladen"
 5. Wacht op START: [naam] van Bert
 
 ---
@@ -40,9 +40,9 @@ claude.ai levert elke CC-opdracht ALTIJD aan als een .md-bestand
 
 ---
 
-# SESSIE_BRIEFING.md — LIKARA V020
+# SESSIE_BRIEFING.md — LIKARA V021
 
-**Gegenereerd**: 2026-06-24
+**Gegenereerd**: 2026-06-25
 
 ---
 
@@ -52,11 +52,11 @@ claude.ai levert elke CC-opdracht ALTIJD aan als een .md-bestand
 
 | Veld | Waarde |
 |------|--------|
-| Build | V020 |
+| Build | V021 |
 | Datum | June 2026 |
-| Commit | 04e3332 |
-| Tests | 595 groen |
-| TST-rapport | TST-V020-Validatierapport.md |
+| Commit | 026ac92 |
+| Tests | 654 frontend + 890 backend groen (8 pre-existing live-DB) |
+| TST-rapport | TST-V021-Validatierapport.md |
 | Kritieke bevindingen | 0 |
 
 ---
@@ -64,88 +64,75 @@ claude.ai levert elke CC-opdracht ALTIJD aan als een .md-bestand
 ## Recente commits
 
 ```
-04e3332 docs(claude): bouwstatus naar V020 — LI019
-e75cceb chore(release): V020 — build-bump + changelog + OPVOLGPUNTEN (LI019)
-46d516f docs(adr): ADR-033 Impact-verkenner — besloten, klaar voor bouw — LI019
-27eb916 docs(skills): LI019-frontendpatronen in complidata-frontend SKILL.md — LI019
-e9142b2 feat(landschapskaart): swimlane-layout geparkeerd — Radiaal is de enige UI-layout — LI019
+026ac92 feat(landschapskaart): organisatie-scopebalk — biedt aan / gebruikt (slice 2/2) — ADR-024
+d27f26a feat(landschapskaart): organisatie-scope-data (bezit + gebruik per organisatie) — ADR-024
+ad5ee97 feat(landschapskaart): vorm-per-type + uitklapbare legenda; toestand-geschiedenis + hang-fix — ADR-033/034
+27e5732 feat(landschapskaart): ring Organisatiestructuur (persoon-met-rol → afdeling → organisatie) — ADR-024
+b3d97bf fix(landschapskaart): lijnen alleen oranje bij het geselecteerde component — ADR-033
 ```
 
 ---
 
 ## Prioriteiten volgende sessie
 
-# NEXT_SESSION.md — LIKARA V018
+# NEXT_SESSION.md — LIKARA V021
 
-**Gegenereerd**: 2026-06-22 (sessie DC017)
-**Build**: V017 → **V018**
-**Laatste commit vóór de afsluiting**: `9e42855` (Laag 1 cleanup CompliData/KILARA → LIKARA); de afsluit-commit (skills/OPVOLGPUNTEN/NEXT_SESSION/changelog/build) volgt hierop.
-**Migratie head**: `0041` (`0041_partij_aard_burger`)
-**Tests**: 860 backend passed + 555 frontend groen + `test:css-build` groen (9 pre-existing backend DB-state/env-failures, o.a. OP-30 Secure-cookie env-test — identiek op schone HEAD, geen regressie).
-
----
-
-## Stand van zaken (V018) — LIKARA-rebranding + canoniek seed + login-theme + dev-gebruikers
-
-Deze sessie (DC017):
-
-- **Canoniek dev-seed** (`be85709`): `_seed_bvowb_scenario` vervangt Veldendam — BvoWB als
-  shared-services dienstenprovider voor Tiel/Culemborg/West Betuwe (8 org, 10 leveranciers, 1 burger,
-  36 personen, 12 apps, 15 contracten incl. 3 DVO's, 29 flows met namen, 75 roltoewijzingen,
-  35 gebruikersgroepen, 267 scores; Zaaksysteem geblokkeerd, BRP migratieklaar).
-- **Keycloak login-theme** (`22a33b8`, `52d3308`, `eb1fe21`): custom KC 24-theme (huisstijl,
-  gecentreerde witte kaart, titel verborgen). KC 24 = klassieke `.login-pf-*` classes, niet PF5.
-- **LIKARA-rename + dev-gebruikers** (`c6df5fb`): theme/realm/frontend/tab-titel; 3 BvoWB
-  dev-accounts (j.devries/p.vandijk = medewerker, m.bakker = auditor) met vaste UUID's,
-  `_seed_dev_gebruikers` koppelt aan persoon (ADR-029, hardcoded KC-subs).
-- **Laag 1 cleanup** (`9e42855`): alle user-visible/config/skills/docs CompliData/KILARA → LIKARA;
-  KC-client `kilara-` → `likara-user-provisioning`; test-emails → `@likara.test`.
-- **Sessie-afsluiting DC017** (deze commit): skills + OPVOLGPUNTEN + V-bump V018 + nieuw
-  changelog-patroon `LIKARA_Changelog_*` (historische blijven CompliData).
-
-Score blijft de enige lifecycle-driver. **Reseed-risico opgelost**: het nieuwe seed-scenario maakt
-flows mét namen (ADR-023a-conform).
+**Gegenereerd**: 2026-06-25 (sessie-afsluiting LI020)
+**Build**: V020 → **V021**
+**Migratie head**: `0042` (`0042_adr033_opgeslagen_view`) — geen schema-/migratiewijziging in LI020
+**Tests**: frontend **654 groen (62 files)** + `vite build` ok + `test:css-build` ok; backend **890 passed / 2 skipped / 8 pre-existing live-DB-failures** (oorzaak getraceerd: test-residu — zie TST-rapport). Zie `docs/TST-V021-Validatierapport.md`.
 
 ---
 
-## Top-prioriteiten volgende sessie (DC018)
+## Stand van zaken (V021) — ADR-033 volledig + gebruikersbeheer-acties + Landschapskaart-reeks
 
-1. **LIKARA Laag 2 rename** (eigen sprint) — technische identifiers: realm-ID `complidata` → `likara`,
-   container-namen `cd-*`, DB-rol `cd_app`, image `complidata-api:local`, ENV `KEYCLOAK_REALM`,
-   clientId `complidata-api`/`complidata-ui`, `kilara_provisioning_secret` → `likara_provisioning_secret`.
-   Raakt compose/.env/init-db/conftest/RLS-rol → **reseed (`down -v`) verplicht** + verificatie.
-2. **Dode seed-functies opruimen** in `dev_seed_testdata.py` (`_seed_applicatie`,
-   `seed_landschapskaart_demo`, `_seed_koppelingen` e.a. — ongebruikt sinds `_seed_bvowb_scenario`).
-3. **Stale child-secties bij detail→detail-hop** — child-secties in ComponentDetail/ApplicatieDetail
-   laden in `onMounted` zonder `:key`; remount-fix doortrekken.
-4. **ADR-030 contract-dekking per band** (design-checkpoint → bouw).
-5. **Resterende open punten**: ADR-029 Fase 5 (`gereedmeld_recht`), ADR-023 Fase F-rest
-   (E-8 + RBAC/audit), landschapskaart server-side ego-subgraaf, STATE_ONGELDIG → "sessie verlopen"-pagina,
-   objecthistorie-diff id→naam-resolutie, soort-catalogus uitbreiden (Dienstenprovider/Samenwerkende gemeente),
-   stale root `OPVOLGPUNTEN.md` (V012) consolideren.
+Deze sessie (LI020):
+
+- **ADR-033 (volledig)** — adaptieve Landschapskaart + Impact-verkenner als graph op het canvas;
+  samenstelling-edge ("onderdeel van"); opgeslagen & deelbare views (entiteit + rechten + API + voorkant + startscherm).
+- **Gebruikersbeheer-acties (ADR-029 Fase 2b, achter+voorkant)** — wachtwoord opnieuw instellen, rol wijzigen,
+  in-/uitschakelen (sessie-afkap), gegevens corrigeren; self-lockout-guards; expliciete audit; beheer-paneel.
+- **Landschapskaart-reeks** (frontend, engine onaangeroerd): selectie-highlight (enkelklik = incidente lijnen oranje;
+  dubbelklik = dieper); organisatiestructuur-ring (persoon-met-rol → afdeling → organisatie, context, buiten impact);
+  toestand-geschiedenis (terug/vooruit) + hang-fix + auto-centreren; vorm-per-type + uitklapbare legenda;
+  organisatie-scopebalk slice 1 (backend read-projectie: eigenaar + gebruikt-door-orgs) + slice 2 (balk: biedt aan / gebruikt).
+- **ADR-034 (swimlane-herwrite)** — vastgelegd als **Voorstel** (nog niet gebouwd).
+- **Feitenchecks** — samenstelling, organisatiestructuur, eigenaar-organisatie, artefact-herkomst, seed-dekking.
+
+---
+
+## Top-5 prioriteiten volgende sessie (LI021) — eerste blok, in volgorde (leunt op elkaar)
+
+1. **Test-hygiëne-fix** — de twee lekkende live-DB-tests zelf-opruimend maken via `finally`/teardown:
+   `test_component_contract_op_niet_applicatie_component` (test_component_fase_b_cd052) en
+   `test_score_write_driver_plus_afgeleide_delen_correlatie` (test_audit_capture_live). Breekt de
+   vervuilings-cirkel; maakt de 8 falers vermoedelijk groen.
+2. **Schone reset** — `docker compose down -v` → reseed → de 32 artefacten (`CD052-db-*`/`AUDIT-SRV-*`) weg.
+3. **Gerichte seed-verrijking** (geen "meer data", drie ontbrekende variaties):
+   - **infrastructuur** (technology-laag) onder componenten → barrel-vorm + "draait-op"/assignment-impactrelatie zichtbaar;
+   - **component-samenstelling** (component↔component, onderdeel-van) → samenstelling-ring + "onderdeel-van"-impactrelatie zichtbaar;
+   - **bewuste scope-gaten** — ≥1 component zonder eigenaar + ≥1 app die uitsluitend door de organisatieloze "Burgers"-groep geserved wordt → gap-tellers van de scopebalk aantoonbaar.
+4. **ADR-034 swimlane-herwrite** (open subknopen) of interactieve legenda als type-filter (besproken vervolg).
+5. **Codebase cleanup** (frontend/backend dode code; cytoscape-dagre opruimen) + ADR-030 contract-dekking.
+
+Volledige backlog: `docs/OPVOLGPUNTEN.md` (sectie "Stand V021 (LI020)").
 
 ---
 
 ## Bekende risico's en aandachtspunten
 
-- **Dev-inlog** vereist de volledige stack (Keycloak); frontend draait buiten Docker
-  (`cd frontend && npm run dev`, poort 3000, proxy → :8000). Migratie head dev-DB: `0041`.
-- **Live KC-wijzigingen** (theme, client-rename, dev-users, emails) staan in het KC-volume; de
-  gecommitte realm-JSON reproduceert ze bij een verse `--import-realm`.
-- **OP-30** `test_auth_pkce` Secure-cookie test faalt omgevingsgebonden (vereist TST-env) — geen regressie.
-- **`test:css-build` nog niet in CI** (los script) — CI-stap/pre-push-hook is de logische vervolgstap.
-- **Eén tenant nu** — geen per-tenant-differentiatie ontwerpen (RBAC = één platform-brede matrix).
+- **8 pre-existing live-DB-failures** — oorzaak getraceerd (test-residu, niet-zelf-opruimende live-DB-tests);
+  wordt door LI021-startpunt 1 structureel opgelost. NIET als opgelost markeren tot dan.
+- Worktree is **schoon**, niets ongecommit.
 
 ---
 
-## Werkwijze (triggerdiscipline)
+## Geleerde patronen deze sessie
 
-Elke opdracht-`.md` begint op **regel 1** met `START: [taaknaam]`. **`AKKOORD: commit`** is exclusief de
-commit-trigger op een groen (gate-)rapport. Schema-/endpoint-/RBAC-/datamodel-rakende slices = **gate**
-vóór commit; licht/additief = doorloop. CC verifieert zélf de groene staat vóór elke commit. Eén
-vraag/advies tegelijk; functioneel beschrijven vanuit de gebruiker is de norm. Reset-procedure:
-`docs/LOKAAL-TESTEN.md`. Startpunt volgende sessie: `docs/_output/LIKARA_Sessiestart_V018.zip` →
-**LIKARA Laag 2 rename (DC018)**.
+Verwerkt in de complidata-skills (frontend, tests, backend) + CONTRIBUTING.md: adaptieve één-graph-pipeline;
+selectie-highlight via runtime-klassen (geen relayout); toestand-geschiedenis zonder relayout-thrash;
+vorm-per-type via één gedeelde bron met luminantie-contrast; context-ringen buiten de impact-keten;
+scope = scope-keuze; feitencheck-buckets vóór bouw; live-DB-tests zelf-opruimend (`finally`); één-slice-één-commit.
 
 
 ---
@@ -154,6 +141,6 @@ vraag/advies tegelijk; functioneel beschrijven vanuit de gebruiker is de norm. R
 
 1. Lees deze briefing volledig
 2. Lees CLAUDE.md (sessiestart-protocol)
-3. Bevestig: "Sessie-briefing geladen — LIKARA V020"
+3. Bevestig: "Sessie-briefing geladen — LIKARA V021"
 4. Wacht op START: [naam] van Bert
 
