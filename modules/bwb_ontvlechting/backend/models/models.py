@@ -945,6 +945,62 @@ class ComponentKlaarverklaring(Base, TenantMixin, TimestampMixin):
     verklaard_op: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False)
 
 
+class ImpactView(Base, TenantMixin, TimestampMixin):
+    """ADR-033 slice 2 — opgeslagen Impact-verkenner-view (bewaarde startselectie).
+
+    Eigen tenant-scoped registratie-feit (GEEN element-subtype): een naam + de componenten die op het
+    moment van opslaan in de actieve set zaten (via de junctie `impact_view_component`). De
+    drill-down-staat wordt NIET bewaard — een view is een startpunt, geen bevroren verkenning.
+    `gedeeld=false` = privé (alleen de maker ziet 'm); `gedeeld=true` = zichtbaar voor de hele tenant,
+    maar bewerken/verwijderen blijft aan de maker (servicelaag-guard bovenop RLS). De maker is de
+    stabiele Keycloak-`sub` (`maker_sub`) + e-mail-fallback (`maker_email`), server-side gestempeld —
+    nooit client-aanleverbaar.
+
+    `UNIQUE(tenant_id, id)` maakt de composiet-FK vanuit de junctie mogelijk (zelfde vorm als de
+    work_package self-FK); `UNIQUE(tenant_id, maker_sub, naam)` verbiedt twee gelijknamige views per
+    maker. Puur registratief — RAAKT DE ENGINE NOOIT: importeert géén `lifecycle_service`/
+    `herbereken_lifecycle`/`bepaal_lifecycle`/`ComponentProfiel`/`Blokkade`/`Checklistscore`."""
+
+    __tablename__ = "impact_view"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "id", name="uq_impact_view_tenant_id"),
+        UniqueConstraint("tenant_id", "maker_sub", "naam", name="uq_impact_view_maker_naam"),
+    )
+
+    id: Mapped[uuid.UUID] = _pk()
+    naam: Mapped[str] = mapped_column(String(150), nullable=False)
+    maker_sub: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    maker_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    gedeeld: Mapped[bool] = mapped_column(sa.Boolean, nullable=False, server_default=text("false"))
+
+
+class ImpactViewComponent(Base, TenantMixin):
+    """ADR-033 slice 2 — junctie: één component in de startselectie van een opgeslagen view.
+
+    Twee composiet-FK's, beide ON DELETE CASCADE:
+    - `(tenant_id, view_id) → impact_view(tenant_id, id)`: view verwijderd ⇒ selectie verdwijnt mee;
+    - `(tenant_id, component_id) → element(tenant_id, id)`: component verwijderd ⇒ valt uit de selectie.
+    `UNIQUE(tenant_id, view_id, component_id)` voorkomt dubbele opname. Geen TimestampMixin: een
+    junctie-rij wordt niet gemuteerd (alleen ge-insert/ge-delete bij een selectie-wijziging)."""
+
+    __tablename__ = "impact_view_component"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "view_id", "component_id", name="uq_impact_view_component"),
+        ForeignKeyConstraint(
+            ["tenant_id", "view_id"], ["impact_view.tenant_id", "impact_view.id"],
+            name="fk_impact_view_component_view", ondelete="CASCADE",
+        ),
+        ForeignKeyConstraint(
+            ["tenant_id", "component_id"], ["element.tenant_id", "element.id"],
+            name="fk_impact_view_component_element", ondelete="CASCADE",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = _pk()
+    view_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    component_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+
+
 class Contract(Base, TenantMixin, TimestampMixin):
     """ADR-020 — contract (tenant-scoped, RLS). `contracttype` + self-FK
     `mantelcontract_id`; de DB-CHECK dwingt type↔mantel_id-consistentie af

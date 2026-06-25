@@ -55,6 +55,11 @@ VERWACHT = {
         Rol.VIEWER: _L, Rol.MEDEWERKER: _L, Rol.BEHEERDER: _L, Rol.AUDITOR: _L,
     },
     Entiteit.KLAARVERKLARING: _INHOUD,  # ADR-027: niet-scorende categorie-klaarverklaring
+    # ADR-033 slice 2 — opgeslagen views: eigen-beheer-patroon (Viewer/Auditor L; Medewerker/
+    # Beheerder LAWV — óók Medewerker mag VERWIJDEREN, want eigen view weggooien).
+    Entiteit.IMPACT_VIEW: {
+        Rol.VIEWER: _L, Rol.MEDEWERKER: _LAWV, Rol.BEHEERDER: _LAWV, Rol.AUDITOR: _L,
+    },
     Entiteit.CHECKLISTVRAAG: _INHOUD,  # ADR-022 W1: tenant-eigen vragenset (CRUD)
     Entiteit.AUDITLOG: {
         Rol.VIEWER: _GEEN, Rol.MEDEWERKER: _GEEN, Rol.BEHEERDER: _L, Rol.AUDITOR: _L,
@@ -69,7 +74,7 @@ VERWACHT = {
 
 
 def test_matrix_volledig_inclusief_negatief():
-    """Elke entiteit × rol × actie (22×4×4 = 352 combinaties) tegen de spec."""
+    """Elke entiteit × rol × actie (23×4×4 = 368 combinaties) tegen de spec."""
     assert set(VERWACHT) == set(Entiteit)  # geen entiteit gemist
     for entiteit, per_rol in VERWACHT.items():
         for rol in Rol:
@@ -105,6 +110,15 @@ def test_kernregels_expliciet():
     assert heeft_permissie(["beheerder"], Entiteit.CHECKLISTVRAAG, Actie.VERWIJDEREN)
     assert not heeft_permissie(["viewer"], Entiteit.CHECKLISTVRAAG, Actie.WIJZIGEN)
     assert not heeft_permissie(["auditor"], Entiteit.CHECKLISTVRAAG, Actie.WIJZIGEN)
+    # ADR-033 slice 2 — opgeslagen views: Viewer/Auditor mogen gedeelde views lezen/gebruiken
+    # maar niet aanmaken; Medewerker mag aanmaken én eigen view VERWIJDEREN (eigen-beheer-patroon).
+    for rol in ("viewer", "medewerker", "beheerder", "auditor"):
+        assert heeft_permissie([rol], Entiteit.IMPACT_VIEW, Actie.LEZEN)
+    assert not heeft_permissie(["viewer"], Entiteit.IMPACT_VIEW, Actie.AANMAKEN)
+    assert not heeft_permissie(["auditor"], Entiteit.IMPACT_VIEW, Actie.AANMAKEN)
+    assert heeft_permissie(["medewerker"], Entiteit.IMPACT_VIEW, Actie.AANMAKEN)
+    assert heeft_permissie(["medewerker"], Entiteit.IMPACT_VIEW, Actie.VERWIJDEREN)
+    assert heeft_permissie(["beheerder"], Entiteit.IMPACT_VIEW, Actie.VERWIJDEREN)
 
 
 def test_fail_secure_geen_of_onbekende_rol():

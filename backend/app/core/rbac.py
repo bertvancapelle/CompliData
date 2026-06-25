@@ -49,6 +49,8 @@ class Entiteit(str, Enum):
     ARCHITECTUUR = "architectuur"
     # ADR-027 — niet-scorende categorie-klaarverklaring (tenant-zijde, inhoud-entiteit).
     KLAARVERKLARING = "klaarverklaring"
+    # ADR-033 slice 2 — opgeslagen & deelbare Impact-verkenner-views (eigen-beheer-entiteit).
+    IMPACT_VIEW = "impact_view"
     AUDITLOG = "auditlog"
     GEBRUIKERSBEHEER = "gebruikersbeheer"
     TENANT_INSTELLINGEN = "tenant_instellingen"
@@ -88,6 +90,17 @@ _ALLEEN_LEZEN = {
     Rol.AUDITOR: _L,
 }
 
+# Eigen-beheer-entiteit (ADR-033 slice 2): Viewer/Auditor lezen (gebruiken gedeelde records);
+# Medewerker én Beheerder mogen volledig CRUD — óók VERWIJDEREN (je eigen record weggooien is
+# geen geprivilegieerde destructieve actie). De fijnere "alleen de maker muteert"-regel zit
+# als eigenaarschaps-guard in de servicelaag, bovenop deze RBAC-gate.
+_EIGEN_BEHEER = {
+    Rol.VIEWER: _L,
+    Rol.MEDEWERKER: _LAWV,
+    Rol.BEHEERDER: _LAWV,
+    Rol.AUDITOR: _L,
+}
+
 PERMISSIES: dict[Entiteit, dict[Rol, frozenset[Actie]]] = {
     Entiteit.APPLICATIE: dict(_INHOUD),
     Entiteit.DATATYPE: dict(_INHOUD),
@@ -115,6 +128,9 @@ PERMISSIES: dict[Entiteit, dict[Rol, frozenset[Actie]]] = {
     Entiteit.ARCHITECTUUR: dict(_ALLEEN_LEZEN),
     # ADR-027 — categorie-klaarverklaring: inhoud-patroon (zelfde als PLATEAU/applicatie).
     Entiteit.KLAARVERKLARING: dict(_INHOUD),
+    # ADR-033 slice 2 — opgeslagen views: eigen-beheer-patroon (Viewer/Auditor L; Medewerker/
+    # Beheerder LAWV). Ownership (maker muteert) borgt de servicelaag.
+    Entiteit.IMPACT_VIEW: dict(_EIGEN_BEHEER),
     # ADR-022 W1: de vragenset is tenant-eigendom — vraagbeheer is een tenant-
     # bevoegdheid (eigen entiteit, los van scoren via CHECKLISTSCORE). Inhoud-patroon:
     # Viewer L · Medewerker LAW · Beheerder LAWV · Auditor L. ("Verwijderen" =

@@ -66,6 +66,9 @@ AUDIT_TENANT_ENTITEITEN: frozenset[str] = frozenset({
     "component_klaarverklaring",
     # ADR-029 — koppeling Keycloak-login ↔ persoon-partij (registratiefeit bij gebruiker-aanmaak).
     "gebruiker_persoon",
+    # ADR-033 slice 2 — opgeslagen Impact-verkenner-views; ook de junctie, zodat selectie-
+    # wijzigingen (component toevoegen/verwijderen) naspeurbaar zijn.
+    "impact_view", "impact_view_component",
 })
 AUDIT_PLATFORM_ENTITEITEN: frozenset[str] = frozenset({
     "tenant", "componentconfig_optie", "contractconfig_optie",

@@ -63,6 +63,7 @@ from routes.roltoewijzing import router as roltoewijzing_router  # noqa: E402
 from routes.architectuur import router as architectuur_router  # noqa: E402
 from routes.landschapskaart import router as landschapskaart_router  # noqa: E402
 from routes.component_klaarverklaring import router as klaarverklaring_router  # noqa: E402
+from routes.impact_view import router as impact_view_router  # noqa: E402
 from routes.gebruikers import router as gebruikers_router  # noqa: E402
 from routes.plaatsingsignaal import router as plaatsingsignaal_router  # noqa: E402
 from routes.plateau import router as plateau_router  # noqa: E402
@@ -154,6 +155,7 @@ app.include_router(relatie_router, prefix="/api/v1")
 app.include_router(architectuur_router, prefix="/api/v1")
 app.include_router(landschapskaart_router, prefix="/api/v1")
 app.include_router(klaarverklaring_router, prefix="/api/v1")
+app.include_router(impact_view_router, prefix="/api/v1")
 app.include_router(gebruikers_router, prefix="/api/v1")
 app.include_router(plaatsingsignaal_router, prefix="/api/v1")
 app.include_router(plateau_router, prefix="/api/v1")
