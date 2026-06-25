@@ -79,17 +79,15 @@ dev-gebruikers + kaart-edge-groepering/master-detail (ADR-023a Fase 3+4).
    container-namen `cd-*`, DB-rol `lk_app`, image `complidata-api:local`, ENV `KEYCLOAK_REALM`,
    clientId `complidata-api`/`complidata-ui`. Bewuste keuze: **eigen sprint DC018** (raakt compose,
    .env, init-db, conftest, RLS-rol → reseed vereist).
-2. **`kilara_provisioning_secret`** identifier (config.py/keycloak.py) → `likara_provisioning_secret`
-   meenemen wanneer Laag 2 wordt opgepakt.
-3. **Reseed-verificatie (`down -v`)** verplicht na de Laag 2 rename.
-4. **Dode seed-functies opruimen** in `dev_seed_testdata.py` (`_seed_applicatie`,
+2. **Reseed-verificatie (`down -v`)** verplicht na de Laag 2 rename.
+3. **Dode seed-functies opruimen** in `dev_seed_testdata.py` (`_seed_applicatie`,
    `seed_landschapskaart_demo`, `_seed_koppelingen` e.a. — ongebruikt sinds `_seed_bvowb_scenario`).
-5. **Child-secties stale bij detail→detail-hop** — child-secties in ComponentDetail/ApplicatieDetail
+4. **Child-secties stale bij detail→detail-hop** — child-secties in ComponentDetail/ApplicatieDetail
    laden zelf in `onMounted` zonder `:key`; bij een hop binnen hetzelfde type kunnen ze stale zijn.
-6. **soort-catalogus uitbreiden** — "Dienstenprovider" en "Samenwerkende gemeente" bestaan niet als
+5. **soort-catalogus uitbreiden** — "Dienstenprovider" en "Samenwerkende gemeente" bestaan niet als
    partijsoort → BvoWB + gemeenten krijgen nu `soort=None` in de seed; catalogus kan uitgebreid worden.
-7. **STATE_ONGELDIG-foutmelding** — ruwe JSON tonen → vriendelijke "sessie verlopen"-pagina.
-8. **Stale root `OPVOLGPUNTEN.md`** (staat nog op V012) — consolideren met `docs/OPVOLGPUNTEN.md` of verwijderen.
+6. **STATE_ONGELDIG-foutmelding** — ruwe JSON tonen → vriendelijke "sessie verlopen"-pagina.
+7. **Stale root `OPVOLGPUNTEN.md`** (staat nog op V012) — consolideren met `docs/OPVOLGPUNTEN.md` of verwijderen.
 
 **Herbevestigd (blijft open):** ADR-029 Fase 5 (`gereedmeld_recht`), ADR-023 Fase F-rest (E-8 +
 RBAC/audit), landschapskaart server-side ego-subgraaf, objecthistorie-diff id→naam-resolutie,
@@ -446,9 +444,9 @@ voorwaarden. EU-jurisdictie-VPS conform de platform-uitgangspunten.
 ### OP-22 — Backup-scope / secops: Keycloak-secrets in de DB-dump — AFGEROND (geverifieerd CD055)
 
 Opgelost via de tweede optie: **Keycloak draait op een eigen database** `keycloak` (rol
-`kc_user`, `init-db/02_keycloak.sql`), losgekoppeld van de app-DB `complidata`. De backup
-(`gen_build.py` → `pg_dump complidata`) bevat daardoor **geen** Keycloak-auth-schema meer
-(`credential`/`client`/…); geverifieerd in CD055: `pg_dump --schema-only` van `complidata` levert
+`kc_user`, `init-db/02_keycloak.sql`), losgekoppeld van de app-DB `likara`. De backup
+(`gen_build.py` → `pg_dump likara`) bevat daardoor **geen** Keycloak-auth-schema meer
+(`credential`/`client`/…); geverifieerd in CD055: `pg_dump --schema-only` van `likara` levert
 **0** Keycloak-tabellen. Loste tegelijk de `COMPONENT`-naamruimte-collision op (onze ADR-021-tabel
 schaduwde Keycloak's interne `COMPONENT` in het gedeelde `public`-schema → Keycloak startte niet).
 Zie complidata-db "V007-patronen" en `docs/LOKAAL-TESTEN.md` (named volume + reset).

@@ -168,7 +168,7 @@ modules/
     frontend/        — module-specifieke views, stores
     migrations/      — module-specifieke Alembic migraties
 init-db/             — PostgreSQL init scripts (extensions, lk_app role)
-keycloak/realms/     — Keycloak realm JSON (complidata realm)
+keycloak/realms/     — Keycloak realm JSON (likara realm, `likara-realm.json`)
 rabbitmq/            — RabbitMQ config
 docs/
   adr/               — Architecture Decision Records
@@ -210,14 +210,14 @@ docker compose -f docker-compose.yml logs lk-migrate
 # Alternatief (lokaal/CI, zonder stack) — migreer als lk_admin, daarna seed.
 # Migratie MOET als lk_admin draaien (lk_app heeft geen CREATE op schema public);
 # zet hiervoor DATABASE_URL_SYNC op de lk_admin-URL:
-cd backend && DATABASE_URL_SYNC=postgresql://lk_admin:changeme_dev@localhost:5432/complidata python3 -m alembic upgrade head
+cd backend && DATABASE_URL_SYNC=postgresql://lk_admin:changeme_dev@localhost:5432/likara python3 -m alembic upgrade head
 cd backend && python3 -m app.platform_init   # referentiedata: 89 checklistvragen (idempotent)
 
 # Smoke test
 bash smoke_test.sh
 
 # PostgreSQL backup
-docker exec lk-postgres pg_dump -U lk_admin complidata > ~/complidata/backups/complidata_$(date +%Y%m%d_%H%M).sql
+docker exec lk-postgres pg_dump -U lk_admin likara > ~/complidata/backups/complidata_$(date +%Y%m%d_%H%M).sql
 ```
 
 ---
@@ -279,8 +279,9 @@ CREATE POLICY tenant_isolation ON new_table
 ```
 
 ### Naamgeving
-- Platform-prefix: `cd_` (LIKARA) — niet `cm_`
-- Database: `complidata`
+- Prefix: `lk_` (DB-rollen) / `lk-` (containers); **tabellen zijn ongeprefixd** (er bestaat géén
+  `cd_`-tabelprefix) — niet `cm_` (dat is CompliMan, een ander product)
+- Database: `likara`
 - App-gebruiker: `lk_app`
 - Admin-gebruiker: `lk_admin`
 - Docker containers: `lk-postgres`, `lk-keycloak`, `lk-redis`, `lk-rabbitmq`, `lk-minio`
@@ -464,7 +465,7 @@ Pas dan: klaar.
 6. git commit + git push
 7. (Backup loopt nu automatisch in stap 5 — geen losse handmatige pg_dump/iCloud-
    stap meer. Handmatig draaien kan nog via:
-   docker exec lk-postgres pg_dump -U lk_admin complidata \
+   docker exec lk-postgres pg_dump -U lk_admin likara \
      > ~/complidata/backups/complidata_$(date +%Y%m%d_%H%M).sql )
 8. claude.ai memory bijwerken — bouwnummer, teststatus, top-5 prioriteiten
 

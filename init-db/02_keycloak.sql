@@ -2,7 +2,7 @@
 --
 -- Isoleert Keycloak's interne schema (o.a. zijn eigen COMPONENT-tabel) van de
 -- app-database likara/public. Lost de table-name-collision op die Keycloak
--- belette te starten en houdt Keycloak-schema/credentials uit de complidata-dump
+-- belette te starten en houdt Keycloak-schema/credentials uit de likara-dump
 -- (sluit OP-22). Draait eenmalig via docker-entrypoint-initdb.d bij lege data-dir,
 -- als de superuser (lk_admin), verbonden met de default-DB likara.
 

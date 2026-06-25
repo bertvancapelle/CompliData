@@ -30,7 +30,7 @@ services:
       KC_DB: postgres
       # CD055 (A1): Keycloak heeft een eigen database `keycloak` + eigen rol `kc_user`
       # (aangemaakt door init-db/02_keycloak.sql). Nooit meer de app-DB likara —
-      # lost de COMPONENT-collision op en houdt Keycloak uit de complidata-dump (OP-22).
+      # lost de COMPONENT-collision op en houdt Keycloak uit de likara-dump (OP-22).
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
       KC_DB_USERNAME: kc_user
       KC_DB_PASSWORD: ${KC_DB_PASSWORD:-changeme_dev}
