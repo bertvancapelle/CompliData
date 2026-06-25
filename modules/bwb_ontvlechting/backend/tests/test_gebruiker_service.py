@@ -69,9 +69,30 @@ def test_gebruikersbeheer_alleen_beheerder():
 
     assert heeft_permissie(["beheerder"], Entiteit.GEBRUIKERSBEHEER, Actie.AANMAKEN)
     assert heeft_permissie(["beheerder"], Entiteit.GEBRUIKERSBEHEER, Actie.LEZEN)
+    assert heeft_permissie(["beheerder"], Entiteit.GEBRUIKERSBEHEER, Actie.WIJZIGEN)  # 2b — beheeracties
     for rol in ("viewer", "medewerker", "auditor"):
         assert not heeft_permissie([rol], Entiteit.GEBRUIKERSBEHEER, Actie.LEZEN)
         assert not heeft_permissie([rol], Entiteit.GEBRUIKERSBEHEER, Actie.AANMAKEN)
+        assert not heeft_permissie([rol], Entiteit.GEBRUIKERSBEHEER, Actie.WIJZIGEN)
+
+
+# ── Offline: 2b-schema's ────────────────────────────────────────────────────────
+def test_2b_schemas_validatie():
+    from schemas.gebruiker import (
+        GebruikerCorrectieRequest, GebruikerRolWijzigRequest, GebruikerStatusRequest,
+    )
+
+    for r in ("viewer", "medewerker", "beheerder", "auditor"):
+        assert GebruikerRolWijzigRequest(rol=r).rol == r
+    with pytest.raises(ValidationError):
+        GebruikerRolWijzigRequest(rol="root")  # buiten de allowlist
+    assert GebruikerStatusRequest(actief=False).actief is False
+    ok = GebruikerCorrectieRequest(naam="Nieuwe Naam", email="Nieuw@Org.NL")
+    assert ok.email == "nieuw@org.nl"  # genormaliseerd
+    with pytest.raises(ValidationError):
+        GebruikerCorrectieRequest(naam="X", email="geen-email")
+    with pytest.raises(ValidationError):  # geen serverbeheerd veld meesturen (extra=forbid)
+        GebruikerCorrectieRequest(naam="X", email="x@org.nl", rol="beheerder")
 
 
 # ── Offline: wachtwoord-generator ──────────────────────────────────────────────
@@ -243,11 +264,246 @@ def test_maak_gebruiker_live_happy_en_geen_mutatie(monkeypatch):
             assert lc_na == lc_voor  # engine onaangeroerd
 
             # lijst toont de gebruiker met naam
-            items, _ = await gebruiker_service.lijst_gebruikers(s, tid, limit=100)
+            items, _ = await gebruiker_service.lijst_gebruikers(s, tid, limit=100, verrijk=False)
             assert any(i.persoon_id == read.persoon_id and i.naam == "Wendy Test" for i in items)
         finally:
             # Leaf-first: persoon (→ cascade koppelrij) + app, dán afdeling, dán org —
             # `fk_partij_organisatie`/lidmaatschap is ON DELETE RESTRICT (reversed = persoon,app,afd,org).
+            for eid in reversed(ids):
+                await s.execute(_text("DELETE FROM element WHERE id=:i"), {"i": str(eid)})
+            await s.commit()
+
+    asyncio.run(_run_rls(_flow))
+
+
+# ── Live (skip-if-no-DB) — ADR-029 Fase 2b beheeracties (Keycloak gemockt) ─────────
+async def _maak_koppel(s, tid, *, sub, naam="Doel Gebruiker", email=None):
+    """Maak org+afd+persoon + een gebruiker_persoon-koppel met de gegeven `sub`. Geeft
+    (koppel, [element-ids voor leaf-first cleanup]) terug."""
+    from models.models import GebruikerPersoon, PartijAard
+    from schemas.partij import PartijCreate
+    from services import partij_service
+
+    email = email or f"wt-{uuid.uuid4().hex[:8]}@org.test"
+    org = await partij_service.maak_aan(s, tid, PartijCreate(aard=PartijAard.organisatie, naam="WT-Org2b"))
+    afd = await partij_service.maak_aan(s, tid, PartijCreate(
+        aard=PartijAard.organisatie_eenheid, naam="WT-Afd2b", organisatie_id=org.id))
+    persoon = await partij_service.maak_aan(s, tid, PartijCreate(
+        aard=PartijAard.persoon, naam=naam, email=email, organisatie_id=org.id, afdeling_id=afd.id))
+    koppel = GebruikerPersoon(tenant_id=tid, keycloak_sub=sub, persoon_id=persoon.id)
+    s.add(koppel)
+    await s.commit()
+    await s.refresh(koppel)
+    return koppel, [org.id, afd.id, persoon.id]
+
+
+@integratie
+def test_reset_wachtwoord_live(monkeypatch):
+    """Nieuw eenmalig wachtwoord (≥16) + KC-reset-call + auditrecord ZONDER het wachtwoord."""
+    from sqlalchemy import text as _text
+    from unittest.mock import AsyncMock as _AM
+
+    from services import gebruiker_service as svc
+
+    reset_mock = _AM()
+    monkeypatch.setattr(svc.keycloak, "reset_keycloak_wachtwoord", reset_mock)
+    tid = uuid.UUID(_TID)
+
+    async def _flow(s):
+        koppel, ids = await _maak_koppel(s, tid, sub="kc-reset")
+        try:
+            pw = await svc.reset_wachtwoord(s, tid, koppel.id)
+            assert pw and len(pw) >= 16
+            assert reset_mock.await_args.args[0] == "kc-reset"  # juiste sub
+            rij = (await s.execute(_text(
+                "SELECT wijziging::text FROM audit_log WHERE entiteit_type='gebruiker_persoon' "
+                "AND entiteit_id=:i ORDER BY tijdstip DESC LIMIT 1"), {"i": str(koppel.id)})).scalar_one()
+            assert "wachtwoord" in rij and pw not in rij  # feit gelogd, wachtwoord NERGENS
+        finally:
+            for eid in reversed(ids):
+                await s.execute(_text("DELETE FROM element WHERE id=:i"), {"i": str(eid)})
+            await s.commit()
+
+    asyncio.run(_run_rls(_flow))
+
+
+@integratie
+def test_wijzig_rol_alle_vier_live(monkeypatch):
+    """Alle vier rollen toewijsbaar: elke wijziging (≠ huidige) roept de KC-rol-swap aan."""
+    from sqlalchemy import text as _text
+    from unittest.mock import AsyncMock as _AM
+
+    from services import gebruiker_service as svc
+
+    rol_mock = _AM()
+    monkeypatch.setattr(svc.keycloak, "wijzig_keycloak_rol", rol_mock)
+    monkeypatch.setattr(svc.keycloak, "lees_keycloak_gebruiker",
+                        _AM(return_value={"enabled": True, "rollen": ["viewer"]}))
+    tid = uuid.UUID(_TID)
+
+    async def _flow(s):
+        koppel, ids = await _maak_koppel(s, tid, sub="kc-rol")
+        try:
+            for nieuw in ("medewerker", "beheerder", "auditor"):  # elk ≠ huidige 'viewer'
+                rol_mock.reset_mock()
+                await svc.wijzig_rol(s, tid, koppel.id, nieuw)
+                rol_mock.assert_awaited_once_with("kc-rol", nieuw)
+        finally:
+            for eid in reversed(ids):
+                await s.execute(_text("DELETE FROM element WHERE id=:i"), {"i": str(eid)})
+            await s.commit()
+
+    asyncio.run(_run_rls(_flow))
+
+
+@integratie
+def test_zet_actief_disable_logout_en_enable_live(monkeypatch):
+    """Uitschakelen → enabled=false + sessie afkappen (logout); inschakelen → enabled=true, geen logout."""
+    from sqlalchemy import text as _text
+    from unittest.mock import AsyncMock as _AM
+
+    from services import gebruiker_service as svc
+
+    enabled_mock, logout_mock = _AM(), _AM()
+    monkeypatch.setattr(svc.keycloak, "zet_keycloak_enabled", enabled_mock)
+    monkeypatch.setattr(svc.keycloak, "logout_keycloak_gebruiker", logout_mock)
+    monkeypatch.setattr(svc.keycloak, "lees_keycloak_gebruiker",
+                        _AM(return_value={"enabled": True, "rollen": ["medewerker"]}))
+    tid = uuid.UUID(_TID)
+
+    async def _flow(s):
+        koppel, ids = await _maak_koppel(s, tid, sub="kc-actief")
+        try:
+            await svc.zet_actief(s, tid, koppel.id, False)
+            enabled_mock.assert_awaited_once_with("kc-actief", False)
+            logout_mock.assert_awaited_once_with("kc-actief")  # sessie direct afgekapt
+            enabled_mock.reset_mock(); logout_mock.reset_mock()
+            await svc.zet_actief(s, tid, koppel.id, True)
+            enabled_mock.assert_awaited_once_with("kc-actief", True)
+            logout_mock.assert_not_awaited()  # geen logout bij inschakelen
+        finally:
+            for eid in reversed(ids):
+                await s.execute(_text("DELETE FROM element WHERE id=:i"), {"i": str(eid)})
+            await s.commit()
+
+    asyncio.run(_run_rls(_flow))
+
+
+@integratie
+def test_corrigeer_gegevens_live(monkeypatch):
+    """Naam/e-mail bijgewerkt op de persoon-partij (+ KC-call); partij-diff geauditeerd."""
+    from sqlalchemy import text as _text
+    from unittest.mock import AsyncMock as _AM
+
+    from services import gebruiker_service as svc
+
+    werk_mock = _AM()
+    monkeypatch.setattr(svc.keycloak, "werk_keycloak_gegevens_bij", werk_mock)
+    tid = uuid.UUID(_TID)
+
+    async def _flow(s):
+        koppel, ids = await _maak_koppel(s, tid, sub="kc-corr", naam="Oude Naam")
+        nieuw_email = f"nw-{uuid.uuid4().hex[:8]}@org.test"
+        try:
+            read = await svc.corrigeer_gegevens(s, tid, koppel.id, naam="Nieuwe Naam", email=nieuw_email)
+            assert read.naam == "Nieuwe Naam" and read.email == nieuw_email
+            werk_mock.assert_awaited_once()
+            row = (await s.execute(_text("SELECT naam, email FROM partij WHERE id=:i"),
+                                   {"i": str(koppel.persoon_id)})).first()
+            assert row.naam == "Nieuwe Naam" and row.email == nieuw_email
+            rij = (await s.execute(_text(
+                "SELECT wijziging::text FROM audit_log WHERE entiteit_type='partij' "
+                "AND entiteit_id=:i ORDER BY tijdstip DESC LIMIT 1"), {"i": str(koppel.persoon_id)})).scalar_one()
+            assert "naam" in rij and "email" in rij
+        finally:
+            for eid in reversed(ids):
+                await s.execute(_text("DELETE FROM element WHERE id=:i"), {"i": str(eid)})
+            await s.commit()
+
+    asyncio.run(_run_rls(_flow))
+
+
+@integratie
+def test_guard_eigen_account_en_eigen_beheerrol_live(monkeypatch):
+    """Self-lockout-guards: je eigen account niet uitschakelen, jezelf niet de-beheerrollen."""
+    from sqlalchemy import text as _text
+    from unittest.mock import AsyncMock as _AM
+
+    from services import gebruiker_service as svc
+    from services.errors import RegistratieConflict
+
+    monkeypatch.setattr(svc.keycloak, "lees_keycloak_gebruiker",
+                        _AM(return_value={"enabled": True, "rollen": ["beheerder"]}))
+    monkeypatch.setattr(svc.keycloak, "zet_keycloak_enabled", _AM())
+    monkeypatch.setattr(svc.keycloak, "wijzig_keycloak_rol", _AM())
+    tid = uuid.UUID(_TID)
+
+    async def _flow(s):
+        # sub == de harness-actor ("test:adr029") → het eigen account.
+        koppel, ids = await _maak_koppel(s, tid, sub="test:adr029")
+        try:
+            with pytest.raises(RegistratieConflict) as e1:
+                await svc.zet_actief(s, tid, koppel.id, False)
+            assert e1.value.code == "EIGEN_ACCOUNT"
+            with pytest.raises(RegistratieConflict) as e2:
+                await svc.wijzig_rol(s, tid, koppel.id, "medewerker")
+            assert e2.value.code == "EIGEN_BEHEERROL"
+        finally:
+            for eid in reversed(ids):
+                await s.execute(_text("DELETE FROM element WHERE id=:i"), {"i": str(eid)})
+            await s.commit()
+
+    asyncio.run(_run_rls(_flow))
+
+
+@integratie
+def test_guard_laatste_beheerder_live(monkeypatch):
+    """De laatste (actieve) beheerder kan niet worden uitgeschakeld/de-rold."""
+    from sqlalchemy import text as _text
+
+    from services import gebruiker_service as svc
+    from services.errors import RegistratieConflict
+
+    # Doel = beheerder; alle andere tenant-gebruikers tellen NIET als beheerder.
+    async def _lees(sub):
+        return {"enabled": True, "rollen": ["beheerder"] if sub == "kc-laatste" else ["medewerker"]}
+
+    monkeypatch.setattr(svc.keycloak, "lees_keycloak_gebruiker", _lees)
+    tid = uuid.UUID(_TID)
+
+    async def _flow(s):
+        koppel, ids = await _maak_koppel(s, tid, sub="kc-laatste")  # ≠ self
+        try:
+            with pytest.raises(RegistratieConflict) as e:
+                await svc.zet_actief(s, tid, koppel.id, False)
+            assert e.value.code == "LAATSTE_BEHEERDER"
+        finally:
+            for eid in reversed(ids):
+                await s.execute(_text("DELETE FROM element WHERE id=:i"), {"i": str(eid)})
+            await s.commit()
+
+    asyncio.run(_run_rls(_flow))
+
+
+@integratie
+def test_lijst_verrijkt_met_rol_en_status_live(monkeypatch):
+    """De lijst verrijkt elke gebruiker met de huidige rol + enabled-status uit Keycloak."""
+    from sqlalchemy import text as _text
+    from unittest.mock import AsyncMock as _AM
+
+    from services import gebruiker_service as svc
+
+    monkeypatch.setattr(svc.keycloak, "lees_keycloak_gebruiker",
+                        _AM(return_value={"enabled": False, "rollen": ["auditor"]}))
+    tid = uuid.UUID(_TID)
+
+    async def _flow(s):
+        koppel, ids = await _maak_koppel(s, tid, sub="kc-verrijk")
+        try:
+            items, _ = await svc.lijst_gebruikers(s, tid, limit=100)  # verrijk=True (default)
+            mij = next(i for i in items if i.id == koppel.id)
+            assert mij.rol == "auditor" and mij.enabled is False
+        finally:
             for eid in reversed(ids):
                 await s.execute(_text("DELETE FROM element WHERE id=:i"), {"i": str(eid)})
             await s.commit()

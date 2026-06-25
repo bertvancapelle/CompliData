@@ -314,6 +314,38 @@ def _cd_audit_after_flush(session, flush_context):
         )
 
 
+def schrijf_expliciet_record(conn, *, tenant_id, actor_sub, actor_email, correlatie_id,
+                             entiteit_type, entiteit_id, wijziging, actie=AuditActie.update):
+    """Schrijf ÉÉN expliciet tenant-auditrecord (sync Core-connection) voor een mutatie die
+    NIET via een ORM-flush loopt — bv. een Keycloak-only gebruikersbeheer-actie. Hergebruikt
+    de keten-lock/staart/insert, zodat het record byte-identiek in de hash-keten landt en de
+    lees-/verify-API het 1-op-1 oppikt."""
+    entry = {"obj": None, "tablename": entiteit_type, "actie": actie,
+             "wijziging": wijziging or None, "captured_id": str(entiteit_id)}
+    _schrijf_keten(
+        conn, tabel="audit_log", entries=[entry], tenant_id=tenant_id,
+        actor_sub=actor_sub or _ACTOR_ONBEKEND, actor_email=actor_email,
+        correlatie_id=correlatie_id or str(uuid.uuid4()), entiteit_id_is_uuid=True,
+    )
+
+
+async def registreer_gebruikersactie(session, *, koppel_id, wijziging) -> None:
+    """Expliciete audit voor een Keycloak-only gebruikersbeheer-actie (ADR-029 Fase 2b).
+
+    `entiteit_type='gebruiker_persoon'`, `entiteit_id`=de koppelrij-id, `actie=update`; de
+    `wijziging` beschrijft de actie ({veld:{oud,nieuw}}). Actor/correlatie/tenant uit de
+    request-context (zoals de flush-capture). Bij wachtwoord-reset bevat `wijziging` NOOIT het
+    wachtwoord — alleen het feit. Schrijft binnen de lopende transactie; de caller commit."""
+    actor_sub, actor_email = huidige_actor()
+    correlatie_id = huidige_correlatie_id()
+    tenant_id = huidige_tenant_id()
+    await session.run_sync(lambda s: schrijf_expliciet_record(
+        s.connection(), tenant_id=tenant_id, actor_sub=actor_sub, actor_email=actor_email,
+        correlatie_id=correlatie_id, entiteit_type="gebruiker_persoon",
+        entiteit_id=koppel_id, wijziging=wijziging,
+    ))
+
+
 @event.listens_for(Session, "after_commit")
 def _cd_audit_after_commit(session):
     """Transactie-einde: reset de score-driver-vlag (v3) en eventuele restpending,

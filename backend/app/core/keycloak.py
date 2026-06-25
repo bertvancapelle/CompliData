@@ -263,6 +263,133 @@ async def deactiveer_keycloak_gebruiker(keycloak_sub: str) -> None:
         logger.warning("KC-cleanup: deactiveren van %s mislukt", keycloak_sub)
 
 
+# De vier tenant-realm-rollen (single source voor rol-swap + verrijking).
+TENANT_ROLLEN = ("viewer", "medewerker", "beheerder", "auditor")
+
+
+async def lees_keycloak_gebruiker(keycloak_sub: str) -> dict | None:
+    """Lees `{enabled, rollen}` van een bestaand account (voor lijst-verrijking + guards).
+
+    Best-effort: niet-gevonden of een leesfout → None (de caller behandelt dat als
+    'onbekend'; de lijst valt dan terug op None voor rol/enabled). Reads vergen alleen
+    `view-users` (geverifieerd 200 met het provisioning-account)."""
+    try:
+        token = await get_provisioning_token()
+        headers = {"Authorization": f"Bearer {token}"}
+        async with httpx.AsyncClient() as client:
+            u = await client.get(f"{ADMIN_BASE}/users/{keycloak_sub}", headers=headers)
+            if u.status_code != 200:
+                return None
+            enabled = bool(u.json().get("enabled", False))
+            r = await client.get(f"{ADMIN_BASE}/users/{keycloak_sub}/role-mappings/realm", headers=headers)
+            rollen = [x["name"] for x in r.json()] if r.status_code == 200 else []
+            return {"enabled": enabled, "rollen": rollen}
+    except Exception:  # noqa: BLE001 — verrijking mag de lijst nooit laten crashen
+        logger.warning("KC-lees: ophalen van %s mislukt", keycloak_sub)
+        return None
+
+
+async def reset_keycloak_wachtwoord(keycloak_sub: str, tijdelijk_wachtwoord: str) -> None:
+    """Zet een nieuw tijdelijk wachtwoord (`temporary=true`) + forceer wijzigen bij de eerste
+    login (`UPDATE_PASSWORD` required action) — identiek aan de aanmaak-flow. Raise bij fout.
+    Het wachtwoord wordt NOOIT gelogd."""
+    token = await get_provisioning_token()
+    headers = {"Authorization": f"Bearer {token}"}
+    async with httpx.AsyncClient() as client:
+        pw = await client.put(
+            f"{ADMIN_BASE}/users/{keycloak_sub}/reset-password",
+            headers=headers,
+            json={"type": "password", "value": tijdelijk_wachtwoord, "temporary": True},
+        )
+        if pw.status_code not in (200, 204):
+            raise KeycloakProvisioningFout("Zetten nieuw wachtwoord mislukt.", pw.status_code)
+        ra = await client.put(
+            f"{ADMIN_BASE}/users/{keycloak_sub}",
+            headers=headers,
+            json={"requiredActions": ["UPDATE_PASSWORD"]},
+        )
+        if ra.status_code not in (200, 204):
+            raise KeycloakProvisioningFout("Zetten required-action mislukt.", ra.status_code)
+
+
+async def zet_keycloak_enabled(keycloak_sub: str, enabled: bool) -> None:
+    """Schakel een account in/uit (`enabled`-flip). Raise bij fout (i.t.t. de best-effort
+    `deactiveer_keycloak_gebruiker`-cleanup, die fouten slikt)."""
+    token = await get_provisioning_token()
+    async with httpx.AsyncClient() as client:
+        resp = await client.put(
+            f"{ADMIN_BASE}/users/{keycloak_sub}",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"enabled": enabled},
+        )
+        if resp.status_code not in (200, 204):
+            raise KeycloakProvisioningFout("Wijzigen account-status mislukt.", resp.status_code)
+
+
+async def logout_keycloak_gebruiker(keycloak_sub: str) -> None:
+    """Kap de lopende sessies van een gebruiker direct af (POST .../logout), zodat 'per
+    direct geen toegang' echt direct is en niet pas na token-expiry. Raise bij fout."""
+    token = await get_provisioning_token()
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"{ADMIN_BASE}/users/{keycloak_sub}/logout",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        if resp.status_code not in (200, 204):
+            raise KeycloakProvisioningFout("Afkappen sessie mislukt.", resp.status_code)
+
+
+async def werk_keycloak_gegevens_bij(keycloak_sub: str, *, naam: str, email: str) -> None:
+    """Corrigeer naam/e-mail (+ username) op het Keycloak-account, consistent met de
+    persoon-partij. Raise bij fout."""
+    token = await get_provisioning_token()
+    voornaam, achternaam = _splits_naam(naam)
+    async with httpx.AsyncClient() as client:
+        resp = await client.put(
+            f"{ADMIN_BASE}/users/{keycloak_sub}",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"username": email, "email": email, "firstName": voornaam, "lastName": achternaam},
+        )
+        if resp.status_code not in (200, 204):
+            raise KeycloakProvisioningFout("Bijwerken gebruikersgegevens mislukt.", resp.status_code)
+
+
+async def wijzig_keycloak_rol(keycloak_sub: str, nieuwe_rol: str) -> None:
+    """Vervang de huidige tenant-realm-rol(len) door `nieuwe_rol`: verwijder elke bestaande
+    rol uit `TENANT_ROLLEN` en wijs de nieuwe toe. Raise bij fout. Idempotent als de
+    nieuwe rol al de enige is."""
+    token = await get_provisioning_token()
+    headers = {"Authorization": f"Bearer {token}"}
+    async with httpx.AsyncClient() as client:
+        # Huidige realm-rol-mappings (id+name) → te verwijderen tenant-rollen (≠ de nieuwe).
+        huidig = await client.get(f"{ADMIN_BASE}/users/{keycloak_sub}/role-mappings/realm", headers=headers)
+        if huidig.status_code != 200:
+            raise KeycloakProvisioningFout("Lezen rol-mappings mislukt.", huidig.status_code)
+        te_verwijderen = [
+            {"id": r["id"], "name": r["name"]}
+            for r in huidig.json()
+            if r.get("name") in TENANT_ROLLEN and r.get("name") != nieuwe_rol
+        ]
+        if te_verwijderen:
+            weg = await client.request(
+                "DELETE", f"{ADMIN_BASE}/users/{keycloak_sub}/role-mappings/realm",
+                headers=headers, json=te_verwijderen,
+            )
+            if weg.status_code not in (200, 204):
+                raise KeycloakProvisioningFout("Verwijderen oude rol mislukt.", weg.status_code)
+        # Nieuwe rol toewijzen (no-op als al aanwezig — Keycloak accepteert dat).
+        rol_resp = await client.get(f"{ADMIN_BASE}/roles/{nieuwe_rol}", headers=headers)
+        if rol_resp.status_code != 200:
+            raise KeycloakProvisioningFout(f"Realm-rol '{nieuwe_rol}' niet gevonden.", rol_resp.status_code)
+        rr = rol_resp.json()
+        toewijs = await client.post(
+            f"{ADMIN_BASE}/users/{keycloak_sub}/role-mappings/realm",
+            headers=headers, json=[{"id": rr["id"], "name": rr["name"]}],
+        )
+        if toewijs.status_code not in (200, 204):
+            raise KeycloakProvisioningFout("Toewijzen nieuwe rol mislukt.", toewijs.status_code)
+
+
 async def refresh_access_token(refresh_token: str) -> dict:
     """Use refresh token to obtain a new access token."""
     async with httpx.AsyncClient() as client:
