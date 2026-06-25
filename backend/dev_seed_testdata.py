@@ -1133,13 +1133,16 @@ async def _seed_bvowb_scenario(session, tenant_id) -> dict:
         ("Vergunningensysteem", "Vergunningverlening en -beheer Tiel", "saas", 0, 0, "Gemeente Tiel"),
         ("HR-systeem", "Personeels- en salarisadministratie Culemborg", "saas", 0, 0, "Gemeente Culemborg"),
         ("Omgevingsloket", "Omgevingsvergunningen en -plannen West Betuwe", "saas", 0, 0, "Gemeente West Betuwe"),
+        # LI021 — bewust registratiegat: applicatie ZONDER eigenaar-organisatie ("nog niet toegewezen").
+        # Kaal (gescoord=0, geen start_inventarisatie) → laat de scope-teller "zonder eigenaar" op 1 aanslaan.
+        ("Archiefbeheer", "Archief- en bewaarbeheer — eigenaar nog niet toegewezen", "on_premise", 0, 0, None),
     ]
     for naam, oms, host, gescoord, blokkerend, eigenaar in applicaties:
         if naam in app_id:
             continue
         obj = await applicatie_service.maak_aan(session, tid, ApplicatieCreate(
             naam=naam, beschrijving=oms, hostingmodel=host,
-            eigenaar_organisatie_id=partij_id[eigenaar], **APP_DEFAULTS))
+            eigenaar_organisatie_id=(partij_id[eigenaar] if eigenaar else None), **APP_DEFAULTS))
         app_id[naam] = obj.id
         telling["applicaties"] += 1
         if gescoord > 0:
@@ -1375,13 +1378,77 @@ async def _seed_bvowb_scenario(session, tenant_id) -> dict:
         telling["gebruikersgroepen"] += 1
 
     gg_orgs = [("BvoWB", 45), ("Gemeente Tiel", 180), ("Gemeente Culemborg", 120), ("Gemeente West Betuwe", 95)]
-    org_apps = ["Zaaksysteem", "Zaakafhandelcomponent", "DMS", "Klantportaal", "Burgerzaken-suite",
+    # LI021 — Klantportaal bewust NIET in org_apps: het wordt uitsluitend door de organisatieloze
+    # "Burgers"-groep geserved → laat de scope-teller "alleen organisatieloos gebruikt" aanslaan.
+    org_apps = ["Zaaksysteem", "Zaakafhandelcomponent", "DMS", "Burgerzaken-suite",
                 "BRP", "Gegevensmakelaar", "Sociaal domein suite"]
     for app_naam in org_apps:
         for org_naam, aantal in gg_orgs:
             await _gg(app_naam, partij_id[org_naam], None, aantal)
     for app_naam in ["Klantportaal", "Burgerzaken-suite", "Zaaksysteem"]:
         await _gg(app_naam, None, "Burgers", 35000)
+
+    # ── 14. Infrastructuur (technology-laag) + component-samenstelling (LI021, context) ──
+    # KALE componenten (Element + Component, géén subtype/scoring/profiel) → engine onaangeroerd.
+    # Idempotent op naam resp. (bron, doel)-relatiepaar. Geen schema/migratie (bestaande typen/relaties).
+    comp_naam_id = {c.naam: c.id for c in (await session.execute(select(Component))).scalars().all()}
+
+    async def _infra(naam, type_, host, eigenaar):
+        if naam in comp_naam_id:
+            return comp_naam_id[naam]
+        elem = Element(tenant_id=tid, element_type=ElementType.component); session.add(elem); await session.flush()
+        session.add(Component(id=elem.id, tenant_id=tid, naam=naam, componenttype=type_,
+                              hostingmodel=host, eigenaar_organisatie_id=eigenaar)); await session.flush()
+        comp_naam_id[naam] = elem.id
+        print(f"  + infra {naam} ({type_})")
+        return elem.id
+
+    bestaande_assignment = {
+        (r.bron_id, r.doel_id) for r in (await session.execute(
+            select(Relatie).where(Relatie.relatietype == "assignment", Relatie.tenant_id == tid)
+        )).scalars().all()
+    }
+
+    async def _draait_op(host_id, app_naam):
+        doel = app_id[app_naam]
+        if (host_id, doel) in bestaande_assignment:
+            return
+        # ADR-023: draait_op → assignment, oriëntatie host→gehoste (bron=host, doel=app).
+        await relatie_service.maak_aan(session, tid, RelatieCreate(
+            bron_id=host_id, doel_id=doel, relatietype="assignment"))
+        bestaande_assignment.add((host_id, doel))
+
+    # Gedeelde database-server onder de zwaarste shared-apps: één onderlaag, meerdere gemeenten geraakt.
+    db_id = await _infra("Shared DB-server", "database", HostingModel.on_premise, partij_id["BvoWB"])
+    for app_naam in ("Zaaksysteem", "BRP", "DMS"):
+        await _draait_op(db_id, app_naam)
+    # Gedeelde fileshare onder de documentgerichte apps — BEWUST zonder eigenaar (gedeelde infra-omissie).
+    fs_id = await _infra("Shared fileshare", "fileshare", HostingModel.on_premise, None)
+    for app_naam in ("DMS", "Klantportaal"):
+        await _draait_op(fs_id, app_naam)
+    # Extern SaaS-platform onder een gemeente-specifieke app (andere impactsmaak: extern gehost).
+    saas_id = await _infra("Extern SaaS-platform", "saas_dienst", HostingModel.saas, None)
+    await _draait_op(saas_id, "Vergunningensysteem")
+
+    # Samenstelling: Burgerzaken-suite = geheel; drie onderdelen "onderdeel van" (aggregation geheel→deel).
+    # Onderdelen = applicatie MÉT eigenaar=BvoWB, kaal (geen start_inventarisatie) → geen gap-vervuiling.
+    bestaande_aggr = {
+        (r.bron_id, r.doel_id) for r in (await session.execute(
+            select(Relatie).where(Relatie.relatietype == "aggregation", Relatie.tenant_id == tid)
+        )).scalars().all()
+    }
+    for deel_naam in ("Aangiften", "Reisdocumenten", "Verkiezingen"):
+        if deel_naam not in app_id:
+            obj = await applicatie_service.maak_aan(session, tid, ApplicatieCreate(
+                naam=deel_naam, beschrijving=f"Onderdeel van de Burgerzaken-suite — {deel_naam}",
+                hostingmodel="on_premise", eigenaar_organisatie_id=partij_id["BvoWB"], **APP_DEFAULTS))
+            app_id[deel_naam] = obj.id
+            telling["applicaties"] += 1
+        paar = (app_id["Burgerzaken-suite"], app_id[deel_naam])
+        if paar not in bestaande_aggr:
+            await relatie_service.maak_aan(session, tid, RelatieCreate(
+                bron_id=paar[0], doel_id=paar[1], relatietype="aggregation"))
+            bestaande_aggr.add(paar)
 
     return telling
 
