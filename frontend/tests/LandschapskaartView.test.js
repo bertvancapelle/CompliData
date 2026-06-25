@@ -37,8 +37,8 @@ import LandschapskaartView from '@modules/bwb_ontvlechting/frontend/views/Landsc
 
 const GRAF = () => ({
   nodes: [
-    { id: 'a1', naam: 'Zaaksysteem', element_type: 'applicatie', laag: 'application', lifecycle_status: 'migratieklaar', domein: 'applicatie', hosting_model: 'saas', leverancier_naam: 'SaaS BV', leverancier_id: 'l1', blokkades_open: 0 },
-    { id: 'a2', naam: 'Documentbeheer', element_type: 'applicatie', laag: 'application', lifecycle_status: 'geblokkeerd', domein: 'applicatie', hosting_model: 'on_premise', leverancier_naam: null, leverancier_id: null, blokkades_open: 1, plateau_naam: 'Plateau 2026', plateau_dispositie: 'Migreren' },
+    { id: 'a1', naam: 'Zaaksysteem', element_type: 'applicatie', laag: 'application', lifecycle_status: 'migratieklaar', domein: 'applicatie', hosting_model: 'saas', leverancier_naam: 'SaaS BV', leverancier_id: 'l1', blokkades_open: 0, eigenaar_organisatie_id: 'p1' },
+    { id: 'a2', naam: 'Documentbeheer', element_type: 'applicatie', laag: 'application', lifecycle_status: 'geblokkeerd', domein: 'applicatie', hosting_model: 'on_premise', leverancier_naam: null, leverancier_id: null, blokkades_open: 1, plateau_naam: 'Plateau 2026', plateau_dispositie: 'Migreren', eigenaar_organisatie_id: 'p1' },
     { id: 'd1', naam: 'Klantdatabank', element_type: 'database', laag: 'technology', lifecycle_status: 'concept', domein: 'Database', hosting_model: 'on_premise', blokkades_open: 0 },
     { id: 'p1', naam: 'Org', element_type: 'partij', laag: 'business', soort: 'organisatie', blokkades_open: 0 },
     { id: 'k1', naam: 'Contract X', element_type: 'contract', laag: 'business', blokkades_open: 0 },
@@ -110,10 +110,10 @@ describe('LandschapskaartView v3', () => {
     expect(w.find('[data-testid="lk-modus-ego"]').exists()).toBe(false)
     expect(w.find('[data-testid="lk-modus-impact"]').exists()).toBe(false)
     expect(w.find('[data-testid="lk-modus-geheel"]').exists()).toBe(false)
-    // resultatenlijst toont ALLEEN applicaties (a1, a2) — niet de partij/contract.
-    expect(w.findAll('[data-testid^="lk-res-naam-"]').length).toBe(2)
-    expect(w.find('[data-testid="lk-res-naam-p1"]').exists()).toBe(false)
-    expect(w.find('[data-testid="lk-res-naam-k1"]').exists()).toBe(false)
+    // resultatenlijst: applicaties (a1, a2) + de eigen organisatie (p1) als vertrekpunt — niet het contract.
+    expect(w.findAll('[data-testid^="lk-res-naam-"]').length).toBe(3)
+    expect(w.find('[data-testid="lk-res-naam-p1"]').exists()).toBe(true)  // organisatie als vertrekpunt
+    expect(w.find('[data-testid="lk-res-naam-k1"]').exists()).toBe(false) // contract niet
   })
 
   it('ADR-033 — de modus volgt de actieve set: 0 → geheel, 1 → ego, ≥2 → impact-verkenner', async () => {
@@ -372,8 +372,8 @@ describe('LandschapskaartView v3', () => {
   it('LI019 1d-v8 — swimlane toont álle nodes uit zichtbareNodes (radiaal-data zonder edge-eis)', async () => {
     api.landschapskaart.haalGrafdata.mockResolvedValue({
       nodes: [
-        { id: 'a1', naam: 'Zaaksysteem', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0 },
-        { id: 'a2', naam: 'DMS', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0 },
+        { id: 'a1', naam: 'Zaaksysteem', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0, eigenaar_organisatie_id: 'p1' },
+        { id: 'a2', naam: 'DMS', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0, eigenaar_organisatie_id: 'p1' },
         { id: 'p1', naam: 'Org (los)', element_type: 'partij', laag: 'business', soort: 'organisatie', blokkades_open: 0 },
       ],
       edges: [{ bron_id: 'a1', doel_id: 'a2', relatietype: 'flow', label: 'koppeling', ring: 'applicaties' }],
@@ -864,8 +864,8 @@ describe('LandschapskaartView v3', () => {
     const { w } = await mountView()
     await w.find('[data-testid="lk-voeg-alle"]').trigger('click')
     await flushPromises()
-    // alleen de twee applicaties komen in de set (partij/contract zijn niet selecteerbaar).
-    expect(w.find('[data-testid="lk-rechts"]').text()).toContain('Actieve set (2)')
+    // twee applicaties + de eigen organisatie (p1) als vertrekpunt = 3; het contract is niet selecteerbaar.
+    expect(w.find('[data-testid="lk-rechts"]').text()).toContain('Actieve set (3)')
   })
 
   it('Fix 3: klik op een actieve-set-item selecteert de node (detail-paneel)', async () => {
@@ -1335,5 +1335,92 @@ describe('LandschapskaartView v3', () => {
     // Voorkeur onthouden (sessionStorage): een nieuwe mount opent meteen uitgeklapt.
     w = (await mountView()).w
     expect(w.find('[data-testid="lk-legenda-paneel"]').exists()).toBe(true)
+  })
+
+  // ── Organisatie-scopebalk (ADR-024 slice 2) ──
+  const _scopeGraf = () => ({
+    nodes: [
+      { id: 'oA', naam: 'Org A', element_type: 'partij', laag: 'business', soort: 'organisatie' },
+      { id: 'oB', naam: 'Org B', element_type: 'partij', laag: 'business', soort: 'organisatie' },
+      { id: 'appA', naam: 'App A', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0, eigenaar_organisatie_id: 'oA', gebruikt_door_organisaties: [] },
+      { id: 'appB', naam: 'App B', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0, eigenaar_organisatie_id: 'oB', gebruikt_door_organisaties: [] },
+      { id: 'appNone', naam: 'App None', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0, eigenaar_organisatie_id: null, gebruikt_door_organisaties: [] },
+      { id: 'appUseA', naam: 'App UseA', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0, eigenaar_organisatie_id: null, gebruikt_door_organisaties: ['oA'] },
+      { id: 'appLoos', naam: 'App Loos', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0, eigenaar_organisatie_id: null, gebruikt_door_organisaties: [], gebruikt_door_organisatieloos: true },
+    ],
+    edges: [],
+  })
+  const _appsInScope = (w) => w.vm.zichtbareNodes.filter((n) => n.element_type === 'applicatie').map((n) => n.id).sort()
+
+  it('scope — organisatie-checkboxes uit soort=organisatie, standaard alle aan + Biedt aan', async () => {
+    api.landschapskaart.haalGrafdata.mockResolvedValue(_scopeGraf())
+    const { w } = await mountView()
+    expect(w.find('[data-testid="lk-scope-org-oA"]').exists()).toBe(true)
+    expect(w.find('[data-testid="lk-scope-org-oB"]').exists()).toBe(true)
+    expect([...w.vm.scopeOrgs].sort()).toEqual(['oA', 'oB']) // alle organisaties standaard aan
+    expect(w.vm.scopeModus).toBe('biedt')
+  })
+
+  it('scope — Biedt aan toont componenten met eigenaar ∈ selectie', async () => {
+    api.landschapskaart.haalGrafdata.mockResolvedValue(_scopeGraf())
+    const { w } = await mountView()
+    expect(_appsInScope(w)).toEqual(['appA', 'appB']) // eigenaar ∈ {oA,oB}; rest buiten scope
+    await w.find('[data-testid="lk-scope-org-oB"]').trigger('change') // oB uit
+    await flushPromises()
+    expect(_appsInScope(w)).toEqual(['appA'])
+  })
+
+  it('scope — Gebruikt toont gebruik-overlap ∈ selectie (schakelaar geldt voor de hele balk)', async () => {
+    api.landschapskaart.haalGrafdata.mockResolvedValue(_scopeGraf())
+    const { w } = await mountView()
+    await w.find('[data-testid="lk-scope-gebruikt"]').trigger('click')
+    await flushPromises()
+    expect(w.vm.scopeModus).toBe('gebruikt')
+    expect(_appsInScope(w)).toEqual(['appUseA']) // gebruikt door oA; appA/appB hebben lege gebruik-set
+  })
+
+  it('scope — niets aangevinkt → volledige kaart (terugval op alles)', async () => {
+    api.landschapskaart.haalGrafdata.mockResolvedValue(_scopeGraf())
+    const { w } = await mountView()
+    await w.find('[data-testid="lk-scope-org-oA"]').trigger('change')
+    await w.find('[data-testid="lk-scope-org-oB"]').trigger('change')
+    await flushPromises()
+    expect([...w.vm.scopeOrgs]).toEqual([])
+    expect(_appsInScope(w)).toEqual(['appA', 'appB', 'appLoos', 'appNone', 'appUseA']) // alles
+  })
+
+  it('scope — de twee gaten zijn herkenbaar (zonder eigenaar bij Biedt; organisatieloos-gebruik bij Gebruikt)', async () => {
+    api.landschapskaart.haalGrafdata.mockResolvedValue(_scopeGraf())
+    const { w } = await mountView()
+    // Biedt: appNone + appUseA + appLoos hebben geen eigenaar → 3.
+    expect(w.vm.zonderEigenaarAantal).toBe(3)
+    expect(w.find('[data-testid="lk-scope-gap"]').text()).toContain('zonder eigenaar')
+    // Gebruikt: alleen appLoos wordt uitsluitend door een organisatieloze groep gebruikt → 1.
+    await w.find('[data-testid="lk-scope-gebruikt"]').trigger('click')
+    await flushPromises()
+    expect(w.vm.organisatieloosGebruiktAantal).toBe(1)
+    expect(w.find('[data-testid="lk-scope-gap"]').text()).toContain('organisatieloze groep')
+  })
+
+  it('scope — een scope-wijziging pusht een toestand in de terug/vooruit-geschiedenis', async () => {
+    api.landschapskaart.haalGrafdata.mockResolvedValue(_scopeGraf())
+    const { w } = await mountView()
+    const cur = w.vm.cursor
+    await w.find('[data-testid="lk-scope-org-oB"]').trigger('change') // scope wijzigen
+    await flushPromises()
+    expect(w.vm.cursor).toBe(cur + 1) // betekenisvolle wijziging → nieuwe toestand
+    expect(_appsInScope(w)).toEqual(['appA'])
+    await w.find('[data-testid="lk-hist-terug"]').trigger('click') // terug herstelt de scope
+    await flushPromises()
+    expect([...w.vm.scopeOrgs].sort()).toEqual(['oA', 'oB'])
+    expect(_appsInScope(w)).toEqual(['appA', 'appB'])
+  })
+
+  it('scope — organisatie is als vertrekpunt selecteerbaar in de lijst', async () => {
+    api.landschapskaart.haalGrafdata.mockResolvedValue(_scopeGraf())
+    const { w } = await mountView()
+    expect(w.find('[data-testid="lk-res-naam-oA"]').exists()).toBe(true) // org in de zoeklijst
+    await kies(w, 'oA')
+    expect(w.vm.actieveSet.has('oA')).toBe(true) // als vertrekpunt gekozen
   })
 })

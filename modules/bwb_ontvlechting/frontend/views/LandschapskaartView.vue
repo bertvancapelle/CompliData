@@ -166,6 +166,8 @@ async function laad() {
     edges.value = (data.edges || []).map((e) => (e.ring === 'beheerorganisatie' ? { ...e, ring: 'rollen' } : e))
     const eersteApp = nodes.value.find(isApplicatie)
     egoStartId.value = eersteApp ? eersteApp.id : null
+    // ADR-024 scope: standaard staan alle eigen organisaties aan ("alles van ons", Biedt aan).
+    scopeOrgs.value = new Set(organisatieNodes.value.map((n) => n.id))
   } catch (e) {
     fout.value = e?.message || 'Laden van de landschapskaart mislukt.'
   } finally {
@@ -180,10 +182,38 @@ async function zetDiepte(d) {
   await laad()
 }
 
-// Alleen applicaties zijn selecteerbaar via de zoeklijst/filters/actieve set; partijen,
-// contracten en infrastructuur verschijnen automatisch als ring-nodes rond de gekozen apps.
+// Alleen applicaties (+ sinds de scope-slice óók de eigen organisaties) zijn selecteerbaar via de
+// zoeklijst/filters/actieve set; partijen, contracten en infrastructuur verschijnen automatisch als
+// ring-nodes rond de gekozen apps.
 const _isApp = (n) => n?.element_type === 'applicatie' || (n?.element_type === 'component' && n?.laag === 'application')
-const appNodes = computed(() => nodes.value.filter(_isApp))
+const _isOrg = (n) => n?.element_type === 'partij' && n?.soort === 'organisatie'
+
+// ── Organisatie-scope (ADR-024 slice 2) — "van wie is het landschap": biedt aan / gebruikt ──────
+// De scope filtert UITSLUITEND application-componenten; infra/partij/contract/gebruikersgroep blijven
+// (andere partijen blijven dus via de relaties zichtbaar). Niets aangevinkt → volledige kaart.
+const scopeOrgs = ref(new Set())   // aangevinkte organisatie-ids; default = alle vier (gezet bij laad)
+const scopeModus = ref('biedt')    // 'biedt' (eigenaar) | 'gebruikt' (serving-overlap)
+const organisatieNodes = computed(() => nodes.value.filter(_isOrg))
+function toggleScopeOrg(id) {
+  const s = new Set(scopeOrgs.value)
+  s.has(id) ? s.delete(id) : s.add(id)
+  scopeOrgs.value = s
+}
+function _inScope(n) {
+  if (!_isApp(n)) return true             // alleen application-componenten worden gescoopt
+  if (!scopeOrgs.value.size) return true  // niets aangevinkt → terugval op ALLES
+  if (scopeModus.value === 'gebruikt') return (n.gebruikt_door_organisaties || []).some((id) => scopeOrgs.value.has(id))
+  return scopeOrgs.value.has(n.eigenaar_organisatie_id) // 'biedt': eigenaar ∈ selectie
+}
+// Application-componenten zijn selecteerbaar (zoeklijst) + de eigen organisaties als vertrekpunt;
+// daarbinnen geldt de scope-zeef.
+const appNodes = computed(() => nodes.value.filter((n) => _isApp(n) || _isOrg(n)).filter(_inScope))
+// Gaten (eerlijk tonen): app-componenten die in deze modus buiten élke organisatie-scope vallen.
+const _appUniverse = computed(() => nodes.value.filter(_isApp))
+const zonderEigenaarAantal = computed(() => _appUniverse.value.filter((n) => !n.eigenaar_organisatie_id).length)
+const organisatieloosGebruiktAantal = computed(
+  () => _appUniverse.value.filter((n) => n.gebruikt_door_organisatieloos && !(n.gebruikt_door_organisaties || []).length).length,
+)
 
 // ── Filter-opties (datagedreven; alleen uit de applicaties) ──────────────────────
 const _uniek = (sel) => [...new Set(appNodes.value.map(sel).filter(Boolean))].sort()
@@ -347,7 +377,9 @@ function _metContext(matchedIds) {
 const zichtbareNodes = computed(() => {
   // LI019 1c — de filterselects gelden in ALLE modi. LI019 1d-v4 — bij een actief filter komen de
   // context-buren (niet-flow ringen) van de gematchte componenten mee, zodat de ringen zichtbaar blijven.
-  const alle = grafNodes.value
+  // ADR-024 scope: de organisatie-scope is een extra zeef VÓÓR de weergave (alleen application-
+  // componenten; niets aangevinkt → alles). Filters/ringen/selectie werken daarbinnen ongewijzigd door.
+  const alle = grafNodes.value.filter(_inScope)
   if (modus.value === 'ego') {
     if (!filterActief.value) return alle.filter((n) => egoZichtbaarIds.value.has(n.id))
     const matched = new Set(alle.filter((n) => egoZichtbaarIds.value.has(n.id) && _filterMatch(n)).map((n) => n.id))
@@ -668,6 +700,7 @@ function _maakToestand() {
     fTypes: [...filterTypes.value], fLev: [...filterLeveranciers.value],
     fHost: [...filterHosting.value], fLc: [...filterLifecycle.value],
     zoek: zoekterm.value, focus: focusOpSet.value,
+    scopeOrgs: [...scopeOrgs.value], scopeModus: scopeModus.value,
   }
 }
 // Genormaliseerde signatuur van de history-relevante toestand (volgorde-onafhankelijk) —
@@ -679,6 +712,7 @@ const _toestandSig = computed(() => JSON.stringify({
   fTypes: [...filterTypes.value].sort(), fLev: [...filterLeveranciers.value].sort(),
   fHost: [...filterHosting.value].sort(), fLc: [...filterLifecycle.value].sort(),
   zoek: zoekterm.value, focus: focusOpSet.value,
+  scopeOrgs: [...scopeOrgs.value].sort(), scopeModus: scopeModus.value,
 }))
 watch(_toestandSig, () => {
   if (!_historieKlaar || _herstellen) return
@@ -718,6 +752,8 @@ function _herstelToestand(t) {
   if (!arrGelijk(filterLifecycle.value, t.fLc)) filterLifecycle.value = [...t.fLc]
   if (zoekterm.value !== t.zoek) zoekterm.value = t.zoek
   if (focusOpSet.value !== t.focus) focusOpSet.value = t.focus
+  if (t.scopeModus && scopeModus.value !== t.scopeModus) scopeModus.value = t.scopeModus
+  if (t.scopeOrgs && !setGelijk(scopeOrgs.value, t.scopeOrgs)) scopeOrgs.value = new Set(t.scopeOrgs)
   // Afgeleide watchers (drill-reset, filter-dialog, push) draaien op de flush → pas dáárná
   // vrijgeven; een onverbruikte animatie-vlag (geen tekening uitgelokt) ook wissen. Centreren
   // loopt via de layout-stop (_naLayout) — geen losse cy.fit() meer (auto-centreren gaat hierin op).
@@ -1538,7 +1574,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', _opEscape)
 })
 
-defineExpose({ openNodePopup, openEdgePopup, selecteerFlow, onNodeTap, sluitPopup, toggleFullscreen, fullscreen, popupOpen, _edgeData, groepeerPerOrg, grafNodes, grafEdges, zichtbareNodes, zichtbareEdges, layoutModus, _laneVan, _swimlanePositions, _layout, laneVolgorde, verbergLegeLanes, laneBanden, getekendeNodes, _herschikLane, toonRegistratiegaps, setLayoutModus, modus, actieveSet, toggleSet, kiesComponent, drillPad, drillNaar, stapTerug, huidigeFocus, huidigeFocusSet, topbalkNodes, impactDirect, impactGeraaktAantal, impactZichtbaarIds, _nodeData, geselecteerdNodeId, _edgeGehighlight, inspecteerNode, historie, cursor, kanTerug, kanVooruit, terugInHistorie, vooruitInHistorie, _vormVoorType, legendaOpen, toggleLegenda, opgeslagenViews, magViewsBeheren, toonStartscherm, openView, openOpslaan, openBewerk, bewaarView, verwijderView, beginMetHeleKaart, viewDialogOpen, viewNaam, viewGedeeld, laadViews })
+defineExpose({ openNodePopup, openEdgePopup, selecteerFlow, onNodeTap, sluitPopup, toggleFullscreen, fullscreen, popupOpen, _edgeData, groepeerPerOrg, grafNodes, grafEdges, zichtbareNodes, zichtbareEdges, layoutModus, _laneVan, _swimlanePositions, _layout, laneVolgorde, verbergLegeLanes, laneBanden, getekendeNodes, _herschikLane, toonRegistratiegaps, setLayoutModus, modus, actieveSet, toggleSet, kiesComponent, drillPad, drillNaar, stapTerug, huidigeFocus, huidigeFocusSet, topbalkNodes, impactDirect, impactGeraaktAantal, impactZichtbaarIds, _nodeData, geselecteerdNodeId, _edgeGehighlight, inspecteerNode, historie, cursor, kanTerug, kanVooruit, terugInHistorie, vooruitInHistorie, _vormVoorType, legendaOpen, toggleLegenda, scopeOrgs, scopeModus, organisatieNodes, toggleScopeOrg, zonderEigenaarAantal, organisatieloosGebruiktAantal, opgeslagenViews, magViewsBeheren, toonStartscherm, openView, openOpslaan, openBewerk, bewaarView, verwijderView, beginMetHeleKaart, viewDialogOpen, viewNaam, viewGedeeld, laadViews })
 
 // Hertekenen bij elke state die de graaf raakt.
 watch(
@@ -1713,6 +1749,41 @@ const typeLabel = (t) => humaniseer(t)
         <button type="button" data-testid="lk-voeg-alle" class="mt-1 rounded-[var(--cd-radius-btn)] bg-[var(--cd-color-primary)] px-[var(--cd-space-sm)] py-1 text-[length:var(--cd-text-sm)] text-white" @click="voegAlleGefilterdeToe">+ Voeg alle gefilterde toe</button>
       </aside>
 
+      <!-- Midden: vaste organisatie-scopebalk bovenin + het kaart-canvas eronder. -->
+      <div class="flex min-h-0 min-w-0 flex-1 flex-col">
+        <!-- ADR-024 scope: "van wie is het landschap" — vier eigen organisaties (checkboxes, default
+             alle aan) + één Biedt-aan/Gebruikt-schakelaar voor de hele balk. Filtert application-
+             componenten; niets aangevinkt → alles. -->
+        <div
+          v-if="organisatieNodes.length"
+          data-testid="lk-scopebalk" role="group" aria-label="Organisatie-scope"
+          class="flex flex-wrap items-center gap-x-[var(--cd-space-md)] gap-y-1 border-b border-[var(--cd-color-border)] bg-white px-[var(--cd-space-md)] py-[var(--cd-space-xs)]"
+        >
+          <span class="text-[length:var(--cd-text-sm)] font-semibold">Scope:</span>
+          <label v-for="o in organisatieNodes" :key="o.id" class="flex items-center gap-1 text-[length:var(--cd-text-sm)]">
+            <input type="checkbox" :checked="scopeOrgs.has(o.id)" :data-testid="`lk-scope-org-${o.id}`" @change="toggleScopeOrg(o.id)" />{{ o.naam }}
+          </label>
+          <div class="ml-auto flex items-center gap-1" role="radiogroup" aria-label="Biedt aan of gebruikt">
+            <button
+              type="button" data-testid="lk-scope-biedt" role="radio" :aria-checked="scopeModus === 'biedt'"
+              :class="['rounded-[var(--cd-radius-btn)] px-2 py-1 text-[length:var(--cd-text-sm)]', scopeModus === 'biedt' ? 'bg-[var(--cd-color-primary)] text-white' : 'bg-[var(--cd-color-accent)]']"
+              @click="scopeModus = 'biedt'"
+            >Biedt aan</button>
+            <button
+              type="button" data-testid="lk-scope-gebruikt" role="radio" :aria-checked="scopeModus === 'gebruikt'"
+              :class="['rounded-[var(--cd-radius-btn)] px-2 py-1 text-[length:var(--cd-text-sm)]', scopeModus === 'gebruikt' ? 'bg-[var(--cd-color-primary)] text-white' : 'bg-[var(--cd-color-accent)]']"
+              @click="scopeModus = 'gebruikt'"
+            >Gebruikt</button>
+          </div>
+          <!-- Gat eerlijk tonen: componenten die in deze modus buiten élke organisatie-scope vallen. -->
+          <span v-if="scopeModus === 'biedt' && zonderEigenaarAantal" data-testid="lk-scope-gap" class="basis-full text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">
+            {{ zonderEigenaarAantal }} component(en) zonder eigenaar — niet in scope
+          </span>
+          <span v-else-if="scopeModus === 'gebruikt' && organisatieloosGebruiktAantal" data-testid="lk-scope-gap" class="basis-full text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">
+            {{ organisatieloosGebruiktAantal }} component(en) alleen door een organisatieloze groep gebruikt — niet in scope
+          </span>
+        </div>
+
       <!-- Canvas — min-h-0 is kritiek: zonder negeert een flex-child de height:100% van de parent,
            waardoor Cytoscape op hoogte 0 initialiseert en de graaf leeg/onzichtbaar blijft. -->
       <div class="relative min-h-0 min-w-0 flex-1 bg-[var(--cd-color-surface)]">
@@ -1881,6 +1952,7 @@ const typeLabel = (t) => humaniseer(t)
         <p v-if="laden" data-testid="lk-laden" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[var(--cd-color-text-muted)]">Landschap laden…</p>
         <p v-else-if="fout" role="alert" data-testid="lk-fout" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[var(--cd-color-danger)]">{{ fout }}</p>
         <p v-else-if="!heeftData" data-testid="lk-leeg" class="absolute left-1/2 top-1/2 max-w-md -translate-x-1/2 -translate-y-1/2 text-center text-[var(--cd-color-text-muted)]">Nog geen landschapsdata geregistreerd.</p>
+      </div>
       </div>
 
       <!-- Rechterpaneel: actieve set + detail + legenda -->
