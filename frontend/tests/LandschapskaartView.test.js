@@ -1548,4 +1548,30 @@ describe('LandschapskaartView v3', () => {
       expect(w.find('[data-testid="lk-chips"]').exists()).toBe(false)
     })
   })
+
+  // ── Fase B (LI023) slice 2b-v2 — beginscherm expliciet sluiten i.p.v. aan de set-grootte gekoppeld ──
+  describe('Fase B — beginscherm expliciet sluiten', () => {
+    it('"Toon op de kaart" sluit het beginscherm en toont de graaf (set blijft gevuld)', async () => {
+      const { w } = await mountView({ heleLandschap: false })
+      expect(w.vm.beginschermOpen).toBe(true)
+      w.vm.toggleSet('a1') // bouw een set op terwijl het beginscherm open blijft (kern van v2)
+      await flushPromises()
+      expect(w.find('[data-testid="lk-beginscherm"]').exists()).toBe(true)
+      await w.find('[data-testid="toon-op-kaart-knop"]').trigger('click') // @sluit
+      await flushPromises()
+      expect(w.vm.beginschermOpen).toBe(false)
+      expect(w.find('[data-testid="lk-beginscherm"]').exists()).toBe(false)
+      expect([...w.vm.actieveSet]).toEqual(['a1'])
+      expect(w.vm.grafNodes.length).toBeGreaterThan(0)
+    })
+
+    it('"Begin opnieuw" (wisSet) heropent het beginscherm', async () => {
+      const { w } = await mountView() // hele-landschap → beginschermOpen=false
+      expect(w.vm.beginschermOpen).toBe(false)
+      w.vm.wisSet()
+      await flushPromises()
+      expect(w.vm.beginschermOpen).toBe(true)
+      expect(w.find('[data-testid="lk-beginscherm"]').exists()).toBe(true)
+    })
+  })
 })

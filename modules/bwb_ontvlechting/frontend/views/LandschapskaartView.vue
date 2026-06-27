@@ -163,6 +163,10 @@ const isApplicatie = (n) => n?.element_type === 'applicatie'
 // "Hele landschap"-staat: bewust de volledige plaat tonen, LOS van de set-grootte. Een lege set
 // betekent niet langer "toon alles", maar het lege beginscherm (de gebruiker kiest een ingang).
 const heleLandschap = ref(false)
+// Fase B slice 2b-v2 (LI023) — het beginscherm is NIET langer aan de set-grootte gekoppeld: de
+// gebruiker bouwt er een set op en sluit het zelf via "Toon op de kaart" (@sluit). Zo verdwijnt het
+// scherm niet meer onder zijn voeten zodra het eerste component is toegevoegd. Start open.
+const beginschermOpen = ref(true)
 const beginscherm = computed(() => actieveSet.value.size === 0 && !heleLandschap.value)
 // Voortgangsteller bij het laden van het hele landschap: {gedaan,totaal} of null. (cy.add is één
 // synchrone call zonder native telbare batches → we tellen op de in chunks verwerkte nodes.)
@@ -514,6 +518,7 @@ const focusOpSet = ref(false)
 function wisSet() {
   actieveSet.value = new Set()
   heleLandschap.value = false
+  beginschermOpen.value = true // "Begin opnieuw"/"Wis alles" = volledige reset → terug naar het beginscherm
 }
 // Fase B — bewuste "toon het hele landschap"-actie: leegt de set en zet de hele-landschap-vlag,
 // waarna de herfetch-watch de volledige graaf laadt (mét voortgangsteller).
@@ -521,6 +526,7 @@ function toonHeleLandschap() {
   toonStartscherm.value = false
   actieveSet.value = new Set()
   heleLandschap.value = true
+  beginschermOpen.value = false // hele landschap = bewuste ingang → sluit het beginscherm
 }
 watch(() => actieveSet.value.size, (n) => { if (n === 0) focusOpSet.value = false })
 
@@ -698,6 +704,7 @@ function openView(v) {
   actieveSet.value = new Set(v.component_ids || [])
   heleLandschap.value = false
   toonStartscherm.value = false
+  beginschermOpen.value = false // een view openen = bewuste ingang → sluit het beginscherm
 }
 async function verwijderView(v) {
   try {
@@ -1675,7 +1682,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', _opEscape)
 })
 
-defineExpose({ openNodePopup, openEdgePopup, selecteerFlow, onNodeTap, sluitPopup, toggleFullscreen, fullscreen, popupOpen, _edgeData, groepeerPerOrg, grafNodes, grafEdges, zichtbareNodes, zichtbareEdges, layoutModus, _laneVan, _swimlanePositions, _layout, laneVolgorde, verbergLegeLanes, laneBanden, getekendeNodes, _herschikLane, toonRegistratiegaps, setLayoutModus, modus, actieveSet, toggleSet, kiesComponent, drillPad, drillNaar, stapTerug, huidigeFocus, huidigeFocusSet, topbalkNodes, impactDirect, impactGeraaktAantal, impactZichtbaarIds, _nodeData, geselecteerdNodeId, _edgeGehighlight, inspecteerNode, historie, cursor, kanTerug, kanVooruit, terugInHistorie, vooruitInHistorie, _vormVoorType, legendaOpen, toggleLegenda, scopeOrgs, scopeModus, organisatieNodes, toggleScopeOrg, zonderEigenaarAantal, organisatieloosGebruiktAantal, opgeslagenViews, magViewsBeheren, toonStartscherm, openView, openOpslaan, openBewerk, bewaarView, verwijderView, beginMetHeleKaart, viewDialogOpen, viewNaam, viewGedeeld, laadViews, heleLandschap, beginscherm, tekenVoortgang, toonHeleLandschap, herlaadGraaf, wisSet, voegComponentenToeAanSet, actieveSetNodes })
+defineExpose({ openNodePopup, openEdgePopup, selecteerFlow, onNodeTap, sluitPopup, toggleFullscreen, fullscreen, popupOpen, _edgeData, groepeerPerOrg, grafNodes, grafEdges, zichtbareNodes, zichtbareEdges, layoutModus, _laneVan, _swimlanePositions, _layout, laneVolgorde, verbergLegeLanes, laneBanden, getekendeNodes, _herschikLane, toonRegistratiegaps, setLayoutModus, modus, actieveSet, toggleSet, kiesComponent, drillPad, drillNaar, stapTerug, huidigeFocus, huidigeFocusSet, topbalkNodes, impactDirect, impactGeraaktAantal, impactZichtbaarIds, _nodeData, geselecteerdNodeId, _edgeGehighlight, inspecteerNode, historie, cursor, kanTerug, kanVooruit, terugInHistorie, vooruitInHistorie, _vormVoorType, legendaOpen, toggleLegenda, scopeOrgs, scopeModus, organisatieNodes, toggleScopeOrg, zonderEigenaarAantal, organisatieloosGebruiktAantal, opgeslagenViews, magViewsBeheren, toonStartscherm, openView, openOpslaan, openBewerk, bewaarView, verwijderView, beginMetHeleKaart, viewDialogOpen, viewNaam, viewGedeeld, laadViews, heleLandschap, beginscherm, beginschermOpen, tekenVoortgang, toonHeleLandschap, herlaadGraaf, wisSet, voegComponentenToeAanSet, actieveSetNodes })
 
 // Hertekenen bij elke state die de graaf raakt.
 watch(
@@ -2080,22 +2087,25 @@ const typeLabel = (t) => humaniseer(t)
 
         <!-- Fase B — voortgangsteller "X van N" bij het laden van het hele landschap (echt
              meebewegend getal naar een bekend totaal, geen tijd-spinner). -->
-        <p v-if="tekenVoortgang" data-testid="lk-voortgang" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[var(--cd-color-text-muted)]">{{ tekenVoortgang.gedaan }} van {{ tekenVoortgang.totaal }} componenten geladen…</p>
-        <p v-else-if="laden" data-testid="lk-laden" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[var(--cd-color-text-muted)]">Landschap laden…</p>
-        <p v-else-if="fout" role="alert" data-testid="lk-fout" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[var(--cd-color-danger)]">{{ fout }}</p>
-        <!-- Fase B slice 2b (LI023) — het volwaardige 4-ingangen-beginscherm vervangt de placeholder
-             (zoek · context · opgeslagen views · hele landschap). Overlay over het lege canvas; de
-             component-root draagt data-testid="lk-beginscherm" + de "toon hele landschap"-actie. -->
+        <!-- Fase B slice 2b-v2 (LI023) — het 4-ingangen-beginscherm staat als eigen overlay vóór de
+             canvas-meldingen: het blijft open (beginschermOpen) terwijl de gebruiker een set opbouwt
+             en sluit pas via "Toon op de kaart" (@sluit), niet automatisch bij de eerste toevoeging.
+             De component-root draagt data-testid="lk-beginscherm". -->
         <KaartBeginscherm
-          v-else-if="beginscherm"
+          v-if="beginschermOpen"
           class="absolute inset-0 bg-[var(--cd-color-bg)]"
           :opgeslagen-views="opgeslagenViews"
           :component-opties="typeCatalogus"
           :eigenaar-opties="[]"
+          :set-grootte="actieveSet.size"
           @voeg-componenten-toe="voegComponentenToeAanSet"
           @open-view="openView"
           @toon-hele-landschap="toonHeleLandschap"
+          @sluit="beginschermOpen = false"
         />
+        <p v-else-if="tekenVoortgang" data-testid="lk-voortgang" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[var(--cd-color-text-muted)]">{{ tekenVoortgang.gedaan }} van {{ tekenVoortgang.totaal }} componenten geladen…</p>
+        <p v-else-if="laden" data-testid="lk-laden" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[var(--cd-color-text-muted)]">Landschap laden…</p>
+        <p v-else-if="fout" role="alert" data-testid="lk-fout" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[var(--cd-color-danger)]">{{ fout }}</p>
         <p v-else-if="!heeftData" data-testid="lk-leeg" class="absolute left-1/2 top-1/2 max-w-md -translate-x-1/2 -translate-y-1/2 text-center text-[var(--cd-color-text-muted)]">Geen componenten in deze selectie.</p>
       </div>
       </div>

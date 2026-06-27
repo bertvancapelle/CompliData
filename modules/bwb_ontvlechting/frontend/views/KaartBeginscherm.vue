@@ -26,8 +26,10 @@ const props = defineProps({
   componentOpties: { type: Array, default: () => [] },
   // Eigenaar-opties (organisatie-partijen); interface-compat — de eigenaar-picker zoekt server-side.
   eigenaarOpties: { type: Array, default: () => [] },
+  // Aantal componenten in de actieve set — voedt de "Toon op de kaart"-knop (label + disabled-staat).
+  setGrootte: { type: Number, default: 0 },
 })
-const emit = defineEmits(['voegComponentenToe', 'openView', 'toonHeleLandschap'])
+const emit = defineEmits(['voegComponentenToe', 'openView', 'toonHeleLandschap', 'sluit'])
 
 // Gesloten enum-lijsten (≤10 vaste opties → native <select>, conform ZoekSelect-standaard).
 const LAAG_OPTIES = ['application', 'technology', 'business', 'implementation_migration']
@@ -308,8 +310,22 @@ defineExpose({ zoek, zoekterm, gekozenType, filterLaag, filterHosting, eigenaarI
         Zoek een component om te beginnen.
       </p>
 
-      <!-- 4 — Bescheiden ontsnapping: het hele landschap -->
+      <!-- Primaire actie: sluit het beginscherm en toon de opgebouwde set op de kaart. Disabled
+           (grayed-out) zolang de set leeg is — er valt dan nog niets te tonen. -->
       <div class="border-t border-[var(--cd-color-border)] pt-[var(--cd-space-md)]">
+        <button
+          type="button"
+          data-testid="toon-op-kaart-knop"
+          :disabled="setGrootte === 0"
+          class="w-full rounded-[var(--cd-radius-btn)] bg-[var(--cd-color-primary)] px-[var(--cd-space-md)] py-2 text-white disabled:cursor-not-allowed disabled:opacity-50"
+          @click="emit('sluit')"
+        >
+          {{ setGrootte === 0 ? 'Selecteer componenten om te beginnen' : `Toon ${setGrootte} component${setGrootte === 1 ? '' : 'en'} op de kaart` }}
+        </button>
+      </div>
+
+      <!-- 4 — Bescheiden ontsnapping: het hele landschap -->
+      <div class="pt-[var(--cd-space-sm)]">
         <button
           type="button"
           data-testid="lk-toon-hele-landschap"
