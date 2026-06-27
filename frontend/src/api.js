@@ -267,8 +267,12 @@ export const api = {
   },
 
   // ADR-025 — Landschapskaart: volledige graaf (nodes + edges) in één read-only call.
+  // Fase B (LI022) — `subgraaf`: set-scoped graaf (de gegeven component-ids + hun directe 1-hop-buren)
+  // via POST (de id-lijst wordt lang → geen GET-querystring). Zelfde respons-vorm als `haalGrafdata`.
   landschapskaart: {
     haalGrafdata: (params = {}) => request(`/landschapskaart${_filterQuery('landschapskaart.haalGrafdata', params, ['diepte'])}`),
+    subgraaf: (component_ids, diepte = 1) =>
+      request('/landschapskaart/subgraaf', { method: 'POST', body: JSON.stringify({ component_ids, diepte }) }),
   },
 
   // ADR-033 slice 2 — opgeslagen & deelbare Impact-verkenner-views. Lijst = eigen + gedeeld

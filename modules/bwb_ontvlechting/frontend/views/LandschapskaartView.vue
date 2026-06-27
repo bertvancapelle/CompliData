@@ -97,7 +97,10 @@ const actieveSet = ref(new Set())
 // lege set → Geheel model; 1 component → Ego-view; ≥2 componenten → Impact-verkenner.
 const modus = computed(() => {
   const n = actieveSet.value.size
-  return n === 0 ? 'geheel' : n === 1 ? 'ego' : 'impact'
+  // Fase B — een lege set is niet langer "geheel model": leeg = beginscherm ('leeg'), tenzij de
+  // bewuste "hele landschap"-actie aanstaat (dan de volledige plaat = 'geheel').
+  if (n === 0) return heleLandschap.value ? 'geheel' : 'leeg'
+  return n === 1 ? 'ego' : 'impact'
 })
 const egoStartId = ref(null)
 const detailId = ref(null)
@@ -155,23 +158,82 @@ const nodePerId = computed(() => Object.fromEntries(grafNodes.value.map((n) => [
 const heeftData = computed(() => nodes.value.length > 0)
 const isApplicatie = (n) => n?.element_type === 'applicatie'
 
-// ── Data laden ────────────────────────────────────────────────────────────────
-async function laad() {
+// ── Data laden (set-gestuurd — Fase B/LI022) ────────────────────────────────────
+// "Hele landschap"-staat: bewust de volledige plaat tonen, LOS van de set-grootte. Een lege set
+// betekent niet langer "toon alles", maar het lege beginscherm (de gebruiker kiest een ingang).
+const heleLandschap = ref(false)
+const beginscherm = computed(() => actieveSet.value.size === 0 && !heleLandschap.value)
+// Voortgangsteller bij het laden van het hele landschap: {gedaan,totaal} of null. (cy.add is één
+// synchrone call zonder native telbare batches → we tellen op de in chunks verwerkte nodes.)
+const tekenVoortgang = ref(null)
+let _laadGen = 0
+const HELE_CHUNK = 50
+
+function _volgendeFrame() {
+  return new Promise((res) => {
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => res())
+    else setTimeout(res, 0)
+  })
+}
+function _mapEdges(rauw) {
+  // ADR-031 — map de backend-ring 'beheerorganisatie' op de UI-ringnaam 'rollen'.
+  return (rauw || []).map((e) => (e.ring === 'beheerorganisatie' ? { ...e, ring: 'rollen' } : e))
+}
+
+// Drie laadpaden: beginscherm (niets laden) · niet-lege set (subgraaf = set + 1-hop) · hele
+// landschap (volledige graaf mét voortgangsteller). Bij elke set-/staat-wijziging wordt de hele set
+// opnieuw opgehaald (idempotent; geen incrementele merge). `_laadGen` verwerpt verouderde races.
+async function herlaadGraaf() {
+  const gen = ++_laadGen
+  if (beginscherm.value) {
+    nodes.value = []
+    edges.value = []
+    egoStartId.value = null
+    tekenVoortgang.value = null
+    fout.value = null
+    laden.value = false
+    return
+  }
   laden.value = true
   fout.value = null
   try {
-    const data = await api.landschapskaart.haalGrafdata({ diepte: diepte.value })
-    nodes.value = data.nodes || []
-    // ADR-031 — map de backend-ring 'beheerorganisatie' op de UI-ringnaam 'rollen'.
-    edges.value = (data.edges || []).map((e) => (e.ring === 'beheerorganisatie' ? { ...e, ring: 'rollen' } : e))
-    const eersteApp = nodes.value.find(isApplicatie)
-    egoStartId.value = eersteApp ? eersteApp.id : null
-    // ADR-024 scope: standaard staan alle eigen organisaties aan ("alles van ons", Biedt aan).
-    scopeOrgs.value = new Set(organisatieNodes.value.map((n) => n.id))
+    if (actieveSet.value.size > 0) {
+      // Niet-lege set → set-scoped subgraaf (een set ís focus; geen volledige plaat).
+      const data = await api.landschapskaart.subgraaf([...actieveSet.value], diepte.value)
+      if (gen !== _laadGen) return
+      nodes.value = data.nodes || []
+      edges.value = _mapEdges(data.edges)
+    } else {
+      // Lege set + hele-landschap-actie → de volledige graaf, in chunks verwerkt voor "X van N".
+      const data = await api.landschapskaart.haalGrafdata({ diepte: diepte.value })
+      if (gen !== _laadGen) return
+      const ruw = data.nodes || []
+      tekenVoortgang.value = { gedaan: 0, totaal: ruw.length }
+      const verwerkt = []
+      for (let i = 0; i < ruw.length; i += HELE_CHUNK) {
+        for (let j = i; j < Math.min(i + HELE_CHUNK, ruw.length); j++) verwerkt.push(ruw[j])
+        tekenVoortgang.value = { gedaan: verwerkt.length, totaal: ruw.length }
+        if (i + HELE_CHUNK < ruw.length) await _volgendeFrame()
+        if (gen !== _laadGen) return
+      }
+      nodes.value = verwerkt
+      edges.value = _mapEdges(data.edges)
+      const eersteApp = nodes.value.find(isApplicatie)
+      egoStartId.value = eersteApp ? eersteApp.id : null
+      // ADR-024 scope: in de hele-landschap-modus staan standaard alle eigen organisaties aan.
+      scopeOrgs.value = new Set(organisatieNodes.value.map((n) => n.id))
+      tekenVoortgang.value = null
+      // Fase B — "toon hele landschap" is een verse verkennings-wortel: hef de history opnieuw op
+      // (na de flush van de scope-default) zodat die default geen losse "terug"-stap wordt.
+      nextTick(() => { if (gen === _laadGen && _historieKlaar) _zaaiHistorie() })
+    }
   } catch (e) {
-    fout.value = e?.message || 'Laden van de landschapskaart mislukt.'
+    if (gen === _laadGen) {
+      fout.value = e?.message || 'Laden van de landschapskaart mislukt.'
+      tekenVoortgang.value = null
+    }
   } finally {
-    laden.value = false
+    if (gen === _laadGen) laden.value = false
   }
 }
 
@@ -179,7 +241,7 @@ async function laad() {
 async function zetDiepte(d) {
   if (diepte.value === d) return
   diepte.value = d
-  await laad()
+  await herlaadGraaf()
 }
 
 // Alleen applicaties (+ sinds de scope-slice óók de eigen organisaties) zijn selecteerbaar via de
@@ -418,6 +480,7 @@ function toggleSet(id) {
   const s = new Set(actieveSet.value)
   s.has(id) ? s.delete(id) : s.add(id)
   actieveSet.value = s
+  heleLandschap.value = false // Fase B — een set opbouwen verlaat de hele-landschap-modus
 }
 // ADR-033 — in de componentenlijst is klikken = toevoegen/verwijderen uit de actieve set
 // (de aparte "+"-knop is vervallen). Het detailpaneel volgt de aangeklikte component.
@@ -429,16 +492,36 @@ function voegAlleGefilterdeToe() {
   const s = new Set(actieveSet.value)
   for (const n of gefilterdeNodes.value) s.add(n.id)
   actieveSet.value = s
+  heleLandschap.value = false
 }
 const actieveSetNodes = computed(() => [...actieveSet.value].map((id) => nodePerId.value[id]).filter(Boolean))
 
 // LI027 — focus op de actieve set (graph-filter) + wis-alles. Focus schakelt automatisch uit
 // zodra de set leeg is.
 const focusOpSet = ref(false)
+// Fase B — "Begin opnieuw" = de enige harde reset: set leeg, hele-landschap-vlag uit. De
+// herfetch-watch leegt vervolgens de graaf (beginscherm-tak) → terug naar het lege beginscherm.
 function wisSet() {
   actieveSet.value = new Set()
+  heleLandschap.value = false
+}
+// Fase B — bewuste "toon het hele landschap"-actie: leegt de set en zet de hele-landschap-vlag,
+// waarna de herfetch-watch de volledige graaf laadt (mét voortgangsteller).
+function toonHeleLandschap() {
+  toonStartscherm.value = false
+  actieveSet.value = new Set()
+  heleLandschap.value = true
 }
 watch(() => actieveSet.value.size, (n) => { if (n === 0) focusOpSet.value = false })
+
+// Fase B — set-gestuurd herladen: elke wijziging van de set óf de hele-landschap-vlag haalt de
+// bijbehorende graaf opnieuw op. NIET tijdens de mount (de initiële laad gebeurt expliciet in
+// onMounted ná het bepalen van deep-link/herstelde staat) → `_mountKlaar` voorkomt een dubbele fetch.
+let _mountKlaar = false
+watch(
+  () => `${[...actieveSet.value].sort().join('|')}#${heleLandschap.value}`,
+  () => { if (_mountKlaar) herlaadGraaf() },
+)
 
 // ── Impact-verkenner (ADR-033) — drill-down over de transitieve koppelingsketen ──────
 // De basis is de actieve set; elke drill-down legt één extra focus-stap bovenop (stack).
@@ -599,9 +682,11 @@ async function bewaarView() {
   }
 }
 
-// Openen: de bewaarde selectie wordt de actieve set → de adaptieve weergave volgt vanzelf.
+// Openen: de bewaarde selectie wordt de actieve set → de adaptieve weergave volgt vanzelf
+// (de herfetch-watch laadt de subgraaf van die set).
 function openView(v) {
   actieveSet.value = new Set(v.component_ids || [])
+  heleLandschap.value = false
   toonStartscherm.value = false
 }
 async function verwijderView(v) {
@@ -613,9 +698,10 @@ async function verwijderView(v) {
     _viewFout(e)
   }
 }
-// 2d — escape: direct naar het geheel-model (lege actieve set), zonder een view te kiezen.
+// 2d — escape vanuit het startscherm: toon meteen het hele landschap (Fase B-actie), zonder een
+// view te kiezen.
 function beginMetHeleKaart() {
-  toonStartscherm.value = false
+  toonHeleLandschap()
 }
 
 // ── Detail ────────────────────────────────────────────────────────────────────
@@ -1478,11 +1564,10 @@ function _herstelKaartState() {
   let s = null
   try { s = JSON.parse(sessionStorage.getItem(_LK_STATE_KEY) || 'null') } catch { s = null }
   if (!s) return
-  // ADR-033 — herstel de actieve set (de modus volgt eruit). Alleen nog bestaande nodes.
-  if (Array.isArray(s.actieveSet)) {
-    const geldig = s.actieveSet.filter((id) => nodes.value.some((n) => n.id === id))
-    if (geldig.length) actieveSet.value = new Set(geldig)
-  }
+  // ADR-033 — herstel de actieve set (de modus volgt eruit). Fase B: de graaf is bij mount nog niet
+  // geladen (set-gestuurd) → herstel de set as-is; de daaropvolgende `herlaadGraaf` haalt de subgraaf
+  // van die set op.
+  if (Array.isArray(s.actieveSet) && s.actieveSet.length) actieveSet.value = new Set(s.actieveSet)
   // LI019 swimlane-parkeren — layoutModus NIET meer herstellen: altijd 'radiaal' (de enige actieve layout).
   // Lanevolgorde herstellen mits een geldige permutatie van de bekende lanes (anders default).
   if (Array.isArray(s.laneVolgorde)) {
@@ -1493,13 +1578,14 @@ function _herstelKaartState() {
   if (typeof s.toonRegistratiegaps === 'boolean') toonRegistratiegaps.value = s.toonRegistratiegaps
   if (Array.isArray(s.ringAan)) ringAan.value = new Set(s.ringAan.filter((r) => RINGEN.includes(r)))
   if (typeof s.groepeerPerOrg === 'boolean') groepeerPerOrg.value = s.groepeerPerOrg
-  // egoStartId alleen herstellen als die node nog bestaat (anders het default-centrum behouden).
-  if (s.egoStartId && nodes.value.some((n) => n.id === s.egoStartId)) egoStartId.value = s.egoStartId
+  // egoStartId herstellen (de subgraaf-fetch laadt die node mee als hij nog bestaat).
+  if (s.egoStartId) egoStartId.value = s.egoStartId
 }
 onBeforeRouteLeave(_bewaarKaartState)
 
 onMounted(async () => {
-  await laad()
+  // Fase B — geen onvoorwaardelijke full-graph-laad meer: eerst catalogus + views, dán de set/staat
+  // bepalen, dán pas de bijbehorende graaf laden (lege set → beginscherm, niets laden).
   // LI019 1b — componenttype-catalogus voor het type-filter (faalt zacht: leeg → niets te kiezen).
   try {
     typeCatalogus.value = (await api.componenten.opties())?.componenttype || []
@@ -1525,6 +1611,11 @@ onMounted(async () => {
   if (!qCenter && opgeslagenViews.value.length >= 1 && actieveSet.value.size === 0) {
     toonStartscherm.value = true
   }
+  // Fase B — eerste graaf-laad volgens de zojuist bepaalde staat (lege set → beginscherm = niets
+  // laden; deep-link/herstelde set → subgraaf). Daarna pas de herfetch-watch scherpstellen, zodat
+  // de set-assignments hierboven geen dubbele fetch geven.
+  await herlaadGraaf()
+  _mountKlaar = true
   // Toestand-geschiedenis zaaien op de zojuist opgebouwde begintoestand (cursor 0). Vanaf hier
   // legt elke betekenisvolle wijziging een nieuwe entry vast (zie de _toestandSig-watch).
   _zaaiHistorie()
@@ -1574,7 +1665,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', _opEscape)
 })
 
-defineExpose({ openNodePopup, openEdgePopup, selecteerFlow, onNodeTap, sluitPopup, toggleFullscreen, fullscreen, popupOpen, _edgeData, groepeerPerOrg, grafNodes, grafEdges, zichtbareNodes, zichtbareEdges, layoutModus, _laneVan, _swimlanePositions, _layout, laneVolgorde, verbergLegeLanes, laneBanden, getekendeNodes, _herschikLane, toonRegistratiegaps, setLayoutModus, modus, actieveSet, toggleSet, kiesComponent, drillPad, drillNaar, stapTerug, huidigeFocus, huidigeFocusSet, topbalkNodes, impactDirect, impactGeraaktAantal, impactZichtbaarIds, _nodeData, geselecteerdNodeId, _edgeGehighlight, inspecteerNode, historie, cursor, kanTerug, kanVooruit, terugInHistorie, vooruitInHistorie, _vormVoorType, legendaOpen, toggleLegenda, scopeOrgs, scopeModus, organisatieNodes, toggleScopeOrg, zonderEigenaarAantal, organisatieloosGebruiktAantal, opgeslagenViews, magViewsBeheren, toonStartscherm, openView, openOpslaan, openBewerk, bewaarView, verwijderView, beginMetHeleKaart, viewDialogOpen, viewNaam, viewGedeeld, laadViews })
+defineExpose({ openNodePopup, openEdgePopup, selecteerFlow, onNodeTap, sluitPopup, toggleFullscreen, fullscreen, popupOpen, _edgeData, groepeerPerOrg, grafNodes, grafEdges, zichtbareNodes, zichtbareEdges, layoutModus, _laneVan, _swimlanePositions, _layout, laneVolgorde, verbergLegeLanes, laneBanden, getekendeNodes, _herschikLane, toonRegistratiegaps, setLayoutModus, modus, actieveSet, toggleSet, kiesComponent, drillPad, drillNaar, stapTerug, huidigeFocus, huidigeFocusSet, topbalkNodes, impactDirect, impactGeraaktAantal, impactZichtbaarIds, _nodeData, geselecteerdNodeId, _edgeGehighlight, inspecteerNode, historie, cursor, kanTerug, kanVooruit, terugInHistorie, vooruitInHistorie, _vormVoorType, legendaOpen, toggleLegenda, scopeOrgs, scopeModus, organisatieNodes, toggleScopeOrg, zonderEigenaarAantal, organisatieloosGebruiktAantal, opgeslagenViews, magViewsBeheren, toonStartscherm, openView, openOpslaan, openBewerk, bewaarView, verwijderView, beginMetHeleKaart, viewDialogOpen, viewNaam, viewGedeeld, laadViews, heleLandschap, beginscherm, tekenVoortgang, toonHeleLandschap, herlaadGraaf, wisSet })
 
 // Hertekenen bij elke state die de graaf raakt.
 watch(
@@ -1607,10 +1698,12 @@ const typeLabel = (t) => humaniseer(t)
          Deze indicator toont alleen wélke weergave nu actief is; kiezen doe je via selecteren. -->
     <div class="flex items-center gap-[var(--cd-space-sm)] border-b border-[var(--cd-color-border)] bg-white p-[var(--cd-space-sm)]">
       <p data-testid="lk-weergave-indicator" class="rounded-[var(--cd-radius-btn)] bg-[var(--cd-color-primary)] px-[var(--cd-space-md)] py-1 text-[length:var(--cd-text-sm)] font-semibold text-white">
-        {{ modus === 'geheel' ? 'Geheel model' : modus === 'ego' ? 'Ego-view' : 'Impact-verkenner' }}
+        {{ modus === 'geheel' ? 'Geheel model' : modus === 'ego' ? 'Ego-view' : modus === 'impact' ? 'Impact-verkenner' : 'Beginscherm' }}
       </p>
       <span class="text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]">Weergave volgt je selectie</span>
-      <span class="ml-auto text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]" data-testid="lk-zichtbaar-aantal">{{ zichtbaarAantal }} nodes zichtbaar</span>
+      <!-- Fase B — "Begin opnieuw": enige harde reset → terug naar het lege beginscherm. -->
+      <button v-if="!beginscherm" type="button" data-testid="lk-begin-opnieuw" class="rounded-[var(--cd-radius-btn)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-1 text-[length:var(--cd-text-sm)] hover:bg-[var(--cd-color-accent)]" @click="wisSet">Begin opnieuw</button>
+      <span class="ml-auto text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]" data-testid="lk-zichtbaar-aantal">{{ zichtbaarAantal }} in beeld</span>
     </div>
 
     <div class="flex min-h-0 flex-1">
@@ -1949,9 +2042,18 @@ const typeLabel = (t) => humaniseer(t)
           </div>
         </div>
 
-        <p v-if="laden" data-testid="lk-laden" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[var(--cd-color-text-muted)]">Landschap laden…</p>
+        <!-- Fase B — voortgangsteller "X van N" bij het laden van het hele landschap (echt
+             meebewegend getal naar een bekend totaal, geen tijd-spinner). -->
+        <p v-if="tekenVoortgang" data-testid="lk-voortgang" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[var(--cd-color-text-muted)]">{{ tekenVoortgang.gedaan }} van {{ tekenVoortgang.totaal }} componenten geladen…</p>
+        <p v-else-if="laden" data-testid="lk-laden" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[var(--cd-color-text-muted)]">Landschap laden…</p>
         <p v-else-if="fout" role="alert" data-testid="lk-fout" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[var(--cd-color-danger)]">{{ fout }}</p>
-        <p v-else-if="!heeftData" data-testid="lk-leeg" class="absolute left-1/2 top-1/2 max-w-md -translate-x-1/2 -translate-y-1/2 text-center text-[var(--cd-color-text-muted)]">Nog geen landschapsdata geregistreerd.</p>
+        <!-- Fase B — leeg beginscherm (lege set, niet hele-landschap): minimale placeholder + de
+             bewuste "toon het hele landschap"-actie. Het volwaardige 4-ingangen-scherm is slice 2. -->
+        <div v-else-if="beginscherm" data-testid="lk-beginscherm" class="absolute left-1/2 top-1/2 flex max-w-md -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-[var(--cd-space-sm)] text-center text-[var(--cd-color-text-muted)]">
+          <p>Begin met zoeken of bladeren in het linkerpaneel — of toon het hele landschap.</p>
+          <button type="button" data-testid="lk-toon-hele-landschap" class="rounded-[var(--cd-radius-btn)] bg-[var(--cd-color-primary)] px-[var(--cd-space-md)] py-2 text-white" @click="toonHeleLandschap">Toon het hele landschap →</button>
+        </div>
+        <p v-else-if="!heeftData" data-testid="lk-leeg" class="absolute left-1/2 top-1/2 max-w-md -translate-x-1/2 -translate-y-1/2 text-center text-[var(--cd-color-text-muted)]">Geen componenten in deze selectie.</p>
       </div>
       </div>
 

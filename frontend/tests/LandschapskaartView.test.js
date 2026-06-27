@@ -23,7 +23,7 @@ vi.mock('@/composables/cytoscape', () => ({
 }))
 vi.mock('@/api', () => ({
   api: {
-    landschapskaart: { haalGrafdata: vi.fn() },
+    landschapskaart: { haalGrafdata: vi.fn(), subgraaf: vi.fn() }, // Fase B — set-scoped subgraaf
     componenten: { opties: vi.fn() }, // LI019 1b — componenttype-catalogus voor het type-filter
     partijen: { lijst: vi.fn() }, // LI019 1b — leverancier-zoek (externe partijen)
     // ADR-033 2c — opgeslagen views.
@@ -46,7 +46,17 @@ const GRAF = () => ({
   edges: [{ bron_id: 'a1', doel_id: 'a2', relatietype: 'flow', label: 'koppeling', ring: 'applicaties', richting: 'eenrichting', protocol: 'rest' }],
 })
 
-async function mountView({ query = '', rollen = ['medewerker'] } = {}) {
+// Fase B (strategie A) — één setter voedt zowel `haalGrafdata` (hele-landschap-modus) als de
+// `subgraaf`-mock (set-modus geeft dezelfde graaf terug), zodat de bestaande full-graph-asserties
+// geldig blijven nadat een set is opgebouwd. `subgraaf` leest `_graf` live (zie beforeEach).
+let _graf = GRAF()
+function zetGraf(g) {
+  _graf = g
+  api.landschapskaart.haalGrafdata.mockResolvedValue(g)
+  return g
+}
+
+async function mountView({ query = '', rollen = ['medewerker'], heleLandschap = true } = {}) {
   const pinia = createPinia()
   setActivePinia(pinia)
   const auth = useAuthStore()
@@ -64,6 +74,13 @@ async function mountView({ query = '', rollen = ['medewerker'] } = {}) {
   const pushSpy = vi.spyOn(router, 'push')
   const w = mount(LandschapskaartView, { global: { plugins: [pinia, router] } })
   await flushPromises()
+  // Fase B (strategie A) — laad standaard het hele landschap zodat de bestaande full-graph-tests
+  // (filters/scope/ego/impact/swimlane/history/ringen) een gevulde graaf hebben. Een ?center-deeplink
+  // laadt al een subgraaf; nieuwe beginscherm-/set-tests passeren heleLandschap:false.
+  if (heleLandschap && !query.includes('center')) {
+    w.vm.toonHeleLandschap()
+    await flushPromises()
+  }
   return { w, pushSpy }
 }
 
@@ -80,7 +97,9 @@ const getekendeIds = (w) => w.vm.getekendeNodes.map((n) => n.id).sort()
 beforeEach(() => {
   vi.clearAllMocks()
   sessionStorage.clear() // LI022 — voorkom dat bewaarde kaart-state tussen tests lekt
-  api.landschapskaart.haalGrafdata.mockResolvedValue(GRAF())
+  zetGraf(GRAF())
+  // Fase B — set-modus: de subgraaf-mock geeft de actuele `_graf` terug (zelfde graaf als haalGrafdata).
+  api.landschapskaart.subgraaf.mockImplementation(() => Promise.resolve(_graf))
   // LI019 1b — type-catalogus + leverancier-zoek defaults.
   api.componenten.opties.mockResolvedValue({
     componenttype: [
@@ -130,8 +149,8 @@ describe('LandschapskaartView v3', () => {
     expect(w.find('[data-testid="lk-canvas"]').exists()).toBe(true)
     await kies(w, 'a2') // weer 1 → ego
     expect(w.vm.modus).toBe('ego')
-    await kies(w, 'a1') // leeg → geheel
-    expect(w.vm.modus).toBe('geheel')
+    await kies(w, 'a1') // Fase B — set leeg én niet hele-landschap → beginscherm ('leeg'), niet meer 'geheel'
+    expect(w.vm.modus).toBe('leeg')
   })
 
   it('ADR-033 — klik in de lijst toggelt set-lidmaatschap (de losse "+"-knop is vervallen)', async () => {
@@ -142,9 +161,9 @@ describe('LandschapskaartView v3', () => {
     expect([...w.vm.actieveSet]).toEqual(['a1'])
     expect(w.find('[data-testid="lk-res-naam-a1"]').attributes('aria-pressed')).toBe('true')
     expect(w.find('[data-testid="lk-res-gekozen-a1"]').exists()).toBe(true) // ✓-markering
-    await kies(w, 'a1') // opnieuw klikken → verwijderen
+    await kies(w, 'a1') // opnieuw klikken → verwijderen → set leeg → beginscherm (Fase B: geen graaf meer)
     expect([...w.vm.actieveSet]).toEqual([])
-    expect(w.find('[data-testid="lk-res-naam-a1"]').attributes('aria-pressed')).toBe('false')
+    expect(w.vm.beginscherm).toBe(true)
   })
 
   it('LI019 1b — type-filter laadt de componenttype-catalogus als doorzoekbare multi-select', async () => {
@@ -162,7 +181,7 @@ describe('LandschapskaartView v3', () => {
 
   it('LI019 1c-v2 — leverancier-filter: andere leverancier weg, kenmerkloos pas mee met "Zonder leverancier"', async () => {
     // Eigen graf: a1 (l1), a3 (andere leverancier l2), a2 (geen leverancier).
-    api.landschapskaart.haalGrafdata.mockResolvedValue({
+    zetGraf({
       nodes: [
         { id: 'a1', naam: 'App1', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', leverancier_naam: 'SaaS BV', leverancier_id: 'l1', blokkades_open: 0 },
         { id: 'a3', naam: 'App3', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', leverancier_naam: 'Andere BV', leverancier_id: 'l2', blokkades_open: 0 },
@@ -240,7 +259,7 @@ describe('LandschapskaartView v3', () => {
   })
 
   it('ADR-033 1c — filter werkt op de directe buren in de Impact-verkenner; de focus blijft altijd', async () => {
-    api.landschapskaart.haalGrafdata.mockResolvedValue({
+    zetGraf({
       nodes: [
         { id: 'a1', naam: 'Focus1', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0 },
         { id: 'a2', naam: 'Focus2', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0 },
@@ -268,7 +287,7 @@ describe('LandschapskaartView v3', () => {
   })
 
   it('LI019 1d-v4 (bug 7) — actief filter behoudt context-nodes (contract) van zichtbare componenten', async () => {
-    api.landschapskaart.haalGrafdata.mockResolvedValue({
+    zetGraf({
       nodes: [
         { id: 'a1', naam: 'App', element_type: 'applicatie', laag: 'application', lifecycle_status: 'migratieklaar', blokkades_open: 0 },
         { id: 'k1', naam: 'Contract X', element_type: 'contract', laag: 'business', blokkades_open: 0 },
@@ -328,7 +347,7 @@ describe('LandschapskaartView v3', () => {
     edges: [{ bron_id: 'app', doel_id: 'db', relatietype: 'assignment', label: 'draait op', ring: 'infrastructuur' }],
   }
   async function mountSwimlane() {
-    api.landschapskaart.haalGrafdata.mockResolvedValue(SWIM_GRAF)
+    zetGraf(SWIM_GRAF)
     const { w } = await mountView()
     w.vm.setLayoutModus('swimlane')
     await flushPromises()
@@ -353,7 +372,7 @@ describe('LandschapskaartView v3', () => {
     for (let i = 0; i < 8; i++) {
       nodes.push({ id: `c${i}`, naam: `Comp ${i}`, element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0 })
     }
-    api.landschapskaart.haalGrafdata.mockResolvedValue({ nodes, edges: [] })
+    zetGraf({ nodes, edges: [] })
     const { w } = await mountView()
     w.vm.setLayoutModus('swimlane')
     await flushPromises()
@@ -370,7 +389,7 @@ describe('LandschapskaartView v3', () => {
   })
 
   it('LI019 1d-v8 — swimlane toont álle nodes uit zichtbareNodes (radiaal-data zonder edge-eis)', async () => {
-    api.landschapskaart.haalGrafdata.mockResolvedValue({
+    zetGraf({
       nodes: [
         { id: 'a1', naam: 'Zaaksysteem', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0, eigenaar_organisatie_id: 'p1' },
         { id: 'a2', naam: 'DMS', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0, eigenaar_organisatie_id: 'p1' },
@@ -495,7 +514,7 @@ describe('LandschapskaartView v3', () => {
   })
 
   it('ADR-033 1b — samenstelling-ring: checkbox aanwezig (standaard aan), edge rendert gestreept mee', async () => {
-    api.landschapskaart.haalGrafdata.mockResolvedValue({
+    zetGraf({
       nodes: [
         { id: 'a1', naam: 'Geheel', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0 },
         { id: 'd1', naam: 'Onderdeel', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0 },
@@ -531,7 +550,7 @@ describe('LandschapskaartView v3', () => {
   })
 
   it('ring uitvinken verbergt ook de nodes van die ring (LI019 Fix 2)', async () => {
-    api.landschapskaart.haalGrafdata.mockResolvedValue({
+    zetGraf({
       nodes: [
         { id: 'a1', naam: 'App1', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0 },
         { id: 'a2', naam: 'App2', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0 },
@@ -543,11 +562,11 @@ describe('LandschapskaartView v3', () => {
       ],
     })
     const { w } = await mountView()
-    expect(w.find('[data-testid="lk-zichtbaar-aantal"]').text()).toContain('3 nodes') // a1, a2, g1
+    expect(w.find('[data-testid="lk-zichtbaar-aantal"]').text()).toContain('3 in beeld') // a1, a2, g1
     // ring 'gebruikers' uit → g1 (alleen via die ring verbonden) verdwijnt; apps blijven via de flow
     await w.find('[data-testid="lk-ring-gebruikers"]').trigger('change')
     await flushPromises()
-    expect(w.find('[data-testid="lk-zichtbaar-aantal"]').text()).toContain('2 nodes')
+    expect(w.find('[data-testid="lk-zichtbaar-aantal"]').text()).toContain('2 in beeld')
   })
 
   it('zoekfilter vermindert de zichtbare resultaten', async () => {
@@ -562,7 +581,7 @@ describe('LandschapskaartView v3', () => {
   it('ADR-033 1b — toont alleen de DIRECTE impact (één laag), niet de hele transitieve keten', async () => {
     // a1 → a2 → a3 (flows); b1 staat los. Vanaf {a1,b1}: directe impact = alleen a2 (één hop);
     // a3 (twee hops) verschijnt NIET vóór doorklikken (geen vooraf-uitgerekende BFS meer).
-    api.landschapskaart.haalGrafdata.mockResolvedValue({
+    zetGraf({
       nodes: [
         { id: 'a1', naam: 'Zaaksysteem', element_type: 'applicatie', laag: 'application', lifecycle_status: 'migratieklaar', blokkades_open: 0 },
         { id: 'a2', naam: 'DMS', element_type: 'applicatie', laag: 'application', lifecycle_status: 'geblokkeerd', blokkades_open: 1 },
@@ -586,7 +605,7 @@ describe('LandschapskaartView v3', () => {
   })
 
   it('ADR-033 1c — drill-down groeit/hercentreert de graaf; "← terug" gaat een stap terug', async () => {
-    api.landschapskaart.haalGrafdata.mockResolvedValue({
+    zetGraf({
       nodes: [
         { id: 'a1', naam: 'Zaaksysteem', element_type: 'applicatie', laag: 'application', lifecycle_status: 'migratieklaar', blokkades_open: 0 },
         { id: 'a2', naam: 'DMS', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0 },
@@ -619,7 +638,7 @@ describe('LandschapskaartView v3', () => {
   })
 
   it('ADR-033 — in impact: DUBBELklik op een directe buur = drill-down; enkelklik NIET', async () => {
-    api.landschapskaart.haalGrafdata.mockResolvedValue({
+    zetGraf({
       nodes: [
         { id: 'a1', naam: 'A1', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0 },
         { id: 'a2', naam: 'A2', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0 },
@@ -648,7 +667,7 @@ describe('LandschapskaartView v3', () => {
   })
 
   it('ADR-033 1b — directe impact volgt alle vier relaties (flow/draait-op/gebruikt-door/samenstelling); contract is context', async () => {
-    api.landschapskaart.haalGrafdata.mockResolvedValue({
+    zetGraf({
       nodes: [
         { id: 'a1', naam: 'App', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0 },
         { id: 'sel', naam: 'Sel', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0 },
@@ -698,7 +717,7 @@ describe('LandschapskaartView v3', () => {
 
   it('ADR-033 — enkelklik highlight ALLEEN de incidente lijnen; tweede klik verplaatst; deselectie = neutraal', async () => {
     // a1↔a2 (flow) en a2↔a3 (flow): a2 raakt beide, a1/a3 elk één.
-    api.landschapskaart.haalGrafdata.mockResolvedValue({
+    zetGraf({
       nodes: [
         { id: 'a1', naam: 'A1', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0 },
         { id: 'a2', naam: 'A2', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0 },
@@ -758,7 +777,7 @@ describe('LandschapskaartView v3', () => {
   })
 
   it('ADR-033 1b — gebruikersgroep is een aanklikbare geraakte node; drill-down toont wie hem gebruikt', async () => {
-    api.landschapskaart.haalGrafdata.mockResolvedValue({
+    zetGraf({
       nodes: [
         { id: 'a1', naam: 'App1', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0 },
         { id: 'a2', naam: 'App2', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0 },
@@ -785,7 +804,7 @@ describe('LandschapskaartView v3', () => {
   })
 
   it('ADR-033 1c — geraakte graaf-knopen tonen lifecycle-kleur + blokkade-indicatie', async () => {
-    api.landschapskaart.haalGrafdata.mockResolvedValue({
+    zetGraf({
       nodes: [
         { id: 'a1', naam: 'App', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0 },
         { id: 'sel', naam: 'Sel', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0 },
@@ -820,12 +839,12 @@ describe('LandschapskaartView v3', () => {
     expect(w.vm.modus).toBe('geheel')
     // LI020 — losse nodes (p1/k1 zonder edges) zijn altijd verborgen; de 2 via de flow verbonden
     // applicaties blijven. De actieve set wordt NIET meer automatisch gevuld (ADR-033).
-    expect(w.find('[data-testid="lk-zichtbaar-aantal"]').text()).toContain('2 nodes')
+    expect(w.find('[data-testid="lk-zichtbaar-aantal"]').text()).toContain('2 in beeld')
     expect(w.find('[data-testid="lk-rechts"]').text()).toContain('Actieve set (0)')
   })
 
   it('ADR-033 — dubbelklik focust op die node alleen → Ego-view met die node als centrum', async () => {
-    api.landschapskaart.haalGrafdata.mockResolvedValue({
+    zetGraf({
       nodes: [
         { id: 'a1', naam: 'App', element_type: 'applicatie', laag: 'application', lifecycle_status: 'concept', blokkades_open: 0 },
         { id: 'p1', naam: 'Provincie', element_type: 'partij', laag: 'business', soort: 'ketenpartner' },
@@ -888,7 +907,7 @@ describe('LandschapskaartView v3', () => {
   it('ADR-033 — lk-state herstelt de actieve set (de modus volgt eruit); oude `modus`-sleutel genegeerd', async () => {
     // Bewaarde state met alleen de actieve set + een achterhaalde `modus`-sleutel (moet genegeerd).
     sessionStorage.setItem('lk-state', JSON.stringify({ actieveSet: ['a1', 'a2'], modus: 'ego' }))
-    const { w } = await mountView()
+    const { w } = await mountView({ heleLandschap: false }) // herstel de set; geen auto-hele-landschap die 'm wist
     expect([...w.vm.actieveSet].sort()).toEqual(['a1', 'a2'])
     expect(w.vm.modus).toBe('impact') // afgeleid uit de herstelde set, niet uit de dode `modus`-sleutel
   })
@@ -951,7 +970,7 @@ describe('LandschapskaartView v3', () => {
       VIEW({ id: 'v1', naam: 'Eigen' }),
       VIEW({ id: 'v2', naam: 'Van collega', gedeeld: true, maker_naam: 'Jan', is_eigenaar: false }),
     ])
-    const { w } = await mountView()
+    const { w } = await mountView({ heleLandschap: false }) // beginscherm + startscherm-flow
     await w.find('[data-testid="lk-startscherm-hele-kaart"]').trigger('click') // sluit startscherm
     await flushPromises()
     expect(w.find('[data-testid="lk-view-open-v1"]').text()).toBe('Eigen')
@@ -966,7 +985,7 @@ describe('LandschapskaartView v3', () => {
 
   it('ADR-033 2c — een view openen zet de bewaarde selectie als actieve set → adaptieve weergave volgt', async () => {
     api.impactViews.lijst.mockResolvedValue([VIEW({ id: 'v1', naam: 'Twee', component_ids: ['a1', 'a2'] })])
-    const { w } = await mountView()
+    const { w } = await mountView({ heleLandschap: false })
     await w.find('[data-testid="lk-startscherm-open-v1"]').trigger('click')
     await flushPromises()
     expect([...w.vm.actieveSet].sort()).toEqual(['a1', 'a2'])
@@ -976,7 +995,7 @@ describe('LandschapskaartView v3', () => {
 
   it('ADR-033 2c — bewerken stuurt naam + gedeeld; selectie-bijwerken voegt de huidige set toe', async () => {
     api.impactViews.lijst.mockResolvedValue([VIEW({ id: 'v1', naam: 'Oud', component_ids: ['a1'] })])
-    const { w } = await mountView()
+    const { w } = await mountView({ heleLandschap: false })
     await w.find('[data-testid="lk-startscherm-hele-kaart"]').trigger('click')
     await flushPromises()
     await kies(w, 'a2') // actieve set {a2} (afwijkend van de view-selectie)
@@ -991,7 +1010,7 @@ describe('LandschapskaartView v3', () => {
 
   it('ADR-033 2c — een eigen view verwijderen roept de API en herlaadt de lijst', async () => {
     api.impactViews.lijst.mockResolvedValue([VIEW({ id: 'v1', naam: 'Weg' })])
-    const { w } = await mountView()
+    const { w } = await mountView({ heleLandschap: false })
     await w.find('[data-testid="lk-startscherm-hele-kaart"]').trigger('click')
     await flushPromises()
     await w.find('[data-testid="lk-view-verwijder-v1"]').trigger('click')
@@ -1002,7 +1021,7 @@ describe('LandschapskaartView v3', () => {
 
   it('ADR-033 2c — een viewer ziet geen opslaan/beheer-affordances (alleen openen)', async () => {
     api.impactViews.lijst.mockResolvedValue([VIEW({ id: 'v1', naam: 'Eigen' })])
-    const { w } = await mountView({ rollen: ['viewer'] })
+    const { w } = await mountView({ rollen: ['viewer'], heleLandschap: false })
     await w.find('[data-testid="lk-startscherm-hele-kaart"]').trigger('click')
     await flushPromises()
     await kies(w, 'a1') // actieve set
@@ -1039,7 +1058,7 @@ describe('LandschapskaartView v3', () => {
 
   it('ADR-033 2d — ≥1 view → startscherm met werkende "begin met de hele kaart"-escape', async () => {
     api.impactViews.lijst.mockResolvedValue([VIEW({ id: 'v1', naam: 'X' })])
-    const { w } = await mountView()
+    const { w } = await mountView({ heleLandschap: false })
     expect(w.find('[data-testid="lk-startscherm"]').exists()).toBe(true)
     await w.find('[data-testid="lk-startscherm-hele-kaart"]').trigger('click')
     await flushPromises()
@@ -1076,7 +1095,7 @@ describe('LandschapskaartView v3', () => {
   })
 
   it('ADR-024 — Organisatiestructuur-ring: eigen toggle, standaard UIT; edges verschijnen pas bij aan', async () => {
-    api.landschapskaart.haalGrafdata.mockResolvedValue(_osGraf())
+    zetGraf(_osGraf())
     const { w } = await mountView()
     // Eigen ring-toggle aanwezig.
     expect(w.find('[data-testid="lk-ring-organisatiestructuur"]').exists()).toBe(true)
@@ -1089,7 +1108,7 @@ describe('LandschapskaartView v3', () => {
   })
 
   it('ADR-024 — hoort-bij-edge is bereikbaar via de bestaande edge-popup', async () => {
-    api.landschapskaart.haalGrafdata.mockResolvedValue(_osGraf())
+    zetGraf(_osGraf())
     const { w } = await mountView()
     await w.find('[data-testid="lk-ring-organisatiestructuur"]').trigger('change')
     await flushPromises()
@@ -1099,7 +1118,7 @@ describe('LandschapskaartView v3', () => {
   })
 
   it('ADR-024 — hoort-bij telt NIET mee in de impact-keten', async () => {
-    api.landschapskaart.haalGrafdata.mockResolvedValue(_osGraf())
+    zetGraf(_osGraf())
     const { w } = await mountView()
     w.vm.toggleSet('afd'); w.vm.toggleSet('app') // focus {afd, app} → impact
     await flushPromises()
@@ -1353,7 +1372,7 @@ describe('LandschapskaartView v3', () => {
   const _appsInScope = (w) => w.vm.zichtbareNodes.filter((n) => n.element_type === 'applicatie').map((n) => n.id).sort()
 
   it('scope — organisatie-checkboxes uit soort=organisatie, standaard alle aan + Biedt aan', async () => {
-    api.landschapskaart.haalGrafdata.mockResolvedValue(_scopeGraf())
+    zetGraf(_scopeGraf())
     const { w } = await mountView()
     expect(w.find('[data-testid="lk-scope-org-oA"]').exists()).toBe(true)
     expect(w.find('[data-testid="lk-scope-org-oB"]').exists()).toBe(true)
@@ -1362,7 +1381,7 @@ describe('LandschapskaartView v3', () => {
   })
 
   it('scope — Biedt aan toont componenten met eigenaar ∈ selectie', async () => {
-    api.landschapskaart.haalGrafdata.mockResolvedValue(_scopeGraf())
+    zetGraf(_scopeGraf())
     const { w } = await mountView()
     expect(_appsInScope(w)).toEqual(['appA', 'appB']) // eigenaar ∈ {oA,oB}; rest buiten scope
     await w.find('[data-testid="lk-scope-org-oB"]').trigger('change') // oB uit
@@ -1371,7 +1390,7 @@ describe('LandschapskaartView v3', () => {
   })
 
   it('scope — Gebruikt toont gebruik-overlap ∈ selectie (schakelaar geldt voor de hele balk)', async () => {
-    api.landschapskaart.haalGrafdata.mockResolvedValue(_scopeGraf())
+    zetGraf(_scopeGraf())
     const { w } = await mountView()
     await w.find('[data-testid="lk-scope-gebruikt"]').trigger('click')
     await flushPromises()
@@ -1380,7 +1399,7 @@ describe('LandschapskaartView v3', () => {
   })
 
   it('scope — niets aangevinkt → volledige kaart (terugval op alles)', async () => {
-    api.landschapskaart.haalGrafdata.mockResolvedValue(_scopeGraf())
+    zetGraf(_scopeGraf())
     const { w } = await mountView()
     await w.find('[data-testid="lk-scope-org-oA"]').trigger('change')
     await w.find('[data-testid="lk-scope-org-oB"]').trigger('change')
@@ -1390,7 +1409,7 @@ describe('LandschapskaartView v3', () => {
   })
 
   it('scope — de twee gaten zijn herkenbaar (zonder eigenaar bij Biedt; organisatieloos-gebruik bij Gebruikt)', async () => {
-    api.landschapskaart.haalGrafdata.mockResolvedValue(_scopeGraf())
+    zetGraf(_scopeGraf())
     const { w } = await mountView()
     // Biedt: appNone + appUseA + appLoos hebben geen eigenaar → 3.
     expect(w.vm.zonderEigenaarAantal).toBe(3)
@@ -1403,7 +1422,7 @@ describe('LandschapskaartView v3', () => {
   })
 
   it('scope — een scope-wijziging pusht een toestand in de terug/vooruit-geschiedenis', async () => {
-    api.landschapskaart.haalGrafdata.mockResolvedValue(_scopeGraf())
+    zetGraf(_scopeGraf())
     const { w } = await mountView()
     const cur = w.vm.cursor
     await w.find('[data-testid="lk-scope-org-oB"]').trigger('change') // scope wijzigen
@@ -1417,10 +1436,88 @@ describe('LandschapskaartView v3', () => {
   })
 
   it('scope — organisatie is als vertrekpunt selecteerbaar in de lijst', async () => {
-    api.landschapskaart.haalGrafdata.mockResolvedValue(_scopeGraf())
+    zetGraf(_scopeGraf())
     const { w } = await mountView()
     expect(w.find('[data-testid="lk-res-naam-oA"]').exists()).toBe(true) // org in de zoeklijst
     await kies(w, 'oA')
     expect(w.vm.actieveSet.has('oA')).toBe(true) // als vertrekpunt gekozen
+  })
+
+  // ── Fase B (LI022) slice 1 — set-gestuurd laadpad (alleen de bedrading; de verkenmechaniek
+  //    op een subgraaf is bewust nog niet ontworpen — zie OPVOLGPUNTEN). ─────────────────────────
+  describe('Fase B — set-gestuurd laadpad', () => {
+    it('lege set + geen hele-landschap → geen fetch; beginscherm-placeholder zichtbaar', async () => {
+      const { w } = await mountView({ heleLandschap: false })
+      expect(api.landschapskaart.haalGrafdata).not.toHaveBeenCalled()
+      expect(api.landschapskaart.subgraaf).not.toHaveBeenCalled()
+      expect(w.vm.beginscherm).toBe(true)
+      expect(w.find('[data-testid="lk-beginscherm"]').exists()).toBe(true)
+      expect(w.find('[data-testid="lk-toon-hele-landschap"]').exists()).toBe(true)
+      expect(w.vm.grafNodes.length).toBe(0)
+    })
+
+    it('niet-lege set → subgraaf met de set; nodes vervangen, weergave volgt', async () => {
+      const { w } = await mountView({ heleLandschap: false })
+      w.vm.toggleSet('a1')
+      await flushPromises()
+      expect(api.landschapskaart.subgraaf).toHaveBeenCalledWith(['a1'], 1)
+      expect(api.landschapskaart.haalGrafdata).not.toHaveBeenCalled()
+      expect(w.vm.beginscherm).toBe(false)
+      expect(w.vm.modus).toBe('ego')
+      expect(w.vm.grafNodes.length).toBe(5) // subgraaf-respons (mock = volledige _graf)
+    })
+
+    it('set-mutatie → herfetch met de volledige bijgewerkte set (hele set opnieuw)', async () => {
+      const { w } = await mountView({ heleLandschap: false })
+      w.vm.toggleSet('a1')
+      await flushPromises()
+      expect(api.landschapskaart.subgraaf).toHaveBeenLastCalledWith(['a1'], 1)
+      w.vm.toggleSet('a2')
+      await flushPromises()
+      expect(api.landschapskaart.subgraaf).toHaveBeenLastCalledWith(['a1', 'a2'], 1)
+      expect(w.vm.modus).toBe('impact')
+    })
+
+    it('"toon hele landschap" → full-graph-fetch én de set wordt geleegd', async () => {
+      const { w } = await mountView({ heleLandschap: false })
+      w.vm.toggleSet('a1')
+      await flushPromises()
+      w.vm.toonHeleLandschap()
+      await flushPromises()
+      expect(api.landschapskaart.haalGrafdata).toHaveBeenCalledWith({ diepte: 1 })
+      expect([...w.vm.actieveSet]).toEqual([])
+      expect(w.vm.heleLandschap).toBe(true)
+      expect(w.vm.modus).toBe('geheel')
+      expect(w.vm.beginscherm).toBe(false)
+    })
+
+    it('"begin opnieuw" (wisSet) → set leeg, hele-landschap-vlag uit, data weg, placeholder terug', async () => {
+      const { w } = await mountView() // start gevuld in de hele-landschap-modus
+      expect(w.vm.heleLandschap).toBe(true)
+      expect(w.vm.grafNodes.length).toBeGreaterThan(0)
+      w.vm.wisSet()
+      await flushPromises()
+      expect([...w.vm.actieveSet]).toEqual([])
+      expect(w.vm.heleLandschap).toBe(false)
+      expect(w.vm.beginscherm).toBe(true)
+      expect(w.vm.grafNodes.length).toBe(0)
+      expect(w.find('[data-testid="lk-beginscherm"]').exists()).toBe(true)
+    })
+
+    it('voortgangsteller is leeg ná het laden van het hele landschap (geen blijvende spinner)', async () => {
+      const { w } = await mountView({ heleLandschap: false })
+      w.vm.toonHeleLandschap()
+      await flushPromises()
+      expect(w.vm.tekenVoortgang).toBe(null)
+      expect(w.vm.grafNodes.length).toBe(5)
+    })
+
+    it('zoek errort niet zonder geladen graaf (beginscherm) — geen resultaten, geen crash', async () => {
+      const { w } = await mountView({ heleLandschap: false })
+      await w.find('[data-testid="lk-zoek"]').setValue('zaak')
+      await flushPromises()
+      expect(w.vm.beginscherm).toBe(true)
+      expect(w.findAll('[data-testid^="lk-res-naam-"]').length).toBe(0)
+    })
   })
 })

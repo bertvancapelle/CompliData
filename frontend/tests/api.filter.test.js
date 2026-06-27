@@ -14,10 +14,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 let laatsteUrl = null
+let laatsteOpties = null
 beforeEach(() => {
   laatsteUrl = null
-  vi.stubGlobal('fetch', vi.fn(async (url) => {
+  laatsteOpties = null
+  vi.stubGlobal('fetch', vi.fn(async (url, opties) => {
     laatsteUrl = String(url)
+    laatsteOpties = opties
     return { ok: true, status: 200, json: async () => ({ items: [], volgende_cursor: null }) }
   }))
 })
@@ -41,6 +44,18 @@ describe('api-client — filter belandt in de query-string', () => {
   it('contracten.lijst zet leverancier_id in de URL', async () => {
     await api.contracten.lijst({ leverancier_id: 'lev1' })
     expect(laatsteUrl).toContain('leverancier_id=lev1')
+  })
+
+  it('landschapskaart.subgraaf (Fase B) doet een POST met component_ids + diepte in de body', async () => {
+    await api.landschapskaart.subgraaf(['a1', 'a2'], 2)
+    expect(laatsteUrl).toContain('/landschapskaart/subgraaf')
+    expect(laatsteOpties?.method).toBe('POST')
+    expect(JSON.parse(laatsteOpties.body)).toEqual({ component_ids: ['a1', 'a2'], diepte: 2 })
+  })
+
+  it('landschapskaart.subgraaf — diepte default 1 als niet meegegeven', async () => {
+    await api.landschapskaart.subgraaf(['a1'])
+    expect(JSON.parse(laatsteOpties.body)).toEqual({ component_ids: ['a1'], diepte: 1 })
   })
 
   it('bewust-leeg filter wordt weggelaten (geen lege param in de URL)', async () => {

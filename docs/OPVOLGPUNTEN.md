@@ -7,6 +7,20 @@ Bron: sessie 2–3 (P1–P5, OP-9 t/m OP-12). Status per punt expliciet vermeld.
 
 ## OPEN
 
+### Subgraaf-semantiek: filter/scope/impact/swimlane op een opgebouwde set (eigen ontwerpslice)
+
+Fase B (LI022) maakt de kaart set-gestuurd. De rijke verkenmechaniek
+(impact-ringen, scope-balk, swimlane, ego/impact-modus) is gedefinieerd óver de
+volledige graaf en is in Fase B verhuisd naar de "hele landschap"-modus (waar de
+volledige graaf nog bestaat). Wat deze mechaniek betekent op een **opgebouwde set
+(subgraaf = set + 1-hop)** is bewust nog niet ontworpen — een set ís al focus, dus
+mogelijk is een deel ervan daar overbodig of anders gedefinieerd.
+
+Te beslissen in een eigen ontwerpslice (rond het interactiemodel, Fase B slice 5):
+welke van filter/scope/impact/swimlane zinvol zijn op een subgraaf, en hoe ze zich
+daar gedragen. Pas dán de set-tests inhoudelijk herijken (nu dekken die alleen de
+bedrading). Geen workaround vooruit; structureel definiëren wanneer de beslissing valt.
+
 ### Stand V022 (sessie-afsluiting LI021, 2026-06-25)
 
 Build **V022**. LI021 = test-hygiëne + seed-verrijking + Landschapskaart-vertrekpunt **fase A** (achterkant-kern).

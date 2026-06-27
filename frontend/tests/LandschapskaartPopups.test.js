@@ -20,7 +20,7 @@ vi.mock('@/composables/cytoscape', () => ({
 }))
 vi.mock('@/api', () => ({
   api: {
-    landschapskaart: { haalGrafdata: vi.fn() },
+    landschapskaart: { haalGrafdata: vi.fn(), subgraaf: vi.fn() }, // Fase B — set-scoped subgraaf
     applicaties: { haal: vi.fn() },
     componenten: { haal: vi.fn() },
     contracten: { haal: vi.fn() },
@@ -66,6 +66,10 @@ async function mountView() {
   const w = mount(LandschapskaartView, { global: { plugins: [pinia, router] } })
   wrappers.push(w)
   await flushPromises()
+  // Fase B — de kaart opent leeg; deze popup-suite test de graaf-interacties, dus laad eerst het
+  // hele landschap (haalGrafdata). Set-mutaties (dubbelklik) lopen via de subgraaf-mock (zelfde GRAF).
+  w.vm.toonHeleLandschap()
+  await flushPromises()
   return { w, pushSpy }
 }
 
@@ -73,6 +77,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   sessionStorage.clear() // LI022 — voorkom dat bewaarde kaart-state tussen tests lekt
   api.landschapskaart.haalGrafdata.mockResolvedValue(GRAF())
+  api.landschapskaart.subgraaf.mockResolvedValue(GRAF()) // Fase B — set-modus = zelfde graaf
   api.impactViews.lijst.mockResolvedValue([]) // geen views → geen startscherm in deze suite
 })
 afterEach(() => {
