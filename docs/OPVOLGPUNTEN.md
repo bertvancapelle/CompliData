@@ -524,6 +524,29 @@ gecontroleerde zoek-vervang-slice in een aparte sessie.
 
 ---
 
+### Laag-2 identifier-rename: complidata/cd_ → likara (aparte, gecoördineerde slag)
+
+Na de skill-laag-rename (LI022, commit 8b8a8b2) resteren de gedragsbepalende
+identifiers. Eén coherente slag, géén documentatie-only:
+
+- **Keycloak audience-mapper clientId** `complidata-api` (o.a. `likara-security` skill);
+  raakt Keycloak-realmconfig + token-audience — coördineren met de identity-laag.
+- **`COMPLIDATA_TEST_MODE`** env-var → `LIKARA_TEST_MODE` (code leest 'm; feature-flag,
+  geen DB-identifier).
+- **`cd_`-familie**: cookies `cd_session`/`cd_refresh`, rol `cd_admin`, en de
+  `cd_`-tabelprefix. De cookies/rol zijn code+config; de **tabelprefix raakt schema +
+  migraties** → dan is het een gate mét migratie, geen losse rename.
+- **Lokale `~/complidata/`-paden** (backups/secrets/dump-bestandsnaam in CLAUDE.md):
+  puur Bert's filesystem, cosmetisch; alleen meenemen als Bert de mappen op zijn Mac
+  ook hernoemt.
+
+Volgorde t.z.t.: eerst feitenrapport (waar leeft elke identifier, welke zijn
+schema-rakend), dan beslissen of de tabelprefix mee gaat (gate+migratie) of dat we
+alleen de niet-schema-identifiers doen. Vangrail-greps (`compliman|cm_|Eraneos`) en
+historie blijven ongemoeid.
+
+---
+
 ## AFGEROND (sessie 2–3)
 
 - **O2** — 7.5 BIO2-classificatie → BBN (CD035): de default-optieset van vraag 7.5 is
