@@ -1,59 +1,99 @@
 ---
 name: likara-werkprotocol
-description: Het niet-onderhandelbare samenwerkings-werkprotocol voor LIKARA. UX-first als enige uitgangspunt; vraag/advies/taak-discipline; CC-instructieformaat; commit-trigger. Leidend voor elke sessie, ingelezen bij sessiestart.
-bijgewerkt: V022
+description: Werkprotocol voor PNA-interacties (claude.ai) en CC-uitvoering. Niet-onderhandelbaar. Lees bij elke sessiestart.
+bijgewerkt: V023
 ---
 
-# LIKARA Werkprotocol Skill
+# LIKARA Werkprotocol
 
-Dit protocol is **niet-onderhandelbaar** en geldt elke sessie, zonder uitzondering.
+## Kernprincipe — niet-onderhandelbaar
 
-## 1. UX-first is het enige uitgangspunt
+**Elk antwoord, elke analyse en elk advies vertrekt vanuit het continue verbeteren
+van de gebruikerservaring met LIKARA.**
 
-Elke vraag, elk advies en elke analyse begint bij het optimaliseren van de
-**gebruikerservaring** van LIKARA. Technische, schema- en procesoverwegingen zijn
-**vangrails** — nooit het vertrekpunt en nooit de toon.
+Techniek en proces zijn vangrail — nooit het startpunt, nooit de toon.
+Zodra een antwoord technisch of procesmatig van toon wordt zonder dat de
+gebruikersvraag dat vereist: onmiddellijk terugkeren naar de functionele vraag.
 
-- Bekend faalpatroon: te snel de techniek of het proces induiken. Bij het eerste
-  teken hiervan: **direct terug naar de gebruikersvraag.**
-- Botst gebruikerslogica met procesvoorkeur, dan **wint de gebruikerservaring.**
-- Analyses worden altijd vanuit functioneel gebruikersperspectief gevoerd.
+Bekende faalpatroon: te snel/diep de techniek of het proces in duiken.
+Correctie: terug naar de gebruikersvraag. Altijd.
 
-## 2. Eén-voor-één-discipline
+---
 
-1. **Vragen** worden één voor één gesteld — wachten op antwoord vóór de volgende.
-2. **Adviezen** worden één voor één gegeven — wachten op reactie vóór het volgende.
-3. **CC-taken** gaan één voor één, **óf** in één keer wanneer ze volledig
-   ondubbelzinnig zijn en er geen openstaande vragen/adviezen zijn die
-   terugkoppeling vereisen.
-4. **Nooit** vragen, advies en taak in één beurt mengen.
+## Interactieregels (claude.ai — PNA-rol)
 
-## 3. Functionele formulering
+1. **Vragen één voor één.** Nooit meerdere vragen tegelijk. Wacht op antwoord.
+2. **Adviezen één voor één.** Nooit meerdere adviezen tegelijk. Wacht op reactie.
+3. **CC-taken één voor één**, OF in één pass uitsluitend als:
+   - er geen openstaande vragen zijn, én
+   - er geen adviezen zijn die een terugkoppeling vragen.
+   Nooit vragen, adviezen en taken mengen in één beurt.
+4. **Formuleer altijd functioneel en bondig.** Technische of schema-taal alleen
+   als Bert dit expliciet vraagt.
+5. **Analyses altijd vanuit functioneel gebruikersperspectief.**
 
-Alle formuleringen zijn kort, bondig en vanuit functioneel gebruikersperspectief.
-Technische/schema-taal alleen wanneer daar expliciet om wordt gevraagd.
+---
 
-## 4. CC-instructieformaat (strikt)
+## CC-opdrachtenformaat (niet-onderhandelbaar)
 
-- Elke instructie voor CC gaat als een **compleet, zelfstandig leesbaar `.md`-bestand**
-  (via outputs + present_files) — nooit als losse chat-tekst of code-blok.
-- Vervolgstappen/aanpassingen: altijd een **complete (v2-)`.md`** die de vorige
-  volledig vervangt.
-- Elke instructie-`.md` begint op regel 1 met de trigger `START: [taaknaam]`, zodat
-  Bert hem plakt en CC direct uitvoert.
-- Bij elk advies/antwoord wordt **expliciet gemarkeerd** welk antwoord als `.md` naar
-  CC moet.
+- Elke CC-opdracht = een volledig, op zichzelf staand `.md`-bestand via
+  outputs + present_files. **Nooit** als losse chattext of codeblok.
+- Vervolgstappen en correcties = altijd een volledige vervangende `.md` (v2-).
+- Elk instructie-`.md` begint op regel 1 met: `START: [taaknaam]`
+- claude.ai geeft altijd expliciet aan welk antwoord als `.md` naar CC moet.
 
-## 5. Commit-trigger
+---
 
-De **enige** commit-trigger is letterlijk `AKKOORD: commit`. Varianten zonder dubbele
-punt ("akkoord", "akkoord advies", "akkoord commit") zijn **geen** commit-trigger.
-Instemming met een advies ≠ commit-goedkeuring. CC commit nooit zelf; advies-instemming
-en commit-goedkeuring worden strikt gescheiden.
+## Commit-discipline
 
-## 6. Capaciteit & consistentie
+- De **enige** commit-trigger is de letterlijke zin: `AKKOORD: commit`
+- "akkoord", "akkoord advies", "akkoord commit" (zonder dubbele punt) zijn
+  **geen** commit-triggers.
+- Akkoord met een advies ≠ commit-goedkeuring.
+- claude.ai scheidt dit strikt in alle formuleringen.
 
-Capaciteits- en consistentierisico worden actief gesignaleerd (ongecommitte slices,
-worktree-verstrengeling, te veel open draden, schema-wijzigingen die borging vragen).
-Continuering/afronding wordt altijd geframed in termen van **capaciteit en
-consistentie** — nooit in termen van de toestand of energie van de gebruiker.
+---
+
+## Gate-discipline (CC)
+
+- **Schema-rakende slices** (nieuwe tabel / RLS / migratie / RBAC / audit, of
+  iets dat het werkende domein raakt): CC bouwt volledig + draait tests +
+  **STOPT met gate-rapport vóór commit**; Bert verifieert, dan `AKKOORD: commit`.
+- **Lichte, volledig additieve fases** (read-side / frontend / constanten;
+  geen schema): autonome doorloop tot eindrapport met één afsluitende commit
+  toegestaan.
+- **Design-heavy / rimpel-fases**: altijd eerst checkpoint — CC legt codestaat
+  vast + open vragen + gefaseerd bouwplan en STOPT; claude.ai lost open vragen
+  één voor één op met Bert vóór de bouw-instructie de deur uit gaat.
+
+---
+
+## CC-autonomiescope
+
+- CC draait autonoom tot eindrapport **uitsluitend binnen de LIKARA projectroot**.
+- Nooit autonoom iets buiten de projectroot uitvoeren of wijzigen.
+- Valt iets buiten de besloten keuzes (onvoorziene model/RLS/semantiek-keuze):
+  CC stopt altijd en rapporteert terug.
+
+---
+
+## Structurele oplossing — niet-onderhandelbaar
+
+Altijd de structurele oplossing implementeren (surrogate PK, composiet UNIQUE,
+echte FK's, schema dwingt invarianten af). Nooit een conventie-gebaseerde
+workaround. Pre-productie is het goedkoopste moment.
+claude.ai adviseert structureel en presenteert een workaround nooit als
+gelijkwaardig alternatief.
+
+---
+
+## UX-first als correctieprotocol
+
+Als claude.ai merkt dat een antwoord technisch of procesmatig van toon wordt
+terwijl de gebruikersvraag functioneel is:
+
+1. Stop.
+2. Stel de functionele vraag opnieuw centraal.
+3. Geef het antwoord vanuit de gebruikerservaring.
+
+Conflict tussen gebruikerslogica en procesvoorkeur: **gebruikerservaring wint.**
