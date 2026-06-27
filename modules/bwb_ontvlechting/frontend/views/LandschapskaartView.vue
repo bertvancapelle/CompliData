@@ -2123,7 +2123,7 @@ const typeLabel = (t) => humaniseer(t)
              De component-root draagt data-testid="lk-beginscherm". -->
         <KaartBeginscherm
           v-if="beginschermOpen"
-          class="absolute inset-0 bg-[var(--cd-color-bg)]"
+          class="absolute inset-0 z-20 bg-[var(--cd-color-bg)]"
           :opgeslagen-views="opgeslagenViews"
           :component-opties="typeCatalogus"
           :eigenaar-opties="[]"
