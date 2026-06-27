@@ -1,6 +1,6 @@
 ---
-name: complidata-ux
-description: Interaction-design-denkmethode voor LIKARA. Verplicht te raadplegen bij ELKE frontend-rakende slice (nieuw scherm, nieuwe sectie, nieuwe actie) — door zowel CC als claude.ai. Borgt dat een functie de UI logisch en compleet houdt voor de gebruiker: geen lege lijsten zonder route naar de actie, actie op de plek waar de gebruiker hem verwacht, terminologie vanuit de gebruiker. Dit is GEEN stijl-/visuele skill (dat is complidata-frontend); dit gaat over of het scherm doet wat de gebruiker verwacht.
+name: likara-ux
+description: Interaction-design-denkmethode voor LIKARA. Verplicht te raadplegen bij ELKE frontend-rakende slice (nieuw scherm, nieuwe sectie, nieuwe actie) — door zowel CC als claude.ai. Borgt dat een functie de UI logisch en compleet houdt voor de gebruiker: geen lege lijsten zonder route naar de actie, actie op de plek waar de gebruiker hem verwacht, terminologie vanuit de gebruiker. Dit is GEEN stijl-/visuele skill (dat is likara-frontend); dit gaat over of het scherm doet wat de gebruiker verwacht.
 bijgewerkt: V015
 ---
 
@@ -191,11 +191,11 @@ toe (partijen/contracten/infra blijven op diepte 1); client-side op de geladen g
 - **Zoeken op betekenis, niet scrollen.** De set bouw je op via betekenis-zoek
   (naam/type/domein/leverancier/eigenaar-organisatie), zodat "alle zaaksystemen" / "alles van
   Tiel" / "alles van leverancier X" één zoekactie is — niet honderden namen scrollen. (De
-  selectie bevat componenten; organisatie/leverancier zijn criteria — zie complidata-frontend.)
+  selectie bevat componenten; organisatie/leverancier zijn criteria — zie likara-frontend.)
 
 ## Verhouding tot andere skills
 
-- `complidata-frontend` = hoe je bouwt (Vue/PrimeVue/Tailwind, tokens, presets). Stijl en techniek.
-- `complidata-ux` (deze) = of het scherm klopt voor de gebruiker. Interaction design.
+- `likara-frontend` = hoe je bouwt (Vue/PrimeVue/Tailwind, tokens, presets). Stijl en techniek.
+- `likara-ux` (deze) = of het scherm klopt voor de gebruiker. Interaction design.
 - Beide raadplegen bij frontend-werk; deze skill gaat over het ontwerp-denken vooraf,
   de frontend-skill over de uitvoering.

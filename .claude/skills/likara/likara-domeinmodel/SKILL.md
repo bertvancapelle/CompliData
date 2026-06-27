@@ -1,5 +1,5 @@
 ---
-name: complidata-domeinmodel
+name: likara-domeinmodel
 description: >
   Canonieke "kaart" van het LIKARA-domeinmodel. Lees dit vóór elke slice
   die een element, relatie, catalogus, partij, of registratie-feit raakt.
@@ -7,7 +7,7 @@ description: >
   (plateau/gap/work_package/deliverable), partijenregister (ADR-024, 4 aarden),
   catalogus-families (scope platform vs. tenant), engine-invariant, RBAC/audit-
   ankerpunten, en harde architectuurregels. De HOE (implementatiepatronen) staat
-  in complidata-db en complidata-backend; dit bestand beschrijft het WAT.
+  in likara-db en likara-backend; dit bestand beschrijft het WAT.
 stack: PostgreSQL 16, SQLAlchemy asyncio, FastAPI — ADR-021/023/024/025/026
 bijgewerkt: V015
 ---
@@ -16,8 +16,8 @@ bijgewerkt: V015
 
 Dit is de canonieke referentie voor het domeinmodel: **wat** bestaat er, hoe hangt
 het samen, en welke regels zijn onschendbaar. De **HOE** (implementatiepatronen,
-RLS-boilerplate, keyset-cursor, seed-patroon) staat in complidata-db en
-complidata-backend. Gebruik dit bestand als eerste oriëntatie bij elke nieuwe slice.
+RLS-boilerplate, keyset-cursor, seed-patroon) staat in likara-db en
+likara-backend. Gebruik dit bestand als eerste oriëntatie bij elke nieuwe slice.
 
 ---
 
@@ -26,7 +26,7 @@ complidata-backend. Gebruik dit bestand als eerste oriëntatie bij elke nieuwe s
 Eén `element`-identiteitsruimte: `UNIQUE(tenant_id, id)`, FORCE RLS.
 Alle entiteiten in de onderstaande tabel zijn **element-subtypes**: ze hebben een
 eigen tabel met een composiet-PK/FK `(tenant_id, id) → element(tenant_id, id)`
-ON DELETE CASCADE. (Subtype-bouwrecept: zie complidata-db V009/V010-patronen.)
+ON DELETE CASCADE. (Subtype-bouwrecept: zie likara-db V009/V010-patronen.)
 
 ### Volledige element-typetabel (ELEMENT_ARCHIMATE_TYPING, V013)
 
@@ -99,7 +99,7 @@ is de surrogaat-PK `relatie.id`.
   koppelingen; meervoud-dezelfde-richting bestaat sindsdien, tegengestelde richting (`A→B`+`B→A`)
   kon altijd al (ander geordend paar).
 
-De HOE (validatie, dubbel-signalering, override-audit) staat in complidata-backend.
+De HOE (validatie, dubbel-signalering, override-audit) staat in likara-backend.
 
 ### De acht ArchiMate-relatietypes
 
@@ -460,13 +460,13 @@ hasattr-test + bronscan-test.
 
 | Soort slice | Primair | Aanvullend |
 |---|---|---|
-| Nieuwe element-entiteit | **dit bestand** + complidata-db (subtype-recept) | complidata-backend (service/route-patroon), complidata-tests |
-| Nieuw verband / relatie | **dit bestand** (facade vs. eigen tabel) + complidata-db | complidata-backend |
-| Nieuwe catalogus | **dit bestand** §5 + complidata-db (grants/seed) | complidata-backend |
-| Nieuwe partij-slice | **dit bestand** §4 + complidata-db | complidata-backend |
-| Frontend-only / read-side | complidata-frontend + complidata-ux | dit bestand voor context |
+| Nieuwe element-entiteit | **dit bestand** + likara-db (subtype-recept) | likara-backend (service/route-patroon), likara-tests |
+| Nieuw verband / relatie | **dit bestand** (facade vs. eigen tabel) + likara-db | likara-backend |
+| Nieuwe catalogus | **dit bestand** §5 + likara-db (grants/seed) | likara-backend |
+| Nieuwe partij-slice | **dit bestand** §4 + likara-db | likara-backend |
+| Frontend-only / read-side | likara-frontend + likara-ux | dit bestand voor context |
 | ADR schrijven / bijwerken | **dit bestand** (context) | senior-architect |
-| Engine-naburige feature | **dit bestand** §6 (engine-invariant) | complidata-tests (borging-patroon) |
+| Engine-naburige feature | **dit bestand** §6 (engine-invariant) | likara-tests (borging-patroon) |
 
 ## V015 — catalogus-beheer-principes (DC014)
 
@@ -485,6 +485,6 @@ hasattr-test + bronscan-test.
   "Geen schuld" = alles wat een beheerder HOORT te kunnen, kan hij — **niet** "alles krijgt een
   knop". De catalogus-**inhoud** achter de verwijzingen (disposities, relatie-rollen) is wél
   beheerbaar (relatiekenmerk-beheer); alleen de **structuur** is code-vast.
-- **Eén tenant nu — geen per-tenant-differentiatie** (zie complidata-ux): catalogi zijn
+- **Eén tenant nu — geen per-tenant-differentiatie** (zie likara-ux): catalogi zijn
   platform-breed/gedeeld, RBAC is één platform-brede matrix. RLS blijft technisch fundament,
   geen ontwerponderwerp tot er echt meerdere tenants zijn.

@@ -1,5 +1,5 @@
 ---
-name: complidata-security
+name: likara-security
 description: Security-patronen voor LIKARA (Zero Trust, httpOnly cookies, NCSC, RLS). Beschrijft de werkelijke V001-staat.
 stack: Keycloak 24.x, FastAPI middleware, Redis, PostgreSQL RLS
 bijgewerkt: V016
@@ -62,7 +62,7 @@ async def me(request: Request, user: AuthenticatedUser = Depends(get_current_use
 
 `lk_admin` is volledig uit de app-laag (OP-11): geen `admin_database_url`, geen
 `get_admin_session`. Platform-werk loopt via `lk_platform`. Details + grants:
-zie complidata-db (DB-rollen / migratie-deploypatroon).
+zie likara-db (DB-rollen / migratie-deploypatroon).
 
 ## Tweelaags rollenmodel + twee permissiedomeinen (ADR-012)
 

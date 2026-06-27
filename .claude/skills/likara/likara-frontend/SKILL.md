@@ -1,5 +1,5 @@
 ---
-name: complidata-frontend
+name: likara-frontend
 description: Frontend-patronen voor LIKARA (Vue 3, PrimeVue Unstyled, Tailwind v4). Beschrijft de werkelijke V003-staat (login + app-shell + module-views).
 stack: Vue 3, Vite, PrimeVue Unstyled, Tailwind CSS v4, Pinia, vue-router, vitest
 bijgewerkt: V019
@@ -522,7 +522,7 @@ Vang een toch-403 netjes af (Toast). Nooit tokens in `localStorage` (httpOnly).
 - Client-side sort op naam ASC; eerste rij auto-geselecteerd.
 - Geldt voor ALLE edge-klikken (ook n=1) — vervangt enkelvoudige popup.
 
-### KOPPELING_DUBBEL-dialoogpatroon (DC017, ook in complidata-backend)
+### KOPPELING_DUBBEL-dialoogpatroon (DC017, ook in likara-backend)
 - 409 met code `KOPPELING_DUBBEL` → bevestigingsdialoog (NIET fout-toast).
 - "Toch aanmaken" → hersubmit met `negeer_waarschuwing: true`.
 - Overige 409 (RELATIE_BESTAAT) → bestaande fout-toast.
@@ -840,7 +840,7 @@ met interactieve drag en edge-rendering.
 
 - **De kaart laadt NOOIT de volledige graaf bij schaal.** Bij 300+ componenten is "het hele
   model" onbruikbaar. De kaart laadt **set + 1-hop** via de set-scoped backend (POST
-  `/landschapskaart/subgraaf` `{component_ids, diepte}`; zie complidata-backend).
+  `/landschapskaart/subgraaf` `{component_ids, diepte}`; zie likara-backend).
 - **Accumulerende sub-graaf-cache.** `nodes`/`edges` zijn niet meer de volledige graaf maar de
   **unie van geladen sub-grafen** binnen de sessie. Ego/impact/drill = **incrementeel bijladen**
   (klik → buren van die node ophalen → mergen). De terug/vooruit-geschiedenis werkt **zonder

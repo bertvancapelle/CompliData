@@ -1,5 +1,5 @@
 ---
-name: complidata-backend
+name: likara-backend
 description: Backend-patronen voor LIKARA (FastAPI + SQLAlchemy + Alembic). Beschrijft de werkelijke V001-staat.
 stack: Python 3.12, FastAPI, Pydantic v2, SQLAlchemy asyncio, Alembic, PostgreSQL 16
 bijgewerkt: V019
@@ -52,7 +52,7 @@ app.include_router(auth.router, prefix="/api/v1")
 | `get_platform_db_session()` | Platform-brede queries (geen RLS-context) |
 
 RLS-context — ALTIJD via `set_config`, NOOIT via `SET`, en **transactie-lokaal**
-(`true`, niet `false`) via de `after_begin`-hook (norm sinds CD048 — zie complidata-db
+(`true`, niet `false`) via de `after_begin`-hook (norm sinds CD048 — zie likara-db
 "V007-patronen"). De eenmalige per-sessie `set_config(..., false)` is **verboden**
 (contextloze poolverbinding na `commit`→`refresh`):
 
@@ -95,7 +95,7 @@ niveau_enum = sa.Enum(NiveauEnum, name="niveau_enum")  # complexiteit + priorite
 
 In de **migratie** (niet in het model) wordt `postgresql.ENUM(..., create_type=False)`
 gebruikt en expliciet `.create(bind, checkfirst=True)` aangeroepen — zie de
-complidata-db skill.
+likara-db skill.
 
 ## Model-patroon
 
@@ -232,7 +232,7 @@ ongedefinieerde methodes → 405.
   enum**, niet gedupliceerd per service — losse kopieën lopen stil uit elkaar. [CD014/CD016]
 - **Sorteer-retrofit per lijst-service (ADR-017/CD020)**: `sort`/`order` als optionele params,
   een `*Sorteerveld`-enum op de route (onbekend veld → 422), een allowlist-kolommen-map + parsers
-  in de service, v2n-keyset (zie complidata-db). Levert de service **dicts** (join, bv. koppeling-
+  in de service, v2n-keyset (zie likara-db). Levert de service **dicts** (join, bv. koppeling-
   `tegenpartij_naam`) → een apart `*LijstItem`/`*LijstPagina`-schema náást de enkel-item `*Read`.
   White-box cursor-/route-tests bewegen mee met het cursorformaat; een default-pad-assertie is het
   bewijs dat het gedrag niet wijzigde. [CD020]

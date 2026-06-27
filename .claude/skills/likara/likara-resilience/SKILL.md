@@ -1,5 +1,5 @@
 ---
-name: complidata-resilience
+name: likara-resilience
 description: Resilience-patronen voor LIKARA (health, startup-validatie, rate-limiting, healthcheck-gating). Beschrijft de werkelijke V001-staat.
 stack: FastAPI, SlowAPI, Redis, Docker Compose healthchecks
 bijgewerkt: V001

@@ -1,5 +1,5 @@
 ---
-name: complidata-db
+name: likara-db
 description: Database-patronen voor LIKARA (PostgreSQL 16, RLS, Alembic). Beschrijft de werkelijke V001-staat.
 stack: PostgreSQL 16, SQLAlchemy asyncio, Alembic
 bijgewerkt: V015
@@ -119,7 +119,7 @@ api:
 
 - App-entrypoint blijft **alleen** `uvicorn` (geen migratie/seed in de app).
 - `platform_init` zaait de 89 platform-brede checklistvragen (referentiedata,
-  idempotent `ON CONFLICT DO NOTHING`); zie complidata-backend seed-patroon.
+  idempotent `ON CONFLICT DO NOTHING`); zie likara-backend seed-patroon.
 - Alembic multi-head vermijden: platform-migraties in
   `backend/alembic/versions/` ketenen aan de module-head (`down_revision`),
   zodat `alembic heads` = 1 blijft.

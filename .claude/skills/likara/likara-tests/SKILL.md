@@ -1,5 +1,5 @@
 ---
-name: complidata-tests
+name: likara-tests
 description: Test-patronen voor LIKARA (pytest unit-tests + TST-validatiecyclus). Beschrijft de werkelijke V001-staat.
 stack: pytest, asyncio, unittest.mock, SQLAlchemy models, vitest, @vue/test-utils
 bijgewerkt: V010
@@ -126,7 +126,7 @@ volledig doorlopen, in deze vaste volgorde:
 
 1. `sluit_acties.py` — lost alle ❌ op
 2. TST-validatiecyclus (CONTRIBUTING.md sectie 6) → `docs/TST-{build_label}-Validatierapport.md`
-3. Skill-review — relevante complidata-skills bijwerken (inhoudelijk stap 1: bepaal welke
+3. Skill-review — relevante likara-skills bijwerken (inhoudelijk stap 1: bepaal welke
    patronen vastgelegd moeten worden)
 4. NEXT_SESSION.md invullen — top-5 + openstaande punten
 5. `gen_build.py` — verhoogt bouwnummer, genereert alle MD-bestanden, **MAAKT DE ZIP**,

@@ -53,7 +53,7 @@ cd backend && python3 -m alembic upgrade head --sql | grep -c "ENABLE ROW LEVEL 
 
 - Geen Eraneos-referenties in de repo
 - Geen CompliMan-referenties (cm_, compliman) in de repo
-- Alle complidata-skills gevuld (>200 bytes)
+- Alle likara-skills gevuld (>200 bytes)
 - CLAUDE.md bouwstatus actueel
 
 ```bash

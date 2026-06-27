@@ -54,7 +54,7 @@ of procesvoorkeur met een technische voorkeur, dan wint de gebruikerservaring.
 
 ### Bootstrap-modus (uitsluitend sessie 1 — extractie)
 
-Als `.claude/skills/complidata/` nog NIET bestaat: dit is sessie 1.
+Als `.claude/skills/likara/` nog NIET bestaat: dit is sessie 1.
 Lees dan uitsluitend:
 
 Read CONTRIBUTING.md (indien aanwezig, anders overslaan)
@@ -80,14 +80,15 @@ Daarna: wacht op START: [naam] van Bert.
 Lees bij elke nieuwe sessie onderstaande skills in hun geheel voordat je iets anders doet.
 
 Read CONTRIBUTING.md
-Read .claude/skills/complidata/complidata-backend/SKILL.md
-Read .claude/skills/complidata/complidata-domeinmodel/SKILL.md
-Read .claude/skills/complidata/complidata-db/SKILL.md
-Read .claude/skills/complidata/complidata-frontend/SKILL.md
-Read .claude/skills/complidata/complidata-ux/SKILL.md
-Read .claude/skills/complidata/complidata-security/SKILL.md
-Read .claude/skills/complidata/complidata-tests/SKILL.md
-Read .claude/skills/complidata/complidata-resilience/SKILL.md
+Read .claude/skills/likara/likara-backend/SKILL.md
+Read .claude/skills/likara/likara-domeinmodel/SKILL.md
+Read .claude/skills/likara/likara-db/SKILL.md
+Read .claude/skills/likara/likara-frontend/SKILL.md
+Read .claude/skills/likara/likara-ux/SKILL.md
+Read .claude/skills/likara/likara-security/SKILL.md
+Read .claude/skills/likara/likara-tests/SKILL.md
+Read .claude/skills/likara/likara-resilience/SKILL.md
+Read .claude/skills/likara/likara-werkprotocol/SKILL.md
 Read .claude/skills/engineering-team/senior-architect/SKILL.md
 Read .claude/skills/engineering-team/senior-backend/SKILL.md
 Read .claude/skills/engineering-team/senior-frontend/SKILL.md
@@ -174,7 +175,7 @@ docs/
   adr/               — Architecture Decision Records
 .claude/
   skills/
-    complidata/      — platform-specifieke skills (aangemaakt in sessie 1)
+    likara/      — platform-specifieke skills (aangemaakt in sessie 1)
     engineering-team/     — platform engineering skills
     engineering-advanced/ — platform engineering skills (advanced)
     security/             — platform security skills
@@ -453,7 +454,7 @@ Pas dan: klaar.
    → lost alle ❌ op voordat je verder gaat
 2. TST — volledige validatiecyclus conform CONTRIBUTING.md sectie 6
    → rapport opslaan als docs/TST-{build_label}-Validatierapport.md
-3. Skill-review — relevante complidata-skills bijwerken
+3. Skill-review — relevante likara-skills bijwerken
 4. NEXT_SESSION.md invullen — top-5 prioriteiten + openstaande punten
 5. gen_build.py — python3 docs/_generators/gen_build.py "{test_status}" "{kritieken}"
    → verhoogt bouwnummer, genereert alle MD-bestanden, maakt ZIP, en draait als
