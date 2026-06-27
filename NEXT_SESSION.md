@@ -1,66 +1,85 @@
-# NEXT_SESSION.md — LIKARA V022
+# NEXT_SESSION.md — LIKARA V023
 
-**Gegenereerd**: 2026-06-25 (sessie-afsluiting LI021)
-**Build**: V021 → **V022**
-**Migratie head**: `0042` (`0042_adr033_opgeslagen_view`) — geen schema-/migratiewijziging in LI021 (test-hygiëne = test-only; seed-verrijking = data-only; fase A = additieve read-only projecties/filter)
-**Tests**: frontend **654 groen (62 files)** + `vite build` ok + `test:css-build` ok; backend **896 passed / 2 skipped / 8 pre-existing live-DB-failures** (seed-drift — zie TST-rapport). Zie `docs/TST-V022-Validatierapport.md`.
-
----
-
-## Stand van zaken (V022) — test-hygiëne + seed-verrijking + kaart-vertrekpunt fase A
-
-Deze sessie (LI021):
-
-- **Test-hygiëne** (`0c4371b`) — twee live-DB-tests zelf-opruimend via `finally` (cleanup draait ook bij
-  falen → geen residu-lek meer; vervuilings-cirkel gebroken).
-- **Seed-verrijking** (`ae905c1`, data-only/idempotent in `_seed_bvowb_scenario`): infrastructuur
-  (technology-laag) + draait-op-relaties; component-samenstelling (Burgerzaken-suite); bewuste scope-gaten
-  (Archiefbeheer zonder eigenaar; Klantportaal uitsluitend organisatieloos gebruikt).
-- **Kaart-vertrekpunt fase A** (`fec08d5`, additief/read-only): POST `/landschapskaart/subgraaf` (set-scoped
-  S+1-hop; `component_ids=None` = volledige graaf, back-compat); leverancier-filter op `/componenten`
-  (afgeleide EXISTS, beide paden); eigenaar-edge "is eigendom van" (context, **niet** in `IMPACT_RINGEN`).
-  Dekt meteen het geparkeerde "scopebalk-tekent-organisaties"-spoor af.
+**Gegenereerd**: 2026-06-27 (sessie-afsluiting LI022)
+**Build**: V022 → **V023**
+**Migratie head**: `0042` (`0042_adr033_opgeslagen_view`) — LI022 had geen schema-/migratiewijziging
+(Fase B = frontend + read-side; slice 2a = nieuwe read-queries over bestaande relaties).
+**Tests**: frontend **663 groen** + `vite build` + `test:css-build` ok; backend **910 passed / 2 skipped**
+(de 8 LI021-failers zijn herijkt — 0 failers).
 
 ---
 
-## Top-5 prioriteiten volgende sessie (LI022) — in volgorde (leunt op elkaar)
+## Stand van zaken (V023) — Landschapskaart Fase B (set-gestuurd) + hygiëne/rename
 
-1. **Reset + seed-herijking (EERST)** — de 8 pre-existing live-DB-failures groen krijgen in CC's omgeving:
-   `docker compose down -v` → reseed (**handmatige dev-seed!** — `docker compose exec <api> python dev_seed_testdata.py`)
-   + de stale tests herijken op `_seed_bvowb_scenario` (ze verwachten dode-seed-rijen — `GeoWorks
-   Licentieovereenkomst`/`Oracle FIN-DB`/3 `client_software`-vragen — die de verrijkte seed niet maakt).
-2. **Kaart-vertrekpunt fase B** — leeg openen + zoek-vertrekpunt via `/componenten`
-   (naam/type/laag/hosting/eigenaar/leverancier) → set-opbouw → POST subgraaf, met accumulerende
-   sub-graaf-cache. Besloten: selectie = alléén component-ids (org/leverancier = criterium + context);
-   **cache weggooien** bij "begin opnieuw"; **1-hop norm, dieper alleen via doorklikken**; endpoint = POST.
-3. **Fase C** — defaults omdraaien (leeg openen consistent: scopebalk niets-aan→alles + startscherm
-   geen-views→hele model wég) + "zoek-erop-dan-toon-het" (auto-ring-activering op zoek, handmatig wint).
-4. **Fase D** — opgeslagen views permanent náást het zoekveld (hoofdingang).
-5. **Overige open punten** (ongewijzigd): ADR-034 open subknopen; interactieve legenda als type-filter;
-   ADR-030 contract-dekking; ADR-029 Fase 5; klaarverklaring-blok op ComponentDetail; signalerings-ADR;
-   dode-code-opschoning; cytoscape-dagre opruimen.
+Deze sessie (LI022):
+- **Reset + seed-herijking** (`d6cd59f`) — de 8 pre-existing live-DB-failers herijkt op de verrijkte
+  `_seed_bvowb_scenario` (seed onaangeroerd; tests bewogen mee).
+- **Skill-laag hernoemd** `complidata-* → likara-*` + nieuwe **`likara-werkprotocol`**-skill (`8b8a8b2`);
+  **Laag-2 identifier-rename** als opvolgpunt geborgd (`6043094`).
+- **Fase B slice 0+1** (`10bb35e`) — set-gestuurd laadpad + `subgraaf` api-client.
+- **Fase B slice 2a** (`509e9ca`) — contract- + gebruiker-context-routes naar componenten (databron voor
+  de "Via context"-ingangen).
+- **Sessie-afsluiting** — generators (gen_build/gen_sessiestart) meegerenamed naar `.claude/skills/likara/`.
 
-Volledige backlog: `docs/OPVOLGPUNTEN.md` (sectie "Stand V022 (LI021)").
+---
+
+## Vertrekpunt volgende sessie — Slice 2b (BESLOTEN ONTWERP, niet opnieuw ontwerpen)
+
+**Slice 2b — leeg-openend 4-ingangen-beginscherm (frontend).** Vervangt de placeholder uit slice 1 door
+het echte scherm. **Databron staat volledig klaar** (slice 2a + bestaande routes); geen backend nodig.
+
+- **Hoofdroute (zoekzone):** type-scope-keuze (standaard `applicatie`; "applicatie" is gewoon een waarde
+  van het componenttype-filter, **géén aparte ingang**; aanpasbaar) + vrije zoekterm → `api.componenten.lijst`
+  (server-side, AND-gecombineerd) → treffers als **aanvinkbare multi-select-dropdown** → aangevinkte
+  componenten verschijnen als **"In beeld"-chips** onder de balk.
+- **"In beeld"-chips = tweede bewerk-plek op één selectie:** uitvinken/`×` = uit de graaf; één bron van
+  waarheid met de knopen.
+- **Filters** (laag · hosting · eigenaar) weggevouwen onder "+ Filters", verfijnen dezelfde treffers.
+- **Via context (drie symmetrische routes — doorzoekbare multi-selects → onderliggende componenten in de set):**
+  - leverancier → `api.partijen.lijst({aard:'externe_partij', zoek})` + `GET /partijen/{id}/componenten`
+  - contract → `api.contracten.lijst({zoek})` + `GET /contracten/{id}/componenten` (nieuw, slice 2a)
+  - gebruiker-context → `GET /gebruikersgroepen/contexten?zoek=` (distinct org+afdeling, met telling) +
+    `GET /gebruikersgroepen/contexten/componenten?organisatie_id=&afdeling=`
+- **Hergebruiken:** bestaande opgeslagen-views-lijst, als gelijkwaardige ingang op het scherm.
+- **Toon het hele landschap:** bestaande actie (slice 1), bescheiden apart onderaan.
+- **Granulariteit:** component-zoek = individuen kiezen; context-routes = context kiezen → alle
+  onderliggende componenten. Alles **accumuleert**; subgraaf-herfetch op de hele set bij elke mutatie.
+- **Engine:** read-only/frontend; geen backend nodig.
+
+---
+
+## Herziene slice-planning (het ontwerp heeft de oude nummering verschoven)
+
+- **Slice 2b absorbeert** de oude "Typen server-side" (oud slice 3) en "Bladeren" (oud slice 4) — die
+  worden **niet apart** gebouwd.
+- **Slice 5 (design-heavy, CHECKPOINT-EERST):** het interactiemodel op de graaf — klik = toevoegen,
+  `×` = weghalen, doorklik haalt buren erbij (+voegt de buur toe), verzamel-doorklik op context-knopen
+  (alle onderliggende componenten), "N in beeld"-teller op de graaf, "Begin opnieuw" als harde reset —
+  **plus** de geparkeerde **subgraaf-semantiek-beslissing** (welke van filter/scope/impact/swimlane
+  zinvol zijn op een set). Bert wil het interactiegedrag kunnen **testen** zodra deze slice landt.
+- **Slice 6:** opschonen (dode full-graph-op-mount-paden, `cytoscape-dagre`-cleanup).
 
 ---
 
 ## Bekende risico's en aandachtspunten
 
-- **8 pre-existing live-DB-failures** — **seed-drift** (tests asserteren op rijen die `_seed_bvowb_scenario`
-  niet maakt). De `finally`-hygiëne brak de residu-cirkel, maar de drift blijft → wordt door LI022-stap 1
-  opgelost. NIET als opgelost markeren tot ze in CC's omgeving groen zijn.
-- **Na elke `docker compose down -v` moet de dev-seed handmatig** (de init-container draait alleen
-  `alembic upgrade head` + `platform_init`, niet de dev-seed). Vergeten = lege scenario-data.
-- Worktree is **schoon**, niets ongecommit.
+- **8 LI021-failers zijn opgelost** (herijkt op de verrijkte seed) — niet als open beschouwen.
+- **`GET /gebruikersgroepen/contexten` is bewust ongepagineerd** (begrensde afgeleide lijst). Alleen bij
+  extreem veel distinct (org, afdeling)-contexten een keyset-slice nodig (zie OPVOLGPUNTEN).
+- **Laag-2 identifier-rename** (`complidata-api`-clientId, `cd_`-familie, `COMPLIDATA_TEST_MODE`) staat nog
+  open als aparte, gecoördineerde slag (OPVOLGPUNTEN) — raakt Keycloak/realm + evt. schema (tabelprefix).
+- Werktree is **schoon** na de afsluit-commit(s).
 
 ---
 
-## Geleerde patronen deze sessie
+## Geleerde patronen deze sessie (verwerkt in de likara-skills)
 
-Verwerkt in de complidata-skills (backend, frontend, ux, tests): kaart laadt nooit de volledige graaf bij
-schaal (set + 1-hop via POST `/landschapskaart/subgraaf`; set-scoping = where-filter omdat de
-ring-classificatie al `bron/doel ∈ id-set` was); vertrekpunt = zoeken, niet "alles tonen" (leeg openen,
-selectie bevat componenten, org/leverancier = criteria); accumulerende sub-graaf-cache + incrementeel
-bijladen; "zoek-erop-dan-toon-het" (handmatige ring-vink wint); eigenaar-edge als context (niet in impact);
-leverancier = afgeleide EXISTS-filter; geen betuttelende scenario-regels (vrijheid + schone "begin opnieuw");
-na `down -v` dev-seed handmatig; live-DB-tests self-contained + drift ≠ residu.
+- **likara-frontend** — set-gestuurd kaart-laadpad: leeg openen, subgraaf-per-set (hele set herfetch),
+  hele-landschap als bewuste actie met "X van N"-teller op verwerkte data, begin-opnieuw = harde reset,
+  entry-point = verse history-wortel.
+- **likara-backend** — context→componenten read-endpoint: deel de WHERE, splits de projectie; geen
+  ComponentProfiel-join (engine-ontkoppeld, kale componenten mee); nullable composiet-sleutel via
+  `IS NOT DISTINCT FROM`; begrensde distinct-picker mag ongepagineerd.
+- **likara-tests** — strategie A bij een laadpad-omslag: mountView laadt de "volledige" modus, één setter
+  voedt beide laadpaden, nieuwe bedrading-tests apart; nagel onbesliste semantiek niet vast; function-
+  bronscan met `ast`-docstring-strip voor engine-borging.

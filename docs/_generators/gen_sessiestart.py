@@ -16,12 +16,12 @@ OUTPUT_DIR = REPO_ROOT / "docs" / "_output"
 
 # Curated skills die altijd in de ZIP gaan
 CURATED_SKILLS = [
-    ".claude/skills/complidata/complidata-backend/SKILL.md",
-    ".claude/skills/complidata/complidata-db/SKILL.md",
-    ".claude/skills/complidata/complidata-frontend/SKILL.md",
-    ".claude/skills/complidata/complidata-security/SKILL.md",
-    ".claude/skills/complidata/complidata-tests/SKILL.md",
-    ".claude/skills/complidata/complidata-resilience/SKILL.md",
+    ".claude/skills/likara/likara-backend/SKILL.md",
+    ".claude/skills/likara/likara-db/SKILL.md",
+    ".claude/skills/likara/likara-frontend/SKILL.md",
+    ".claude/skills/likara/likara-security/SKILL.md",
+    ".claude/skills/likara/likara-tests/SKILL.md",
+    ".claude/skills/likara/likara-resilience/SKILL.md",
     ".claude/skills/engineering-team/senior-architect/SKILL.md",
     ".claude/skills/engineering-team/senior-backend/SKILL.md",
     ".claude/skills/engineering-team/senior-frontend/SKILL.md",

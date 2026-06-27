@@ -2,7 +2,7 @@
 name: likara-tests
 description: Test-patronen voor LIKARA (pytest unit-tests + TST-validatiecyclus). Beschrijft de werkelijke V001-staat.
 stack: pytest, asyncio, unittest.mock, SQLAlchemy models, vitest, @vue/test-utils
-bijgewerkt: V010
+bijgewerkt: V023
 ---
 
 # LIKARA Tests Skill
@@ -315,3 +315,23 @@ empirisch geverifieerd tegen de draaiende stack (zie `docs/LOKAAL-TESTEN.md`).
   in `finally` op, en asserteer alléén op je eigen data — dan ben je immuun voor seed-drift en
   residu. (Let op: `applicatie_service.maak_aan` geeft een **object** terug (`.id`),
   `component_service.maak_aan` een **dict** (`["id"]`).)
+
+## LI022-patronen (strategie A — testmigratie bij een laadpad-omslag, geverifieerd)
+
+- **Wijzigt een view zijn laadgedrag fundamenteel** (bv. van "laad altijd alles" naar set-gestuurd via
+  een nieuw endpoint), **herschrijf de bestaande gedragstests dan niet** — richt ze op de **modus waar
+  dat gedrag aantoonbaar nog leeft**. Recept (Landschapskaart Fase B slice 0+1):
+  - een gedeelde `mountView`-helper die ná mount de **"volledige" modus** laadt, zodat de bestaande
+    full-graph-asserties (filters/scope/ego/impact/swimlane/history/ringen) geldig blijven;
+  - **één setter voedt beide laadpaden**: de oude full-load én de nieuwe subgraaf-mock leveren
+    **dezelfde data**, zodat een set opbouwen de graaf niet leegt onder de bestaande tests;
+  - **nieuwe bedrading-tests apart** (eigen `describe`): dekken alléén het nieuwe laad-/reset-/
+    teller-gedrag (lege set = geen fetch + placeholder; set → subgraaf; mutatie → herfetch hele set;
+    hele-landschap → full-graph + set geleegd; begin-opnieuw → reset).
+- **Nagel onbesliste semantiek niet vast in tests.** Wat nog niet ontworpen is (bv. wat
+  filter/scope/impact/swimlane betekenen op een opgebouwde subgraaf) hoort **niet** in een assertie —
+  dek alleen de bedrading; de inhoudelijke semantiek volgt in een eigen ontwerpslice. Een test die een
+  nog-open ontwerpkeuze fixeert, blokkeert dat ontwerp later.
+- **Function-bronscan met `ast`-docstring-strip** voor engine-/read-only-borging van een nieuwe
+  service-functie in een module die de engine elders wél raakt: een platte tekstscan struikelt over een
+  docstring die een verboden symbool ter uitleg noemt → strip de docstring via `ast` vóór de scan.

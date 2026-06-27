@@ -2,7 +2,7 @@
 name: likara-frontend
 description: Frontend-patronen voor LIKARA (Vue 3, PrimeVue Unstyled, Tailwind v4). Beschrijft de werkelijke V003-staat (login + app-shell + module-views).
 stack: Vue 3, Vite, PrimeVue Unstyled, Tailwind CSS v4, Pinia, vue-router, vitest
-bijgewerkt: V019
+bijgewerkt: V023
 ---
 
 # LIKARA Frontend Skill
@@ -862,3 +862,24 @@ met interactieve drag en edge-rendering.
 - **NB — de oude "val terug op alles"-defaults schalen niet** en worden in fase B/C omgedraaid:
   scopebalk "niets-aan → alles" en startscherm "geen-views → hele model" gaan naar **leeg openen**
   (de gebruiker kiest). Laat dit niet per ongeluk terugkeren.
+
+## LI022 — set-gestuurd kaart-laadpad (Fase B slice 0+1, niet-onderhandelbaar)
+
+- **De Landschapskaart opent LEEG** (beginscherm) en bouwt **set-gestuurd** op: niet-lege set =
+  `POST /landschapskaart/subgraaf` (`api.landschapskaart.subgraaf([...set], diepte)` → set + 1-hop).
+  **Bij elke set-mutatie de HELE set opnieuw ophalen** (idempotent; geen incrementele merge — eenvoud >
+  micro-optimalisatie). Eén centrale herfetch-watch op `(set, heleLandschap)`; een `_mountKlaar`-guard
+  voorkomt een dubbele fetch tijdens de mount.
+- **`modus` 0 is niet meer 'geheel'.** Lege set + geen hele-landschap = `'leeg'` (beginscherm).
+- **"Toon het hele landschap" is een BEWUSTE, aparte actie** (geen default van een lege set): een
+  `heleLandschap`-vlag **los van de set-grootte** leegt de set en laadt de volledige graaf
+  (`haalGrafdata`). Een set opbouwen (`toggleSet`/`openView`) zet de vlag weer uit.
+- **Voortgangsteller "X van N"** bij het laden van het hele landschap: tel op **verwerkte data in
+  chunks** (`cy.add` is één synchrone call zonder native batches) — een echt meebewegend getal naar een
+  **bekend totaal**, géén tijd-gedreven spinner.
+- **"Begin opnieuw" = de enige harde reset** → set leeg + hele-landschap-vlag uit → de herfetch-watch
+  leegt de graaf → terug naar het lege beginscherm.
+- Een **entry-point** (hele landschap / begin opnieuw) is een **verse history-wortel**: her-zaai de
+  toestand-historie ná de laad (via `nextTick`), zodat de scope-default geen losse "terug"-stap wordt.
+- **Strategie A voor de tests** bij deze omslag: zie likara-tests (mountView-helper laadt het hele
+  landschap; één setter voedt full-load én subgraaf-mock; nieuwe bedrading-tests apart).

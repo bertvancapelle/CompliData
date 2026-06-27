@@ -7,6 +7,29 @@ Bron: sessie 2–3 (P1–P5, OP-9 t/m OP-12). Status per punt expliciet vermeld.
 
 ## OPEN
 
+### Stand V023 (sessie-afsluiting LI022, 2026-06-27)
+
+Build **V022 → V023**. LI022 = Landschapskaart Fase B (set-gestuurd) + hygiëne/rename.
+
+**Geland/afgerond in LI022:**
+- **Fase B slice 0+1 — set-gestuurd laadpad** (`10bb35e`): de kaart opent leeg; niet-lege set →
+  `POST /landschapskaart/subgraaf`; bewuste "Toon hele landschap" met "X van N"-teller; "Begin opnieuw"
+  = harde reset. `api.landschapskaart.subgraaf` bedraad. **AFGEROND.**
+- **Fase B slice 2a — context-routes naar componenten** (`509e9ca`): `GET /contracten/{id}/componenten`
+  (incl. kale componenten; engine-ontkoppeld) + `GET /gebruikersgroepen/contexten(/componenten)`
+  (distinct (org, afdeling)-picker + nullable-veilige context→componenten). **AFGEROND.**
+- **Stale live-DB-tests herijkt op de verrijkte seed** (`d6cd59f`); **skill-laag hernoemd
+  complidata→likara + nieuwe `likara-werkprotocol`** (`8b8a8b2`); **Laag-2 identifier-rename geborgd**
+  (`6043094`); **generators-skill-paden meegerenamed** (deze afsluiting — gen_build/gen_sessiestart
+  verwezen nog naar `.claude/skills/complidata/`).
+- **Oude slice-3 (Typen server-side) + slice-4 (Bladeren) worden door slice 2b geabsorbeerd** — niet
+  apart gebouwd (zie NEXT_SESSION voor het slice-2b-ontwerp + de herziene slice-planning).
+
+**Nieuw klein/optioneel vervolgpunt:**
+- `GET /gebruikersgroepen/contexten` is **bewust ongepagineerd** (begrensde distinct-afgeleide lijst, met
+  zoek + telling). Keyset alleen nodig als een tenant extreem veel distinct (organisatie, afdeling)-
+  contexten krijgt → dan een kleine eigen slice (keyset over een 2-nullable-koloms-distinct).
+
 ### Subgraaf-semantiek: filter/scope/impact/swimlane op een opgebouwde set (eigen ontwerpslice)
 
 Fase B (LI022) maakt de kaart set-gestuurd. De rijke verkenmechaniek

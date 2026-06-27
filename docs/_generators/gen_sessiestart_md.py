@@ -31,8 +31,8 @@ def main():
 
 1. Lees dit document volledig
 2. Voer de sessiestart uit conform CLAUDE.md:
-   - Controleer of .claude/skills/complidata/ bestaat
-   - Zo ja: normale modus — lees alle complidata-skills + engineering/security
+   - Controleer of .claude/skills/likara/ bestaat
+   - Zo ja: normale modus — lees alle likara-skills + engineering/security
    - Zo nee: bootstrap-modus — lees alleen engineering/security
 3. Lees SESSIE_BRIEFING.md voor de actuele projectstatus
 4. Bevestig: "Sessiestart compleet — LIKARA {build_label} — [N] skills geladen"

@@ -48,7 +48,7 @@ REQUIRED_DIRS = [
     "docs/adr",
     "docs/_generators",
     "docs/_skills",
-    ".claude/skills/complidata",
+    ".claude/skills/likara",
     ".claude/skills/engineering-team",
     ".claude/skills/security",
     "modules",
@@ -67,12 +67,12 @@ REQUIRED_FILES = [
 ]
 
 REQUIRED_SKILLS = [
-    ".claude/skills/complidata/complidata-backend/SKILL.md",
-    ".claude/skills/complidata/complidata-db/SKILL.md",
-    ".claude/skills/complidata/complidata-frontend/SKILL.md",
-    ".claude/skills/complidata/complidata-security/SKILL.md",
-    ".claude/skills/complidata/complidata-tests/SKILL.md",
-    ".claude/skills/complidata/complidata-resilience/SKILL.md",
+    ".claude/skills/likara/likara-backend/SKILL.md",
+    ".claude/skills/likara/likara-db/SKILL.md",
+    ".claude/skills/likara/likara-frontend/SKILL.md",
+    ".claude/skills/likara/likara-security/SKILL.md",
+    ".claude/skills/likara/likara-tests/SKILL.md",
+    ".claude/skills/likara/likara-resilience/SKILL.md",
 ]
 
 REQUIRED_PATTERNS = [

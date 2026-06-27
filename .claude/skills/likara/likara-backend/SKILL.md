@@ -2,7 +2,7 @@
 name: likara-backend
 description: Backend-patronen voor LIKARA (FastAPI + SQLAlchemy + Alembic). Beschrijft de werkelijke V001-staat.
 stack: Python 3.12, FastAPI, Pydantic v2, SQLAlchemy asyncio, Alembic, PostgreSQL 16
-bijgewerkt: V019
+bijgewerkt: V023
 ---
 
 # LIKARA Backend Skill
@@ -504,3 +504,24 @@ zorg dat de `partij_self`-join aanwezig is in de query.
   knoop meekomt (geen dangling endpoint). **Context, NIET in `IMPACT_RINGEN`.** Dekt het
   "scopebalk-tekent-organisaties"-spoor af (zelfde projectie). Dezelfde dubbele engine-borging
   als LI020 (import-afwezigheid + read-only bronscan) blijft per slice verplicht.
+
+## LI022-patroon (context → onderliggende-componenten read-endpoint)
+
+Een "context → onderliggende componenten"-route (databron voor de Landschapskaart-subgraaf) **deelt
+het association-/relatie-where-patroon** met een bestaand endpoint maar levert **bewust een andere
+projectie** — geen dubbele logica: deel de WHERE, splits de projectie.
+- **`GET /contracten/{id}/componenten` (Fase B slice 2a)** naast `/contracten/{id}/applicaties`: zelfde
+  association (`doel=contract`, `bron=component`), maar **zonder ComponentProfiel-join** (die INNER join
+  liet kale, profielloze componenten wegvallen → een contract op bv. een database-component was
+  onzichtbaar) en **zonder subtype-restrictie**. Het weglaten van de profiel-join **ontkoppelt het
+  endpoint juist van de engine** (gewenst). `/applicaties` blijft ongemoeid omdat een consument
+  (ContractDetail) op de profiel-/rol-semantiek leunt → **nieuw endpoint, niet verbreden**.
+- **Nullable composiet-sleutel als context-identiteit** (bv. `(organisatie_id|null, afdeling|null)` voor
+  een gebruiker-context, `/gebruikersgroepen/contexten`): match met **`IS NOT DISTINCT FROM`**
+  (`col.is_not_distinct_from(value)`) zodat de lege-deel-casus (org leeg, of afdeling leeg, bv.
+  "— / Burgers") **structureel** klopt; een niet-opgegeven query-param = null-match (exacte context). Een
+  **begrensde distinct-afgeleide picker-lijst** mag bewust ongepagineerd (consistent met de zuster-
+  context-endpoints `/partijen/{id}/componenten`, `/contracten/{id}/componenten`).
+- **Engine-borging bij een module die de engine elders wél raakt** (zoals `contract_service` dat
+  `ComponentProfiel` voor `applicaties` importeert): borg de nieuwe read-functie met een **function-
+  bronscan met `ast`-docstring-strip** (zie likara-tests) i.p.v. de module-brede import-afwezigheidstest.
