@@ -11,6 +11,7 @@ vi.mock('@/composables/cytoscape', () => ({
   default: vi.fn(() => ({
     on: vi.fn(),
     elements: () => ({ remove: vi.fn(), unselect: vi.fn() }),
+    nodes: () => ({ forEach: () => {}, map: () => [], length: 0 }), // LI032 — positie-capture in tekenGraaf
     getElementById: () => ({ length: 0, select: vi.fn() }),
     animate: vi.fn(),
     zoom: () => 1,
@@ -1289,7 +1290,7 @@ describe('LandschapskaartView v3', () => {
   const _opnameCy = (rec) => () => {
     const cy = {
       on: vi.fn(), elements: () => ({ remove: vi.fn(), unselect: vi.fn() }),
-      nodes: () => ({ removeClass: vi.fn() }), edges: () => ({ removeClass: vi.fn() }),
+      nodes: () => ({ removeClass: vi.fn(), forEach: () => {}, map: () => [], length: 0 }), edges: () => ({ removeClass: vi.fn() }),
       getElementById: () => ({ length: 0, select: vi.fn() }),
       animate: vi.fn(), zoom: () => 1, pan: () => ({ x: 0, y: 0 }), add: vi.fn(),
       layout: (opts) => ({ run: () => { rec.anim.push(opts && opts.animate); if (opts && opts.stop) opts.stop() } }),
@@ -1871,6 +1872,43 @@ describe('LandschapskaartView v3', () => {
       })
       const { w } = await mountView()
       expect(w.vm.grafNodes.map((n) => n.id)).toContain('gg-org-Y') // org niet als node → aggregaat blijft
+    })
+  })
+
+  // ── LI032 — positie-stabiele re-render (bestaande nodes blijven staan, nieuwe wordt geplaatst) ─
+  describe('positie-stabiele re-render (LI032)', () => {
+    const mkNode = (id, x, y) => ({ id: () => id, position: () => ({ x, y }) })
+    const fakeCyMet = (lijst) => ({
+      on: vi.fn(), off: vi.fn(), elements: () => ({ remove: vi.fn(), unselect: vi.fn() }),
+      nodes: () => ({ forEach: (f) => lijst.forEach(f), map: (f) => lijst.map(f), length: lijst.length }),
+      getElementById: () => ({ length: 0, select: vi.fn() }),
+      animate: vi.fn(), zoom: () => 1, pan: () => ({ x: 0, y: 0 }), add: vi.fn(),
+      layout: () => ({ run: vi.fn() }), resize: vi.fn(), fit: vi.fn(), center: vi.fn(),
+      edges: () => ({ removeClass: vi.fn() }), destroy: vi.fn(),
+    })
+
+    it('alle huidige nodes hadden een vorige positie → preset (posities exact behouden)', async () => {
+      cytoscape.mockReturnValueOnce(fakeCyMet([mkNode('a1', 10, 20), mkNode('a2', 30, 40)]))
+      const { w } = await mountView()
+      const cfg = w.vm._layout(false, new Map([['a1', { x: 10, y: 20 }], ['a2', { x: 30, y: 40 }]]))
+      expect(cfg.name).toBe('preset')
+      expect(cfg.positions.a1).toEqual({ x: 10, y: 20 })
+    })
+
+    it('nieuwe node erbij → fcose met de bestaande nodes gefixeerd op hun positie', async () => {
+      cytoscape.mockReturnValueOnce(fakeCyMet([mkNode('a1', 10, 20), mkNode('b1', 0, 0)]))
+      const { w } = await mountView()
+      const cfg = w.vm._layout(false, new Map([['a1', { x: 10, y: 20 }]])) // b1 is nieuw
+      expect(cfg.name).toBe('fcose')
+      expect(cfg.fixedNodeConstraint).toEqual([{ nodeId: 'a1', position: { x: 10, y: 20 } }])
+    })
+
+    it('geen vorige posities (verse render) → normale modus-layout (geen preset/fixed)', async () => {
+      cytoscape.mockReturnValueOnce(fakeCyMet([mkNode('a1', 0, 0)]))
+      const { w } = await mountView()
+      const cfg = w.vm._layout(false, new Map())
+      expect(cfg.name).not.toBe('preset')
+      expect(cfg.fixedNodeConstraint === undefined || cfg.fixedNodeConstraint.length === 0).toBe(true)
     })
   })
 

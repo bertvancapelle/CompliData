@@ -1601,7 +1601,7 @@ function onLaneSleepEinde(e) {
   if (doel) _herschikLane(sleepLane.value, doel)
   sleepLane.value = null
 }
-function _layout(geenAnimatie = false) {
+function _layout(geenAnimatie = false, vorigePosities = null) {
   // `geenAnimatie` (bij history-herstel): teken direct, zonder de 400ms-animatie — voorkomt dat
   // snel terug/vooruit animaties opstapelt. De stop-callback (_naLayout) kadert daarna één keer.
   const anim = geenAnimatie ? { animate: false } : { animate: true, animationDuration: 400 }
@@ -1611,6 +1611,31 @@ function _layout(geenAnimatie = false) {
   // correct geplaatst raster; de stop-callback fit + sync't de overlay als vangrail.
   if (layoutModus.value === 'swimlane') {
     return { name: 'preset', positions: _swimlanePositions(), animate: false, fit: true, padding: 60, stop: _naLayout }
+  }
+  // LI032 — positie-stabiele re-render: al-geplaatste nodes blijven op hun vorige plek; alléén
+  // nieuwe nodes krijgen een positie. Voorkomt dat de hele graaf herschikt bij het toevoegen van
+  // één component. Geldt voor de radiale modi (swimlane heeft eigen preset). Bij de eerste/verse
+  // render (geen vorige posities) valt het terug op de normale modus-layout hieronder.
+  if (vorigePosities && vorigePosities.size) {
+    const gefixeerd = []
+    cy.nodes().forEach((n) => {
+      const p = vorigePosities.get(n.id())
+      if (p) gefixeerd.push({ nodeId: n.id(), position: p })
+    })
+    const totaal = cy.nodes().length
+    if (totaal > 0 && gefixeerd.length === totaal) {
+      // Niets structureel nieuws → behoud de posities exact (geen reshuffle bij b.v. ring-toggle).
+      const positions = {}
+      gefixeerd.forEach((g) => { positions[g.nodeId] = g.position })
+      return { name: 'preset', positions, animate: false, fit: false, stop: _naLayout }
+    }
+    if (gefixeerd.length > 0) {
+      // Mix oud+nieuw → fcose plaatst de nieuwe nodes; de bestaande blijven gefixeerd op hun plek.
+      return {
+        name: 'fcose', quality: 'proof', randomize: false, idealEdgeLength: 120, nodeRepulsion: 8000,
+        fixedNodeConstraint: gefixeerd, ...anim, stop: _naLayout,
+      }
+    }
   }
   // LI019 1d (Taak 3) — Radiaal/Ego: concentric met het geselecteerde component centraal.
   if (modus.value === 'ego') {
@@ -1653,9 +1678,13 @@ async function tekenGraaf() {
   // zodat de graaf nooit op 0px initialiseert en zichtbaar blijft i.p.v. leeg.
   const el = containerRef.value
   if (el && el.offsetHeight === 0) el.style.minHeight = '500px'
+  // LI032 — leg de huidige node-posities vast vóór de remove (na remove zijn ze weg), zodat de
+  // her-layout bestaande nodes op hun plek kan fixeren en alleen nieuwe nodes herplaatst.
+  const vorigePosities = new Map()
+  cy.nodes().forEach((n) => vorigePosities.set(n.id(), { ...n.position() }))
   cy.elements().remove()
   cy.add(_elementen())
-  cy.layout(_layout(_geenAnim)).run()
+  cy.layout(_layout(_geenAnim, vorigePosities)).run()
   // Klein delay voor de browser-layout-flush, dán her-meten + passend maken.
   setTimeout(() => {
     cy?.resize?.()
