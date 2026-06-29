@@ -199,3 +199,76 @@ toe (partijen/contracten/infra blijven op diepte 1); client-side op de geladen g
 - `likara-ux` (deze) = of het scherm klopt voor de gebruiker. Interaction design.
 - Beide raadplegen bij frontend-werk; deze skill gaat over het ontwerp-denken vooraf,
   de frontend-skill over de uitvoering.
+
+## LI023 — Landschapskaart Fase B beginscherm (V024)
+
+### Vier ingangen — structuur
+
+De kaart opent altijd leeg (beginscherm). De gebruiker kiest een startpunt:
+
+1. **Zoeken op component** — naam/type/laag/hosting/eigenaar/leverancier →
+   aanvinkbare multi-select dropdown → componenten verschijnen als "In beeld"-chips.
+2. **Via leverancier** — doorzoekbare pick → alle componenten van die leverancier in de set.
+3. **Via contract** — doorzoekbare pick → alle gekoppelde componenten in de set.
+4. **Via gebruikersgroep/context** — pick van (organisatie, afdeling) → componenten in de set.
+5. **Opgeslagen views** — eerdere sets direct openen (gelijkwaardige ingang).
+6. **Toon het hele landschap** — bewuste, bescheiden actie onderaan.
+
+### Chips = "In beeld" (de set)
+
+- Aangevinkte componenten verschijnen als chips boven de kaart.
+- Uitvinken of `×` = component uit de set (niet uit het systeem).
+- Chips en graaf-knopen zijn hetzelfde object — één bron van waarheid.
+- Actiebalk ("Toon N componenten") staat **bovenaan** het beginscherm (niet sticky-bottom):
+  gebruiker kijkt omhoog na aanvinken → actie zit waar de blik al is.
+
+### Set-gestuurd laadmodel
+
+- Niet-lege set → POST `/landschapskaart/subgraaf` → set + 1-hop buren.
+- Bij elke set-mutatie wordt de hele set opnieuw opgehaald (idempotent).
+- "Begin opnieuw" = harde reset: set leeg + kaart leeg + beginscherm heropend.
+- Organisatie/leverancier zijn **filtercriteria**, geen set-leden.
+- De kaart laadt NOOIT automatisch het hele landschap (schaalt niet).
+
+### beginschermOpen-vlag
+
+Zichtbaarheid = aparte `beginschermOpen = ref(true)`.
+NIET gekoppeld aan `actieveSet.size === 0` — die koppeling veroorzaakte spooksluitingen.
+Sluiten = alleen via expliciete gebruikersactie; heropenen = wisSet() + harde reset.
+
+## LI023 — Signalering registratiegaten (ADR-035, V024)
+
+### Doel
+
+De gebruiker ziet direct waar registraties onvolledig zijn. LIKARA stimuleert
+volledigheid actief — zonder iets te blokkeren of automatisch aan te passen.
+
+### Twee presentatielagen
+
+- **Badges op entiteiten** — kleine indicator direct op de component/contract/
+  gebruikersgroep in lijst of kaart. Gat zichtbaar op de plek waar het hoort.
+- **Centraal Signalering-scherm** — overzicht alle openstaande gaten, gesorteerd
+  op ernst, met doorkliklink naar de entiteit.
+
+### Tien signaaltypen in twee niveaus
+
+🔴 **Kritiek** (governance direct geraakt):
+- Component zonder eigenaar (organisatie)
+- Component zonder verantwoordelijke persoon (rol)
+- Registratie onvolledig (score onder drempelwaarde — default 80%, configureerbaar)
+- Contract zonder leverancier
+- Blokkade zonder eigenaar
+
+🟡 **Aandacht** (volledigheid geraakt, niet blokkerend):
+- Component zonder gebruikersgroep
+- Component zonder koppeling (geïsoleerd)
+- Contract zonder gekoppeld component
+- Gebruikersgroep zonder organisatie
+- Object zonder enige roltoewijzing
+
+### Interactie-invariant
+
+Signalering is puur read-only en informatief — geen engine-poort, geen
+score-mutatie, geen lifecycle-driver. De gebruiker beslist; LIKARA signaleert.
+Elk signaal heeft een directe doorkliklink; geen in-line bewerking in het
+signaleringsscherm.

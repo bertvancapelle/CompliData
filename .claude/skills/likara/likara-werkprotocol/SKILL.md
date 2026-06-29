@@ -111,3 +111,20 @@ Volgorde:
 1. `docker compose up -d`
 2. `cd frontend && npm run dev` (of via CC achtergrondtaak)
 3. Verifieer: `docker compose ps` (alle services healthy) + :3000 bereikbaar
+
+---
+
+## UX-first analysekader (LI024, bevestigd werkprotocol)
+
+Bij elke feature-vraag, ADR-besluit of technische keuze:
+
+1. **Wat ziet/doet de gebruiker?** (startpunt — altijd)
+2. **Welk probleem lost het op voor de gebruiker?** (context)
+3. **Wat is de eenvoudigste oplossing die dat doel dient?** (richting)
+4. Pas dan: technische uitwerking als vangrail.
+
+Een analyse die bij stap 4 begint, is een overtreding van dit protocol.
+Een advies zonder stap 1–3 mag niet worden uitgebracht.
+
+Dit kader is niet-onderhandelbaar en overschrijft elke neiging om met
+technische overwegingen te openen.

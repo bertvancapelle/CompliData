@@ -488,3 +488,23 @@ hasattr-test + bronscan-test.
 - **Eén tenant nu — geen per-tenant-differentiatie** (zie likara-ux): catalogi zijn
   platform-breed/gedeeld, RBAC is één platform-brede matrix. RLS blijft technisch fundament,
   geen ontwerponderwerp tot er echt meerdere tenants zijn.
+
+## Signalering — registratiegaten (ADR-035, V024)
+
+Tien signaaltypen op entiteiten in het domeinmodel. Puur read-only afgeleid.
+
+| Signaal | Bron | Ernst |
+|---|---|---|
+| Component zonder eigenaar (organisatie) | `eigenaar_organisatie_id IS NULL` | 🔴 Kritiek |
+| Component zonder verantwoordelijke (rol) | geen `roltoewijzing` op component | 🔴 Kritiek |
+| Registratie onvolledig | score onder tenant-drempelwaarde | 🔴 Kritiek |
+| Contract zonder leverancier | `leverancier_id IS NULL` | 🔴 Kritiek |
+| Blokkade zonder eigenaar | geen roltoewijzing op blokkade | 🔴 Kritiek |
+| Component zonder gebruikersgroep | geen serving-relatie van gg naar component | 🟡 Aandacht |
+| Component zonder koppeling (geïsoleerd) | geen flow-relaties | 🟡 Aandacht |
+| Contract zonder gekoppeld component | geen association van component naar contract | 🟡 Aandacht |
+| Gebruikersgroep zonder organisatie | `organisatie_id IS NULL` | 🟡 Aandacht |
+| Object zonder roltoewijzing | geen `roltoewijzing`-rij voor dit element | 🟡 Aandacht |
+
+Engine-invariant: Signalering raakt nooit `component_profiel`, `checklistscore`,
+`blokkade` (schrijven) of `lifecycle_status`. Geen engine-poort.
