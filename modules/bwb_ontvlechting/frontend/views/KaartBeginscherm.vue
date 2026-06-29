@@ -84,6 +84,11 @@ function voegResultaatToe(n) {
   if (!n?.id || isToegevoegd(n.id)) return
   toegevoegd.value = new Set(toegevoegd.value).add(n.id)
   emit('voegComponentenToe', [n])
+  // Direct opruimen: zoekterm leeg + dropdown dicht, zodat de gebruiker niet handmatig hoeft te wissen.
+  // (resultaten NIET legen — de reeds-toegevoegd-markering op de rij blijft zo correct als de
+  // dropdown heropent; de dropdown is nu dicht via zoekOpen.)
+  zoekterm.value = ''
+  zoekOpen.value = false
 }
 
 // ── Via context (drie symmetrische secties) ──────────────────────────────────────
@@ -154,7 +159,7 @@ onBeforeUnmount(() => {
   document.removeEventListener('keydown', _opEscape)
 })
 
-defineExpose({ zoek, zoekterm, gekozenType, filterLaag, filterHosting, eigenaarId, resultaten, toonFilters })
+defineExpose({ zoek, zoekterm, gekozenType, filterLaag, filterHosting, eigenaarId, resultaten, toonFilters, zoekOpen })
 </script>
 
 <template>

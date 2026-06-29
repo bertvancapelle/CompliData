@@ -151,4 +151,24 @@ describe('KaartBeginscherm', () => {
     await w.find('[data-testid="toon-op-kaart-knop"]').trigger('click')
     expect(w.emitted('sluit')).toBeTruthy()
   })
+
+  // LI023 — na aanvinken meteen opruimen (geen handmatig wissen).
+  it('na aanvinken component → zoekterm is leeg', async () => {
+    const w = mountKB()
+    await w.find('[data-testid="kb-zoek"]').setValue('zaak')
+    await w.vm.zoek()
+    await flushPromises()
+    await w.find('[data-testid="kb-res-check-c1"]').trigger('change')
+    expect(w.vm.zoekterm).toBe('')
+  })
+
+  it('na aanvinken component → dropdown is gesloten', async () => {
+    const w = mountKB()
+    await w.find('[data-testid="kb-zoek"]').setValue('zaak')
+    await w.vm.zoek()
+    await flushPromises()
+    expect(w.vm.zoekOpen).toBe(true) // dropdown stond open
+    await w.find('[data-testid="kb-res-check-c1"]').trigger('change')
+    expect(w.vm.zoekOpen).toBe(false) // en is nu gesloten
+  })
 })
