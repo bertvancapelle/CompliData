@@ -1,7 +1,7 @@
 # ADR-030 — Contract-dekking per contract↔component-band
 
-**Status:** Voorstel (open subknopen — nog niet besloten, niet gebouwd).
-**Datum:** 2026-06-22 (voorstel)
+**Status:** Besloten (LI023) — centrale subknoop beslist (Optie B); nog niet gebouwd.
+**Datum:** 2026-06-22 (voorstel) · besloten 2026-06-29 (LI023)
 **Relatie:** Bouwt voort op **ADR-023** (unified relatiemodel + relatie-kenmerken als beheerbare
 catalogus, OK-2) en de **relatiekenmerk-vocabulaire-catalogus** (`RelatieKenmerkDimensie` /
 `relatiekenmerk_optie`, ADR-023 Fase E). Verwant aan **ADR-023a** (meervoudige flow-koppelingen):
@@ -64,7 +64,20 @@ nieuw mechanisme te introduceren.
 
 ---
 
-## DE centrale open subknoop (te beslissen door Bert — geen keuze geforceerd)
+## Besloten subknoop (LI023)
+
+**Dekking contract-breed vs. per-band.** Contract-brede dekking blijft behouden naast de per-band
+(per component↔contract-koppeling) dekking. Beide niveaus zijn nodig: de beheerder wil per contract
+zien welke componenten gedekt zijn én per component zien onder welk contract het valt.
+
+→ Dit beslecht de centrale open subknoop hieronder in de richting van **Optie B (naast elkaar)**:
+contract-breed blijft als algemene dekking, de band kan specifieker/afwijkend zijn. De bijbehorende
+regels (leidend bij conflict, aanvulling vs. vervanging, weergave van beide) worden bij de bouw-slice
+uitgewerkt; de "Overige open subknopen" hieronder blijven daarvoor relevant.
+
+---
+
+## DE centrale open subknoop (oorspronkelijk voorstel — beslist: Optie B, zie hierboven)
 
 **Blijft de contract-brede dekking (`ContractDekking`) bestaan als "algemene/default dekking" NAAST
 de per-band-dekking, of VERVANGT de per-band-dekking die volledig?**

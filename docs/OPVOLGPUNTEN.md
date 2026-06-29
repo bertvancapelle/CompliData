@@ -30,6 +30,35 @@ Build **V022 → V023**. LI022 = Landschapskaart Fase B (set-gestuurd) + hygiën
   zoek + telling). Keyset alleen nodig als een tenant extreem veel distinct (organisatie, afdeling)-
   contexten krijgt → dan een kleine eigen slice (keyset over een 2-nullable-koloms-distinct).
 
+### Nieuwe bouwpunten besloten LI023
+
+**ADR-025 (Praatplaat) — BESLOTEN, bouw gepland:**
+"Bekijk op kaart"-knop op alle componentdetailpagina's → vooringestelde
+ego-view op de Landschapskaart. Koppelingenkaart visuele weergave vervalt.
+Read-API per component + frontend-integratie.
+
+**ADR-026 (ArchiMate typering beheerbaar) — BESLOTEN, bouw gepland:**
+Drie verplichte typeringsvelden in componenttype-formulier. Gesloten lijsten
+(code-constanten). Seed compliant maken bij de bouw-slice.
+
+**ADR-030 (Contract coverage) — BESLOTEN, bouw gepland:**
+Per-band dekking naast contract-brede dekking (Optie B).
+
+**ADR-035 (Signalering registratiegaten) — BESLOTEN, bouw gepland:**
+Zie ADR-035 (hernummerd; ADR-031 was reeds vergeven). Coherent Signalering-scherm
+(absorbeert Plaatsingssignalen). 10 signaaltypen, 2 niveaus, badges op entiteiten
++ centraal overzicht.
+
+**Klaarverklaring op ComponentDetail — BESLOTEN, bouw gepland:**
+MigratiegereedheidSectie-blok + knop plaatsen op ComponentDetail.
+ADR-027 is compleet; triviale implementatiegap.
+
+**Interactieve legenda als type-filter — BESLOTEN, bouw gepland:**
+Klik op type in legenda → filtert graaf op dat type.
+
+**Export/import/rapportage — NIEUW STRATEGISCH THEMA (parked):**
+Breder thema dan alleen praatplaat-export. Scope en fasering apart te bepalen.
+
 ### Subgraaf-semantiek: filter/scope/impact/swimlane op een opgebouwde set (eigen ontwerpslice)
 
 Fase B (LI022) maakt de kaart set-gestuurd. De rijke verkenmechaniek
@@ -148,7 +177,7 @@ radiaal-layout + swimlane geparkeerd.
 - **Tenant-eigen partijsoort** — geparkeerd.
 - **Contract-leverancier verbreding** — `aard=externe_partij`-constraint verbreden.
 - **Signalerings-ADR registratiegaten** — object zonder rol, lege eigenaar-organisatie, contract
-  zonder leverancier, lege eigenaar-blokkadelijst.
+  zonder leverancier, lege eigenaar-blokkadelijst. **→ opgenomen in ADR-035 (Signalering registratiegaten), besloten LI023.**
 - **Browser-verificatie radiaal auto-centrering na dubbelklik** (commit 0cf8559).
 
 ### Stand V018 (sessie-afsluiting DC017, 2026-06-22)
@@ -314,6 +343,7 @@ Tests: **810** backend + **440** frontend groen (52 files).
   (2) lege eigenaar-organisatie/gebruikersgroep-organisatie (geparkeerd); (3) contract zonder
   leverancier (indicator + statusfilter + dashboard-ratio); (4) lege 'Eigenaar'-kolom blokkadelijst.
   Generalisatie-discipline n≥2; read-only, geen engine-poort.
+  **→ opgenomen in ADR-035 (Signalering registratiegaten), besloten LI023.**
 - **Architectuuroverzicht-sortering volgt codewaarde, niet NL-label** — geaccepteerd randgeval (B2/B6-a).
 - Tenant-eigen partijsoort (geparkeerd); per-tenant zichtbaarheid catalogus-opties; OP-29 label-rename;
   `SUBTYPE_HEEFT_DATA` 422↔409-heroverweging.

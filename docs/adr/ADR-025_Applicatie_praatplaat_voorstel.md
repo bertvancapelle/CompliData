@@ -95,3 +95,31 @@ Generiek over de modi:
 - **BIV-classificatie** (beschikbaarheid/integriteit/vertrouwelijkheid) als filter + kleurcodering — ADR-028.
 - **Export** PNG/PDF van de kaart.
 - **Cytoscape verder**: pad-inzicht (impactketen tussen twee nodes), clustering per domein/laag.
+
+---
+
+## Nadere besluiten (LI023)
+
+Dit ADR is al geland (DC013/V013). De onderstaande punten zijn **aanvullende productbesluiten**
+bovenop de gelande basis — geen herziening van de bestaande inhoud, maar een aanscherping van de
+praatplaat-aanpak. Enkele ervan zijn nieuw beleid (1, 2) en sturen een geplande bouw-slice.
+
+1. **Renderingtechniek + plek.** De praatplaat is een vooringestelde ego-view op de Landschapskaart,
+   bereikbaar via een "Bekijk op kaart"-knop op de componentdetailpagina. Geen aparte
+   renderingtechniek; de bestaande Landschapskaart-infrastructuur wordt hergebruikt.
+2. **Verhouding tot de Koppelingenkaart.** De Koppelingenkaart als visuele weergave vervalt — de
+   "Bekijk op kaart"-knop is de betere vervanger. De Koppelingen-tab (tabel, bewerken/toevoegen)
+   blijft volledig intact.
+3. **Centrum-scope.** De "Bekijk op kaart"-knop staat op alle componentdetailpagina's. Het centrum is
+   altijd het component waar de gebruiker op dat moment naar kijkt, ongeacht het type. Lege ringen
+   worden niet getoond.
+4. **Label-/taalmapping per ring:**
+   - Koppelingen → "werkt samen met" / "levert aan" / "ontvangt van"
+   - Gebruikersgroepen → "wordt gebruikt door"
+   - Contracten → "valt onder contract"
+   - Infrastructuur → "draait op"
+   - Eigenaarschap → "is in beheer bij"
+   - Samenstelling → "bestaat uit" / "is onderdeel van"
+5. **RBAC.** Hergebruik de bestaande `ARCHITECTUUR.LEZEN`-permissie.
+6. **Export/print.** Niet in v1; onderdeel van een breder export/import/rapportage-thema dat apart
+   wordt opgepakt.

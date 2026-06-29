@@ -57,3 +57,25 @@ Dit ADR maakt de typering beheerbaar door de platformbeheerder én dicht het lek
 - Per-tenant typering of -overrides.
 - Wijziging van de vaste element-type-typing (`ELEMENT_ARCHIMATE_TYPING`, ADR-023 Fase D) —
   die blijft code-vast.
+
+---
+
+## Nadere besluiten (LI023)
+
+Dit ADR is al geaccepteerd. De onderstaande punten leggen de eerder open uitwerkingsvragen vast als
+besluit; ze sturen de geplande bouw-slice (verplichte typering in het componenttype-formulier).
+
+1. **Gesloten lijst voor `archimate_element`.** Code-constante (gedeelde bron, zoals laag en aspect).
+   De geldige ArchiMate-elementen zijn een vaste, taal-bepaalde set — geen organisatie-specifieke data.
+2. **Volledigheids-mechanisme.** Het formulier is niet in te dienen zonder volledige typering — drie
+   verplichte velden, net zoals naam verplicht is. De beheerder kan niet per ongeluk een incompleet
+   type aanmaken. Service-side validatie + runtime-test als technische vangrail.
+3. **Volledigheid: bij aanmaken.** Een componenttype zonder typering is direct al zinloos. Verplicht
+   bij aanmaken, niet uitgesteld tot activeren.
+4. **Bestaande NULL-rijen.** Er is alleen testdata (geen productiedata). De seed wordt bij de
+   bouw-slice compliant gemaakt: elk componenttype in `seed_componentconfig` krijgt alle drie de
+   typeringsvelden gevuld. Geen apart opschoonstap nodig.
+5. **RBAC.** Typering bewerken = platformbeheerder (`PlatformEntiteit.COMPONENTCONFIG`). Geen aparte
+   permissie nodig.
+6. **Combinatievalidatie expliciet uit.** Het systeem dwingt niet af welk element bij welke
+   laag/aspect hoort. De beheerder draagt de verantwoording voor een zinnige mapping.
