@@ -7,6 +7,40 @@ Bron: sessie 2–3 (P1–P5, OP-9 t/m OP-12). Status per punt expliciet vermeld.
 
 ## OPEN
 
+### Stand V025 (sessie-afsluiting LI024, 2026-06-29)
+
+Build **V024 → V025**. LI024 = volledige prioriteitenlijst afgewerkt +
+uitgebreide UX-verbeteringen Landschapskaart.
+
+**Geland in LI024:**
+- Skills aangemaakt: likara-werkprotocol, likara-domeinmodel, likara-ux (33ded4f)
+- ADR-035 Slice 1: 2 kritieke signalen + Signalering-scherm 2 tabs (1903f14)
+- ADR-035 Slice 2: 5 aandacht-signalen + centraal overzicht (0247506)
+- ADR-025 "Bekijk op kaart"-knop + beginscherm-fix (f87182e)
+- ADR-026 ArchiMate typering: al gerealiseerd V013 — geen bouw nodig
+- ADR-030 Contract coverage per-band: migratie 0043 + service + UI (0953857)
+- Klaarverklaring-blok ComponentDetail: al gerealiseerd — geen bouw nodig
+- Interactieve legenda: dim/spotlight + draggable (533ec94 + 537941f)
+- Zoekbalk bug fix + resultaten in kaart-modus LI028/029 (740aae3 / commit LI029)
+- fcose layout-optimalisatie LI030 (537941f)
+- Dubbele nodes fix LI031 (fe9873c)
+- Positie-stabiele re-render LI032 (013d240)
+- Detail-popup draggable + overlap-fix LI033/034 (commit LI033)
+- LIKARA tagline fix LI035 (commit LI035)
+- Eigenaar-ring fix LI036 (f8e735e)
+- Ring-reactivity regressietest LI037 (144ecd9)
+
+**Nieuw open (prioriteitsvolgorde voor LI025):**
+1. ADR-035 Slice 3 — Registratie onvolledig (configureerbare drempelwaarde)
+2. Modus ego→impact ontkoppelen van set-grootte (ADR-033-revisie)
+3. GebruikersgroepDetail standalone pagina
+4. BlokkadeDetail standalone pagina
+5. Zoekbalk contextlabel "Component toevoegen aan beeld"
+
+**Structureel onmogelijk / uitgesteld:**
+- blokkade_zonder_eigenaar — schema-/semantiekherziening vereist
+- badges GebruikersgroepDetail/BlokkadeDetail — wacht op detail-pagina's
+
 ### Stand V024 (sessie-afsluiting LI023, 2026-06-29)
 
 Build **V023 → V024**. LI023 = Landschapskaart Fase B compleet + UX-fixes +

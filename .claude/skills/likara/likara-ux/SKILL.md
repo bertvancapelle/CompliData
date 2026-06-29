@@ -1,7 +1,7 @@
 ---
 name: likara-ux
 description: Interaction-design-denkmethode voor LIKARA. Verplicht te raadplegen bij ELKE frontend-rakende slice (nieuw scherm, nieuwe sectie, nieuwe actie) — door zowel CC als claude.ai. Borgt dat een functie de UI logisch en compleet houdt voor de gebruiker: geen lege lijsten zonder route naar de actie, actie op de plek waar de gebruiker hem verwacht, terminologie vanuit de gebruiker. Dit is GEEN stijl-/visuele skill (dat is likara-frontend); dit gaat over of het scherm doet wat de gebruiker verwacht.
-bijgewerkt: V015
+bijgewerkt: V024
 ---
 
 # LIKARA UX / Interaction-Design Skill
@@ -272,3 +272,25 @@ Signalering is puur read-only en informatief — geen engine-poort, geen
 score-mutatie, geen lifecycle-driver. De gebruiker beslist; LIKARA signaleert.
 Elk signaal heeft een directe doorkliklink; geen in-line bewerking in het
 signaleringsscherm.
+
+## LI024 — Aanvullende UX-patronen
+
+### Draggable overlays
+Legenda én detail-popup zijn versleepbaar via mousedown/mousemove/mouseup op document.
+Initialiseer positie vanuit getBoundingClientRect() bij eerste drag (niet ?? 0).
+Reset bij wisSet(). Patroon: detailPos/legendaPos ref({x,y}), null = CSS-standaardpositie.
+
+### Incrementele graaf-uitbreiding (positie-stabiel)
+Component toevoegen aan set → bestaande nodes houden hun positie (vorigePosities
+vastgelegd vóór cy.elements().remove()); nieuwe nodes worden gepositioneerd via
+fcose fixedNodeConstraint. cy blijft een pure afgeleide van de state (LI032).
+
+### Ring-filter (legenda)
+Klik op type in legenda → dat type blijft scherp (opacity 1.0), alle anderen dimmen
+(opacity 0.35, lk-dim class). Geen relayout. Reset bij dubbelklik op node of wisSet().
+Buiten history (_toestandSig).
+
+### Zoekresultaten in kaart-modus
+In kaart-modus (beginscherm dicht): zoekresultaten verschijnen inline onder de
+zoekbalk bij zoekterm.trim() || filterActief. Per rij een +-knop (toggleSet) en
+✓ als al in beeld. Beginscherm heeft een eigen server-side zoek (los pad).

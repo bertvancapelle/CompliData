@@ -1,4 +1,4 @@
-# SESSIE_BRIEFING.md — LIKARA V024
+# SESSIE_BRIEFING.md — LIKARA V025
 
 **Gegenereerd**: 2026-06-29
 
@@ -10,11 +10,11 @@
 
 | Veld | Waarde |
 |------|--------|
-| Build | V024 |
+| Build | V025 |
 | Datum | June 2026 |
-| Commit | 0e16999 |
-| Tests | 698 frontend + 910 backend groen (2 skipped) |
-| TST-rapport | TST-V024-Validatierapport.md |
+| Commit | 144ecd9 |
+| Tests | backend 928 / frontend 745 groen (2 skipped) |
+| TST-rapport | TST-V025-Validatierapport.md |
 | Kritieke bevindingen | 0 |
 
 ---
@@ -22,102 +22,64 @@
 ## Recente commits
 
 ```
-0e16999 chore: verouderd root-OPVOLGPUNTEN.md verwijderd — docs/OPVOLGPUNTEN.md is de enige bron (LI023)
-ac4afb7 docs(adr): ADR-025/026 nadere besluiten + ADR-030 besloten + ADR-035 Signalering aangemaakt + OPVOLGPUNTEN bijgewerkt (LI023)
-3fc3414 docs: PRODUCTVISIE.md toegevoegd aan projectroot (LI023)
-a4979fa fix(landschapskaart): zoekterm en dropdown resetten na aanvinken component (LI023)
-1019d8f feat(landschapskaart): generieke re-layout bij elke node-samenstelling-wijziging (LI023)
+144ecd9 test(landschapskaart): edge-only ring-toggle hertekent (regressie, LI037)
+f8e735e fix(landschapskaart): eigenaar-edges verdwenen permanent — 'eigenaar' nu een echte ring (LI036)
+0953857 feat(contract): ADR-030 per-band (component↔contract) dekking naast contract-brede dekking
+d7052fa fix(login): generieke LIKARA-tagline op het splashscherm (LI035)
+eb0a7ed fix(landschapskaart): detail-/legenda-paneel springt niet meer bij eerste sleep-beweging (LI034)
 ```
 
 ---
 
 ## Prioriteiten volgende sessie
 
-# NEXT_SESSION.md — LIKARA V023
+# LIKARA — Next Session (LI025)
 
-**Gegenereerd**: 2026-06-27 (sessie-afsluiting LI022)
-**Build**: V022 → **V023**
-**Migratie head**: `0042` (`0042_adr033_opgeslagen_view`) — LI022 had geen schema-/migratiewijziging
-(Fase B = frontend + read-side; slice 2a = nieuwe read-queries over bestaande relaties).
-**Tests**: frontend **663 groen** + `vite build` + `test:css-build` ok; backend **910 passed / 2 skipped**
-(de 8 LI021-failers zijn herijkt — 0 failers).
+## Top-5 prioriteiten
 
----
+1. **ADR-035 Slice 3** — Registratie onvolledig (score onder configureerbare drempelwaarde).
+   Vereist platform-instelling (tenant-breed, default 80%). Aparte mini-slice.
 
-## Stand van zaken (V023) — Landschapskaart Fase B (set-gestuurd) + hygiëne/rename
+2. **Modus ego→impact ontkoppelen van set-grootte** — automatische modus-wissel bij
+   2+ set-leden voelt abrupt. Modus wordt expliciete gebruikerskeuze (tabs);
+   ADR-033-revisie nodig.
 
-Deze sessie (LI022):
-- **Reset + seed-herijking** (`d6cd59f`) — de 8 pre-existing live-DB-failers herijkt op de verrijkte
-  `_seed_bvowb_scenario` (seed onaangeroerd; tests bewogen mee).
-- **Skill-laag hernoemd** `complidata-* → likara-*` + nieuwe **`likara-werkprotocol`**-skill (`8b8a8b2`);
-  **Laag-2 identifier-rename** als opvolgpunt geborgd (`6043094`).
-- **Fase B slice 0+1** (`10bb35e`) — set-gestuurd laadpad + `subgraaf` api-client.
-- **Fase B slice 2a** (`509e9ca`) — contract- + gebruiker-context-routes naar componenten (databron voor
-  de "Via context"-ingangen).
-- **Sessie-afsluiting** — generators (gen_build/gen_sessiestart) meegerenamed naar `.claude/skills/likara/`.
+3. **GebruikersgroepDetail — standalone pagina** — ontbreekt; gebruikersgroepen
+   leven nu als sectie in ComponentDetail. Badge + signalering wachten hierop.
 
----
+4. **BlokkadeDetail — standalone pagina** — ontbreekt; blokkades hebben alleen
+   BlokkadeOverzichtView (lijst). Badge + signalering wachten hierop.
 
-## Vertrekpunt volgende sessie — Slice 2b (BESLOTEN ONTWERP, niet opnieuw ontwerpen)
+5. **Zoekbalk contextlabel** — "Component toevoegen aan beeld" boven de zoekbalk
+   in kaart-modus (klein, cosmetic, 1 regel tekst).
 
-**Slice 2b — leeg-openend 4-ingangen-beginscherm (frontend).** Vervangt de placeholder uit slice 1 door
-het echte scherm. **Databron staat volledig klaar** (slice 2a + bestaande routes); geen backend nodig.
+## Openstaande punten (volledig)
 
-- **Hoofdroute (zoekzone):** type-scope-keuze (standaard `applicatie`; "applicatie" is gewoon een waarde
-  van het componenttype-filter, **géén aparte ingang**; aanpasbaar) + vrije zoekterm → `api.componenten.lijst`
-  (server-side, AND-gecombineerd) → treffers als **aanvinkbare multi-select-dropdown** → aangevinkte
-  componenten verschijnen als **"In beeld"-chips** onder de balk.
-- **"In beeld"-chips = tweede bewerk-plek op één selectie:** uitvinken/`×` = uit de graaf; één bron van
-  waarheid met de knopen.
-- **Filters** (laag · hosting · eigenaar) weggevouwen onder "+ Filters", verfijnen dezelfde treffers.
-- **Via context (drie symmetrische routes — doorzoekbare multi-selects → onderliggende componenten in de set):**
-  - leverancier → `api.partijen.lijst({aard:'externe_partij', zoek})` + `GET /partijen/{id}/componenten`
-  - contract → `api.contracten.lijst({zoek})` + `GET /contracten/{id}/componenten` (nieuw, slice 2a)
-  - gebruiker-context → `GET /gebruikersgroepen/contexten?zoek=` (distinct org+afdeling, met telling) +
-    `GET /gebruikersgroepen/contexten/componenten?organisatie_id=&afdeling=`
-- **Hergebruiken:** bestaande opgeslagen-views-lijst, als gelijkwaardige ingang op het scherm.
-- **Toon het hele landschap:** bestaande actie (slice 1), bescheiden apart onderaan.
-- **Granulariteit:** component-zoek = individuen kiezen; context-routes = context kiezen → alle
-  onderliggende componenten. Alles **accumuleert**; subgraaf-herfetch op de hele set bij elke mutatie.
-- **Engine:** read-only/frontend; geen backend nodig.
+### ADR-035 Signalering
+- Slice 3: "Registratie onvolledig" (configureerbare score-drempelwaarde) — uitgesteld
+- blokkade_zonder_eigenaar — structureel onmogelijk (roltoewijzing verwijst niet naar
+  blokkade, blokkade is geen element-subtype); vereist schema-/semantiekherziening
+- badges op GebruikersgroepDetail/BlokkadeDetail — uitgesteld tot detail-pagina's bestaan
 
----
+### ADR-030
+- Signaaltype "component zonder per-band dekking" als toekomstig ADR-035-signaaltype — genoteerd
 
-## Herziene slice-planning (het ontwerp heeft de oude nummering verschoven)
+### Landschapskaart
+- Modus ego→impact ontkoppelen van set-grootte (ADR-033-revisie)
+- Scope-balk gedrag in subgraaf-modus (bewust uitgesteld)
+- Swimlane implementatie (ADR-034, geparkeerd)
+- Saved views als permanente hoofdingang (Fase D)
 
-- **Slice 2b absorbeert** de oude "Typen server-side" (oud slice 3) en "Bladeren" (oud slice 4) — die
-  worden **niet apart** gebouwd.
-- **Slice 5 (design-heavy, CHECKPOINT-EERST):** het interactiemodel op de graaf — klik = toevoegen,
-  `×` = weghalen, doorklik haalt buren erbij (+voegt de buur toe), verzamel-doorklik op context-knopen
-  (alle onderliggende componenten), "N in beeld"-teller op de graaf, "Begin opnieuw" als harde reset —
-  **plus** de geparkeerde **subgraaf-semantiek-beslissing** (welke van filter/scope/impact/swimlane
-  zinvol zijn op een set). Bert wil het interactiegedrag kunnen **testen** zodra deze slice landt.
-- **Slice 6:** opschonen (dode full-graph-op-mount-paden, `cytoscape-dagre`-cleanup).
+### Platform
+- GebruikersgroepDetail standalone pagina
+- BlokkadeDetail standalone pagina
+- fcose TOEGESTANE_ELEMENTEN uitbreiding (ADR-026-amendement, optioneel)
 
----
+### Cosmetic/klein
+- Zoekbalk contextlabel "Component toevoegen aan beeld" in kaart-modus
 
-## Bekende risico's en aandachtspunten
-
-- **8 LI021-failers zijn opgelost** (herijkt op de verrijkte seed) — niet als open beschouwen.
-- **`GET /gebruikersgroepen/contexten` is bewust ongepagineerd** (begrensde afgeleide lijst). Alleen bij
-  extreem veel distinct (org, afdeling)-contexten een keyset-slice nodig (zie OPVOLGPUNTEN).
-- **Laag-2 identifier-rename** (`complidata-api`-clientId, `cd_`-familie, `COMPLIDATA_TEST_MODE`) staat nog
-  open als aparte, gecoördineerde slag (OPVOLGPUNTEN) — raakt Keycloak/realm + evt. schema (tabelprefix).
-- Werktree is **schoon** na de afsluit-commit(s).
-
----
-
-## Geleerde patronen deze sessie (verwerkt in de likara-skills)
-
-- **likara-frontend** — set-gestuurd kaart-laadpad: leeg openen, subgraaf-per-set (hele set herfetch),
-  hele-landschap als bewuste actie met "X van N"-teller op verwerkte data, begin-opnieuw = harde reset,
-  entry-point = verse history-wortel.
-- **likara-backend** — context→componenten read-endpoint: deel de WHERE, splits de projectie; geen
-  ComponentProfiel-join (engine-ontkoppeld, kale componenten mee); nullable composiet-sleutel via
-  `IS NOT DISTINCT FROM`; begrensde distinct-picker mag ongepagineerd.
-- **likara-tests** — strategie A bij een laadpad-omslag: mountView laadt de "volledige" modus, één setter
-  voedt beide laadpaden, nieuwe bedrading-tests apart; nagel onbesliste semantiek niet vast; function-
-  bronscan met `ast`-docstring-strip voor engine-borging.
+### Strategisch (parked)
+- Export/import/rapportage — scope en fasering apart te bepalen
 
 
 ---
@@ -126,5 +88,5 @@ het echte scherm. **Databron staat volledig klaar** (slice 2a + bestaande routes
 
 1. Lees deze briefing volledig
 2. Lees CLAUDE.md (sessiestart-protocol)
-3. Bevestig: "Sessie-briefing geladen — LIKARA V024"
+3. Bevestig: "Sessie-briefing geladen — LIKARA V025"
 4. Wacht op START: [naam] van Bert

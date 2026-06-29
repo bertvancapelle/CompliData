@@ -9,7 +9,7 @@ description: >
   ankerpunten, en harde architectuurregels. De HOE (implementatiepatronen) staat
   in likara-db en likara-backend; dit bestand beschrijft het WAT.
 stack: PostgreSQL 16, SQLAlchemy asyncio, FastAPI — ADR-021/023/024/025/026
-bijgewerkt: V015
+bijgewerkt: V024
 ---
 
 # LIKARA Domeinmodel — Kaart
@@ -508,3 +508,12 @@ Tien signaaltypen op entiteiten in het domeinmodel. Puur read-only afgeleid.
 
 Engine-invariant: Signalering raakt nooit `component_profiel`, `checklistscore`,
 `blokkade` (schrijven) of `lifecycle_status`. Geen engine-poort.
+
+## Contract-band-dekking (ADR-030, V024)
+
+Tabel: contract_band_dekking (tenant_id, contract_id, component_id, dekking_sleutels TEXT[])
+PK: (tenant_id, contract_id, component_id) — één rij per component↔contract-koppeling.
+Catalogus: contractconfig_optie (dimensie=dekking) — hergebruikt.
+Weergave: contract_breed (uit ContractDekking-tag-tabel) + per_band (array) naast elkaar.
+toon_per_band = per_band IS NOT NULL AND per_band != contract_breed (set-vergelijking op sleutels).
+FORCE RLS, FK→element CASCADE.
