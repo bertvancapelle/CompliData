@@ -1912,6 +1912,28 @@ describe('LandschapskaartView v3', () => {
     })
   })
 
+  // ── LI033 — sleepbaar detail-paneel ──────────────────────────────────────────────────────────
+  describe('detail-popup draggable (LI033)', () => {
+    it('slepen verplaatst het detail-paneel; wisSet reset naar standaard', async () => {
+      const { w } = await mountView()
+      expect(w.vm.detailPos).toEqual({ x: null, y: null })
+      w.vm.onDetailMousedown({ clientX: 100, clientY: 80, target: { closest: () => null }, preventDefault() {} })
+      expect(w.vm.detailDragging).toBe(true)
+      w.vm.onDetailMousemove({ clientX: 140, clientY: 120 }) // offset (100,80) → pos (40,40)
+      expect(w.vm.detailPos).toEqual({ x: 40, y: 40 })
+      w.vm.onDetailMouseup()
+      expect(w.vm.detailDragging).toBe(false)
+      w.vm.wisSet()
+      expect(w.vm.detailPos).toEqual({ x: null, y: null })
+    })
+
+    it('mousedown op een knop/link/input start geen drag', async () => {
+      const { w } = await mountView()
+      w.vm.onDetailMousedown({ target: { closest: (sel) => (sel.includes('button') ? {} : null) }, preventDefault() {} })
+      expect(w.vm.detailDragging).toBe(false)
+    })
+  })
+
   // ── LI025 — interactieve legenda-typefilter (dimmen, niet verbergen) ─────────────────────────
   describe('legenda-typefilter (LI025)', () => {
     it('toggle: klik type → filter; nogmaals → null; ander type → dat type', async () => {

@@ -583,6 +583,7 @@ function wisSet() {
   heleLandschap.value = false
   beginschermOpen.value = true // "Begin opnieuw"/"Wis alles" = volledige reset → terug naar het beginscherm
   legendaPos.value = { x: null, y: null } // LI025 — legenda terug naar standaardpositie
+  detailPos.value = { x: null, y: null } // LI033 — detail-paneel terug naar standaardpositie
 }
 // Fase B — bewuste "toon het hele landschap"-actie: leegt de set en zet de hele-landschap-vlag,
 // waarna de herfetch-watch de volledige graaf laadt (mét voortgangsteller).
@@ -1379,6 +1380,31 @@ onBeforeUnmount(() => {
   document.removeEventListener('mouseup', onLegendaMouseup)
 })
 
+// LI033 — sleepbaar detail-paneel (zelfde patroon als de legenda). null = standaard in de sidebar;
+// slepen zet een absolute viewport-positie. Reset naar standaard bij "Begin opnieuw" (wisSet).
+const detailPos = ref({ x: null, y: null })
+const detailDragging = ref(false)
+let _detailDragOffset = { x: 0, y: 0 }
+function onDetailMousedown(e) {
+  if (e.target?.closest?.('button, a, input')) return // knoppen/links/inputs werken gewoon
+  detailDragging.value = true
+  _detailDragOffset = { x: e.clientX - (detailPos.value.x ?? 0), y: e.clientY - (detailPos.value.y ?? 0) }
+  e.preventDefault?.()
+}
+function onDetailMousemove(e) {
+  if (!detailDragging.value) return
+  detailPos.value = { x: e.clientX - _detailDragOffset.x, y: e.clientY - _detailDragOffset.y }
+}
+function onDetailMouseup() { detailDragging.value = false }
+onMounted(() => {
+  document.addEventListener('mousemove', onDetailMousemove)
+  document.addEventListener('mouseup', onDetailMouseup)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('mousemove', onDetailMousemove)
+  document.removeEventListener('mouseup', onDetailMouseup)
+})
+
 // LI019 1d-v5 — swimlane-indeling, afgeleid uit bestaande node-velden. Robuust voor de werkelijke
 // data: ÉLK element_type dat geen partij/contract/gebruikersgroep is, is een componenttype →
 // componenten (technology-laag → infrastructuur). Zo belanden application-componenten nóóit meer in
@@ -1641,7 +1667,7 @@ function _layout(geenAnimatie = false, vorigePosities = null) {
   if (modus.value === 'ego') {
     return {
       name: 'concentric', concentric: (n) => (n.id() === egoStartId.value ? 10 : 5), levelWidth: () => 1,
-      minNodeSpacing: 60, padding: 60, ...anim, stop: _naLayout,
+      minNodeSpacing: 80, spacingFactor: 1.5, padding: 60, ...anim, stop: _naLayout,
     }
   }
   // ADR-033 1c / LI030 — Impact-verkenner: fcose (force-directed) minimaliseert kruisende lijnen.
@@ -1662,7 +1688,7 @@ function _layout(geenAnimatie = false, vorigePosities = null) {
   // → dichter bij het centrum).
   return {
     name: 'concentric', concentric: (n) => n.degree(false), levelWidth: () => 2,
-    minNodeSpacing: 50, padding: 50, ...anim, stop: _naLayout,
+    minNodeSpacing: 80, spacingFactor: 1.5, padding: 50, ...anim, stop: _naLayout,
   }
 }
 
@@ -1861,7 +1887,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', _opEscape)
 })
 
-defineExpose({ openNodePopup, openEdgePopup, selecteerFlow, onNodeTap, sluitPopup, toggleFullscreen, fullscreen, popupOpen, _edgeData, groepeerPerOrg, grafNodes, grafEdges, zichtbareNodes, zichtbareEdges, layoutModus, _laneVan, _swimlanePositions, _layout, laneVolgorde, verbergLegeLanes, laneBanden, getekendeNodes, _herschikLane, toonRegistratiegaps, setLayoutModus, modus, actieveSet, toggleSet, kiesComponent, drillPad, drillNaar, stapTerug, huidigeFocus, huidigeFocusSet, topbalkNodes, impactDirect, impactGeraaktAantal, impactZichtbaarIds, _nodeData, geselecteerdNodeId, _edgeGehighlight, inspecteerNode, historie, cursor, kanTerug, kanVooruit, terugInHistorie, vooruitInHistorie, _vormVoorType, legendaOpen, toggleLegenda, scopeOrgs, scopeModus, organisatieNodes, toggleScopeOrg, _inScope, zonderEigenaarAantal, organisatieloosGebruiktAantal, opgeslagenViews, magViewsBeheren, toonStartscherm, openView, openOpslaan, openBewerk, bewaarView, verwijderView, beginMetHeleKaart, viewDialogOpen, viewNaam, viewGedeeld, laadViews, heleLandschap, beginscherm, beginschermOpen, tekenVoortgang, toonHeleLandschap, herlaadGraaf, wisSet, voegComponentenToeAanSet, actieveSetNodes, componentBuren, voegBurenToe, voegContextComponentenToe, geselecteerdNodeBuren, detailNode, _relayoutTeller, legendaTypeFilter, toggleLegendaFilter, _legendaMatch, legendaPos, legendaDragging, onLegendaMousedown, onLegendaMousemove, onLegendaMouseup })
+defineExpose({ openNodePopup, openEdgePopup, selecteerFlow, onNodeTap, sluitPopup, toggleFullscreen, fullscreen, popupOpen, _edgeData, groepeerPerOrg, grafNodes, grafEdges, zichtbareNodes, zichtbareEdges, layoutModus, _laneVan, _swimlanePositions, _layout, laneVolgorde, verbergLegeLanes, laneBanden, getekendeNodes, _herschikLane, toonRegistratiegaps, setLayoutModus, modus, actieveSet, toggleSet, kiesComponent, drillPad, drillNaar, stapTerug, huidigeFocus, huidigeFocusSet, topbalkNodes, impactDirect, impactGeraaktAantal, impactZichtbaarIds, _nodeData, geselecteerdNodeId, _edgeGehighlight, inspecteerNode, historie, cursor, kanTerug, kanVooruit, terugInHistorie, vooruitInHistorie, _vormVoorType, legendaOpen, toggleLegenda, scopeOrgs, scopeModus, organisatieNodes, toggleScopeOrg, _inScope, zonderEigenaarAantal, organisatieloosGebruiktAantal, opgeslagenViews, magViewsBeheren, toonStartscherm, openView, openOpslaan, openBewerk, bewaarView, verwijderView, beginMetHeleKaart, viewDialogOpen, viewNaam, viewGedeeld, laadViews, heleLandschap, beginscherm, beginschermOpen, tekenVoortgang, toonHeleLandschap, herlaadGraaf, wisSet, voegComponentenToeAanSet, actieveSetNodes, componentBuren, voegBurenToe, voegContextComponentenToe, geselecteerdNodeBuren, detailNode, _relayoutTeller, legendaTypeFilter, toggleLegendaFilter, _legendaMatch, legendaPos, legendaDragging, onLegendaMousedown, onLegendaMousemove, onLegendaMouseup, detailPos, detailDragging, onDetailMousedown, onDetailMousemove, onDetailMouseup })
 
 // LI023 — generieke re-layout: herpositioneer zodra de WERKELIJK GETEKENDE node-samenstelling
 // wijzigt. De id-compositie van `getekendeNodes` vangt álle oorzaken (scope/ring/zoekfilter/nieuwe
@@ -2371,7 +2397,13 @@ const typeLabel = (t) => humaniseer(t)
 
         <div class="border-t border-[var(--cd-color-border)] pt-[var(--cd-space-sm)]">
           <p class="mb-1 font-semibold text-[length:var(--cd-text-sm)]">Detail</p>
-          <div v-if="detailNode" data-testid="lk-detail" class="flex flex-col gap-1 text-[length:var(--cd-text-sm)]">
+          <div
+            v-if="detailNode"
+            data-testid="lk-detail"
+            :style="detailPos.x !== null ? { position: 'fixed', left: detailPos.x + 'px', top: detailPos.y + 'px', zIndex: 30 } : {}"
+            :class="['flex flex-col gap-1 text-[length:var(--cd-text-sm)]', detailPos.x !== null ? 'w-56 rounded-[var(--cd-radius-card)] border border-[var(--cd-color-border)] bg-white p-[var(--cd-space-sm)] shadow-[var(--cd-shadow-lg)]' : '', detailDragging ? 'cursor-grabbing' : 'cursor-grab']"
+            @mousedown="onDetailMousedown"
+          >
             <p class="font-semibold" data-testid="lk-detail-naam">{{ detailNode.naam }}</p>
             <!-- LI021 — partij: aard; gebruikersgroep: ledental; anders de component-velden. -->
             <p v-if="detailNode.element_type === 'partij'" data-testid="lk-detail-aard"><span class="text-[var(--cd-color-text-muted)]">Aard:</span> {{ detailNode.soort ? typeLabel(detailNode.soort) : '—' }}</p>
