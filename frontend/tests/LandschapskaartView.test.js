@@ -1817,6 +1817,31 @@ describe('LandschapskaartView v3', () => {
     })
   })
 
+  // ── LI030 — impact-layout via fcose (kruisings-minimalisatie + vaste set-ankers) ─────────────
+  describe('impact-layout (LI030)', () => {
+    it('impact-modus gebruikt fcose; ego blijft concentric', async () => {
+      const { w } = await mountView()
+      await kies(w, 'a1') // 1 → ego
+      expect(w.vm.modus).toBe('ego')
+      expect(w.vm._layout().name).toBe('concentric') // ego ongewijzigd
+      await kies(w, 'a2') // 2 → impact
+      expect(w.vm.modus).toBe('impact')
+      const cfg = w.vm._layout()
+      expect(cfg.name).toBe('fcose')
+      expect(cfg.randomize).toBe(false) // deterministisch
+      expect(Array.isArray(cfg.fixedNodeConstraint)).toBe(true) // set-ankers-mechanisme
+    })
+
+    it('impact: de set-nodes (ankers) zijn zichtbaar in de graaf', async () => {
+      const { w } = await mountView()
+      await kies(w, 'a1')
+      await kies(w, 'a2')
+      const ids = w.vm.getekendeNodes.map((n) => n.id)
+      expect(ids).toContain('a1')
+      expect(ids).toContain('a2')
+    })
+  })
+
   // ── LI025 — interactieve legenda-typefilter (dimmen, niet verbergen) ─────────────────────────
   describe('legenda-typefilter (LI025)', () => {
     it('toggle: klik type → filter; nogmaals → null; ander type → dat type', async () => {

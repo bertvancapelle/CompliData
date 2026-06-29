@@ -1606,11 +1606,18 @@ function _layout(geenAnimatie = false) {
       minNodeSpacing: 60, padding: 60, ...anim, stop: _naLayout,
     }
   }
-  // ADR-033 1c — Impact-verkenner: concentric met de FOCUS centraal, de directe buren eromheen.
+  // ADR-033 1c / LI030 — Impact-verkenner: fcose (force-directed) minimaliseert kruisende lijnen.
+  // De set-nodes (ankerpunten) worden op een vaste, gespreide positie gefixeerd → prominent en
+  // stabiel; de context-nodes ordenen zich eromheen. Deterministisch (randomize:false) → consistente
+  // plaatsing. `cy.add()` is al gedraaid (tekenGraaf), dus getElementById vindt de getekende set.
   if (modus.value === 'impact') {
+    const fixedNodeConstraint = [...actieveSet.value]
+      .filter((id) => cy.getElementById(id).length)
+      .map((id, i) => ({ nodeId: id, position: { x: i * 220, y: 0 } }))
     return {
-      name: 'concentric', concentric: (n) => (huidigeFocusSet.value.has(n.id()) ? 10 : 5), levelWidth: () => 1,
-      minNodeSpacing: 60, padding: 60, ...anim, stop: _naLayout,
+      name: 'fcose', quality: 'proof', randomize: false,
+      idealEdgeLength: 120, nodeRepulsion: 8000,
+      fixedNodeConstraint, padding: 60, ...anim, stop: _naLayout,
     }
   }
   // LI019 1d (Taak 3) — Radiaal/Geheel+Impact: concentric op koppelingsdichtheid (meer koppelingen
