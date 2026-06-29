@@ -310,21 +310,7 @@ defineExpose({ zoek, zoekterm, gekozenType, filterLaag, filterHosting, eigenaarI
         Zoek een component om te beginnen.
       </p>
 
-      <!-- Primaire actie: sluit het beginscherm en toon de opgebouwde set op de kaart. Disabled
-           (grayed-out) zolang de set leeg is — er valt dan nog niets te tonen. -->
-      <div class="border-t border-[var(--cd-color-border)] pt-[var(--cd-space-md)]">
-        <button
-          type="button"
-          data-testid="toon-op-kaart-knop"
-          :disabled="setGrootte === 0"
-          class="w-full rounded-[var(--cd-radius-btn)] bg-[var(--cd-color-primary)] px-[var(--cd-space-md)] py-2 text-white disabled:cursor-not-allowed disabled:opacity-50"
-          @click="emit('sluit')"
-        >
-          {{ setGrootte === 0 ? 'Selecteer componenten om te beginnen' : `Toon ${setGrootte} component${setGrootte === 1 ? '' : 'en'} op de kaart` }}
-        </button>
-      </div>
-
-      <!-- 4 — Bescheiden ontsnapping: het hele landschap -->
+      <!-- 4 — Bescheiden ontsnapping: het hele landschap (boven de sticky actie, scrollt mee). -->
       <div class="pt-[var(--cd-space-sm)]">
         <button
           type="button"
@@ -333,6 +319,21 @@ defineExpose({ zoek, zoekterm, gekozenType, filterLaag, filterHosting, eigenaarI
           @click="emit('toonHeleLandschap')"
         >
           Of toon het hele landschap →
+        </button>
+      </div>
+
+      <!-- Primaire actie: STICKY onderaan de scrollbare container — altijd bereikbaar, ongeacht de
+           scrollpositie. Eigen achtergrond zodat de context-secties er netjes onderdoor scrollen.
+           Disabled (grayed-out) zolang de set leeg is — er valt dan nog niets te tonen. -->
+      <div class="sticky bottom-0 border-t border-[var(--cd-color-border)] bg-[var(--cd-color-bg)] pt-[var(--cd-space-sm)] pb-[var(--cd-space-sm)]">
+        <button
+          type="button"
+          data-testid="toon-op-kaart-knop"
+          :disabled="setGrootte === 0"
+          class="w-full rounded-[var(--cd-radius-btn)] bg-[var(--cd-color-primary)] px-[var(--cd-space-md)] py-2 text-white disabled:cursor-not-allowed disabled:opacity-50"
+          @click="emit('sluit')"
+        >
+          {{ setGrootte === 0 ? 'Selecteer componenten om te beginnen' : `Toon ${setGrootte} component${setGrootte === 1 ? '' : 'en'} op de kaart` }}
         </button>
       </div>
     </div>
