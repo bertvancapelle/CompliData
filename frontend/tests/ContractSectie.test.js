@@ -10,7 +10,7 @@ vi.mock('@/api', () => ({
   api: {
     componenten: { contracten: vi.fn() },
     contractconfig: { opties: vi.fn() },
-    contracten: { lijst: vi.fn() },
+    contracten: { lijst: vi.fn(), bandDekking: { ophalen: vi.fn(), instellen: vi.fn(), verwijderen: vi.fn() } },
     componentContracten: { maak: vi.fn(), werkBij: vi.fn(), verwijder: vi.fn() },
   },
 }))
@@ -61,8 +61,19 @@ const _rij = () => ({
 beforeEach(() => {
   vi.clearAllMocks()
   api.componenten.contracten.mockResolvedValue([_rij()])
+  // ADR-030 — standaard geen per-band dekking (toon_per_band=false).
+  api.contracten.bandDekking.ophalen.mockResolvedValue({
+    contract_breed: ['Hosting', 'Onderhoud'], per_band: null, per_band_sleutels: null, toon_per_band: false,
+  })
+  api.contracten.bandDekking.instellen.mockResolvedValue(undefined)
+  api.contracten.bandDekking.verwijderen.mockResolvedValue(undefined)
   api.contractconfig.opties.mockResolvedValue({
-    dekking: [], kostenmodel: [],
+    dekking: [
+      { optie_sleutel: 'hosting', label: 'Hosting' },
+      { optie_sleutel: 'onderhoud', label: 'Onderhoud' },
+      { optie_sleutel: 'licentie', label: 'Licentie' },
+    ],
+    kostenmodel: [],
     relatie_rol: [
       { optie_sleutel: 'valt_onder', label: 'Valt onder / aanschaf' },
       { optie_sleutel: 'onderhoud', label: 'Onderhoud' },
@@ -178,5 +189,49 @@ describe('ContractSectie — §3 valt-onder-samenvatting', () => {
     const t = w.find('[data-testid="ct-valt-onder"]').text()
     expect(t).toContain('Contract A')
     expect(t).toContain('Contract B')
+  })
+
+  // ── ADR-030 — per-band dekking ──────────────────────────────────────────────────
+  describe('per-band dekking (ADR-030)', () => {
+    it('toont alleen de algemene dekking als toon_per_band=false', async () => {
+      const w = await mountSectie()
+      expect(w.find('[data-testid="ct-dekking-breed-k1"]').text()).toContain('Hosting · Onderhoud')
+      expect(w.find('[data-testid="ct-dekking-band-k1"]').exists()).toBe(false)
+    })
+
+    it('toont beide dekkingen als toon_per_band=true', async () => {
+      api.contracten.bandDekking.ophalen.mockResolvedValue({
+        contract_breed: ['Hosting', 'Onderhoud'], per_band: ['Hosting', 'Licentie'],
+        per_band_sleutels: ['hosting', 'licentie'], toon_per_band: true,
+      })
+      const w = await mountSectie()
+      expect(w.find('[data-testid="ct-dekking-breed-k1"]').text()).toContain('Hosting · Onderhoud')
+      expect(w.find('[data-testid="ct-dekking-band-k1"]').text()).toContain('Hosting · Licentie')
+    })
+
+    it('bewerk-knop alleen met de juiste rol; opslaan stuurt de gekozen sleutels (PUT)', async () => {
+      const w = await mountSectie({ rollen: ['beheerder'] })
+      await w.find('[data-testid="ct-dekking-bewerk-k1"]').trigger('click')
+      await flushPromises()
+      // vink 'licentie' aan
+      await w.find('[data-testid="ct-dekking-optie-k1-licentie"]').setValue(true)
+      await w.find('[data-testid="ct-dekking-opslaan-k1"]').trigger('click')
+      await flushPromises()
+      expect(api.contracten.bandDekking.instellen).toHaveBeenCalledWith('c1', APP, ['licentie'])
+    })
+
+    it('"Terug naar algemene dekking" roept DELETE aan', async () => {
+      const w = await mountSectie()
+      await w.find('[data-testid="ct-dekking-bewerk-k1"]').trigger('click')
+      await flushPromises()
+      await w.find('[data-testid="ct-dekking-terug-k1"]').trigger('click')
+      await flushPromises()
+      expect(api.contracten.bandDekking.verwijderen).toHaveBeenCalledWith('c1', APP)
+    })
+
+    it('geen bewerk-knop voor een viewer', async () => {
+      const w = await mountSectie({ rollen: ['viewer'] })
+      expect(w.find('[data-testid="ct-dekking-bewerk-k1"]').exists()).toBe(false)
+    })
   })
 })

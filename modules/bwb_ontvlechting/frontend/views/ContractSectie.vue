@@ -57,11 +57,56 @@ async function laad() {
   fout.value = null
   try {
     items.value = await api.componenten.contracten(props.applicatieId)
+    await laadDekking()
   } catch (e) {
     fout.value = e?.message || 'Laden van gekoppelde contracten mislukt.'
   } finally {
     laden.value = false
   }
+}
+
+// ── ADR-030 — per-band (component↔contract) dekking ──────────────────────────────
+const dekking = reactive({}) // contract_id → {contract_breed, per_band, per_band_sleutels, toon_per_band}
+const dekkingOpties = ref([]) // catalogus dimensie=dekking (voor de bewerk-multiselect)
+const bewerkContractId = ref(null)
+const bewerkSleutels = ref([])
+
+async function laadDekking() {
+  const contracten = [...new Set(items.value.map((r) => r.contract_id))]
+  await Promise.all(contracten.map(async (cid) => {
+    try { dekking[cid] = await api.contracten.bandDekking.ophalen(cid, props.applicatieId) }
+    catch { /* dekking optioneel; de koppeling-rij blijft bruikbaar */ }
+  }))
+}
+async function _zorgDekkingOpties() {
+  if (dekkingOpties.value.length) return
+  try { dekkingOpties.value = (await api.contractconfig.opties()).dekking || [] } catch (e) { _toastFout(e) }
+}
+async function bewerkBandDekking(rij) {
+  await _zorgDekkingOpties()
+  bewerkSleutels.value = [...(dekking[rij.contract_id]?.per_band_sleutels || [])]
+  bewerkContractId.value = rij.contract_id
+}
+function toggleDekkingSleutel(s) {
+  const i = bewerkSleutels.value.indexOf(s)
+  if (i >= 0) bewerkSleutels.value.splice(i, 1)
+  else bewerkSleutels.value.push(s)
+}
+async function slaBandDekkingOp(rij) {
+  try {
+    await api.contracten.bandDekking.instellen(rij.contract_id, props.applicatieId, bewerkSleutels.value)
+    dekking[rij.contract_id] = await api.contracten.bandDekking.ophalen(rij.contract_id, props.applicatieId)
+    bewerkContractId.value = null
+    toast.add({ severity: 'success', summary: 'Dekking opgeslagen', life: 2500 })
+  } catch (e) { _toastFout(e) }
+}
+async function verwijderBandDekking(rij) {
+  try {
+    await api.contracten.bandDekking.verwijderen(rij.contract_id, props.applicatieId)
+    dekking[rij.contract_id] = await api.contracten.bandDekking.ophalen(rij.contract_id, props.applicatieId)
+    bewerkContractId.value = null
+    toast.add({ severity: 'success', summary: 'Terug naar algemene dekking', life: 2500 })
+  } catch (e) { _toastFout(e) }
 }
 
 // Rol-opties zijn bij eerste render al nodig voor de inline rol-select per rij.
@@ -160,7 +205,7 @@ const typeLabel = (c) => label(CONTRACTTYPE, c)
 onMounted(() => Promise.all([laad(), _zorgRolOpties()]))
 
 // §5 — het context-paneel bij categorie 8 hergebruikt deze al geladen koppeling-state.
-defineExpose({ items, laad })
+defineExpose({ items, laad, dekking, dekkingOpties, bewerkContractId, bewerkSleutels, bewerkBandDekking, slaBandDekkingOp, verwijderBandDekking })
 </script>
 
 <template>
@@ -208,6 +253,38 @@ defineExpose({ items, laad })
         <tr v-for="rij in items" :key="rij.koppeling_id" class="border-t border-[var(--cd-color-border)]">
           <td class="py-[var(--cd-space-xs)]">
             <router-link :to="{ name: 'contract-detail', params: { id: rij.contract_id } }" class="text-[var(--cd-color-primary)] hover:underline">{{ rij.contractnaam }}</router-link>
+            <!-- ADR-030 — dekking: algemeen (contract-breed) + per-band (alleen als afwijkend). -->
+            <div class="mt-0.5 flex flex-col gap-0.5 text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">
+              <span v-if="dekking[rij.contract_id]?.contract_breed?.length" :data-testid="`ct-dekking-breed-${rij.koppeling_id}`">
+                Algemene dekking: {{ dekking[rij.contract_id].contract_breed.join(' · ') }}
+              </span>
+              <span v-if="dekking[rij.contract_id]?.toon_per_band" :data-testid="`ct-dekking-band-${rij.koppeling_id}`" class="text-[var(--cd-color-text)]">
+                Dekking voor dit component: {{ dekking[rij.contract_id].per_band.join(' · ') }}
+              </span>
+              <button
+                v-if="mag && bewerkContractId !== rij.contract_id"
+                type="button"
+                :data-testid="`ct-dekking-bewerk-${rij.koppeling_id}`"
+                class="self-start text-[var(--cd-color-primary)] hover:underline"
+                @click="bewerkBandDekking(rij)"
+              >Dekking aanpassen</button>
+              <!-- Inline bewerken: multiselect uit de dekking-catalogus -->
+              <div v-if="bewerkContractId === rij.contract_id" :data-testid="`ct-dekking-editor-${rij.koppeling_id}`" class="mt-0.5 flex flex-col gap-0.5 text-[var(--cd-color-text)]">
+                <label v-for="o in dekkingOpties" :key="o.optie_sleutel" class="flex items-center gap-1">
+                  <input
+                    type="checkbox"
+                    :data-testid="`ct-dekking-optie-${rij.koppeling_id}-${o.optie_sleutel}`"
+                    :checked="bewerkSleutels.includes(o.optie_sleutel)"
+                    @change="toggleDekkingSleutel(o.optie_sleutel)"
+                  />{{ o.label }}
+                </label>
+                <div class="mt-0.5 flex flex-wrap gap-2">
+                  <button type="button" :data-testid="`ct-dekking-opslaan-${rij.koppeling_id}`" class="text-[var(--cd-color-primary)] hover:underline" @click="slaBandDekkingOp(rij)">Opslaan</button>
+                  <button type="button" :data-testid="`ct-dekking-terug-${rij.koppeling_id}`" class="text-[var(--cd-color-text-muted)] hover:underline" @click="verwijderBandDekking(rij)">Terug naar algemene dekking</button>
+                  <button type="button" :data-testid="`ct-dekking-annuleer-${rij.koppeling_id}`" class="text-[var(--cd-color-text-muted)] hover:underline" @click="bewerkContractId = null">Annuleren</button>
+                </div>
+              </div>
+            </div>
           </td>
           <td>{{ rij.leverancier_naam }}</td>
           <td>{{ typeLabel(rij.contracttype) }}</td>

@@ -20,7 +20,7 @@ from sqlalchemy import (
     UniqueConstraint,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.audit import AuditActie, auditactie_enum
@@ -1082,6 +1082,28 @@ class ContractKostenmodel(Base, TenantMixin, TimestampMixin):
         UUID(as_uuid=True), ForeignKey("contract.id", ondelete="CASCADE"), nullable=False
     )
     optie_sleutel: Mapped[str] = mapped_column(String(60), nullable=False)
+
+
+class ContractBandDekking(Base, TenantMixin, TimestampMixin):
+    """ADR-030 — per-band (component↔contract) dekking, náást de contract-brede dekking
+    (`ContractDekking`). Eén rij per (contract, component); `dekking_sleutels` (array) verwijst
+    naar de actieve catalogus (dimensie `dekking`), app-side gevalideerd — geen harde FK (de
+    catalogus is platform-referentiedata zonder tenant_id). Composiet-FK's naar `element`
+    (contract + component zijn element-subtypes) met ON DELETE CASCADE."""
+
+    __tablename__ = "contract_band_dekking"
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id", "contract_id", "component_id", name="uq_contract_band_dekking"
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = _pk()
+    contract_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    component_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    dekking_sleutels: Mapped[list[str]] = mapped_column(
+        ARRAY(String(60)), nullable=False, server_default=text("'{}'")
+    )
 
 
 # ADR-023 B-mig-2 slice 3: `ComponentContract` is vervangen door `association`-relaties

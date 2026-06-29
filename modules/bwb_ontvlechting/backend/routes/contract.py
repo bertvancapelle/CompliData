@@ -26,6 +26,8 @@ from schemas.contract import (
     ContractUpdate,
     DeelcontractItem,
 )
+from schemas.contract_band_dekking import BandDekkingRead, BandDekkingUpdate
+from services import contract_band_dekking_service as band_svc
 from services import contract_service as svc
 from services import contractconfig_catalog as catalog
 from services import relatiekenmerk_catalog
@@ -147,4 +149,43 @@ async def verwijder_contract(
     session: AsyncSession = Depends(get_tenant_session),
 ):
     await svc.verwijder(session, user.tenant_id, contract_id)
+    return Response(status_code=204)
+
+
+# ── ADR-030 — per-band (component↔contract) dekking ──────────────────────────────
+@router.get("/{contract_id}/band-dekking/{component_id}", response_model=BandDekkingRead)
+async def haal_band_dekking(
+    contract_id: uuid.UUID,
+    component_id: uuid.UUID,
+    user: AuthenticatedUser = Depends(vereist_permissie(Entiteit.CONTRACT, Actie.LEZEN)),
+    session: AsyncSession = Depends(get_tenant_session),
+):
+    """Contract-brede + per-band dekking voor deze component↔contract-koppeling."""
+    return await band_svc.haal_band_dekking_op(session, user.tenant_id, contract_id, component_id)
+
+
+@router.put("/{contract_id}/band-dekking/{component_id}", status_code=204)
+async def zet_band_dekking(
+    contract_id: uuid.UUID,
+    component_id: uuid.UUID,
+    body: BandDekkingUpdate,
+    user: AuthenticatedUser = Depends(vereist_permissie(Entiteit.CONTRACT, Actie.WIJZIGEN)),
+    session: AsyncSession = Depends(get_tenant_session),
+):
+    """Stel de per-band dekking in (upsert). 404 onbekend contract/component; 422 ongeldige sleutel."""
+    await band_svc.stel_band_dekking_in(
+        session, user.tenant_id, contract_id, component_id, body.dekking_sleutels
+    )
+    return Response(status_code=204)
+
+
+@router.delete("/{contract_id}/band-dekking/{component_id}", status_code=204)
+async def wis_band_dekking(
+    contract_id: uuid.UUID,
+    component_id: uuid.UUID,
+    user: AuthenticatedUser = Depends(vereist_permissie(Entiteit.CONTRACT, Actie.WIJZIGEN)),
+    session: AsyncSession = Depends(get_tenant_session),
+):
+    """Verwijder de per-band dekking (terug naar de contract-brede dekking)."""
+    await band_svc.verwijder_band_dekking(session, user.tenant_id, contract_id, component_id)
     return Response(status_code=204)

@@ -224,6 +224,14 @@ export const api = {
       request(`/contracten/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     verwijder: (id) => request(`/contracten/${id}`, { method: 'DELETE' }),
     deelcontracten: (id) => request(`/contracten/${id}/deelcontracten`),
+    // ADR-030 — per-band (component↔contract) dekking.
+    bandDekking: {
+      ophalen: (contractId, componentId) => request(`/contracten/${contractId}/band-dekking/${componentId}`),
+      instellen: (contractId, componentId, sleutels) =>
+        request(`/contracten/${contractId}/band-dekking/${componentId}`, { method: 'PUT', body: JSON.stringify({ dekking_sleutels: sleutels }) }),
+      verwijderen: (contractId, componentId) =>
+        request(`/contracten/${contractId}/band-dekking/${componentId}`, { method: 'DELETE' }),
+    },
     applicaties: (id) => request(`/contracten/${id}/applicaties`),
     // Fase B slice 2a (LI022) — ALLE aan het contract gekoppelde componenten (context-route naar de
     // kaart-subgraaf), incl. kale/profielloze componenten die `/applicaties` weglaat.
