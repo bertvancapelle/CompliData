@@ -26,6 +26,7 @@ import ChecklistscoreSectie from './ChecklistscoreSectie.vue'
 import BlokkadeSectie from './BlokkadeSectie.vue'
 // ADR-027 — migratiegereedheid (component-klaarverklaring); component-generiek, ook hier.
 import MigratiegereedheidSectie from './MigratiegereedheidSectie.vue'
+import SignaleringBadge from './SignaleringBadge.vue'
 
 const props = defineProps({ id: { type: String, required: true } })
 const router = useRouter()
@@ -41,6 +42,8 @@ const verwijderDialog = ref(false)
 const bezig = ref(false)
 // ADR-022 Fase C: read-only "wat verdwijnt"-samenvatting in de bevestiging.
 const verwijderImpact = ref(null)
+// ADR-035 Slice 1 — registratiegaten-badge (read-only; faalt zacht, geen invloed op de detail-laad).
+const signaleringBadge = ref({ kritiek: 0, aandacht: 0 })
 
 async function openVerwijderDialog() {
   verwijderImpact.value = null
@@ -88,8 +91,13 @@ function _toastFout(e) {
 async function laad() {
   laden.value = true
   fout.value = null
+  signaleringBadge.value = { kritiek: 0, aandacht: 0 }
   try {
     component.value = await api.componenten.haal(props.id)
+    // Badge read-only + optioneel: een fout hierin mag de detail-laad niet breken.
+    try {
+      signaleringBadge.value = await api.signalering.badgeComponent(props.id)
+    } catch { /* badge optioneel */ }
   } catch (e) {
     fout.value = e?.status === 404 ? 'Dit component bestaat niet (meer).' : e?.message || 'Er ging iets mis.'
     _toastFout(e)
@@ -172,6 +180,8 @@ watch(() => props.id, () => laad(), { immediate: true })
           :value="label(LIFECYCLE, component.lifecycle_status)"
           :severity="LIFECYCLE_SEVERITY[component.lifecycle_status] || 'info'"
         />
+        <!-- ADR-035 — registratiegaten-badge (read-only signalering). -->
+        <SignaleringBadge :kritiek="signaleringBadge.kritiek" :aandacht="signaleringBadge.aandacht" />
       </div>
 
       <p

@@ -173,11 +173,11 @@ async function uitloggen() {
           </router-link>
           <router-link
             v-if="magArchitectuurZien"
-            :to="{ name: 'plaatsingssignalen' }"
-            data-testid="nav-plaatsingssignalen"
+            :to="{ name: 'signalering' }"
+            data-testid="nav-signalering"
             class="rounded-[var(--cd-radius-nav)] px-[var(--cd-space-md)] py-[var(--cd-space-sm)] text-[var(--cd-color-text)] hover:bg-[var(--cd-color-accent)] aria-[current=page]:bg-[var(--cd-color-accent)] aria-[current=page]:font-semibold"
           >
-            Plaatsingssignalen
+            Signalering
           </router-link>
           <router-link
             :to="{ name: 'checklistvragen' }"

@@ -302,6 +302,13 @@ export const api = {
     plaatsing: () => request('/signalen/plaatsing'),
   },
 
+  // ADR-035 Slice 1 — Signalering registratiegaten (read-only). Centraal overzicht
+  // (ARCHITECTUUR.LEZEN) + per-component badge (COMPONENT.LEZEN).
+  signalering: {
+    registratiegaten: () => request('/signalering/registratiegaten'),
+    badgeComponent: (id) => request(`/signalering/badges/component/${id}`),
+  },
+
   // ADR-023 Fase E/F (F-1) — migratielaag (read-only overzicht). Leunt volledig op de
   // bestaande lees-endpoints; geen nieuwe backend-semantiek.
   plateaus: {

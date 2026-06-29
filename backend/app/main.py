@@ -66,6 +66,7 @@ from routes.component_klaarverklaring import router as klaarverklaring_router  #
 from routes.impact_view import router as impact_view_router  # noqa: E402
 from routes.gebruikers import router as gebruikers_router  # noqa: E402
 from routes.plaatsingsignaal import router as plaatsingsignaal_router  # noqa: E402
+from routes.signalering import router as signalering_router  # noqa: E402
 from routes.plateau import router as plateau_router  # noqa: E402
 from routes.work_package import router as work_package_router  # noqa: E402
 from routes.deliverable import router as deliverable_router  # noqa: E402
@@ -158,6 +159,7 @@ app.include_router(klaarverklaring_router, prefix="/api/v1")
 app.include_router(impact_view_router, prefix="/api/v1")
 app.include_router(gebruikers_router, prefix="/api/v1")
 app.include_router(plaatsingsignaal_router, prefix="/api/v1")
+app.include_router(signalering_router, prefix="/api/v1")
 app.include_router(plateau_router, prefix="/api/v1")
 app.include_router(work_package_router, prefix="/api/v1")
 app.include_router(deliverable_router, prefix="/api/v1")

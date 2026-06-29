@@ -18,6 +18,8 @@ const ArchitectuurView = () => import('../views/ArchitectuurView.vue')
 const LandschapskaartView = () => import('@modules/bwb_ontvlechting/frontend/views/LandschapskaartView.vue')
 // ADR-023 Fase F / F-3 stap 2 — consistentie-signalering technische plaatsing, lazy.
 const PlaatsingSignalenView = () => import('../views/PlaatsingSignalenView.vue')
+// ADR-035 — coherent Signalering-scherm (registratiegaten + plaatsing als tabs), lazy.
+const SignaleringView = () => import('../views/SignaleringView.vue')
 const ApplicatieDetail = () => import('@modules/bwb_ontvlechting/frontend/views/ApplicatieDetail.vue')
 const ApplicatieFormulier = () =>
   import('@modules/bwb_ontvlechting/frontend/views/ApplicatieFormulier.vue')
@@ -88,6 +90,8 @@ const routes = [
       // ADR-025 — Landschapskaart (read-only grafische landschapsweergave); zelfde leesrecht als architectuur.
       { path: 'landschapskaart', name: 'landschapskaart', component: LandschapskaartView, meta: { roles: MIGRATIE_ROLLEN } },
       { path: 'signalen/plaatsing', name: 'plaatsingssignalen', component: PlaatsingSignalenView, meta: { roles: MIGRATIE_ROLLEN } },
+      // ADR-035 — Signalering-scherm (registratiegaten + plaatsing-tab); zelfde leesrecht.
+      { path: 'signalering', name: 'signalering', component: SignaleringView, meta: { roles: MIGRATIE_ROLLEN } },
       // ADR-021 W1 (CD054b): de Applicaties-lijst is opgegaan in de verenigde
       // Componenten-lijst. `/applicaties` redirect (naam behouden zodat bestaande
       // navigaties/bookmarks niet breken) naar Componenten met typefilter=applicatie.
