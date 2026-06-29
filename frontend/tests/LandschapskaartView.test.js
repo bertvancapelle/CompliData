@@ -1684,4 +1684,29 @@ describe('LandschapskaartView v3', () => {
       expect(heel.find('[data-testid="lk-scope-biedt"]').exists()).toBe(true)
     })
   })
+
+  // ── LI023 — generieke gedebouncede re-layout op de getekende node-samenstelling ────────────────
+  describe('generieke re-layout', () => {
+    const naDebounce = () => new Promise((r) => setTimeout(r, 300)) // > 250ms debounce
+
+    it('re-layout wordt uitgevoerd als de getekende node-samenstelling verandert (zoekfilter)', async () => {
+      const { w } = await mountView() // geheel, volledige graaf
+      await naDebounce() // mount-/laad-relayout laten landen
+      const voor = w.vm._relayoutTeller
+      await w.find('[data-testid="lk-zoek"]').setValue('Zaak') // krimpt getekendeNodes (geen modus-/set-wijziging)
+      await flushPromises()
+      await naDebounce()
+      expect(w.vm._relayoutTeller).toBeGreaterThan(voor)
+    })
+
+    it('geen re-layout als de samenstelling ongewijzigd blijft (irrelevante UI-wijziging)', async () => {
+      const { w } = await mountView()
+      await naDebounce()
+      const voor = w.vm._relayoutTeller
+      w.vm.toggleLegenda() // pure UI — geen node-/edge-/layout-wijziging
+      await flushPromises()
+      await naDebounce()
+      expect(w.vm._relayoutTeller).toBe(voor)
+    })
+  })
 })

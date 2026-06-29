@@ -111,6 +111,9 @@ const diepte = ref(1) // 1 = directe buren (ego); 2 = ook indirecte applicatie-b
 
 const containerRef = ref(null)
 let cy = null
+// LI023 — observatie (tests/diagnostiek): aantal uitgevoerde re-layouts. Hier (vóór defineExpose
+// + de debounce-watch) gedeclareerd om TDZ te vermijden; de gedebouncede re-layout vult 'm.
+const _relayoutTeller = ref(0)
 
 // ADR-031 — sub-granulariteit Gebruikers-ring: groepeer gebruikersgroepen per organisatie.
 const groepeerPerOrg = ref(true)
@@ -1727,12 +1730,38 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', _opEscape)
 })
 
-defineExpose({ openNodePopup, openEdgePopup, selecteerFlow, onNodeTap, sluitPopup, toggleFullscreen, fullscreen, popupOpen, _edgeData, groepeerPerOrg, grafNodes, grafEdges, zichtbareNodes, zichtbareEdges, layoutModus, _laneVan, _swimlanePositions, _layout, laneVolgorde, verbergLegeLanes, laneBanden, getekendeNodes, _herschikLane, toonRegistratiegaps, setLayoutModus, modus, actieveSet, toggleSet, kiesComponent, drillPad, drillNaar, stapTerug, huidigeFocus, huidigeFocusSet, topbalkNodes, impactDirect, impactGeraaktAantal, impactZichtbaarIds, _nodeData, geselecteerdNodeId, _edgeGehighlight, inspecteerNode, historie, cursor, kanTerug, kanVooruit, terugInHistorie, vooruitInHistorie, _vormVoorType, legendaOpen, toggleLegenda, scopeOrgs, scopeModus, organisatieNodes, toggleScopeOrg, _inScope, zonderEigenaarAantal, organisatieloosGebruiktAantal, opgeslagenViews, magViewsBeheren, toonStartscherm, openView, openOpslaan, openBewerk, bewaarView, verwijderView, beginMetHeleKaart, viewDialogOpen, viewNaam, viewGedeeld, laadViews, heleLandschap, beginscherm, beginschermOpen, tekenVoortgang, toonHeleLandschap, herlaadGraaf, wisSet, voegComponentenToeAanSet, actieveSetNodes, componentBuren, voegBurenToe, voegContextComponentenToe, geselecteerdNodeBuren, detailNode })
+defineExpose({ openNodePopup, openEdgePopup, selecteerFlow, onNodeTap, sluitPopup, toggleFullscreen, fullscreen, popupOpen, _edgeData, groepeerPerOrg, grafNodes, grafEdges, zichtbareNodes, zichtbareEdges, layoutModus, _laneVan, _swimlanePositions, _layout, laneVolgorde, verbergLegeLanes, laneBanden, getekendeNodes, _herschikLane, toonRegistratiegaps, setLayoutModus, modus, actieveSet, toggleSet, kiesComponent, drillPad, drillNaar, stapTerug, huidigeFocus, huidigeFocusSet, topbalkNodes, impactDirect, impactGeraaktAantal, impactZichtbaarIds, _nodeData, geselecteerdNodeId, _edgeGehighlight, inspecteerNode, historie, cursor, kanTerug, kanVooruit, terugInHistorie, vooruitInHistorie, _vormVoorType, legendaOpen, toggleLegenda, scopeOrgs, scopeModus, organisatieNodes, toggleScopeOrg, _inScope, zonderEigenaarAantal, organisatieloosGebruiktAantal, opgeslagenViews, magViewsBeheren, toonStartscherm, openView, openOpslaan, openBewerk, bewaarView, verwijderView, beginMetHeleKaart, viewDialogOpen, viewNaam, viewGedeeld, laadViews, heleLandschap, beginscherm, beginschermOpen, tekenVoortgang, toonHeleLandschap, herlaadGraaf, wisSet, voegComponentenToeAanSet, actieveSetNodes, componentBuren, voegBurenToe, voegContextComponentenToe, geselecteerdNodeBuren, detailNode, _relayoutTeller })
 
-// Hertekenen bij elke state die de graaf raakt.
+// LI023 — generieke re-layout: herpositioneer zodra de WERKELIJK GETEKENDE node-samenstelling
+// wijzigt. De id-compositie van `getekendeNodes` vangt álle oorzaken (scope/ring/zoekfilter/nieuwe
+// subgraaf) ÉN de gevallen die alleen `getekendeNodes` raken maar niet `zichtbareNodes` — m.n.
+// "Focus op actieve set" (`focusOpSet`), die de vorige zichtbareNodes-watch miste. Daarnaast
+// hertekenen bij wijzigingen die de node-id-set níét veranderen maar wél een redraw vergen:
+// edges (ring-toggle die enkel edges raakt), layout-modus, kleur-op-domein, swimlane-opties.
+// Gedebounced (250ms) → snelle opeenvolgende wijzigingen leiden tot één relayout (geen flikker,
+// geen dubbele layout). De initiële layout blijft de directe `tekenGraaf()` in onMounted/herlaadGraaf.
+function _debounce(fn, ms) {
+  let t
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms) }
+}
+function _hertekenNu() {
+  if (!_mountKlaar || !cy) return // niet vóór de eerste render / vóór cy bestaat
+  _relayoutTeller.value++
+  tekenGraaf()
+}
+const _hertekenGedebounced = _debounce(_hertekenNu, 250)
 watch(
-  [modus, layoutModus, verbergLegeLanes, laneVolgorde, toonRegistratiegaps, zichtbareNodes, zichtbareEdges, actieveSet, kleurOpDomein, groepeerPerOrg],
-  () => tekenGraaf(),
+  [
+    () => getekendeNodes.value.map((n) => n.id).join('|'), // de werkelijk getekende node-set
+    zichtbareEdges, modus, layoutModus, kleurOpDomein, groepeerPerOrg, verbergLegeLanes, laneVolgorde, toonRegistratiegaps,
+  ],
+  () => {
+    // History-herstel (terug/vooruit) relayout't DIRECT — zonder debounce — zodat tekenGraaf de
+    // `_herstelZonderAnimatie`-vlag synchroon consumeert (de hang-fix). Overige wijzigingen
+    // gedebounced (250ms) → snelle opeenvolgende changes coalesceren tot één relayout.
+    if (_herstellen) _hertekenNu()
+    else _hertekenGedebounced()
+  },
   { deep: false },
 )
 
