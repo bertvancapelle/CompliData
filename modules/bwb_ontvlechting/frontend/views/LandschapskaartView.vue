@@ -330,10 +330,13 @@ const zoekHosting = _zoekUitLijst(hostingFilterOpties)
 const zoekLifecycle = _zoekUitLijst(lifecycleFilterOpties)
 
 // ── Zoeken + filteren ─────────────────────────────────────────────────────────
+// LI028 — `filterActief` stuurt UITSLUITEND het graafpad (zichtbareNodes). De vrije zoekterm hoort
+// hier BEWUST NIET bij: die voedt alleen de resultatenlijst (`_matcht` → `gefilterdeNodes`). Anders
+// zou typen de graaf-tak omschakelen (ego/impact → context-buren via _metContext; geheel → opbouw/
+// afpel) en het aantal nodes veranderen zonder dat er een chip is toegevoegd.
 const filterActief = computed(
   () =>
     !!(
-      zoekterm.value.trim() ||
       filterTypes.value.length ||
       filterLeveranciers.value.length ||
       filterHosting.value.length ||
@@ -482,8 +485,10 @@ const zichtbareNodes = computed(() => {
   // Geheel model toont standaard het VOLLEDIGE landschap. Filters verfijnen: opbouw = de match (+
   // context); afpel = alles behalve de match.
   if (!filterActief.value) return alle
-  if (!opbouwModus.value) return alle.filter((n) => !_matcht(n))
-  const matched = new Set(alle.filter(_matcht).map((n) => n.id))
+  // LI028 — graaf-filtering op de attribuut-/typefilters (`_filterMatch`), NIET op de zoekterm:
+  // typen mag de getekende graaf niet veranderen (de zoekterm voedt alleen de resultatenlijst).
+  if (!opbouwModus.value) return alle.filter((n) => !_filterMatch(n))
+  const matched = new Set(alle.filter(_filterMatch).map((n) => n.id))
   const zichtbaar = _metContext(matched)
   return alle.filter((n) => zichtbaar.has(n.id))
 })
@@ -2029,7 +2034,17 @@ const typeLabel = (t) => humaniseer(t)
             <button type="button" :aria-pressed="inSet(n.id)" class="grow truncate text-left hover:underline" :data-testid="`lk-res-naam-${n.id}`" @click="kiesComponent(n.id)">{{ n.naam }}</button>
             <span v-if="n.blokkades_open > 0" :data-testid="`lk-res-blok-${n.id}`" title="Open blokkade(s)">⚠</span>
             <span v-if="n.hosting_model">{{ hostingIcoon(n.hosting_model) }}</span>
-            <span v-if="inSet(n.id)" :data-testid="`lk-res-gekozen-${n.id}`" class="text-[var(--cd-color-primary)]" title="In de actieve set">✓</span>
+            <!-- LI028 — expliciete, altijd zichtbare "voeg toe aan beeld"-actie; ✓ als het al in de set zit. -->
+            <button
+              v-if="!inSet(n.id)"
+              type="button"
+              :data-testid="`lk-res-voegtoe-${n.id}`"
+              class="shrink-0 rounded px-1.5 font-semibold text-[var(--cd-color-primary)] hover:bg-[var(--cd-color-accent)]"
+              :title="`${n.naam} toevoegen aan beeld`"
+              :aria-label="`${n.naam} toevoegen aan beeld`"
+              @click="toggleSet(n.id)"
+            >+</button>
+            <span v-else :data-testid="`lk-res-gekozen-${n.id}`" class="text-[var(--cd-color-primary)]" title="Al in beeld">✓</span>
           </li>
           <li v-if="!gefilterdeResultaten.length" class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">Geen resultaten.</li>
         </ul>

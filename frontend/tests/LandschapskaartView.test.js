@@ -578,6 +578,43 @@ describe('LandschapskaartView v3', () => {
     expect(w.findAll('[data-testid^="lk-res-naam-"]').length).toBe(1)
   })
 
+  // ── LI028 — zoekbalk raakt de graaf niet + expliciete "voeg toe"-knop ────────────────────────
+  it('LI028 — typen in de zoekbalk verandert de graaf niet (geen herfetch, set ongemoeid)', async () => {
+    const { w } = await mountView() // geheel, volledige graaf
+    await flushPromises()
+    const grafVoor = getekendeIds(w)
+    const setVoor = [...w.vm.actieveSet]
+    const fetchVoor = api.landschapskaart.subgraaf.mock.calls.length
+    await w.find('[data-testid="lk-zoek"]').setValue('dms')
+    await flushPromises()
+    expect(getekendeIds(w)).toEqual(grafVoor) // graaf ongewijzigd
+    expect([...w.vm.actieveSet]).toEqual(setVoor) // set ongewijzigd
+    expect(api.landschapskaart.subgraaf.mock.calls.length).toBe(fetchVoor) // geen herfetch
+  })
+
+  it('LI028 — typen in ego-modus expandeert de graaf niet (regressie 13→24)', async () => {
+    const { w } = await mountView()
+    await flushPromises()
+    w.vm.toggleSet('a1') // ego-modus op a1
+    await flushPromises()
+    const grafVoor = getekendeIds(w)
+    await w.find('[data-testid="lk-zoek"]').setValue('zaak')
+    await flushPromises()
+    expect(getekendeIds(w)).toEqual(grafVoor) // zoekterm voegt geen context-buren toe
+  })
+
+  it('LI028 — "+"-knop voegt een resultaat toe aan het beeld; ✓ als het al in beeld is', async () => {
+    const { w } = await mountView() // geheel → resultatenlijst toont app/org-nodes
+    await flushPromises()
+    expect(w.find('[data-testid="lk-res-voegtoe-a2"]').exists()).toBe(true) // niet in set → + knop
+    expect(w.find('[data-testid="lk-res-gekozen-a2"]').exists()).toBe(false)
+    await w.find('[data-testid="lk-res-voegtoe-a2"]').trigger('click')
+    await flushPromises()
+    expect(w.vm.actieveSet.has('a2')).toBe(true) // toggleSet uitgevoerd
+    expect(w.find('[data-testid="lk-res-voegtoe-a2"]').exists()).toBe(false) // in set → geen + knop
+    expect(w.find('[data-testid="lk-res-gekozen-a2"]').exists()).toBe(true) // ✓
+  })
+
   it('ADR-033 1b — toont alleen de DIRECTE impact (één laag), niet de hele transitieve keten', async () => {
     // a1 → a2 → a3 (flows); b1 staat los. Vanaf {a1,b1}: directe impact = alleen a2 (één hop);
     // a3 (twee hops) verschijnt NIET vóór doorklikken (geen vooraf-uitgerekende BFS meer).
@@ -1689,11 +1726,11 @@ describe('LandschapskaartView v3', () => {
   describe('generieke re-layout', () => {
     const naDebounce = () => new Promise((r) => setTimeout(r, 300)) // > 250ms debounce
 
-    it('re-layout wordt uitgevoerd als de getekende node-samenstelling verandert (zoekfilter)', async () => {
+    it('re-layout wordt uitgevoerd als de getekende node-samenstelling verandert', async () => {
       const { w } = await mountView() // geheel, volledige graaf
       await naDebounce() // mount-/laad-relayout laten landen
       const voor = w.vm._relayoutTeller
-      await w.find('[data-testid="lk-zoek"]').setValue('Zaak') // krimpt getekendeNodes (geen modus-/set-wijziging)
+      w.vm.toonRegistratiegaps = true // losse nodes erbij → getekendeNodes groeit (geen modus-/set-wijziging)
       await flushPromises()
       await naDebounce()
       expect(w.vm._relayoutTeller).toBeGreaterThan(voor)
