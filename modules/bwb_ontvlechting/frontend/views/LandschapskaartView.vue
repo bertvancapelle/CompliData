@@ -1362,6 +1362,11 @@ const legendaDragging = ref(false)
 let _dragOffset = { x: 0, y: 0 }
 function onLegendaMousedown(e) {
   if (e.target?.closest?.('button, input')) return // knoppen/inputs in de legenda werken gewoon
+  // LI034 — init vanuit de werkelijke DOM-positie (anders springt het paneel bij de eerste beweging).
+  if (legendaPos.value.x === null) {
+    const r = e.currentTarget?.getBoundingClientRect?.()
+    if (r) legendaPos.value = { x: r.left, y: r.top }
+  }
   legendaDragging.value = true
   _dragOffset = { x: e.clientX - (legendaPos.value.x ?? 0), y: e.clientY - (legendaPos.value.y ?? 0) }
   e.preventDefault?.()
@@ -1387,6 +1392,12 @@ const detailDragging = ref(false)
 let _detailDragOffset = { x: 0, y: 0 }
 function onDetailMousedown(e) {
   if (e.target?.closest?.('button, a, input')) return // knoppen/links/inputs werken gewoon
+  // LI034 — initialiseer de positie vanuit de werkelijke DOM-positie als nog niet gesleept; anders
+  // behandelt `?? 0` de CSS-positie als (0,0) → het paneel springt naar de hoek bij de eerste beweging.
+  if (detailPos.value.x === null) {
+    const r = e.currentTarget?.getBoundingClientRect?.()
+    if (r) detailPos.value = { x: r.left, y: r.top }
+  }
   detailDragging.value = true
   _detailDragOffset = { x: e.clientX - (detailPos.value.x ?? 0), y: e.clientY - (detailPos.value.y ?? 0) }
   e.preventDefault?.()

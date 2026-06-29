@@ -1932,6 +1932,20 @@ describe('LandschapskaartView v3', () => {
       w.vm.onDetailMousedown({ target: { closest: (sel) => (sel.includes('button') ? {} : null) }, preventDefault() {} })
       expect(w.vm.detailDragging).toBe(false)
     })
+
+    it('LI034 — init vanuit DOM-positie: geen sprong naar de hoek bij de eerste beweging', async () => {
+      const { w } = await mountView()
+      // paneel staat (CSS) op rect.left=1200; mousedown op x=800 (binnen het paneel)
+      w.vm.onDetailMousedown({
+        clientX: 800, clientY: 100,
+        target: { closest: () => null },
+        currentTarget: { getBoundingClientRect: () => ({ left: 1200, top: 100 }) },
+        preventDefault() {},
+      })
+      expect(w.vm.detailPos).toEqual({ x: 1200, y: 100 }) // geïnitialiseerd op de echte positie
+      w.vm.onDetailMousemove({ clientX: 850, clientY: 100 }) // 50px naar rechts
+      expect(w.vm.detailPos.x).toBe(1250) // schuift 50px, springt NIET naar de hoek
+    })
   })
 
   // ── LI025 — interactieve legenda-typefilter (dimmen, niet verbergen) ─────────────────────────
