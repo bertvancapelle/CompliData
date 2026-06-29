@@ -564,6 +564,7 @@ function wisSet() {
   actieveSet.value = new Set()
   heleLandschap.value = false
   beginschermOpen.value = true // "Begin opnieuw"/"Wis alles" = volledige reset → terug naar het beginscherm
+  legendaPos.value = { x: null, y: null } // LI025 — legenda terug naar standaardpositie
 }
 // Fase B — bewuste "toon het hele landschap"-actie: leegt de set en zet de hele-landschap-vlag,
 // waarna de herfetch-watch de volledige graaf laadt (mét voortgangsteller).
@@ -1294,6 +1295,71 @@ function toggleLegenda() {
   try { sessionStorage.setItem(_LEGENDA_KEY, legendaOpen.value ? '1' : '0') } catch { /* negeren */ }
 }
 
+// LI025 — interactieve legenda-typefilter: klik een vorm-categorie → dat type blijft scherp, alle
+// andere nodes dimmen (lk-dim, opacity 0.15); de graaf beweegt NIET (geen relayout, geen verbergen).
+// View-only spotlight (buiten `_toestandSig`/history). Predicaat spiegelt `_vormVoorType`/
+// `_typeRegelVoor` (één bron).
+const legendaTypeFilter = ref(null)
+function toggleLegendaFilter(label) {
+  legendaTypeFilter.value = legendaTypeFilter.value === label ? null : label
+}
+const _LEGENDA_MATCH = {
+  // Component = de round-rectangle-glyph: alles wat geen gg/contract/partij/technology is.
+  Component: (n) => n.element_type !== 'gebruikersgroep' && n.element_type !== 'contract' && n.element_type !== 'partij' && n.laag !== 'technology',
+  Infrastructuur: (n) => n.laag === 'technology',
+  Contract: (n) => n.element_type === 'contract',
+  Gebruikersgroep: (n) => n.element_type === 'gebruikersgroep',
+  Persoon: (n) => n.element_type === 'partij' && n.soort === 'persoon',
+  Organisatie: (n) => n.element_type === 'partij' && n.soort === 'organisatie',
+  Afdeling: (n) => n.element_type === 'partij' && n.soort === 'organisatie_eenheid',
+  Leverancier: (n) => n.element_type === 'partij' && n.soort === 'externe_partij',
+  Burger: (n) => n.element_type === 'partij' && n.soort === 'burger',
+}
+function _legendaMatch(n, label) {
+  const f = _LEGENDA_MATCH[label]
+  return f ? f(n) : true
+}
+// Dim alle nodes die NIET bij het gekozen type horen (lk-dim). Mirror van _pasSelectieHighlight:
+// optional-chaining houdt de gemockte cytoscape in tests veilig. Wordt ook na (her)tekenen
+// aangeroepen (tekenGraaf) zodat de dim na een redraw behouden blijft.
+function _pasLegendaDim() {
+  if (!cy) return
+  try {
+    const type = legendaTypeFilter.value
+    if (!type) { cy.nodes?.()?.removeClass?.('lk-dim'); return }
+    cy.nodes?.()?.forEach?.((node) => {
+      const past = _legendaMatch(node.data?.() || {}, type)
+      node[past ? 'removeClass' : 'addClass']?.('lk-dim')
+    })
+  } catch { /* gemockte cytoscape in tests → no-op */ }
+}
+watch(legendaTypeFilter, _pasLegendaDim)
+
+// LI025 — floating/draggable legenda. Standaard rechtsonder (CSS-fallback, x/y = null); slepen zet
+// een absolute viewport-positie. Reset naar standaard bij "Begin opnieuw" (wisSet).
+const legendaPos = ref({ x: null, y: null })
+const legendaDragging = ref(false)
+let _dragOffset = { x: 0, y: 0 }
+function onLegendaMousedown(e) {
+  if (e.target?.closest?.('button, input')) return // knoppen/inputs in de legenda werken gewoon
+  legendaDragging.value = true
+  _dragOffset = { x: e.clientX - (legendaPos.value.x ?? 0), y: e.clientY - (legendaPos.value.y ?? 0) }
+  e.preventDefault?.()
+}
+function onLegendaMousemove(e) {
+  if (!legendaDragging.value) return
+  legendaPos.value = { x: e.clientX - _dragOffset.x, y: e.clientY - _dragOffset.y }
+}
+function onLegendaMouseup() { legendaDragging.value = false }
+onMounted(() => {
+  document.addEventListener('mousemove', onLegendaMousemove)
+  document.addEventListener('mouseup', onLegendaMouseup)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('mousemove', onLegendaMousemove)
+  document.removeEventListener('mouseup', onLegendaMouseup)
+})
+
 // LI019 1d-v5 — swimlane-indeling, afgeleid uit bestaande node-velden. Robuust voor de werkelijke
 // data: ÉLK element_type dat geen partij/contract/gebruikersgroep is, is een componenttype →
 // componenten (technology-laag → infrastructuur). Zo belanden application-componenten nóóit meer in
@@ -1356,7 +1422,12 @@ function _nodeData(n) {
   const label = (n.naam || '') + (!isGG && n.blokkades_open > 0 ? ' ⚠' : '') + `\n${tweede}`
   // HARDE leesbaarheidseis: tekstkleur ALTIJD via de luminantie van de werkelijke vulkleur (`bg`),
   // voor elke vorm × elke status — nooit een vaste kleur per vorm.
-  return { id: n.id, label, bg, border, txt: _txtColor(bg), shape: _vormVoorType(n) }
+  // LI025 — discriminerende type-velden meegeven, zodat de legenda-dim (`_legendaMatch` op
+  // node.data()) het type herkent (anders bevat data() alleen id/label/bg/border/txt/shape).
+  return {
+    id: n.id, label, bg, border, txt: _txtColor(bg), shape: _vormVoorType(n),
+    element_type: n.element_type, laag: n.laag, soort: n.soort,
+  }
 }
 function _edgeData(e, i) {
   let lc = '#94a3b8' // LI019 1d-v5 — iets donkerder default zodat edges tussen lanes goed zichtbaar zijn
@@ -1565,6 +1636,7 @@ async function tekenGraaf() {
     cy?.fit?.(undefined, 50)
     updateBands()
     _pasSelectieHighlight() // ADR-033 — na een (her)tekening de selectie-highlight opnieuw aanbrengen
+    _pasLegendaDim() // LI025 — en de legenda-dim (nieuwe node-objecten dragen de klasse nog niet)
   }, 100)
 }
 
@@ -1601,6 +1673,8 @@ const CY_STYLE = [
   // de knoop zelf krijgen de oranje SELECTIE_RAND (één gedeelde kleurbron).
   { selector: 'edge.hl-edge', style: { 'line-color': SELECTIE_RAND, 'target-arrow-color': SELECTIE_RAND, width: 2.5, 'z-index': 900 } },
   { selector: 'node.hl-node', style: { 'border-width': 3, 'border-color': SELECTIE_RAND, 'border-style': 'solid' } },
+  // LI025 — legenda-typefilter: niet-matchende nodes dimmen (spotlight op het gekozen type).
+  { selector: 'node.lk-dim', style: { opacity: 0.15 } },
   // Fix 3: visuele markering van de geselecteerde node (klik op set-item / node).
   { selector: 'node:selected', style: { 'border-width': 4, 'border-color': SELECTIE_RAND, 'border-style': 'solid' } },
 ]
@@ -1732,7 +1806,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', _opEscape)
 })
 
-defineExpose({ openNodePopup, openEdgePopup, selecteerFlow, onNodeTap, sluitPopup, toggleFullscreen, fullscreen, popupOpen, _edgeData, groepeerPerOrg, grafNodes, grafEdges, zichtbareNodes, zichtbareEdges, layoutModus, _laneVan, _swimlanePositions, _layout, laneVolgorde, verbergLegeLanes, laneBanden, getekendeNodes, _herschikLane, toonRegistratiegaps, setLayoutModus, modus, actieveSet, toggleSet, kiesComponent, drillPad, drillNaar, stapTerug, huidigeFocus, huidigeFocusSet, topbalkNodes, impactDirect, impactGeraaktAantal, impactZichtbaarIds, _nodeData, geselecteerdNodeId, _edgeGehighlight, inspecteerNode, historie, cursor, kanTerug, kanVooruit, terugInHistorie, vooruitInHistorie, _vormVoorType, legendaOpen, toggleLegenda, scopeOrgs, scopeModus, organisatieNodes, toggleScopeOrg, _inScope, zonderEigenaarAantal, organisatieloosGebruiktAantal, opgeslagenViews, magViewsBeheren, toonStartscherm, openView, openOpslaan, openBewerk, bewaarView, verwijderView, beginMetHeleKaart, viewDialogOpen, viewNaam, viewGedeeld, laadViews, heleLandschap, beginscherm, beginschermOpen, tekenVoortgang, toonHeleLandschap, herlaadGraaf, wisSet, voegComponentenToeAanSet, actieveSetNodes, componentBuren, voegBurenToe, voegContextComponentenToe, geselecteerdNodeBuren, detailNode, _relayoutTeller })
+defineExpose({ openNodePopup, openEdgePopup, selecteerFlow, onNodeTap, sluitPopup, toggleFullscreen, fullscreen, popupOpen, _edgeData, groepeerPerOrg, grafNodes, grafEdges, zichtbareNodes, zichtbareEdges, layoutModus, _laneVan, _swimlanePositions, _layout, laneVolgorde, verbergLegeLanes, laneBanden, getekendeNodes, _herschikLane, toonRegistratiegaps, setLayoutModus, modus, actieveSet, toggleSet, kiesComponent, drillPad, drillNaar, stapTerug, huidigeFocus, huidigeFocusSet, topbalkNodes, impactDirect, impactGeraaktAantal, impactZichtbaarIds, _nodeData, geselecteerdNodeId, _edgeGehighlight, inspecteerNode, historie, cursor, kanTerug, kanVooruit, terugInHistorie, vooruitInHistorie, _vormVoorType, legendaOpen, toggleLegenda, scopeOrgs, scopeModus, organisatieNodes, toggleScopeOrg, _inScope, zonderEigenaarAantal, organisatieloosGebruiktAantal, opgeslagenViews, magViewsBeheren, toonStartscherm, openView, openOpslaan, openBewerk, bewaarView, verwijderView, beginMetHeleKaart, viewDialogOpen, viewNaam, viewGedeeld, laadViews, heleLandschap, beginscherm, beginschermOpen, tekenVoortgang, toonHeleLandschap, herlaadGraaf, wisSet, voegComponentenToeAanSet, actieveSetNodes, componentBuren, voegBurenToe, voegContextComponentenToe, geselecteerdNodeBuren, detailNode, _relayoutTeller, legendaTypeFilter, toggleLegendaFilter, _legendaMatch, legendaPos, legendaDragging, onLegendaMousedown, onLegendaMousemove, onLegendaMouseup })
 
 // LI023 — generieke re-layout: herpositioneer zodra de WERKELIJK GETEKENDE node-samenstelling
 // wijzigt. De id-compositie van `getekendeNodes` vangt álle oorzaken (scope/ring/zoekfilter/nieuwe
@@ -2046,7 +2120,9 @@ const typeLabel = (t) => humaniseer(t)
           <div
             v-else
             data-testid="lk-legenda-paneel"
-            class="max-h-[70%] w-60 overflow-auto rounded-[var(--cd-radius-card)] border border-[var(--cd-color-border)] bg-white/95 p-[var(--cd-space-sm)] shadow-[var(--cd-shadow-lg)]"
+            :style="legendaPos.x !== null ? { position: 'fixed', left: legendaPos.x + 'px', top: legendaPos.y + 'px', bottom: 'auto', right: 'auto', zIndex: 30 } : {}"
+            :class="['max-h-[70%] w-60 overflow-auto rounded-[var(--cd-radius-card)] border border-[var(--cd-color-border)] bg-white/95 p-[var(--cd-space-sm)] shadow-[var(--cd-shadow-lg)]', legendaDragging ? 'cursor-grabbing' : 'cursor-grab']"
+            @mousedown="onLegendaMousedown"
           >
             <div class="mb-1 flex items-center justify-between">
               <span class="font-semibold text-[length:var(--cd-text-sm)]">Legenda</span>
@@ -2055,9 +2131,18 @@ const typeLabel = (t) => humaniseer(t)
             <!-- Vorm = type -->
             <div data-testid="lk-legenda-vorm" class="flex flex-col gap-1">
               <p class="text-[length:var(--cd-text-xs)] font-semibold text-[var(--cd-color-text-muted)]">Vorm = type</p>
-              <span v-for="v in VORM_LEGENDA" :key="v.label" class="flex items-center gap-2 text-[length:var(--cd-text-sm)]">
+              <button
+                v-for="v in VORM_LEGENDA"
+                :key="v.label"
+                type="button"
+                :data-testid="`lk-legenda-type-${v.label}`"
+                :aria-pressed="legendaTypeFilter === v.label"
+                :title="legendaTypeFilter === v.label ? 'Filter opheffen' : `Toon alleen: ${v.label}`"
+                :class="['flex items-center gap-2 text-left text-[length:var(--cd-text-sm)] cursor-pointer rounded px-1 hover:bg-[var(--cd-color-accent)]', legendaTypeFilter === v.label ? 'bg-[var(--cd-color-accent)] font-semibold' : '']"
+                @click="toggleLegendaFilter(v.label)"
+              >
                 <span class="inline-block h-3.5 w-3.5 shrink-0 bg-[var(--cd-color-text-muted)]" :style="v.stijl" aria-hidden="true"></span>{{ v.label }}
-              </span>
+              </button>
             </div>
             <!-- Kleur = status -->
             <div data-testid="lk-legenda-status" class="mt-[var(--cd-space-sm)] flex flex-col gap-1 border-t border-[var(--cd-color-border)] pt-[var(--cd-space-sm)]">

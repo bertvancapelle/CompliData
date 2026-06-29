@@ -1724,4 +1724,100 @@ describe('LandschapskaartView v3', () => {
       expect(w.vm.beginschermOpen).toBe(true)
     })
   })
+
+  // ── LI025 — interactieve legenda-typefilter (dimmen, niet verbergen) ─────────────────────────
+  describe('legenda-typefilter (LI025)', () => {
+    it('toggle: klik type → filter; nogmaals → null; ander type → dat type', async () => {
+      const { w } = await mountView()
+      expect(w.vm.legendaTypeFilter).toBe(null)
+      w.vm.toggleLegendaFilter('Component')
+      expect(w.vm.legendaTypeFilter).toBe('Component')
+      w.vm.toggleLegendaFilter('Component') // toggle uit
+      expect(w.vm.legendaTypeFilter).toBe(null)
+      w.vm.toggleLegendaFilter('Component')
+      w.vm.toggleLegendaFilter('Contract') // ander type
+      expect(w.vm.legendaTypeFilter).toBe('Contract')
+    })
+
+    it('filter laat de graaf ONGEWIJZIGD (dimmen, geen verbergen)', async () => {
+      const { w } = await mountView()
+      w.vm.setLayoutModus('swimlane') // tekent alle nodes ongeacht edges
+      await flushPromises()
+      const alle = getekendeIds(w)
+      expect(alle).toEqual(['a1', 'a2', 'd1', 'k1', 'p1'])
+      w.vm.toggleLegendaFilter('Contract')
+      await flushPromises()
+      expect(getekendeIds(w)).toEqual(alle) // niets verdwijnt
+    })
+
+    it('dimt niet-matchende nodes via cy (lk-dim); filter weg → geen lk-dim', async () => {
+      // Eigen cy-stub met inspecteerbare nodes (de globale mock heeft geen nodes()).
+      const mkNode = (data) => {
+        const cls = new Set()
+        return { data: () => data, addClass: (c) => cls.add(c), removeClass: (c) => cls.delete(c), heeft: (c) => cls.has(c) }
+      }
+      const nodes = [
+        mkNode({ id: 'a1', element_type: 'applicatie', laag: 'application' }),
+        mkNode({ id: 'd1', element_type: 'database', laag: 'technology' }),
+        mkNode({ id: 'k1', element_type: 'contract', laag: 'business' }),
+      ]
+      const coll = { forEach: (f) => nodes.forEach(f), removeClass: (c) => nodes.forEach((n) => n.removeClass(c)) }
+      const fakeCy = {
+        on: vi.fn(), off: vi.fn(), elements: () => ({ remove: vi.fn(), unselect: vi.fn() }),
+        getElementById: () => ({ length: 0, select: vi.fn() }), animate: vi.fn(), zoom: () => 1,
+        pan: () => ({ x: 0, y: 0 }), add: vi.fn(), layout: () => ({ run: vi.fn() }),
+        resize: vi.fn(), fit: vi.fn(), destroy: vi.fn(), edges: () => ({ removeClass: vi.fn() }),
+        nodes: () => coll,
+      }
+      cytoscape.mockReturnValueOnce(fakeCy)
+      const { w } = await mountView()
+
+      w.vm.toggleLegendaFilter('Contract')
+      await flushPromises()
+      expect(nodes[2].heeft('lk-dim')).toBe(false) // contract = scherp
+      expect(nodes[0].heeft('lk-dim')).toBe(true) // applicatie = gedimd
+      expect(nodes[1].heeft('lk-dim')).toBe(true) // database = gedimd
+
+      w.vm.toggleLegendaFilter('Contract') // filter weg
+      await flushPromises()
+      expect(nodes.every((n) => !n.heeft('lk-dim'))).toBe(true)
+    })
+
+    it('_legendaMatch mapt vorm-categorieën correct', async () => {
+      const { w } = await mountView()
+      const m = w.vm._legendaMatch
+      expect(m({ element_type: 'applicatie', laag: 'application' }, 'Component')).toBe(true)
+      expect(m({ element_type: 'database', laag: 'technology' }, 'Infrastructuur')).toBe(true)
+      expect(m({ element_type: 'database', laag: 'technology' }, 'Component')).toBe(false)
+      expect(m({ element_type: 'contract', laag: 'business' }, 'Contract')).toBe(true)
+      expect(m({ element_type: 'partij', soort: 'organisatie' }, 'Organisatie')).toBe(true)
+    })
+
+    it('regressie dim-bug: cy-node.data() draagt element_type → _legendaMatch matcht', async () => {
+      const { w } = await mountView()
+      const data = w.vm._nodeData({ id: 'k1', naam: 'Contract X', element_type: 'contract', laag: 'business', blokkades_open: 0 })
+      expect(data.element_type).toBe('contract') // vóór de fix ontbrak dit veld → dim matchte nooit
+      expect(w.vm._legendaMatch(data, 'Contract')).toBe(true)
+      expect(w.vm._legendaMatch(data, 'Component')).toBe(false)
+    })
+
+    it('floating: slepen verplaatst de legenda; wisSet reset naar standaard', async () => {
+      const { w } = await mountView()
+      expect(w.vm.legendaPos).toEqual({ x: null, y: null })
+      w.vm.onLegendaMousedown({ clientX: 200, clientY: 150, target: { closest: () => null }, preventDefault() {} })
+      expect(w.vm.legendaDragging).toBe(true)
+      w.vm.onLegendaMousemove({ clientX: 260, clientY: 190 }) // offset = (200,150) → pos = (60,40)
+      expect(w.vm.legendaPos).toEqual({ x: 60, y: 40 })
+      w.vm.onLegendaMouseup()
+      expect(w.vm.legendaDragging).toBe(false)
+      w.vm.wisSet() // "Begin opnieuw" → terug naar standaardpositie
+      expect(w.vm.legendaPos).toEqual({ x: null, y: null })
+    })
+
+    it('drag-handler negeert knoppen (filter blijft werken)', async () => {
+      const { w } = await mountView()
+      w.vm.onLegendaMousedown({ target: { closest: (sel) => (sel.includes('button') ? {} : null) }, preventDefault() {} })
+      expect(w.vm.legendaDragging).toBe(false) // mousedown op een knop start geen drag
+    })
+  })
 })
