@@ -267,6 +267,21 @@ function toggleScopeOrg(id) {
   scopeOrgs.value = s
 }
 function _inScope(n) {
+  // ── Subgraaf-modus (actieve set aanwezig): scope filtert CONTEXT (org/gg), NIET de componenten ──
+  // De set-leden zijn de focus en blijven altijd staan; de scope verbergt alleen org-/gebruikersgroep-
+  // context die niet bij de gekozen organisatie(s) hoort. (LI023 — scope-subgraaf-fix.)
+  if (actieveSet.value.size > 0) {
+    if (actieveSet.value.has(n.id)) return true            // set-lid → altijd zichtbaar
+    if (scopeOrgs.value.size === 0) return true            // geen scope gekozen → alles zichtbaar
+    if (_isOrg(n)) return scopeOrgs.value.has(n.id)        // org-node: alleen de gekozen scope-orgs
+    if (n.element_type === 'gebruikersgroep') {
+      // gg-node: tonen als zijn organisatie in scope zit; org-loze gg (organisatie_id null) → tonen.
+      if (n.organisatie_id) return scopeOrgs.value.has(n.organisatie_id)
+      return true
+    }
+    return true                                            // contract/infra/persoon/externe partij: altijd
+  }
+  // ── Hele-landschap-modus: ongewijzigd (scope zeeft application-componenten op eigenaar/gebruik) ──
   if (!_isApp(n)) return true             // alleen application-componenten worden gescoopt
   if (!scopeOrgs.value.size) return true  // niets aangevinkt → terugval op ALLES
   if (scopeModus.value === 'gebruikt') return (n.gebruikt_door_organisaties || []).some((id) => scopeOrgs.value.has(id))
@@ -1712,7 +1727,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', _opEscape)
 })
 
-defineExpose({ openNodePopup, openEdgePopup, selecteerFlow, onNodeTap, sluitPopup, toggleFullscreen, fullscreen, popupOpen, _edgeData, groepeerPerOrg, grafNodes, grafEdges, zichtbareNodes, zichtbareEdges, layoutModus, _laneVan, _swimlanePositions, _layout, laneVolgorde, verbergLegeLanes, laneBanden, getekendeNodes, _herschikLane, toonRegistratiegaps, setLayoutModus, modus, actieveSet, toggleSet, kiesComponent, drillPad, drillNaar, stapTerug, huidigeFocus, huidigeFocusSet, topbalkNodes, impactDirect, impactGeraaktAantal, impactZichtbaarIds, _nodeData, geselecteerdNodeId, _edgeGehighlight, inspecteerNode, historie, cursor, kanTerug, kanVooruit, terugInHistorie, vooruitInHistorie, _vormVoorType, legendaOpen, toggleLegenda, scopeOrgs, scopeModus, organisatieNodes, toggleScopeOrg, zonderEigenaarAantal, organisatieloosGebruiktAantal, opgeslagenViews, magViewsBeheren, toonStartscherm, openView, openOpslaan, openBewerk, bewaarView, verwijderView, beginMetHeleKaart, viewDialogOpen, viewNaam, viewGedeeld, laadViews, heleLandschap, beginscherm, beginschermOpen, tekenVoortgang, toonHeleLandschap, herlaadGraaf, wisSet, voegComponentenToeAanSet, actieveSetNodes, componentBuren, voegBurenToe, voegContextComponentenToe, geselecteerdNodeBuren, detailNode })
+defineExpose({ openNodePopup, openEdgePopup, selecteerFlow, onNodeTap, sluitPopup, toggleFullscreen, fullscreen, popupOpen, _edgeData, groepeerPerOrg, grafNodes, grafEdges, zichtbareNodes, zichtbareEdges, layoutModus, _laneVan, _swimlanePositions, _layout, laneVolgorde, verbergLegeLanes, laneBanden, getekendeNodes, _herschikLane, toonRegistratiegaps, setLayoutModus, modus, actieveSet, toggleSet, kiesComponent, drillPad, drillNaar, stapTerug, huidigeFocus, huidigeFocusSet, topbalkNodes, impactDirect, impactGeraaktAantal, impactZichtbaarIds, _nodeData, geselecteerdNodeId, _edgeGehighlight, inspecteerNode, historie, cursor, kanTerug, kanVooruit, terugInHistorie, vooruitInHistorie, _vormVoorType, legendaOpen, toggleLegenda, scopeOrgs, scopeModus, organisatieNodes, toggleScopeOrg, _inScope, zonderEigenaarAantal, organisatieloosGebruiktAantal, opgeslagenViews, magViewsBeheren, toonStartscherm, openView, openOpslaan, openBewerk, bewaarView, verwijderView, beginMetHeleKaart, viewDialogOpen, viewNaam, viewGedeeld, laadViews, heleLandschap, beginscherm, beginschermOpen, tekenVoortgang, toonHeleLandschap, herlaadGraaf, wisSet, voegComponentenToeAanSet, actieveSetNodes, componentBuren, voegBurenToe, voegContextComponentenToe, geselecteerdNodeBuren, detailNode })
 
 // Hertekenen bij elke state die de graaf raakt.
 watch(
@@ -1929,7 +1944,9 @@ const typeLabel = (t) => humaniseer(t)
           <label v-for="o in organisatieNodes" :key="o.id" class="flex items-center gap-1 text-[length:var(--cd-text-sm)]">
             <input type="checkbox" :checked="scopeOrgs.has(o.id)" :data-testid="`lk-scope-org-${o.id}`" @change="toggleScopeOrg(o.id)" />{{ o.naam }}
           </label>
-          <div class="ml-auto flex items-center gap-1" role="radiogroup" aria-label="Biedt aan of gebruikt">
+          <!-- LI023 — de Biedt/Gebruikt-as scoopt application-componenten en geldt alléén in de
+               hele-landschap-modus; in subgraaf-modus filtert de scope context-nodes (org/gg). -->
+          <div v-if="actieveSet.size === 0" class="ml-auto flex items-center gap-1" role="radiogroup" aria-label="Biedt aan of gebruikt">
             <button
               type="button" data-testid="lk-scope-biedt" role="radio" :aria-checked="scopeModus === 'biedt'"
               :class="['rounded-[var(--cd-radius-btn)] px-2 py-1 text-[length:var(--cd-text-sm)]', scopeModus === 'biedt' ? 'bg-[var(--cd-color-primary)] text-white' : 'bg-[var(--cd-color-accent)]']"
@@ -1942,10 +1959,10 @@ const typeLabel = (t) => humaniseer(t)
             >Gebruikt</button>
           </div>
           <!-- Gat eerlijk tonen: componenten die in deze modus buiten élke organisatie-scope vallen. -->
-          <span v-if="scopeModus === 'biedt' && zonderEigenaarAantal" data-testid="lk-scope-gap" class="basis-full text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">
+          <span v-if="actieveSet.size === 0 && scopeModus === 'biedt' && zonderEigenaarAantal" data-testid="lk-scope-gap" class="basis-full text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">
             {{ zonderEigenaarAantal }} component(en) zonder eigenaar — niet in scope
           </span>
-          <span v-else-if="scopeModus === 'gebruikt' && organisatieloosGebruiktAantal" data-testid="lk-scope-gap" class="basis-full text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">
+          <span v-else-if="actieveSet.size === 0 && scopeModus === 'gebruikt' && organisatieloosGebruiktAantal" data-testid="lk-scope-gap" class="basis-full text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">
             {{ organisatieloosGebruiktAantal }} component(en) alleen door een organisatieloze groep gebruikt — niet in scope
           </span>
         </div>

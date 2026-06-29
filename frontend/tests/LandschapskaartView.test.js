@@ -1630,4 +1630,58 @@ describe('LandschapskaartView v3', () => {
       expect([...w.vm.actieveSet]).toEqual(['a1'])
     })
   })
+
+  // ── LI023 — scope filtert in subgraaf-modus CONTEXT (org/gg), niet de componenten ──────────────
+  describe('scope subgraaf-modus', () => {
+    const APP = { id: 'a1', element_type: 'applicatie', laag: 'application' }
+    const ORG1 = { id: 'p1', element_type: 'partij', soort: 'organisatie' }
+    const ORG2 = { id: 'p2', element_type: 'partij', soort: 'organisatie' }
+
+    // Zet de view in subgraaf-modus (set ≥1) met een gekozen scope-org.
+    async function metScope(orgIds = []) {
+      const { w } = await mountView({ heleLandschap: false })
+      w.vm.toggleSet('a1')
+      await flushPromises()
+      for (const id of orgIds) w.vm.toggleScopeOrg(id)
+      await flushPromises()
+      return w
+    }
+
+    it('set-lid altijd zichtbaar ongeacht scope', async () => {
+      const w = await metScope(['p1'])
+      expect(w.vm._inScope(APP)).toBe(true) // a1 is set-lid
+    })
+
+    it('org-node zonder scope → zichtbaar', async () => {
+      const w = await metScope([]) // geen scope gekozen
+      expect(w.vm._inScope(ORG2)).toBe(true)
+    })
+
+    it('org-node met scope → alleen de gekozen org zichtbaar', async () => {
+      const w = await metScope(['p1'])
+      expect(w.vm._inScope(ORG1)).toBe(true)
+      expect(w.vm._inScope(ORG2)).toBe(false)
+    })
+
+    it('gebruikersgroep met organisatie_id buiten scope → verborgen (binnen scope → zichtbaar; org-loos → zichtbaar)', async () => {
+      const w = await metScope(['p1'])
+      expect(w.vm._inScope({ id: 'gg-org-p2', element_type: 'gebruikersgroep', organisatie_id: 'p2' })).toBe(false)
+      expect(w.vm._inScope({ id: 'gg-org-p1', element_type: 'gebruikersgroep', organisatie_id: 'p1' })).toBe(true)
+      expect(w.vm._inScope({ id: 'gg-org-x', element_type: 'gebruikersgroep', organisatie_id: null })).toBe(true)
+    })
+
+    it('contract/infra-node altijd zichtbaar bij scope', async () => {
+      const w = await metScope(['p1'])
+      expect(w.vm._inScope({ id: 'k1', element_type: 'contract' })).toBe(true)
+      expect(w.vm._inScope({ id: 'd1', element_type: 'component', laag: 'technology' })).toBe(true)
+    })
+
+    it('Biedt aan/Gebruikt-toggle verborgen in subgraaf-modus, zichtbaar in hele-landschap', async () => {
+      const sub = await metScope(['p1'])
+      expect(sub.find('[data-testid="lk-scopebalk"]').exists()).toBe(true) // p1 is een org-node in de subgraaf
+      expect(sub.find('[data-testid="lk-scope-biedt"]').exists()).toBe(false)
+      const { w: heel } = await mountView() // hele-landschap
+      expect(heel.find('[data-testid="lk-scope-biedt"]').exists()).toBe(true)
+    })
+  })
 })
