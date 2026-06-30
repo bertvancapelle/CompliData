@@ -14,7 +14,7 @@ bijgewerkt: V016
 localStorage.setItem('token', ...)
 ```
 
-Sessie loopt via de `cd_session` httpOnly cookie (`HttpOnly`, `Secure`,
+Sessie loopt via de `lk_session` httpOnly cookie (`HttpOnly`, `Secure`,
 `SameSite=Strict`). De backend leest de cookie en valideert de Keycloak-JWT
 via JWKS.
 
@@ -43,8 +43,8 @@ Permissions-Policy: geolocation=(), microphone=(), camera=()
 async def me(request: Request, user: AuthenticatedUser = Depends(get_current_user)):
     return asdict(user)
 
-# /api/v1/auth/logout — RP-initiated (CD008/CD010): lokaal intrekken (cd_session +
-# cd_refresh + Redis-refresh-handle) + Keycloak end-session-URL teruggeven met
+# /api/v1/auth/logout — RP-initiated (CD008/CD010): lokaal intrekken (lk_session +
+# lk_refresh + Redis-refresh-handle) + Keycloak end-session-URL teruggeven met
 # id_token_hint (naadloze redirect). Zie de V004-sectie hieronder.
 ```
 
@@ -104,7 +104,7 @@ Authorization Code + PKCE, **volledig server-side** (`api/v1/auth.py`):
 - `/auth/callback`: `state` **eenmalig** via Redis `GETDEL` (CSRF + replay);
   code-exchange met `code_verifier` server-side (client_secret nooit naar
   client); `id_token`-validatie incl. **nonce** (`decode_id_token`); zet
-  `cd_session` (`HttpOnly`/`Secure`/`SameSite=Strict`, max-age = access 15 min).
+  `lk_session` (`HttpOnly`/`Secure`/`SameSite=Strict`, max-age = access 15 min).
 - Open-redirect-bescherming op `next` (`_valideer_next`: alleen same-origin
   relatief pad, anders app-root).
 - Fouten in canoniek `{"fout":{...}}`; auth-fail hergebruikt de
@@ -156,7 +156,7 @@ Auth-fail-counters in Redis gebruiken een SHA-256 hash van het IP-adres
 | Onderdeel | Status |
 |---|---|
 | RBAC tenant + platform | Geïmplementeerd — `_load_roles` mapt `realm_access.roles`; twee domeinen (ADR-010/012) |
-| Login/callback PKCE-flow | Geïmplementeerd — server-side PKCE + `cd_session` (ADR-002) |
+| Login/callback PKCE-flow | Geïmplementeerd — server-side PKCE + `lk_session` (ADR-002) |
 | Audit trail / hash-chaining | Niet geïmplementeerd — ADR-006 open |
 | MFA-config Keycloak | Realm aanwezig; MFA-policy nog in te stellen |
 | Refresh-token / RP-initiated logout | Geïmplementeerd — ADR-015 (refresh + Redis) + RP-logout met `id_token_hint` (CD007/CD008/CD010). Voorwaarde: `revoke-refresh-token` aan (OP-14) |
@@ -178,7 +178,7 @@ functioneel (rollen uit `/auth/me`). Een toch-403 in de UI netjes afvangen (Toas
 
 ## Cookie — dev vs. productie
 
-`cd_session` is `HttpOnly`/`SameSite=Strict`; `cookie_secure` is **settings-driven**.
+`lk_session` is `HttpOnly`/`SameSite=Strict`; `cookie_secure` is **settings-driven**.
 Lokaal-dev (http://localhost) zet `COOKIE_SECURE=false` (in `docker-compose.yml` op
 de api-service, dev-only; `.env.example`), anders dropt o.a. Safari de Secure-cookie
 over HTTP. **Productie houdt `secure=True`** — de dev-waarde nooit meenemen.
@@ -194,11 +194,11 @@ is onjuist — openstaand vervolgpunt.)
 
 - **Keycloak-gedelegeerde refresh + Redis (ADR-015)**: het `refresh_token` (+ `id_token`)
   als JSON in Redis `auth_refresh:{sessie_id}`, gekoppeld via een opake httpOnly
-  `cd_refresh`-cookie (nooit client-leesbaar). `POST /auth/refresh`:
+  `lk_refresh`-cookie (nooit client-leesbaar). `POST /auth/refresh`:
   `grant_type=refresh_token` server-side (`client_secret` nooit naar client) → nieuw
-  `cd_session` + **geroteerd** token; faal → 401 canoniek + handle opruimen. Bij
+  `lk_session` + **geroteerd** token; faal → 401 canoniek + handle opruimen. Bij
   refresh het `id_token` **meeverversen** (anders verouderde logout-hint). [CD007/CD010]
-- **RP-initiated logout (OP-4)**: lokaal intrekken (`cd_session` + `cd_refresh` +
+- **RP-initiated logout (OP-4)**: lokaal intrekken (`lk_session` + `lk_refresh` +
   Redis-handle, idempotent) **én** Keycloak end-session; `id_token_hint` (uit het
   handle) → naadloze redirect naar `post_logout_redirect_uri` (server-config, geen
   open redirect). Zonder hint toont Keycloak een bevestigingsscherm (empirisch

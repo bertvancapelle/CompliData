@@ -4,7 +4,7 @@
 `code_verifier`/`state`/`nonce` worden server-side in Redis bewaard (gekoppeld
 via `state`, nooit client-leesbaar) en de gebruiker wordt naar Keycloak
 geredirect. `/auth/callback` wisselt de code server-side in, valideert het
-id_token (nonce/iss/aud/exp) en zet de `cd_session` httpOnly cookie die door
+id_token (nonce/iss/aud/exp) en zet de `lk_session` httpOnly cookie die door
 `/auth/me` wordt gevalideerd.
 """
 import json
@@ -52,7 +52,7 @@ _REFRESH_PREFIX = "auth_refresh:"
 
 
 def _zet_session_cookie(response: Response | RedirectResponse, access_token: str) -> None:
-    """Zet de httpOnly `cd_session`-cookie (access-token, 15 min)."""
+    """Zet de httpOnly `lk_session`-cookie (access-token, 15 min)."""
     response.set_cookie(
         key=settings.cookie_name,
         value=access_token,
@@ -66,7 +66,7 @@ def _zet_session_cookie(response: Response | RedirectResponse, access_token: str
 
 
 def _zet_refresh_cookie(response: Response | RedirectResponse, sessie_id: str) -> None:
-    """Zet de httpOnly `cd_refresh`-cookie (opake sessie-id; nooit client-leesbaar)."""
+    """Zet de httpOnly `lk_refresh`-cookie (opake sessie-id; nooit client-leesbaar)."""
     response.set_cookie(
         key=settings.refresh_cookie_name,
         value=sessie_id,
@@ -228,7 +228,7 @@ async def refresh(request: Request):
 
     Leest de opake sessie-identifier (cookie) → haalt het refresh_token uit Redis
     → wisselt bij Keycloak (`grant_type=refresh_token`, server-side) → zet een
-    nieuw `cd_session` en bewaart het GEROTEERDE refresh_token (B3). Falen
+    nieuw `lk_session` en bewaart het GEROTEERDE refresh_token (B3). Falen
     (afwezig/verlopen/door-Keycloak-geweigerd) ⇒ 401 canoniek (ADR-014).
     """
     sessie_id = request.cookies.get(settings.refresh_cookie_name)
@@ -308,7 +308,7 @@ async def logout(request: Request, response: Response):
     """RP-initiated logout (OP-4): lokale intrekking + Keycloak end-session.
 
     1. Verwijder het Redis-refresh-handle (ADR-015-raakvlak; het OP-3-token mag
-       niet blijven leven), idempotent. 2. Wis `cd_session` én `cd_refresh`.
+       niet blijven leven), idempotent. 2. Wis `lk_session` én `lk_refresh`.
        3. Geef de Keycloak end-session-URL terug; de frontend navigeert ernaartoe
        zodat ook de SSO-sessie eindigt (anders logt de volgende /login stil weer in).
     """

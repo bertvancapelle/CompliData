@@ -48,7 +48,7 @@ function toggleSidebar() {
 
 async function uitloggen() {
   // RP-initiated logout (OP-4, CD008/CD010): de store roept `/auth/logout` aan
-  // (wist `cd_session`/`cd_refresh` + trekt het Redis-refresh-handle in) en
+  // (wist `lk_session`/`lk_refresh` + trekt het Redis-refresh-handle in) en
   // navigeert naar de Keycloak end-session-URL, zodat óók de SSO-sessie eindigt
   // (geen stil herinloggen). Zonder URL valt de store terug op `/login`.
   await auth.logout()

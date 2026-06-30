@@ -5,7 +5,7 @@
  * De app toont zelf GEEN wachtwoordveld: de "Inloggen"-knop start de
  * Keycloak-redirect-flow (ADR-002) via een volledige browser-redirect naar het
  * backend-endpoint `/api/v1/auth/login`. Na succesvolle login zet de backend de
- * httpOnly `cd_session`-cookie en redirect terug naar `next` (default `/`); de
+ * httpOnly `lk_session`-cookie en redirect terug naar `next` (default `/`); de
  * router-guard zet de geauthenticeerde gebruiker daarna door.
  */
 import { computed, ref } from 'vue'

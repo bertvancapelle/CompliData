@@ -77,7 +77,7 @@ src/layouts/AppLayout.vue   — topbar (app-naam, gebruiker-e-mail, uitlog-knop)
 - Router: geauthenticeerde routes als children onder `AppLayout`;
   `login`/`auth-callback`/`verboden` standalone (`meta.public`). De guard
   (`store/auth.js` + `router/index.js`) blijft ongewijzigd.
-- Uitloggen: `auth.logout()` (wist `cd_session`, redirect `/login`). **OP-4**:
+- Uitloggen: `auth.logout()` (wist `lk_session`, redirect `/login`). **OP-4**:
   geen Keycloak-SSO-logout (buiten scope; in code gedocumenteerd).
 
 ## api.js fetch-wrapper
@@ -300,7 +300,7 @@ Vang een toch-403 netjes af (Toast). Nooit tokens in `localStorage` (httpOnly).
   `window.location.assign('/api/v1/auth/login')` (geen `fetch`, geen in-app
   wachtwoordveld). `next` alleen meesturen bij een same-origin relatief pad
   (backend hervalideert). `?sessie_verlopen=1` → inline `role="alert"`.
-- Na login zet de backend `cd_session` en redirect naar `next` (default `/`); de
+- Na login zet de backend `lk_session` en redirect naar `next` (default `/`); de
   router-guard zet de gebruiker door.
 
 ## Testopzet (vitest)

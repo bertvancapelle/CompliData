@@ -32,8 +32,8 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
 
     # Cookie — secure=True als productie-default, dev overschrijft via .env
-    cookie_name: str = "cd_session"
-    refresh_cookie_name: str = "cd_refresh"  # opake sessie-id → refresh_token in Redis (ADR-015)
+    cookie_name: str = "lk_session"
+    refresh_cookie_name: str = "lk_refresh"  # opake sessie-id → refresh_token in Redis (ADR-015)
     cookie_secure: bool = True
     cookie_samesite: str = "strict"
     cookie_domain: str = "localhost"

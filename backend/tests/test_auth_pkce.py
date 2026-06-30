@@ -152,7 +152,7 @@ def test_login_next_relatief_pad_behouden(client, fake_redis):
 # ── /callback — succes ───────────────────────────────────────────────────────
 
 
-def test_callback_succes_zet_cd_session_cookie(client, fake_redis, monkeypatch):
+def test_callback_succes_zet_lk_session_cookie(client, fake_redis, monkeypatch):
     state, nonce = _doe_login(client)
     gezien = {}
 
@@ -380,7 +380,7 @@ def test_callback_bewaart_refresh_token_in_redis(client, fake_redis, monkeypatch
     resp = client.get(f"/api/v1/auth/callback?code=c&state={state}", follow_redirects=False)
     assert resp.status_code == 303
     setcookie = resp.headers["set-cookie"].lower()
-    assert settings.refresh_cookie_name.lower() in setcookie  # cd_refresh-cookie gezet
+    assert settings.refresh_cookie_name.lower() in setcookie  # lk_refresh-cookie gezet
     handles = {k: v for k, v in fake_redis.store.items() if k.startswith("auth_refresh:")}
     opgeslagen = json.loads(list(handles.values())[0])  # JSON {refresh_token, id_token}
     assert opgeslagen["refresh_token"] == "rt-1"
@@ -402,7 +402,7 @@ def test_refresh_geldig_handle_rouleert_en_zet_nieuwe_sessie(client, fake_redis,
     resp = client.post("/api/v1/auth/refresh")
     assert resp.status_code == 204
     setcookie = resp.headers["set-cookie"].lower()
-    assert f"{settings.cookie_name}=acc-new".lower() in setcookie  # nieuw cd_session
+    assert f"{settings.cookie_name}=acc-new".lower() in setcookie  # nieuw lk_session
     assert "httponly" in setcookie
     # rotatie: nieuwste refresh + ververst id_token bewaard
     opgeslagen = json.loads(fake_redis.store["auth_refresh:sid-1"])
@@ -467,7 +467,7 @@ def test_logout_wist_beide_cookies_en_redis_handle(client, fake_redis):
 
 
 def test_logout_idempotent_zonder_sessie(client, fake_redis):
-    # Geen cd_refresh-cookie / geen handle → geen fout, wel keycloak_logout_url.
+    # Geen lk_refresh-cookie / geen handle → geen fout, wel keycloak_logout_url.
     resp = client.post("/api/v1/auth/logout")
     assert resp.status_code == 200
     assert "keycloak_logout_url" in resp.json()
