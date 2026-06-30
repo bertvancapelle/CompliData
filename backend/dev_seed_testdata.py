@@ -200,12 +200,12 @@ KOPPELINGEN = [
 LEVERANCIERS_D = [
     {"naam": "GemSoft B.V.", "straat_huisnummer": "Softwareplein 12", "postcode": "3811 AB",
      "plaats": "Amersfoort", "contactpersoon": "Account Management",
-     "telefoon": "033-1234567", "mobiel": "06-12345678", "email": "contact@gemsoft.example"},
+     "telefoon": "033-1234567", "mobiel": "06-12345678", "email": "contact@gemsoft.test"},
     {"naam": "CivData Solutions", "straat_huisnummer": "Dataweg 8", "postcode": "3542 AD",
      "plaats": "Utrecht", "contactpersoon": "Servicedesk",
-     "telefoon": "030-7654321", "mobiel": "06-87654321", "email": "info@civdata.example"},
+     "telefoon": "030-7654321", "mobiel": "06-87654321", "email": "info@civdata.test"},
     # Minimaal: alleen plaats + email.
-    {"naam": "InfraHost Nederland", "plaats": "Rotterdam", "email": "support@infrahost.example"},
+    {"naam": "InfraHost Nederland", "plaats": "Rotterdam", "email": "support@infrahost.test"},
     # Minimaal: alleen contactpersoon + telefoon.
     {"naam": "GeoWorks B.V.", "contactpersoon": "Verkoop binnendienst", "telefoon": "020-5556677"},
 ]
@@ -564,7 +564,7 @@ async def _seed_aanvulling_d(session, app_ids: dict) -> dict:
     await _zorg_partij(
         PartijAard.persoon, "J. de Vries",
         organisatie_id=org_id, afdeling_id=afd_id,
-        email="j.devries@gemeente.example", telefoon="06-12345678",
+        email="j.devries@gemeente.test", telefoon="06-12345678",
         omschrijving="Functioneel beheerder",
     )
 
@@ -886,10 +886,10 @@ async def seed_landschapskaart_demo(session, tenant_id) -> dict:
     # ADR-024 (Optie 1) — personen met contactgegevens (functietitel is persoon-only).
     await _zorg_partij(
         PartijAard.persoon, "P. van Dijk", organisatie_id=org_id, afdeling_id=afd_id,
-        email="p.vandijk@bwb.nl", telefoon="06-12345678", functietitel="Informatiemanager")
+        email="p.vandijk@bwb.test", telefoon="06-12345678", functietitel="Informatiemanager")
     await _zorg_partij(
         PartijAard.persoon, "J. de Vries", organisatie_id=org_id, afdeling_id=afd_id,
-        email="j.devries@bwb.nl", telefoon="06-87654321", functietitel="Product Owner")
+        email="j.devries@bwb.test", telefoon="06-87654321", functietitel="Product Owner")
     await _zorg_partij(PartijAard.externe_partij, "TechSupplier BV")
     await _zorg_partij(PartijAard.externe_partij, "SaaS-leverancier NL")
     # Zaaksysteem (basis-seed) resolvbaar maken voor een roltoewijzing (staat niet in LK_APPS).
@@ -1004,10 +1004,10 @@ async def _seed_bvowb_scenario(session, tenant_id) -> dict:
 
     # ── 1. Organisaties (aard=organisatie): dienstenprovider + gemeenten ──
     organisaties = [
-        ("BvoWB", None, "Markt 1", "4001 AA", "Tiel", "0344-678900", "info@bvowb.nl"),
-        ("Gemeente Tiel", None, "Achterweg 2", "4001 BB", "Tiel", "0344-678910", "info@gemeentetiel.nl"),
-        ("Gemeente Culemborg", None, "Herenstraat 3", "4101 CC", "Culemborg", "0345-678920", "info@culemborg.nl"),
-        ("Gemeente West Betuwe", None, "Dorpsstraat 4", "4021 DD", "West Betuwe", "0344-678930", "info@westbetuwe.nl"),
+        ("BvoWB", None, "Markt 1", "4001 AA", "Tiel", "0344-678900", "info@bvowb.test"),
+        ("Gemeente Tiel", None, "Achterweg 2", "4001 BB", "Tiel", "0344-678910", "info@gemeentetiel.test"),
+        ("Gemeente Culemborg", None, "Herenstraat 3", "4101 CC", "Culemborg", "0345-678920", "info@culemborg.test"),
+        ("Gemeente West Betuwe", None, "Dorpsstraat 4", "4021 DD", "West Betuwe", "0344-678930", "info@westbetuwe.test"),
     ]
     for naam, soort, straat, pc, plaats, tel, mail in organisaties:
         await _partij(PartijAard.organisatie, naam, "organisaties", soort=soort,
@@ -1016,10 +1016,10 @@ async def _seed_bvowb_scenario(session, tenant_id) -> dict:
 
     # ── 1b. Ketenpartners (aard=externe_partij, soort=ketenpartner) — externe samenwerkingspartijen ──
     ketenpartners = [
-        ("Provincie Gelderland", "Markt 11", "6811 CG", "Arnhem", "026-3599111", "info@gelderland.nl"),
-        ("RVIG", "Turfmarkt 147", "2511 DP", "Den Haag", "070-3614614", "info@rvig.nl"),
-        ("RDW", "Europaweg 205", "9723 AS", "Groningen", "0900-0739", "info@rdw.nl"),
-        ("Belastingdienst", "Parnassusweg 5", "1077 DC", "Amsterdam", "0800-0543", "info@belastingdienst.nl"),
+        ("Provincie Gelderland", "Markt 11", "6811 CG", "Arnhem", "026-3599111", "info@gelderland.test"),
+        ("RVIG", "Turfmarkt 147", "2511 DP", "Den Haag", "070-3614614", "info@rvig.test"),
+        ("RDW", "Europaweg 205", "9723 AS", "Groningen", "0900-0739", "info@rdw.test"),
+        ("Belastingdienst", "Parnassusweg 5", "1077 DC", "Amsterdam", "0800-0543", "info@belastingdienst.test"),
     ]
     for naam, straat, pc, plaats, tel, mail in ketenpartners:
         await _partij(PartijAard.externe_partij, naam, "ketenpartners", soort="ketenpartner",
@@ -1027,16 +1027,16 @@ async def _seed_bvowb_scenario(session, tenant_id) -> dict:
 
     # ── 2. Leveranciers (aard=externe_partij, soort=leverancier) ──
     leveranciers = [
-        ("GemSoft B.V.", "Softwareweg 12", "3821 BB", "Amersfoort", "033-4567890", "info@gemsoft.nl"),
-        ("CivData Solutions", "Dataplein 5", "2521 CC", "Den Haag", "070-3456789", "contact@civdata.nl"),
-        ("GeoWorks B.V.", "Geostraat 8", "1234 DD", "Amsterdam", "020-5678901", "info@geoworks.nl"),
-        ("DataBridge B.V.", "Databrug 3", "6827 HH", "Arnhem", "026-4567890", "hello@databridge.nl"),
-        ("FinSys N.V.", "Financiënweg 99", "3011 FF", "Rotterdam", "010-3456789", "info@finsys.nl"),
-        ("SocioSuite GmbH", "Sozialstraße 7", "6221 GG", "Maastricht", "043-3456789", "info@sociosuite.nl"),
-        ("BurgX B.V.", "Burgemeesterslaan 44", "5611 EE", "Eindhoven", "040-2345678", "support@burgx.nl"),
-        ("PermitPro B.V.", "Vergunningenweg 8", "5223 AA", "'s-Hertogenbosch", "073-6789012", "info@permitpro.nl"),
-        ("HRWorks B.V.", "Personeelsplein 22", "3511 AB", "Utrecht", "030-2345678", "info@hrworks.nl"),
-        ("OmgevingsSoft B.V.", "Omgevingslaan 15", "6811 JK", "Arnhem", "026-5678901", "info@omgevingssoft.nl"),
+        ("GemSoft B.V.", "Softwareweg 12", "3821 BB", "Amersfoort", "033-4567890", "info@gemsoft.test"),
+        ("CivData Solutions", "Dataplein 5", "2521 CC", "Den Haag", "070-3456789", "contact@civdata.test"),
+        ("GeoWorks B.V.", "Geostraat 8", "1234 DD", "Amsterdam", "020-5678901", "info@geoworks.test"),
+        ("DataBridge B.V.", "Databrug 3", "6827 HH", "Arnhem", "026-4567890", "hello@databridge.test"),
+        ("FinSys N.V.", "Financiënweg 99", "3011 FF", "Rotterdam", "010-3456789", "info@finsys.test"),
+        ("SocioSuite GmbH", "Sozialstraße 7", "6221 GG", "Maastricht", "043-3456789", "info@sociosuite.test"),
+        ("BurgX B.V.", "Burgemeesterslaan 44", "5611 EE", "Eindhoven", "040-2345678", "support@burgx.test"),
+        ("PermitPro B.V.", "Vergunningenweg 8", "5223 AA", "'s-Hertogenbosch", "073-6789012", "info@permitpro.test"),
+        ("HRWorks B.V.", "Personeelsplein 22", "3511 AB", "Utrecht", "030-2345678", "info@hrworks.test"),
+        ("OmgevingsSoft B.V.", "Omgevingslaan 15", "6811 JK", "Arnhem", "026-5678901", "info@omgevingssoft.test"),
     ]
     for naam, straat, pc, plaats, tel, mail in leveranciers:
         await _partij(PartijAard.externe_partij, naam, "leveranciers", soort="leverancier",
@@ -1047,9 +1047,9 @@ async def _seed_bvowb_scenario(session, tenant_id) -> dict:
 
     # ── 4. Afdelingen BvoWB (onder BvoWB) ──
     afdelingen = [
-        ("Beheer & Exploitatie", "Markt 1", "4001 AA", "Tiel", "0344-678901", "beheer@bvowb.nl"),
-        ("Informatievoorziening", "Markt 1", "4001 AA", "Tiel", "0344-678902", "iv@bvowb.nl"),
-        ("Klantbeheer & Relatiebeheer", "Markt 1", "4001 AA", "Tiel", "0344-678903", "klantbeheer@bvowb.nl"),
+        ("Beheer & Exploitatie", "Markt 1", "4001 AA", "Tiel", "0344-678901", "beheer@bvowb.test"),
+        ("Informatievoorziening", "Markt 1", "4001 AA", "Tiel", "0344-678902", "iv@bvowb.test"),
+        ("Klantbeheer & Relatiebeheer", "Markt 1", "4001 AA", "Tiel", "0344-678903", "klantbeheer@bvowb.test"),
     ]
     for naam, straat, pc, plaats, tel, mail in afdelingen:
         await _partij(PartijAard.organisatie_eenheid, naam, "afdelingen", organisatie_id=bvowb_id,
@@ -1057,12 +1057,12 @@ async def _seed_bvowb_scenario(session, tenant_id) -> dict:
 
     # ── 5. BvoWB-medewerkers (org=BvoWB, afdeling=…) ──
     bvowb_medewerkers = [
-        ("P. van Dijk", "Beheer & Exploitatie", "06-23456789", "p.vandijk@bvowb.nl"),
-        ("T. Klaassen", "Beheer & Exploitatie", "06-34567890", "t.klaassen@bvowb.nl"),
-        ("J. de Vries", "Informatievoorziening", "06-12345678", "j.devries@bvowb.nl"),
-        ("S. de Boer", "Informatievoorziening", "06-45678901", "s.deboer@bvowb.nl"),
-        ("R. Visser", "Klantbeheer & Relatiebeheer", "06-56789012", "r.visser@bvowb.nl"),
-        ("M. Bakker", "Klantbeheer & Relatiebeheer", "06-67890123", "m.bakker@bvowb.nl"),
+        ("P. van Dijk", "Beheer & Exploitatie", "06-23456789", "p.vandijk@bvowb.test"),
+        ("T. Klaassen", "Beheer & Exploitatie", "06-34567890", "t.klaassen@bvowb.test"),
+        ("J. de Vries", "Informatievoorziening", "06-12345678", "j.devries@bvowb.test"),
+        ("S. de Boer", "Informatievoorziening", "06-45678901", "s.deboer@bvowb.test"),
+        ("R. Visser", "Klantbeheer & Relatiebeheer", "06-56789012", "r.visser@bvowb.test"),
+        ("M. Bakker", "Klantbeheer & Relatiebeheer", "06-67890123", "m.bakker@bvowb.test"),
     ]
     for naam, afd, tel, mail in bvowb_medewerkers:
         await _partij(PartijAard.persoon, naam, "personen", organisatie_id=bvowb_id,
@@ -1070,12 +1070,12 @@ async def _seed_bvowb_scenario(session, tenant_id) -> dict:
 
     # ── 6. Gemeente-contactpersonen (org=gemeente) ──
     gemeente_personen = [
-        ("A. Janssen", "Gemeente Tiel", "06-11223344", "a.janssen@gemeentetiel.nl"),
-        ("W. de Groot", "Gemeente Tiel", "06-22334455", "w.degroot@gemeentetiel.nl"),
-        ("B. van Essen", "Gemeente Culemborg", "06-33445566", "b.vanessen@culemborg.nl"),
-        ("C. Lievaart", "Gemeente Culemborg", "06-44556677", "c.lievaart@culemborg.nl"),
-        ("D. Lammers", "Gemeente West Betuwe", "06-55667788", "d.lammers@westbetuwe.nl"),
-        ("E. van Dijk", "Gemeente West Betuwe", "06-66778899", "e.vandijk@westbetuwe.nl"),
+        ("A. Janssen", "Gemeente Tiel", "06-11223344", "a.janssen@gemeentetiel.test"),
+        ("W. de Groot", "Gemeente Tiel", "06-22334455", "w.degroot@gemeentetiel.test"),
+        ("B. van Essen", "Gemeente Culemborg", "06-33445566", "b.vanessen@culemborg.test"),
+        ("C. Lievaart", "Gemeente Culemborg", "06-44556677", "c.lievaart@culemborg.test"),
+        ("D. Lammers", "Gemeente West Betuwe", "06-55667788", "d.lammers@westbetuwe.test"),
+        ("E. van Dijk", "Gemeente West Betuwe", "06-66778899", "e.vandijk@westbetuwe.test"),
     ]
     for naam, org, tel, mail in gemeente_personen:
         await _partij(PartijAard.persoon, naam, "personen", organisatie_id=partij_id[org],
@@ -1083,26 +1083,26 @@ async def _seed_bvowb_scenario(session, tenant_id) -> dict:
 
     # ── 7. Leverancier-contactpersonen (2 per leverancier; rol → roltoewijzing hieronder) ──
     leverancier_personen = [
-        ("L. Smeets", "GemSoft B.V.", "06-11223344", "l.smeets@gemsoft.nl"),
-        ("K. Peters", "GemSoft B.V.", "06-22334455", "k.peters@gemsoft.nl"),
-        ("T. van den Berg", "CivData Solutions", "06-33445566", "t.vandenberg@civdata.nl"),
-        ("F. Hendriks", "CivData Solutions", "06-44556677", "f.hendriks@civdata.nl"),
-        ("W. Jansen", "GeoWorks B.V.", "06-55667788", "w.jansen@geoworks.nl"),
-        ("C. Mulder", "GeoWorks B.V.", "06-66778899", "c.mulder@geoworks.nl"),
-        ("A. Dijkstra", "DataBridge B.V.", "06-77889900", "a.dijkstra@databridge.nl"),
-        ("I. van der Laan", "DataBridge B.V.", "06-88990011", "i.vanderlaan@databridge.nl"),
-        ("B. Vermeer", "FinSys N.V.", "06-99001122", "b.vermeer@finsys.nl"),
-        ("D. Koster", "FinSys N.V.", "06-00112233", "d.koster@finsys.nl"),
-        ("E. van Leeuwen", "SocioSuite GmbH", "06-11223355", "e.vanleeuwen@sociosuite.nl"),
-        ("G. Bosman", "SocioSuite GmbH", "06-22334466", "g.bosman@sociosuite.nl"),
-        ("H. de Wit", "BurgX B.V.", "06-33445577", "h.dewit@burgx.nl"),
-        ("N. Groothuis", "BurgX B.V.", "06-44556688", "n.groothuis@burgx.nl"),
-        ("O. Ploeg", "PermitPro B.V.", "06-55667799", "o.ploeg@permitpro.nl"),
-        ("V. Brouwer", "PermitPro B.V.", "06-66778800", "v.brouwer@permitpro.nl"),
-        ("Q. van Houten", "HRWorks B.V.", "06-77889911", "q.vanhouten@hrworks.nl"),
-        ("X. Pietersen", "HRWorks B.V.", "06-88990022", "x.pietersen@hrworks.nl"),
-        ("Y. Hendriksen", "OmgevingsSoft B.V.", "06-99001133", "y.hendriksen@omgevingssoft.nl"),
-        ("Z. van Beek", "OmgevingsSoft B.V.", "06-00112244", "z.vanbeek@omgevingssoft.nl"),
+        ("L. Smeets", "GemSoft B.V.", "06-11223344", "l.smeets@gemsoft.test"),
+        ("K. Peters", "GemSoft B.V.", "06-22334455", "k.peters@gemsoft.test"),
+        ("T. van den Berg", "CivData Solutions", "06-33445566", "t.vandenberg@civdata.test"),
+        ("F. Hendriks", "CivData Solutions", "06-44556677", "f.hendriks@civdata.test"),
+        ("W. Jansen", "GeoWorks B.V.", "06-55667788", "w.jansen@geoworks.test"),
+        ("C. Mulder", "GeoWorks B.V.", "06-66778899", "c.mulder@geoworks.test"),
+        ("A. Dijkstra", "DataBridge B.V.", "06-77889900", "a.dijkstra@databridge.test"),
+        ("I. van der Laan", "DataBridge B.V.", "06-88990011", "i.vanderlaan@databridge.test"),
+        ("B. Vermeer", "FinSys N.V.", "06-99001122", "b.vermeer@finsys.test"),
+        ("D. Koster", "FinSys N.V.", "06-00112233", "d.koster@finsys.test"),
+        ("E. van Leeuwen", "SocioSuite GmbH", "06-11223355", "e.vanleeuwen@sociosuite.test"),
+        ("G. Bosman", "SocioSuite GmbH", "06-22334466", "g.bosman@sociosuite.test"),
+        ("H. de Wit", "BurgX B.V.", "06-33445577", "h.dewit@burgx.test"),
+        ("N. Groothuis", "BurgX B.V.", "06-44556688", "n.groothuis@burgx.test"),
+        ("O. Ploeg", "PermitPro B.V.", "06-55667799", "o.ploeg@permitpro.test"),
+        ("V. Brouwer", "PermitPro B.V.", "06-66778800", "v.brouwer@permitpro.test"),
+        ("Q. van Houten", "HRWorks B.V.", "06-77889911", "q.vanhouten@hrworks.test"),
+        ("X. Pietersen", "HRWorks B.V.", "06-88990022", "x.pietersen@hrworks.test"),
+        ("Y. Hendriksen", "OmgevingsSoft B.V.", "06-99001133", "y.hendriksen@omgevingssoft.test"),
+        ("Z. van Beek", "OmgevingsSoft B.V.", "06-00112244", "z.vanbeek@omgevingssoft.test"),
     ]
     for naam, lev, tel, mail in leverancier_personen:
         await _partij(PartijAard.persoon, naam, "personen", organisatie_id=partij_id[lev],
@@ -1110,10 +1110,10 @@ async def _seed_bvowb_scenario(session, tenant_id) -> dict:
 
     # ── 8. Ketenpartner-contactpersonen (1 per ketenpartner) ──
     ketenpartner_personen = [
-        ("F. de Jong", "Provincie Gelderland", "06-11223366", "f.dejong@gelderland.nl"),
-        ("G. Willems", "RVIG", "06-22334477", "g.willems@rvig.nl"),
-        ("H. van Dam", "RDW", "06-33445588", "h.vandam@rdw.nl"),
-        ("I. Fontijn", "Belastingdienst", "06-44556699", "i.fontijn@belastingdienst.nl"),
+        ("F. de Jong", "Provincie Gelderland", "06-11223366", "f.dejong@gelderland.test"),
+        ("G. Willems", "RVIG", "06-22334477", "g.willems@rvig.test"),
+        ("H. van Dam", "RDW", "06-33445588", "h.vandam@rdw.test"),
+        ("I. Fontijn", "Belastingdienst", "06-44556699", "i.fontijn@belastingdienst.test"),
     ]
     for naam, org, tel, mail in ketenpartner_personen:
         await _partij(PartijAard.persoon, naam, "personen", organisatie_id=partij_id[org],
