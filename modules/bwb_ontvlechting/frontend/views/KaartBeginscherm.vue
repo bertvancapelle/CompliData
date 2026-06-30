@@ -172,12 +172,12 @@ defineExpose({ zoek, zoekterm, gekozenType, filterLaag, filterHosting, eigenaarI
          gekozen. Geen disabled-staat meer — bij een lege set is de knop simpelweg verborgen. -->
     <div
       v-if="setGrootte > 0"
-      class="shrink-0 border-b border-[var(--cd-color-border)] bg-[var(--cd-color-bg)] px-[var(--cd-space-lg)] py-[var(--cd-space-sm)]"
+      class="shrink-0 border-b border-[var(--lk-color-border)] bg-[var(--lk-color-bg)] px-[var(--lk-space-lg)] py-[var(--lk-space-sm)]"
     >
       <button
         type="button"
         data-testid="toon-op-kaart-knop"
-        class="w-full rounded-[var(--cd-radius-btn)] bg-[var(--cd-color-primary)] px-[var(--cd-space-md)] py-2 text-white"
+        class="w-full rounded-[var(--lk-radius-btn)] bg-[var(--lk-color-primary)] px-[var(--lk-space-md)] py-2 text-white"
         @click="emit('sluit')"
       >
         Toon {{ setGrootte }} component{{ setGrootte === 1 ? '' : 'en' }} op de kaart
@@ -185,24 +185,24 @@ defineExpose({ zoek, zoekterm, gekozenType, filterLaag, filterHosting, eigenaarI
     </div>
 
     <!-- Scrollbare content -->
-    <div class="flex-1 overflow-y-auto px-[var(--cd-space-lg)] py-[var(--cd-space-md)]">
-    <div class="mx-auto flex w-full max-w-2xl flex-col gap-[var(--cd-space-lg)]">
+    <div class="flex-1 overflow-y-auto px-[var(--lk-space-lg)] py-[var(--lk-space-md)]">
+    <div class="mx-auto flex w-full max-w-2xl flex-col gap-[var(--lk-space-lg)]">
       <header class="flex flex-col gap-1">
-        <h2 class="text-[length:var(--cd-text-lg)] font-semibold">Begin je verkenning</h2>
-        <p class="text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]">
+        <h2 class="text-[length:var(--lk-text-lg)] font-semibold">Begin je verkenning</h2>
+        <p class="text-[length:var(--lk-text-sm)] text-[var(--lk-color-text-muted)]">
           Zoek een component, kies via leverancier, contract of gebruikerscontext, open een opgeslagen view — of toon het hele landschap.
         </p>
       </header>
 
       <!-- 1 — Zoekroute (hoofdroute): type-filter + zoekterm → aanvinkbare resultatenlijst -->
-      <section class="flex flex-col gap-[var(--cd-space-sm)]">
-        <p class="text-[length:var(--cd-text-sm)] font-semibold">Zoek een component</p>
-        <div class="relative flex gap-[var(--cd-space-sm)]">
+      <section class="flex flex-col gap-[var(--lk-space-sm)]">
+        <p class="text-[length:var(--lk-text-sm)] font-semibold">Zoek een component</p>
+        <div class="relative flex gap-[var(--lk-space-sm)]">
           <select
             v-model="gekozenType"
             data-testid="kb-type"
             aria-label="Componenttype"
-            class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] bg-white px-[var(--cd-space-sm)] py-1 text-[length:var(--cd-text-sm)]"
+            class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] bg-white px-[var(--lk-space-sm)] py-1 text-[length:var(--lk-text-sm)]"
             @change="zoek"
           >
             <option v-for="o in componentOpties" :key="o.optie_sleutel" :value="o.optie_sleutel">{{ o.label || humaniseer(o.optie_sleutel) }}</option>
@@ -213,7 +213,7 @@ defineExpose({ zoek, zoekterm, gekozenType, filterLaag, filterHosting, eigenaarI
             data-testid="kb-zoek"
             placeholder="🔍 Zoek op naam…"
             aria-label="Zoek component"
-            class="grow rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-1 text-[length:var(--cd-text-sm)] focus:outline-2 focus:outline-offset-2 focus:outline-[var(--cd-color-primary)]"
+            class="grow rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-1 text-[length:var(--lk-text-sm)] focus:outline-2 focus:outline-offset-2 focus:outline-[var(--lk-color-primary)]"
             @focus="zoekOpen = true"
             @input="zoekDebounced"
           />
@@ -222,17 +222,17 @@ defineExpose({ zoek, zoekterm, gekozenType, filterLaag, filterHosting, eigenaarI
           <ul
             v-show="zoekOpen && (zoekLaden || resultaten.length)"
             data-testid="kb-resultaten"
-            class="absolute left-0 right-0 top-full z-10 mt-1 max-h-72 overflow-auto rounded-[var(--cd-radius-card)] border border-[var(--cd-color-border)] bg-[var(--cd-color-surface)] shadow-[var(--cd-shadow-md)]"
+            class="absolute left-0 right-0 top-full z-10 mt-1 max-h-72 overflow-auto rounded-[var(--lk-radius-card)] border border-[var(--lk-color-border)] bg-[var(--lk-color-surface)] shadow-[var(--lk-shadow-md)]"
           >
-            <li v-if="zoekLaden" class="px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]">Laden…</li>
+            <li v-if="zoekLaden" class="px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)] text-[var(--lk-color-text-muted)]">Laden…</li>
             <li
               v-for="n in resultaten"
               v-else
               :key="n.id"
               :data-testid="`kb-res-${n.id}`"
-              class="px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]"
+              class="px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]"
             >
-              <label class="flex cursor-pointer items-center gap-2" :class="isToegevoegd(n.id) ? 'text-[var(--cd-color-text-muted)]' : ''">
+              <label class="flex cursor-pointer items-center gap-2" :class="isToegevoegd(n.id) ? 'text-[var(--lk-color-text-muted)]' : ''">
                 <input
                   type="checkbox"
                   :data-testid="`kb-res-check-${n.id}`"
@@ -241,10 +241,10 @@ defineExpose({ zoek, zoekterm, gekozenType, filterLaag, filterHosting, eigenaarI
                   @change="voegResultaatToe(n)"
                 />
                 <span class="grow truncate">{{ n.naam }}</span>
-                <span v-if="isToegevoegd(n.id)" class="shrink-0 text-[var(--cd-color-primary)]" title="In de set">✓</span>
+                <span v-if="isToegevoegd(n.id)" class="shrink-0 text-[var(--lk-color-primary)]" title="In de set">✓</span>
               </label>
             </li>
-            <li v-if="!zoekLaden && !resultaten.length" class="px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]">Geen resultaten.</li>
+            <li v-if="!zoekLaden && !resultaten.length" class="px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)] text-[var(--lk-color-text-muted)]">Geen resultaten.</li>
           </ul>
         </div>
 
@@ -253,29 +253,29 @@ defineExpose({ zoek, zoekterm, gekozenType, filterLaag, filterHosting, eigenaarI
           <button
             type="button"
             data-testid="kb-filters-toggle"
-            class="flex items-center gap-1 text-[length:var(--cd-text-sm)] text-[var(--cd-color-primary)] hover:underline"
+            class="flex items-center gap-1 text-[length:var(--lk-text-sm)] text-[var(--lk-color-primary)] hover:underline"
             :aria-expanded="toonFilters ? 'true' : 'false'"
             @click="toonFilters = !toonFilters"
           >
             + Filters
-            <span v-if="filtersActief" data-testid="kb-filters-badge" class="rounded-full bg-[var(--cd-color-primary)] px-1.5 text-[length:var(--cd-text-xs)] text-white">actief</span>
+            <span v-if="filtersActief" data-testid="kb-filters-badge" class="rounded-full bg-[var(--lk-color-primary)] px-1.5 text-[length:var(--lk-text-xs)] text-white">actief</span>
           </button>
-          <div v-if="toonFilters" data-testid="kb-filters" class="mt-[var(--cd-space-sm)] flex flex-wrap items-end gap-[var(--cd-space-md)]">
-            <label class="flex flex-col gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
+          <div v-if="toonFilters" data-testid="kb-filters" class="mt-[var(--lk-space-sm)] flex flex-wrap items-end gap-[var(--lk-space-md)]">
+            <label class="flex flex-col gap-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]">
               <span class="font-semibold">Laag</span>
-              <select v-model="filterLaag" data-testid="kb-filter-laag" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] bg-white px-[var(--cd-space-sm)] py-1" @change="zoek">
+              <select v-model="filterLaag" data-testid="kb-filter-laag" class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] bg-white px-[var(--lk-space-sm)] py-1" @change="zoek">
                 <option value="">alle</option>
                 <option v-for="l in LAAG_OPTIES" :key="l" :value="l">{{ humaniseer(l) }}</option>
               </select>
             </label>
-            <label class="flex flex-col gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
+            <label class="flex flex-col gap-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]">
               <span class="font-semibold">Hosting</span>
-              <select v-model="filterHosting" data-testid="kb-filter-hosting" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] bg-white px-[var(--cd-space-sm)] py-1" @change="zoek">
+              <select v-model="filterHosting" data-testid="kb-filter-hosting" class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] bg-white px-[var(--lk-space-sm)] py-1" @change="zoek">
                 <option value="">alle</option>
                 <option v-for="h in HOSTING_OPTIES" :key="h" :value="h">{{ humaniseer(h) }}</option>
               </select>
             </label>
-            <label class="flex flex-col gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
+            <label class="flex flex-col gap-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]">
               <span class="font-semibold">Eigenaar</span>
               <div class="w-56">
                 <ZoekSelect
@@ -294,51 +294,51 @@ defineExpose({ zoek, zoekterm, gekozenType, filterLaag, filterHosting, eigenaarI
       </section>
 
       <!-- 2 — Via context: drie symmetrische secties -->
-      <section class="flex flex-col gap-[var(--cd-space-md)] border-t border-[var(--cd-color-border)] pt-[var(--cd-space-md)]">
-        <p class="text-[length:var(--cd-text-sm)] font-semibold">Of kies via context</p>
-        <label class="flex flex-col gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
+      <section class="flex flex-col gap-[var(--lk-space-md)] border-t border-[var(--lk-color-border)] pt-[var(--lk-space-md)]">
+        <p class="text-[length:var(--lk-text-sm)] font-semibold">Of kies via context</p>
+        <label class="flex flex-col gap-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]">
           <span>Leverancier</span>
           <ZoekSelect :zoek-functie="zoekLeveranciers" :weergave="(p) => p.naam" id-veld="id" placeholder="Zoek leverancier…" testid="kb-leverancier" @keuze="kiesLeverancier" />
         </label>
-        <label class="flex flex-col gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
+        <label class="flex flex-col gap-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]">
           <span>Contract</span>
           <ZoekSelect :zoek-functie="zoekContracten" :weergave="(c) => c.naam" id-veld="id" placeholder="Zoek contract…" testid="kb-contract" @keuze="kiesContract" />
         </label>
-        <label class="flex flex-col gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
+        <label class="flex flex-col gap-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]">
           <span>Gebruikerscontext</span>
           <ZoekSelect :zoek-functie="zoekContexten" :weergave="_contextLabel" id-veld="_key" placeholder="Zoek organisatie of afdeling…" testid="kb-context" @keuze="kiesContext" />
         </label>
       </section>
 
       <!-- 3 — Opgeslagen views (gelijkwaardige ingang) -->
-      <section v-if="opgeslagenViews.length" data-testid="kb-views" class="flex flex-col gap-[var(--cd-space-sm)] border-t border-[var(--cd-color-border)] pt-[var(--cd-space-md)]">
-        <p class="text-[length:var(--cd-text-sm)] font-semibold">Opgeslagen views</p>
+      <section v-if="opgeslagenViews.length" data-testid="kb-views" class="flex flex-col gap-[var(--lk-space-sm)] border-t border-[var(--lk-color-border)] pt-[var(--lk-space-md)]">
+        <p class="text-[length:var(--lk-text-sm)] font-semibold">Opgeslagen views</p>
         <ul class="flex flex-col gap-1">
           <li v-for="v in opgeslagenViews" :key="v.id">
             <button
               type="button"
               :data-testid="`kb-view-${v.id}`"
-              class="flex w-full items-center gap-2 rounded-[var(--cd-radius-btn)] border border-[var(--cd-color-border)] px-[var(--cd-space-md)] py-2 text-left text-[length:var(--cd-text-sm)] hover:bg-[var(--cd-color-accent)]"
+              class="flex w-full items-center gap-2 rounded-[var(--lk-radius-btn)] border border-[var(--lk-color-border)] px-[var(--lk-space-md)] py-2 text-left text-[length:var(--lk-text-sm)] hover:bg-[var(--lk-color-accent)]"
               @click="emit('openView', v)"
             >
               <span class="grow truncate">{{ v.naam }}</span>
-              <span v-if="!v.is_eigenaar && v.gedeeld" class="shrink-0 text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">gedeeld door {{ v.maker_naam || '—' }}</span>
+              <span v-if="!v.is_eigenaar && v.gedeeld" class="shrink-0 text-[length:var(--lk-text-xs)] text-[var(--lk-color-text-muted)]">gedeeld door {{ v.maker_naam || '—' }}</span>
             </button>
           </li>
         </ul>
       </section>
 
       <!-- Lege staat: geen views, niets gezocht -->
-      <p v-if="toonLegeStaat" data-testid="kb-leeg" class="text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]">
+      <p v-if="toonLegeStaat" data-testid="kb-leeg" class="text-[length:var(--lk-text-sm)] text-[var(--lk-color-text-muted)]">
         Zoek een component om te beginnen.
       </p>
 
       <!-- 4 — Bescheiden ontsnapping: het hele landschap (onderaan de scrollbare content). -->
-      <div class="pt-[var(--cd-space-sm)]">
+      <div class="pt-[var(--lk-space-sm)]">
         <button
           type="button"
           data-testid="lk-toon-hele-landschap"
-          class="text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)] hover:text-[var(--cd-color-primary)] hover:underline"
+          class="text-[length:var(--lk-text-sm)] text-[var(--lk-color-text-muted)] hover:text-[var(--lk-color-primary)] hover:underline"
           @click="emit('toonHeleLandschap')"
         >
           Of toon het hele landschap →

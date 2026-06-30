@@ -156,17 +156,17 @@ onMounted(laad)
 
 <template>
   <section aria-labelledby="wp-detail-titel">
-    <router-link :to="{ name: 'work-package-lijst' }" class="text-[length:var(--cd-text-sm)] text-[var(--cd-color-primary)] hover:underline">
+    <router-link :to="{ name: 'work-package-lijst' }" class="text-[length:var(--lk-text-sm)] text-[var(--lk-color-primary)] hover:underline">
       ← Werkpakketten
     </router-link>
 
-    <p v-if="fout" role="alert" data-testid="wp-detail-fout" class="my-[var(--cd-space-md)] text-[var(--cd-color-danger)]">{{ fout }}</p>
-    <p v-else-if="laden" data-testid="wp-detail-laden" class="my-[var(--cd-space-md)] text-[var(--cd-color-text-muted)]">Laden…</p>
+    <p v-if="fout" role="alert" data-testid="wp-detail-fout" class="my-[var(--lk-space-md)] text-[var(--lk-color-danger)]">{{ fout }}</p>
+    <p v-else-if="laden" data-testid="wp-detail-laden" class="my-[var(--lk-space-md)] text-[var(--lk-color-text-muted)]">Laden…</p>
 
     <template v-else-if="wp">
-      <div class="mt-[var(--cd-space-sm)] mb-[var(--cd-space-sm)]">
-        <div class="flex items-center gap-[var(--cd-space-md)]">
-          <h1 id="wp-detail-titel" data-testid="wp-naam" class="text-[length:var(--cd-text-2xl)] font-semibold text-[var(--cd-color-primary)]">
+      <div class="mt-[var(--lk-space-sm)] mb-[var(--lk-space-sm)]">
+        <div class="flex items-center gap-[var(--lk-space-md)]">
+          <h1 id="wp-detail-titel" data-testid="wp-naam" class="text-[length:var(--lk-text-2xl)] font-semibold text-[var(--lk-color-primary)]">
             {{ wp.naam }}
           </h1>
           <ObjectHistoriePaneel entiteit-type="work_package" :entiteit-id="props.id" class="ml-auto" />
@@ -174,21 +174,21 @@ onMounted(laad)
           <Button v-if="magVerwijderen" label="Verwijderen" severity="danger" data-testid="wp-verwijderen" @click="verwijderOpen = true" />
         </div>
         <!-- Parent-context: bovenliggend werkpakket als subtitel (alleen als niet top-niveau). -->
-        <p v-if="wp.bovenliggend_id" data-testid="wp-ouder" class="mt-1 text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]">
+        <p v-if="wp.bovenliggend_id" data-testid="wp-ouder" class="mt-1 text-[length:var(--lk-text-sm)] text-[var(--lk-color-text-muted)]">
           Onderdeel van
-          <router-link :to="{ name: 'work-package-detail', params: { id: wp.bovenliggend_id } }" data-testid="wp-ouder-link" class="rounded px-1 text-[var(--cd-color-primary)] hover:bg-[var(--cd-color-accent)] hover:underline">{{ ouder?.naam || 'bovenliggend pakket' }}</router-link>
+          <router-link :to="{ name: 'work-package-detail', params: { id: wp.bovenliggend_id } }" data-testid="wp-ouder-link" class="rounded px-1 text-[var(--lk-color-primary)] hover:bg-[var(--lk-color-accent)] hover:underline">{{ ouder?.naam || 'bovenliggend pakket' }}</router-link>
         </p>
       </div>
-      <p v-if="wp.toelichting" class="mb-[var(--cd-space-md)] text-[var(--cd-color-text)]">{{ wp.toelichting }}</p>
+      <p v-if="wp.toelichting" class="mb-[var(--lk-space-md)] text-[var(--lk-color-text)]">{{ wp.toelichting }}</p>
 
-      <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
-        <h2 class="text-[length:var(--cd-text-lg)] font-semibold">Subpakketten ({{ directeSubpakketten.length }} direct)</h2>
+      <div class="flex items-center gap-[var(--lk-space-md)] mb-[var(--lk-space-sm)]">
+        <h2 class="text-[length:var(--lk-text-lg)] font-semibold">Subpakketten ({{ directeSubpakketten.length }} direct)</h2>
         <Button v-if="magBeheren" label="+ Sub-werkpakket" severity="secondary" data-testid="wp-sub-toevoegen" class="ml-auto" @click="openSub" />
       </div>
-      <DataTable :value="subboom" data-testid="wp-subboom-tabel" class="bg-[var(--cd-color-surface)] rounded-[var(--cd-radius-card)] shadow-[var(--cd-shadow-sm)]">
+      <DataTable :value="subboom" data-testid="wp-subboom-tabel" class="bg-[var(--lk-color-surface)] rounded-[var(--lk-radius-card)] shadow-[var(--lk-shadow-sm)]">
         <Column field="naam" header="Naam">
           <template #body="{ data }">
-            <router-link :to="{ name: 'work-package-detail', params: { id: data.id } }" class="text-[var(--cd-color-primary)] hover:underline">
+            <router-link :to="{ name: 'work-package-detail', params: { id: data.id } }" class="text-[var(--lk-color-primary)] hover:underline">
               {{ data.naam }}
             </router-link>
           </template>
@@ -206,17 +206,17 @@ onMounted(laad)
 
     <!-- Bewerken -->
     <Dialog v-model:visible="editOpen" modal :closable="false" header="Werkpakket bewerken" data-testid="wp-edit-dialog">
-      <form class="flex flex-col gap-[var(--cd-space-md)] min-w-[24rem]" data-testid="wp-edit-form" @submit.prevent="bevestigBewerken">
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+      <form class="flex flex-col gap-[var(--lk-space-md)] min-w-[24rem]" data-testid="wp-edit-form" @submit.prevent="bevestigBewerken">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="we-naam" class="font-semibold">Naam *</label>
           <InputText id="we-naam" v-model="editForm.naam" data-testid="we-naam" :aria-invalid="!!editFout" />
-          <span v-if="editFout" role="alert" data-testid="we-fout" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ editFout }}</span>
+          <span v-if="editFout" role="alert" data-testid="we-fout" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ editFout }}</span>
         </div>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="we-toelichting" class="font-semibold">Toelichting</label>
           <Textarea id="we-toelichting" v-model="editForm.toelichting" rows="3" data-testid="we-toelichting" />
         </div>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="we-bovenliggend" class="font-semibold">Bovenliggend werkpakket (leeg = top-niveau)</label>
           <ZoekSelect
             id="we-bovenliggend"
@@ -227,7 +227,7 @@ onMounted(laad)
             placeholder="Zoek een bovenliggend werkpakket…"
           />
         </div>
-        <div class="flex gap-[var(--cd-space-md)]">
+        <div class="flex gap-[var(--lk-space-md)]">
           <Button type="submit" label="Opslaan" data-testid="we-opslaan" :disabled="bezig" />
           <Button type="button" label="Annuleren" severity="secondary" @click="editOpen = false" />
         </div>
@@ -236,11 +236,11 @@ onMounted(laad)
 
     <!-- Verwijderen -->
     <Dialog v-model:visible="verwijderOpen" modal header="Werkpakket verwijderen" data-testid="wp-verwijder-dialog">
-      <p class="mb-[var(--cd-space-md)] max-w-prose">
+      <p class="mb-[var(--lk-space-md)] max-w-prose">
         Weet je zeker dat je <strong>{{ wp?.naam }}</strong> wilt verwijderen? Een werkpakket met
         onderliggende werkpakketten kan niet worden verwijderd.
       </p>
-      <div class="flex justify-end gap-[var(--cd-space-md)]">
+      <div class="flex justify-end gap-[var(--lk-space-md)]">
         <Button label="Annuleren" severity="secondary" @click="verwijderOpen = false" />
         <Button label="Definitief verwijderen" severity="danger" data-testid="wp-verwijder-bevestig" :disabled="bezig" @click="bevestigVerwijderen" />
       </div>
@@ -248,20 +248,20 @@ onMounted(laad)
 
     <!-- Sub-werkpakket toevoegen -->
     <Dialog v-model:visible="subOpen" modal :closable="false" header="Sub-werkpakket toevoegen" data-testid="wp-sub-dialog">
-      <form class="flex flex-col gap-[var(--cd-space-md)] min-w-[24rem]" data-testid="wp-sub-form" @submit.prevent="bevestigSub">
-        <p class="text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]">
+      <form class="flex flex-col gap-[var(--lk-space-md)] min-w-[24rem]" data-testid="wp-sub-form" @submit.prevent="bevestigSub">
+        <p class="text-[length:var(--lk-text-sm)] text-[var(--lk-color-text-muted)]">
           Onder: <strong>{{ wp?.naam }}</strong>
         </p>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="ws-naam" class="font-semibold">Naam *</label>
           <InputText id="ws-naam" v-model="subForm.naam" data-testid="ws-naam" :aria-invalid="!!subFout" />
-          <span v-if="subFout" role="alert" data-testid="ws-fout" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ subFout }}</span>
+          <span v-if="subFout" role="alert" data-testid="ws-fout" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ subFout }}</span>
         </div>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="ws-toelichting" class="font-semibold">Toelichting</label>
           <Textarea id="ws-toelichting" v-model="subForm.toelichting" rows="3" data-testid="ws-toelichting" />
         </div>
-        <div class="flex gap-[var(--cd-space-md)]">
+        <div class="flex gap-[var(--lk-space-md)]">
           <Button type="submit" label="Toevoegen" data-testid="ws-opslaan" :disabled="bezig" />
           <Button type="button" label="Annuleren" severity="secondary" @click="subOpen = false" />
         </div>

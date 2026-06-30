@@ -270,7 +270,7 @@ describe('ComponentDetail', () => {
     expect(w.find('[data-testid="bk-herkomst-b1"]').exists()).toBe(true)
     await w.find('[data-testid="bk-herkomst-b1"]').trigger('click')
     await flushPromises()
-    expect(w.find('[data-testid="cs-rij-2.7"]').classes()).toContain('bg-[var(--cd-color-accent)]')
+    expect(w.find('[data-testid="cs-rij-2.7"]').classes()).toContain('bg-[var(--lk-color-accent)]')
   })
 
   // ── ADR-022 Fase E: "Start beoordeling" (concept → in_inventarisatie) ──────

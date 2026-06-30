@@ -7,7 +7,7 @@
  *
  * Filters v1 (AND): naam (vrije-tekst-fragment → backend resolveert naam→sub), periode (van/tot),
  * component (ZoekSelect), handeling. Backend handhaaft AUDITLOG.LEZEN; nav is affordance.
- * `--cd-`-tokens, geen `<style>`.
+ * `--lk-`-tokens, geen `<style>`.
  */
 import { reactive, ref } from 'vue'
 import { Button, Column, DataTable, InputText } from '@/primevue'
@@ -91,29 +91,29 @@ laad()
 
 <template>
   <section aria-labelledby="audit-titel">
-    <h1 id="audit-titel" class="text-[length:var(--cd-text-xl)] font-semibold mb-[var(--cd-space-md)]">Auditlog</h1>
+    <h1 id="audit-titel" class="text-[length:var(--lk-text-xl)] font-semibold mb-[var(--lk-space-md)]">Auditlog</h1>
 
     <!-- Filterbalk -->
-    <div class="flex flex-wrap items-end gap-[var(--cd-space-md)] mb-[var(--cd-space-md)]">
-      <div class="flex flex-col gap-[var(--cd-space-xs)]">
-        <label for="filter-naam" class="text-[length:var(--cd-text-sm)] font-semibold">Naam</label>
+    <div class="flex flex-wrap items-end gap-[var(--lk-space-md)] mb-[var(--lk-space-md)]">
+      <div class="flex flex-col gap-[var(--lk-space-xs)]">
+        <label for="filter-naam" class="text-[length:var(--lk-text-sm)] font-semibold">Naam</label>
         <InputText id="filter-naam" v-model="filters.actor_naam" data-testid="filter-naam" placeholder="Naam (deel)…" @keyup.enter="pasToe" />
       </div>
-      <div class="flex flex-col gap-[var(--cd-space-xs)]">
-        <label for="filter-van" class="text-[length:var(--cd-text-sm)] font-semibold">Van</label>
-        <input id="filter-van" v-model="filters.van" type="date" data-testid="filter-van" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)]" @change="pasToe" />
+      <div class="flex flex-col gap-[var(--lk-space-xs)]">
+        <label for="filter-van" class="text-[length:var(--lk-text-sm)] font-semibold">Van</label>
+        <input id="filter-van" v-model="filters.van" type="date" data-testid="filter-van" class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)]" @change="pasToe" />
       </div>
-      <div class="flex flex-col gap-[var(--cd-space-xs)]">
-        <label for="filter-tot" class="text-[length:var(--cd-text-sm)] font-semibold">Tot</label>
-        <input id="filter-tot" v-model="filters.tot" type="date" data-testid="filter-tot" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)]" @change="pasToe" />
+      <div class="flex flex-col gap-[var(--lk-space-xs)]">
+        <label for="filter-tot" class="text-[length:var(--lk-text-sm)] font-semibold">Tot</label>
+        <input id="filter-tot" v-model="filters.tot" type="date" data-testid="filter-tot" class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)]" @change="pasToe" />
       </div>
-      <div class="flex flex-col gap-[var(--cd-space-xs)] min-w-[14rem]">
-        <label for="filter-component" class="text-[length:var(--cd-text-sm)] font-semibold">Onderdeel</label>
+      <div class="flex flex-col gap-[var(--lk-space-xs)] min-w-[14rem]">
+        <label for="filter-component" class="text-[length:var(--lk-text-sm)] font-semibold">Onderdeel</label>
         <ZoekSelect v-model="filters.component_id" :zoek-functie="zoekComponenten" placeholder="Zoek een component…" testid="filter-component" @update:modelValue="pasToe" />
       </div>
-      <div class="flex flex-col gap-[var(--cd-space-xs)]">
-        <label for="filter-actie" class="text-[length:var(--cd-text-sm)] font-semibold">Handeling</label>
-        <select id="filter-actie" v-model="filters.actie" data-testid="filter-actie" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white" @change="pasToe">
+      <div class="flex flex-col gap-[var(--lk-space-xs)]">
+        <label for="filter-actie" class="text-[length:var(--lk-text-sm)] font-semibold">Handeling</label>
+        <select id="filter-actie" v-model="filters.actie" data-testid="filter-actie" class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white" @change="pasToe">
           <option value="">Alle</option>
           <option v-for="a in ['create', 'update', 'delete', 'derive']" :key="a" :value="a">{{ label(AUDIT_ACTIE, a) }}</option>
         </select>
@@ -122,17 +122,17 @@ laad()
       <Button label="Wissen" severity="secondary" data-testid="audit-wissen" @click="wis" />
     </div>
 
-    <p v-if="fout" role="alert" data-testid="audit-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ fout }}</p>
+    <p v-if="fout" role="alert" data-testid="audit-fout" class="text-[var(--lk-color-danger)] mb-[var(--lk-space-sm)]">{{ fout }}</p>
 
     <DataTable
       :value="gebeurtenissen"
       data-testid="audit-tabel"
       v-model:expandedRows="uitgeklapt"
       dataKey="correlatie_id"
-      class="bg-[var(--cd-color-surface)] rounded-[var(--cd-radius-card)] shadow-[var(--cd-shadow-sm)]"
+      class="bg-[var(--lk-color-surface)] rounded-[var(--lk-radius-card)] shadow-[var(--lk-shadow-sm)]"
     >
       <template #empty>
-        <span data-testid="audit-leeg" class="text-[var(--cd-color-text-muted)]">{{ laden ? 'Laden…' : 'Geen gebeurtenissen gevonden.' }}</span>
+        <span data-testid="audit-leeg" class="text-[var(--lk-color-text-muted)]">{{ laden ? 'Laden…' : 'Geen gebeurtenissen gevonden.' }}</span>
       </template>
       <Column header="" style="width: 3rem">
         <template #body="{ data }">
@@ -141,7 +141,7 @@ laad()
             :data-testid="`audit-toggle-${data.correlatie_id}`"
             :aria-expanded="_isOpen(data)"
             aria-label="Toon wijziging-details"
-            class="px-1 text-[var(--cd-color-text-muted)] hover:text-[var(--cd-color-primary)]"
+            class="px-1 text-[var(--lk-color-text-muted)] hover:text-[var(--lk-color-primary)]"
             @click="toggleRij(data)"
           >{{ _isOpen(data) ? '▾' : '▸' }}</button>
         </template>
@@ -151,22 +151,22 @@ laad()
       <Column header="Onderdeel"><template #body="{ data }"><span data-testid="audit-onderdeel">{{ _onderdeel(_driver(data)) }}</span></template></Column>
       <Column header="Handeling"><template #body="{ data }">{{ label(AUDIT_ACTIE, _driver(data).actie) }}{{ _afgeleid(data) }}</template></Column>
       <template #expansion="{ data }">
-        <div data-testid="audit-diff" class="px-[var(--cd-space-lg)] py-[var(--cd-space-sm)] text-[length:var(--cd-text-sm)]">
-          <div v-for="r in data.records" :key="r.id" class="mb-[var(--cd-space-sm)]">
+        <div data-testid="audit-diff" class="px-[var(--lk-space-lg)] py-[var(--lk-space-sm)] text-[length:var(--lk-text-sm)]">
+          <div v-for="r in data.records" :key="r.id" class="mb-[var(--lk-space-sm)]">
             <p class="font-semibold">{{ _onderdeel(r) }} · {{ label(AUDIT_ACTIE, r.actie) }}</p>
             <template v-if="diffWeergave(r).regels.length">
-              <p v-if="diffWeergave(r).intro" class="text-[var(--cd-color-text-muted)]">{{ diffWeergave(r).intro }}</p>
-              <ul class="ml-[var(--cd-space-md)] text-[var(--cd-color-text-muted)]">
+              <p v-if="diffWeergave(r).intro" class="text-[var(--lk-color-text-muted)]">{{ diffWeergave(r).intro }}</p>
+              <ul class="ml-[var(--lk-space-md)] text-[var(--lk-color-text-muted)]">
                 <li v-for="(regel, i) in diffWeergave(r).regels" :key="i" data-testid="audit-diff-regel">{{ regel }}</li>
               </ul>
             </template>
-            <p v-else class="ml-[var(--cd-space-md)] italic text-[var(--cd-color-text-muted)]">Geen velddetails vastgelegd.</p>
+            <p v-else class="ml-[var(--lk-space-md)] italic text-[var(--lk-color-text-muted)]">Geen velddetails vastgelegd.</p>
           </div>
         </div>
       </template>
     </DataTable>
 
-    <div v-if="cursor" class="mt-[var(--cd-space-md)] flex justify-center">
+    <div v-if="cursor" class="mt-[var(--lk-space-md)] flex justify-center">
       <Button label="Meer laden" severity="secondary" :disabled="laden" data-testid="audit-meer" @click="laad({ meer: true })" />
     </div>
   </section>

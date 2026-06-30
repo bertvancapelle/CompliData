@@ -324,15 +324,15 @@ laadBeide()
 
 <template>
   <section class="card" aria-labelledby="sectie-koppelingen">
-    <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
-      <h2 id="sectie-koppelingen" class="text-[length:var(--cd-text-lg)] font-semibold">Koppelingen</h2>
+    <div class="flex items-center gap-[var(--lk-space-md)] mb-[var(--lk-space-sm)]">
+      <h2 id="sectie-koppelingen" class="text-[length:var(--lk-text-lg)] font-semibold">Koppelingen</h2>
       <Button v-if="mag" label="Toevoegen" severity="secondary" data-testid="kp-toevoegen" class="ml-auto" @click="openNieuw" />
     </div>
 
-    <p v-if="fout" role="alert" data-testid="kp-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ fout }}</p>
+    <p v-if="fout" role="alert" data-testid="kp-fout" class="text-[var(--lk-color-danger)] mb-[var(--lk-space-sm)]">{{ fout }}</p>
 
     <!-- Uitgaand: deze applicatie = bron -->
-    <h3 class="font-semibold mt-[var(--cd-space-sm)]">Uitgaand (dit component is bron)</h3>
+    <h3 class="font-semibold mt-[var(--lk-space-sm)]">Uitgaand (dit component is bron)</h3>
     <DataTable
       :value="uitgaand.items"
       lazy
@@ -349,7 +349,7 @@ laadBeide()
       <Column header="Impact"><template #body="{ data }"><Tag :value="label(IMPACT_VERBREKING, data.impact_bij_verbreking)" :severity="IMPACT_SEVERITY[data.impact_bij_verbreking] || 'info'" /></template></Column>
       <Column header="">
         <template #body="{ data }">
-          <div v-if="mag" class="flex gap-[var(--cd-space-sm)]">
+          <div v-if="mag" class="flex gap-[var(--lk-space-sm)]">
             <Button label="Bewerken" severity="secondary" :data-testid="`kp-bewerk-${data.id}`" @click="(e) => openBewerken(e, data)" />
             <Button label="Verwijderen" severity="danger" :data-testid="`kp-verwijder-${data.id}`" @click="(e) => vraagVerwijder(e, data)" />
           </div>
@@ -357,10 +357,10 @@ laadBeide()
       </Column>
       <template #empty><span data-testid="kp-leeg-uitgaand">Geen uitgaande koppelingen.</span></template>
     </DataTable>
-    <Button v-if="uitgaand.cursor" label="Meer laden" severity="secondary" data-testid="kp-meer-uitgaand" :disabled="uitgaand.laden" class="mt-[var(--cd-space-sm)]" @click="laadUitgaand()" />
+    <Button v-if="uitgaand.cursor" label="Meer laden" severity="secondary" data-testid="kp-meer-uitgaand" :disabled="uitgaand.laden" class="mt-[var(--lk-space-sm)]" @click="laadUitgaand()" />
 
     <!-- Inkomend: deze applicatie = doel -->
-    <h3 class="font-semibold mt-[var(--cd-space-md)]">Inkomend (dit component is doel)</h3>
+    <h3 class="font-semibold mt-[var(--lk-space-md)]">Inkomend (dit component is doel)</h3>
     <DataTable
       :value="inkomend.items"
       lazy
@@ -377,7 +377,7 @@ laadBeide()
       <Column header="Impact"><template #body="{ data }"><Tag :value="label(IMPACT_VERBREKING, data.impact_bij_verbreking)" :severity="IMPACT_SEVERITY[data.impact_bij_verbreking] || 'info'" /></template></Column>
       <Column header="">
         <template #body="{ data }">
-          <div v-if="mag" class="flex gap-[var(--cd-space-sm)]">
+          <div v-if="mag" class="flex gap-[var(--lk-space-sm)]">
             <Button label="Bewerken" severity="secondary" :data-testid="`kp-bewerk-${data.id}`" @click="(e) => openBewerken(e, data)" />
             <Button label="Verwijderen" severity="danger" :data-testid="`kp-verwijder-${data.id}`" @click="(e) => vraagVerwijder(e, data)" />
           </div>
@@ -385,12 +385,12 @@ laadBeide()
       </Column>
       <template #empty><span data-testid="kp-leeg-inkomend">Geen inkomende koppelingen.</span></template>
     </DataTable>
-    <Button v-if="inkomend.cursor" label="Meer laden" severity="secondary" data-testid="kp-meer-inkomend" :disabled="inkomend.laden" class="mt-[var(--cd-space-sm)]" @click="laadInkomend()" />
+    <Button v-if="inkomend.cursor" label="Meer laden" severity="secondary" data-testid="kp-meer-inkomend" :disabled="inkomend.laden" class="mt-[var(--lk-space-sm)]" @click="laadInkomend()" />
 
     <!-- Aanmaken/bewerken -->
     <Dialog v-model:visible="dialogOpen" modal :closable="false" :header="bewerkenId ? 'Koppeling bewerken' : 'Koppeling toevoegen'" data-testid="kp-dialog" @show="focusEerste" @hide="onHide">
-      <form class="flex flex-col gap-[var(--cd-space-md)] min-w-[22rem]" data-testid="kp-form" @submit.prevent="opslaan">
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+      <form class="flex flex-col gap-[var(--lk-space-md)] min-w-[22rem]" data-testid="kp-form" @submit.prevent="opslaan">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="kp-naam" class="font-semibold">Naam *</label>
           <input
             id="kp-naam"
@@ -399,11 +399,11 @@ laadBeide()
             data-testid="kp-veld-naam"
             :aria-invalid="!!fouten.naam"
             aria-describedby="kp-fout-naam"
-            class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white"
+            class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white"
           />
-          <span v-if="fouten.naam" id="kp-fout-naam" role="alert" data-testid="kp-fout-naam" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.naam }}</span>
+          <span v-if="fouten.naam" id="kp-fout-naam" role="alert" data-testid="kp-fout-naam" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten.naam }}</span>
         </div>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="kp-bron" class="font-semibold">Bron-component *</label>
           <ZoekSelect
             id="kp-bron"
@@ -415,9 +415,9 @@ laadBeide()
             :invalid="!!fouten.bron_applicatie_id"
             placeholder="Zoek een component…"
           />
-          <span v-if="fouten.bron_applicatie_id" role="alert" data-testid="kp-fout-bron" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.bron_applicatie_id }}</span>
+          <span v-if="fouten.bron_applicatie_id" role="alert" data-testid="kp-fout-bron" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten.bron_applicatie_id }}</span>
         </div>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="kp-doel" class="font-semibold">Doel-component *</label>
           <ZoekSelect
             id="kp-doel"
@@ -430,21 +430,21 @@ laadBeide()
             aria-describedby="kp-fout-doel"
             placeholder="Zoek een component…"
           />
-          <span v-if="fouten.doel_applicatie_id" id="kp-fout-doel" role="alert" data-testid="kp-fout-doel" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.doel_applicatie_id }}</span>
+          <span v-if="fouten.doel_applicatie_id" id="kp-fout-doel" role="alert" data-testid="kp-fout-doel" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten.doel_applicatie_id }}</span>
         </div>
-        <div v-for="veld in ['richting', 'protocol', 'impact_bij_verbreking']" :key="veld" class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div v-for="veld in ['richting', 'protocol', 'impact_bij_verbreking']" :key="veld" class="flex flex-col gap-[var(--lk-space-xs)]">
           <label :for="`kp-${veld}`" class="font-semibold">{{ VELD_LABEL[veld] }} *</label>
-          <select :id="`kp-${veld}`" v-model="form[veld]" :data-testid="`kp-veld-${veld}`" :aria-invalid="!!fouten[veld]" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white">
+          <select :id="`kp-${veld}`" v-model="form[veld]" :data-testid="`kp-veld-${veld}`" :aria-invalid="!!fouten[veld]" class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white">
             <option value="" disabled>— maak een keuze —</option>
             <option v-for="c in opties[veld]" :key="c" :value="c">{{ label(OPTIE_MAP[veld], c) }}</option>
           </select>
-          <span v-if="fouten[veld]" role="alert" :data-testid="`kp-fout-${veld}`" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten[veld] }}</span>
+          <span v-if="fouten[veld]" role="alert" :data-testid="`kp-fout-${veld}`" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten[veld] }}</span>
         </div>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="kp-omschrijving" class="font-semibold">Omschrijving</label>
           <Textarea id="kp-omschrijving" v-model="form.omschrijving" rows="3" data-testid="kp-veld-omschrijving" />
         </div>
-        <div class="flex gap-[var(--cd-space-md)]">
+        <div class="flex gap-[var(--lk-space-md)]">
           <Button type="submit" label="Opslaan" data-testid="kp-opslaan" :disabled="bezig" />
           <Button type="button" label="Annuleren" severity="secondary" @click="dialogOpen = false" />
         </div>
@@ -452,8 +452,8 @@ laadBeide()
     </Dialog>
 
     <Dialog v-model:visible="verwijderOpen" modal header="Koppeling verwijderen" data-testid="kp-verwijder-dialog" @hide="onHide">
-      <p class="mb-[var(--cd-space-md)] max-w-prose">Deze koppeling definitief verwijderen?</p>
-      <div class="flex justify-end gap-[var(--cd-space-md)]">
+      <p class="mb-[var(--lk-space-md)] max-w-prose">Deze koppeling definitief verwijderen?</p>
+      <div class="flex justify-end gap-[var(--lk-space-md)]">
         <Button label="Annuleren" severity="secondary" @click="verwijderOpen = false" />
         <Button label="Verwijderen" severity="danger" data-testid="kp-verwijder-bevestig" :disabled="bezig" @click="bevestigVerwijder" />
       </div>
@@ -462,8 +462,8 @@ laadBeide()
     <!-- KOPPELING_DUBBEL: bevestig een tweede vergelijkbare koppeling (ADR-023a). Het
          aanmaakformulier blijft open (data behouden) zodat Annuleren terugvalt op bewerken. -->
     <Dialog v-model:visible="dubbelOpen" modal header="Vergelijkbare koppeling bestaat al" data-testid="kp-dubbel-dialog">
-      <p class="mb-[var(--cd-space-md)] max-w-prose">Er bestaat al een koppeling van dit type tussen deze componenten. Wil je toch een tweede aanmaken?</p>
-      <div class="flex justify-end gap-[var(--cd-space-md)]">
+      <p class="mb-[var(--lk-space-md)] max-w-prose">Er bestaat al een koppeling van dit type tussen deze componenten. Wil je toch een tweede aanmaken?</p>
+      <div class="flex justify-end gap-[var(--lk-space-md)]">
         <Button label="Annuleren" severity="secondary" data-testid="kp-dubbel-annuleren" @click="dubbelOpen = false" />
         <Button label="Toch aanmaken" data-testid="kp-dubbel-bevestig" :disabled="bezig" @click="bevestigDubbel" />
       </div>

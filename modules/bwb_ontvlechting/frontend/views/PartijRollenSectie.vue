@@ -127,8 +127,8 @@ defineExpose({ items, laad })
 
 <template>
   <section class="card" aria-labelledby="sectie-partij-rollen" data-testid="pr-sectie">
-    <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
-      <h2 id="sectie-partij-rollen" class="text-[length:var(--cd-text-lg)] font-semibold">
+    <div class="flex items-center gap-[var(--lk-space-md)] mb-[var(--lk-space-sm)]">
+      <h2 id="sectie-partij-rollen" class="text-[length:var(--lk-text-lg)] font-semibold">
         Rollen op objecten
       </h2>
       <Button v-if="mag" label="Rol toevoegen" severity="secondary" data-testid="pr-toevoegen" class="ml-auto" @click="openToevoegen" />
@@ -137,7 +137,7 @@ defineExpose({ items, laad })
     <DataTable :value="items" data-testid="pr-tabel">
       <Column header="Object">
         <template #body="{ data }">
-          <router-link :to="objectRoute(data)" data-testid="pr-object-link" class="text-[var(--cd-color-primary)] hover:underline">{{ data.object_naam }}</router-link>
+          <router-link :to="objectRoute(data)" data-testid="pr-object-link" class="text-[var(--lk-color-primary)] hover:underline">{{ data.object_naam }}</router-link>
         </template>
       </Column>
       <Column header="Type"><template #body="{ data }"><Tag :value="typeLabel(data.object_type)" severity="secondary" /></template></Column>
@@ -146,8 +146,8 @@ defineExpose({ items, laad })
     </DataTable>
 
     <Dialog v-model:visible="dialogOpen" modal :closable="false" header="Rol toewijzen aan deze partij" data-testid="pr-dialog" @show="focusEerste" @hide="onHide">
-      <form class="flex flex-col gap-[var(--cd-space-md)] min-w-[22rem]" data-testid="pr-form" @submit.prevent="voegToe">
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+      <form class="flex flex-col gap-[var(--lk-space-md)] min-w-[22rem]" data-testid="pr-form" @submit.prevent="voegToe">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="pr-object" class="font-semibold">Object *</label>
           <ZoekSelect
             id="pr-object"
@@ -159,17 +159,17 @@ defineExpose({ items, laad })
             :invalid="!!fouten.object_id"
             placeholder="Zoek een component of contract…"
           />
-          <span v-if="fouten.object_id" role="alert" data-testid="pr-fout-object" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.object_id }}</span>
+          <span v-if="fouten.object_id" role="alert" data-testid="pr-fout-object" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten.object_id }}</span>
         </div>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="pr-rol" class="font-semibold">Rol *</label>
-          <select id="pr-rol" v-model="form.rol" data-testid="pr-veld-rol" :aria-invalid="!!fouten.rol" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white">
+          <select id="pr-rol" v-model="form.rol" data-testid="pr-veld-rol" :aria-invalid="!!fouten.rol" class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white">
             <option value="" disabled>— kies een rol —</option>
             <option v-for="o in rolOpties" :key="o.optie_sleutel" :value="o.optie_sleutel">{{ o.label }}</option>
           </select>
-          <span v-if="fouten.rol" role="alert" data-testid="pr-fout-rol" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.rol }}</span>
+          <span v-if="fouten.rol" role="alert" data-testid="pr-fout-rol" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten.rol }}</span>
         </div>
-        <div class="flex gap-[var(--cd-space-md)]">
+        <div class="flex gap-[var(--lk-space-md)]">
           <Button type="submit" label="Toewijzen" data-testid="pr-opslaan" :disabled="bezig" />
           <Button type="button" label="Annuleren" severity="secondary" @click="dialogOpen = false" />
         </div>

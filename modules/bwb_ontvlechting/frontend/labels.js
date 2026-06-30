@@ -235,14 +235,14 @@ export const SCORE_SEVERITY = {
 }
 
 // Score → kleur (ÉÉN gedeelde bron, overal consistent): Ja groen · Deels oranje ·
-// Nee rood · N.v.t. neutraal/grijs. Tailwind tekstkleur-classes op de --cd-tokens.
+// Nee rood · N.v.t. neutraal/grijs. Tailwind tekstkleur-classes op de --lk-tokens.
 // Kleur is nooit de enige drager — de scoretekst (Ja/Deels/Nee) blijft zichtbaar
 // (zie ScoreBadge / het checklist-keuzeveld). Onbekend/leeg ⇒ geen kleur.
 export const SCORE_KLEUR = {
-  ja: 'text-[var(--cd-color-success)]',
-  deels: 'text-[var(--cd-color-warning)]',
-  nee: 'text-[var(--cd-color-danger)]',
-  nvt: 'text-[var(--cd-color-text-muted)]',
+  ja: 'text-[var(--lk-color-success)]',
+  deels: 'text-[var(--lk-color-warning)]',
+  nee: 'text-[var(--lk-color-danger)]',
+  nvt: 'text-[var(--lk-color-text-muted)]',
 }
 
 // Helper: de kleur-class voor een score (leeg/onbekend ⇒ ''). Single source = SCORE_KLEUR.

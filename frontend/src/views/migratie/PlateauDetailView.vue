@@ -233,30 +233,30 @@ onMounted(() => {
 
 <template>
   <section aria-labelledby="plateau-detail-titel">
-    <router-link :to="{ name: 'plateau-lijst' }" class="text-[length:var(--cd-text-sm)] text-[var(--cd-color-primary)] hover:underline">
+    <router-link :to="{ name: 'plateau-lijst' }" class="text-[length:var(--lk-text-sm)] text-[var(--lk-color-primary)] hover:underline">
       ← Plateaus
     </router-link>
 
-    <p v-if="fout" role="alert" data-testid="plateau-detail-fout" class="my-[var(--cd-space-md)] text-[var(--cd-color-danger)]">{{ fout }}</p>
-    <p v-else-if="laden" data-testid="plateau-detail-laden" class="my-[var(--cd-space-md)] text-[var(--cd-color-text-muted)]">Laden…</p>
+    <p v-if="fout" role="alert" data-testid="plateau-detail-fout" class="my-[var(--lk-space-md)] text-[var(--lk-color-danger)]">{{ fout }}</p>
+    <p v-else-if="laden" data-testid="plateau-detail-laden" class="my-[var(--lk-space-md)] text-[var(--lk-color-text-muted)]">Laden…</p>
 
     <template v-else-if="plateau">
-      <div class="mt-[var(--cd-space-sm)] mb-[var(--cd-space-sm)] flex items-center gap-[var(--cd-space-md)]">
-        <h1 id="plateau-detail-titel" data-testid="plateau-naam" class="text-[length:var(--cd-text-2xl)] font-semibold text-[var(--cd-color-primary)]">
+      <div class="mt-[var(--lk-space-sm)] mb-[var(--lk-space-sm)] flex items-center gap-[var(--lk-space-md)]">
+        <h1 id="plateau-detail-titel" data-testid="plateau-naam" class="text-[length:var(--lk-text-2xl)] font-semibold text-[var(--lk-color-primary)]">
           {{ plateau.naam }}
         </h1>
         <ObjectHistoriePaneel entiteit-type="plateau" :entiteit-id="props.id" class="ml-auto" />
         <Button v-if="magBeheren" label="Bewerken" data-testid="plateau-bewerken" @click="openBewerken" />
         <Button v-if="magVerwijderen" label="Verwijderen" severity="danger" data-testid="plateau-verwijderen" @click="verwijderOpen = true" />
       </div>
-      <p v-if="plateau.toelichting" class="mb-[var(--cd-space-lg)] text-[var(--cd-color-text)]">{{ plateau.toelichting }}</p>
+      <p v-if="plateau.toelichting" class="mb-[var(--lk-space-lg)] text-[var(--lk-color-text)]">{{ plateau.toelichting }}</p>
 
-      <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
-        <h2 class="text-[length:var(--cd-text-lg)] font-semibold">Leden</h2>
+      <div class="flex items-center gap-[var(--lk-space-md)] mb-[var(--lk-space-sm)]">
+        <h2 class="text-[length:var(--lk-text-lg)] font-semibold">Leden</h2>
         <Button v-if="magBeheren" label="+ Lid koppelen" severity="secondary" data-testid="lid-koppelen" class="ml-auto" @click="openKoppelen" />
       </div>
 
-      <DataTable :value="leden" data-testid="plateau-leden-tabel" class="bg-[var(--cd-color-surface)] rounded-[var(--cd-radius-card)] shadow-[var(--cd-shadow-sm)]">
+      <DataTable :value="leden" data-testid="plateau-leden-tabel" class="bg-[var(--lk-color-surface)] rounded-[var(--lk-radius-card)] shadow-[var(--lk-shadow-sm)]">
         <Column header="Naam"><template #body="{ data }">{{ data.lid_naam || '—' }}</template></Column>
         <Column header="Type"><template #body="{ data }">{{ TYPE_LABEL[data.lid_element_type] || data.lid_element_type }}</template></Column>
         <Column header="Dispositie">
@@ -266,7 +266,7 @@ onMounted(() => {
               :value="data.dispositie"
               :data-testid="`lid-dispositie-${data.id}`"
               :aria-label="`Dispositie van ${data.lid_naam || data.lid_id}`"
-              class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white"
+              class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white"
               @change="(e) => wijzigDispositie(data, e)"
             >
               <option v-for="o in dispositieOpties" :key="o.optie_sleutel" :value="o.optie_sleutel">{{ o.label }}</option>
@@ -277,7 +277,7 @@ onMounted(() => {
         </Column>
         <Column header="Contractueel bevestigd">
           <template #body="{ data }">
-            <span v-if="data.lid_element_type !== 'contract'" class="text-[var(--cd-color-text-muted)]">n.v.t.</span>
+            <span v-if="data.lid_element_type !== 'contract'" class="text-[var(--lk-color-text-muted)]">n.v.t.</span>
             <Tag v-else :value="data.contractueel_bevestigd ? 'Bevestigd' : 'Niet bevestigd'" :severity="data.contractueel_bevestigd ? 'success' : 'warning'" data-testid="lid-bevestiging" />
           </template>
         </Column>
@@ -300,17 +300,17 @@ onMounted(() => {
 
     <!-- Plateau bewerken -->
     <Dialog v-model:visible="editOpen" modal :closable="false" header="Plateau bewerken" data-testid="plateau-edit-dialog">
-      <form class="flex flex-col gap-[var(--cd-space-md)] min-w-[24rem]" data-testid="plateau-edit-form" @submit.prevent="bevestigBewerken">
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+      <form class="flex flex-col gap-[var(--lk-space-md)] min-w-[24rem]" data-testid="plateau-edit-form" @submit.prevent="bevestigBewerken">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="pe-naam" class="font-semibold">Naam *</label>
           <InputText id="pe-naam" v-model="editForm.naam" data-testid="pe-naam" :aria-invalid="!!editFout" />
-          <span v-if="editFout" role="alert" data-testid="pe-fout" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ editFout }}</span>
+          <span v-if="editFout" role="alert" data-testid="pe-fout" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ editFout }}</span>
         </div>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="pe-toelichting" class="font-semibold">Toelichting</label>
           <Textarea id="pe-toelichting" v-model="editForm.toelichting" rows="3" data-testid="pe-toelichting" />
         </div>
-        <div class="flex gap-[var(--cd-space-md)]">
+        <div class="flex gap-[var(--lk-space-md)]">
           <Button type="submit" label="Opslaan" data-testid="pe-opslaan" :disabled="bezig" />
           <Button type="button" label="Annuleren" severity="secondary" @click="editOpen = false" />
         </div>
@@ -319,11 +319,11 @@ onMounted(() => {
 
     <!-- Plateau verwijderen -->
     <Dialog v-model:visible="verwijderOpen" modal header="Plateau verwijderen" data-testid="plateau-verwijder-dialog">
-      <p class="mb-[var(--cd-space-md)] max-w-prose">
+      <p class="mb-[var(--lk-space-md)] max-w-prose">
         Weet je zeker dat je <strong>{{ plateau?.naam }}</strong> wilt verwijderen? De leden-koppelingen
         vervallen; de componenten en contracten zelf blijven bestaan.
       </p>
-      <div class="flex justify-end gap-[var(--cd-space-md)]">
+      <div class="flex justify-end gap-[var(--lk-space-md)]">
         <Button label="Annuleren" severity="secondary" @click="verwijderOpen = false" />
         <Button label="Definitief verwijderen" severity="danger" data-testid="plateau-verwijder-bevestig" :disabled="bezig" @click="bevestigVerwijderen" />
       </div>
@@ -331,15 +331,15 @@ onMounted(() => {
 
     <!-- Lid koppelen -->
     <Dialog v-model:visible="koppelOpen" modal :closable="false" header="Lid koppelen" data-testid="lid-koppel-dialog" @show="focusEerste" @hide="onHide">
-      <form class="flex flex-col gap-[var(--cd-space-md)] min-w-[24rem]" data-testid="lid-koppel-form" @submit.prevent="bevestigKoppel">
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+      <form class="flex flex-col gap-[var(--lk-space-md)] min-w-[24rem]" data-testid="lid-koppel-form" @submit.prevent="bevestigKoppel">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="lk-type" class="font-semibold">Type lid</label>
-          <select id="lk-type" v-model="lidForm.lidType" data-testid="lk-type" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white" @change="onLidTypeChange">
+          <select id="lk-type" v-model="lidForm.lidType" data-testid="lk-type" class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white" @change="onLidTypeChange">
             <option value="component">Component</option>
             <option value="contract">Contract</option>
           </select>
         </div>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="lk-lid" class="font-semibold">{{ isContractLid ? 'Contract' : 'Component' }} *</label>
           <ZoekSelect
             id="lk-lid"
@@ -352,31 +352,31 @@ onMounted(() => {
             :invalid="!!lidFouten.lid_id"
             :placeholder="isContractLid ? 'Zoek een contract…' : 'Zoek een component…'"
           />
-          <span v-if="lidFouten.lid_id" role="alert" data-testid="lk-fout-lid" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ lidFouten.lid_id }}</span>
+          <span v-if="lidFouten.lid_id" role="alert" data-testid="lk-fout-lid" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ lidFouten.lid_id }}</span>
         </div>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="lk-dispositie" class="font-semibold">Dispositie *</label>
-          <select id="lk-dispositie" v-model="lidForm.dispositie" data-testid="lk-dispositie" :aria-invalid="!!lidFouten.dispositie" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white">
+          <select id="lk-dispositie" v-model="lidForm.dispositie" data-testid="lk-dispositie" :aria-invalid="!!lidFouten.dispositie" class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white">
             <option value="" disabled>— kies een dispositie —</option>
             <option v-for="o in dispositieOpties" :key="o.optie_sleutel" :value="o.optie_sleutel">{{ o.label }}</option>
           </select>
-          <span v-if="lidFouten.dispositie" role="alert" data-testid="lk-fout-dispositie" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ lidFouten.dispositie }}</span>
+          <span v-if="lidFouten.dispositie" role="alert" data-testid="lk-fout-dispositie" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ lidFouten.dispositie }}</span>
         </div>
 
         <!-- Contractuele bevestiging — alleen voor een contract-lid -->
-        <fieldset v-if="isContractLid" class="flex flex-col gap-[var(--cd-space-sm)] border border-[var(--cd-color-border)] rounded-[var(--cd-radius-input)] p-[var(--cd-space-md)]" data-testid="lk-bevestiging">
-          <legend class="font-semibold px-[var(--cd-space-xs)]">Contractuele bevestiging</legend>
-          <label class="flex items-center gap-[var(--cd-space-sm)]">
+        <fieldset v-if="isContractLid" class="flex flex-col gap-[var(--lk-space-sm)] border border-[var(--lk-color-border)] rounded-[var(--lk-radius-input)] p-[var(--lk-space-md)]" data-testid="lk-bevestiging">
+          <legend class="font-semibold px-[var(--lk-space-xs)]">Contractuele bevestiging</legend>
+          <label class="flex items-center gap-[var(--lk-space-sm)]">
             <input type="checkbox" v-model="lidForm.contractueel_bevestigd" data-testid="lk-bevestigd" />
             <span>Contractueel bevestigd (wie/wanneer wordt automatisch vastgelegd)</span>
           </label>
-          <div class="flex flex-col gap-[var(--cd-space-xs)]">
+          <div class="flex flex-col gap-[var(--lk-space-xs)]">
             <label for="lk-aantal" class="font-semibold">Aantal gebruikers / licenties</label>
-            <input id="lk-aantal" v-model="lidForm.bevestigd_aantal_gebruikers" type="number" min="0" data-testid="lk-aantal" class="w-40 rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white" />
+            <input id="lk-aantal" v-model="lidForm.bevestigd_aantal_gebruikers" type="number" min="0" data-testid="lk-aantal" class="w-40 rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white" />
           </div>
         </fieldset>
 
-        <div class="flex gap-[var(--cd-space-md)]">
+        <div class="flex gap-[var(--lk-space-md)]">
           <Button type="submit" label="Koppelen" data-testid="lk-opslaan" :disabled="bezig" />
           <Button type="button" label="Annuleren" severity="secondary" @click="koppelOpen = false" />
         </div>
@@ -385,10 +385,10 @@ onMounted(() => {
 
     <!-- Lid ontkoppelen -->
     <Dialog v-model:visible="ontkoppelOpen" modal header="Lid ontkoppelen" data-testid="lid-ontkoppel-dialog" @hide="onHide">
-      <p class="mb-[var(--cd-space-md)] max-w-prose">
+      <p class="mb-[var(--lk-space-md)] max-w-prose">
         <strong>{{ teOntkoppelen?.lid_naam }}</strong> uit dit plateau ontkoppelen? Het component/contract zelf blijft bestaan.
       </p>
-      <div class="flex justify-end gap-[var(--cd-space-md)]">
+      <div class="flex justify-end gap-[var(--lk-space-md)]">
         <Button label="Annuleren" severity="secondary" @click="ontkoppelOpen = false" />
         <Button label="Ontkoppelen" severity="danger" data-testid="lid-ontkoppel-bevestig" :disabled="bezig" @click="bevestigOntkoppel" />
       </div>

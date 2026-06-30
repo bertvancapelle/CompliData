@@ -6,66 +6,66 @@
 
 :root {
   /* Spacing scale */
-  --cd-space-xs: 4px;
-  --cd-space-sm: 8px;
-  --cd-space-md: 16px;
-  --cd-space-lg: 24px;
-  --cd-space-xl: 32px;
-  --cd-space-2xl: 48px;
+  --lk-space-xs: 4px;
+  --lk-space-sm: 8px;
+  --lk-space-md: 16px;
+  --lk-space-lg: 24px;
+  --lk-space-xl: 32px;
+  --lk-space-2xl: 48px;
 
   /* Shadows */
-  --cd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --cd-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
-  --cd-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --lk-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --lk-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --lk-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
 
   /* Z-index scale */
-  --cd-z-dropdown: 100;
-  --cd-z-sticky: 200;
-  --cd-z-overlay: 300;
-  --cd-z-modal: 400;
-  --cd-z-toast: 500;
+  --lk-z-dropdown: 100;
+  --lk-z-sticky: 200;
+  --lk-z-overlay: 300;
+  --lk-z-modal: 400;
+  --lk-z-toast: 500;
 
   /* Transitions */
-  --cd-transition-fast: 150ms ease;
-  --cd-transition-normal: 250ms ease;
+  --lk-transition-fast: 150ms ease;
+  --lk-transition-normal: 250ms ease;
 
   /* Color fallbacks — overschreven door tenant-thema via useTheme */
-  --cd-color-primary: #1B4B82;
-  --cd-color-success: #1D9E75;
-  --cd-color-danger: #E24B4A;
-  --cd-color-warning: #ba7517;
-  --cd-color-text: #1A1A2E;
-  --cd-color-text-muted: rgba(45, 55, 72, 0.7);
-  --cd-color-surface: #ffffff;
-  --cd-color-bg: #f7fafc;
-  --cd-color-border: #e2e8f0;
-  --cd-color-accent: #E8F0FB;
+  --lk-color-primary: #1B4B82;
+  --lk-color-success: #1D9E75;
+  --lk-color-danger: #E24B4A;
+  --lk-color-warning: #ba7517;
+  --lk-color-text: #1A1A2E;
+  --lk-color-text-muted: rgba(45, 55, 72, 0.7);
+  --lk-color-surface: #ffffff;
+  --lk-color-bg: #f7fafc;
+  --lk-color-border: #e2e8f0;
+  --lk-color-accent: #E8F0FB;
   /* Lichtblauwe primary-schaal — gevulde secondary-knop (neventactie) */
-  --cd-color-primary-50:  #E6F1FB;  /* vul-tint */
-  --cd-color-primary-100: #D6E6F7;  /* hover, fractie donkerder */
-  --cd-color-primary-700: #185FA5;  /* tekst-tint (mid-blauw) */
+  --lk-color-primary-50:  #E6F1FB;  /* vul-tint */
+  --lk-color-primary-100: #D6E6F7;  /* hover, fractie donkerder */
+  --lk-color-primary-700: #185FA5;  /* tekst-tint (mid-blauw) */
   /* Aliassen voor achterwaartse compatibiliteit */
-  --cd-text-primary: var(--cd-color-text);
-  --cd-text-secondary: var(--cd-color-text-muted);
-  --cd-border: var(--cd-color-border);
-  --cd-surface-alt: var(--cd-color-accent);
-  --cd-font-family: 'Calibri', sans-serif;
-  --cd-border-radius: 6px;
+  --lk-text-primary: var(--lk-color-text);
+  --lk-text-secondary: var(--lk-color-text-muted);
+  --lk-border: var(--lk-color-border);
+  --lk-surface-alt: var(--lk-color-accent);
+  --lk-font-family: 'Calibri', sans-serif;
+  --lk-border-radius: 6px;
 
   /* Asymmetrisch hoek-patroon — ADR-047 v0.2 (ACT-282) */
-  --cd-radius-card:     16px 0 16px 0;
-  --cd-radius-btn:       8px 0  8px 0;
-  --cd-radius-nav:       8px 0  8px 0;
-  --cd-radius-input:     6px 0  6px 0;
-  --cd-radius-badge:     6px 0  6px 0;
-  --cd-radius-dialog:   16px 0 16px 0;
-  --cd-radius-dropdown:   0 0   8px 8px;
+  --lk-radius-card:     16px 0 16px 0;
+  --lk-radius-btn:       8px 0  8px 0;
+  --lk-radius-nav:       8px 0  8px 0;
+  --lk-radius-input:     6px 0  6px 0;
+  --lk-radius-badge:     6px 0  6px 0;
+  --lk-radius-dialog:   16px 0 16px 0;
+  --lk-radius-dropdown:   0 0   8px 8px;
 
   /* Typography scale */
-  --cd-text-xs: 0.75rem;
-  --cd-text-sm: 0.875rem;
-  --cd-text-base: 1rem;
-  --cd-text-lg: 1.125rem;
-  --cd-text-xl: 1.25rem;
-  --cd-text-2xl: 1.5rem;
+  --lk-text-xs: 0.75rem;
+  --lk-text-sm: 0.875rem;
+  --lk-text-base: 1rem;
+  --lk-text-lg: 1.125rem;
+  --lk-text-xl: 1.25rem;
+  --lk-text-2xl: 1.5rem;
 }

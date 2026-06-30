@@ -190,12 +190,12 @@ laad({ reset: true })
 
 <template>
   <section class="card" aria-labelledby="sectie-datatypes">
-    <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
-      <h2 id="sectie-datatypes" class="text-[length:var(--cd-text-lg)] font-semibold">Datatypes</h2>
+    <div class="flex items-center gap-[var(--lk-space-md)] mb-[var(--lk-space-sm)]">
+      <h2 id="sectie-datatypes" class="text-[length:var(--lk-text-lg)] font-semibold">Datatypes</h2>
       <Button v-if="mag" label="Toevoegen" severity="secondary" data-testid="dt-toevoegen" class="ml-auto" @click="openNieuw" />
     </div>
 
-    <p v-if="fout" role="alert" data-testid="dt-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ fout }}</p>
+    <p v-if="fout" role="alert" data-testid="dt-fout" class="text-[var(--lk-color-danger)] mb-[var(--lk-space-sm)]">{{ fout }}</p>
 
     <DataTable
       :value="items"
@@ -212,7 +212,7 @@ laad({ reset: true })
       <Column field="omvang_indicatie" header="Omvang" sortable />
       <Column header="">
         <template #body="{ data }">
-          <div v-if="mag" class="flex gap-[var(--cd-space-sm)]">
+          <div v-if="mag" class="flex gap-[var(--lk-space-sm)]">
             <Button label="Bewerken" severity="secondary" :data-testid="`dt-bewerk-${data.id}`" @click="(e) => openBewerken(e, data)" />
             <Button label="Verwijderen" severity="danger" :data-testid="`dt-verwijder-${data.id}`" @click="(e) => vraagVerwijder(e, data)" />
           </div>
@@ -221,29 +221,29 @@ laad({ reset: true })
       <template #empty><span data-testid="dt-leeg">Nog geen datatypes.</span></template>
     </DataTable>
 
-    <Button v-if="cursor" label="Meer laden" severity="secondary" data-testid="dt-meer" :disabled="laden" class="mt-[var(--cd-space-sm)]" @click="laad()" />
+    <Button v-if="cursor" label="Meer laden" severity="secondary" data-testid="dt-meer" :disabled="laden" class="mt-[var(--lk-space-sm)]" @click="laad()" />
 
     <!-- Aanmaken/bewerken -->
     <Dialog v-model:visible="dialogOpen" modal :closable="false" :header="bewerkenId ? 'Datatype bewerken' : 'Datatype toevoegen'" data-testid="dt-dialog" @show="focusEerste" @hide="onHide">
-      <form class="flex flex-col gap-[var(--cd-space-md)] min-w-[20rem]" data-testid="dt-form" @submit.prevent="opslaan">
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+      <form class="flex flex-col gap-[var(--lk-space-md)] min-w-[20rem]" data-testid="dt-form" @submit.prevent="opslaan">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="dt-categorie" class="font-semibold">Categorie *</label>
-          <select id="dt-categorie" ref="eersteVeld" autofocus v-model="form.categorie" data-testid="dt-veld-categorie" :aria-invalid="!!fouten.categorie" aria-describedby="dt-fout-categorie" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white">
+          <select id="dt-categorie" ref="eersteVeld" autofocus v-model="form.categorie" data-testid="dt-veld-categorie" :aria-invalid="!!fouten.categorie" aria-describedby="dt-fout-categorie" class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white">
             <option value="" disabled>— maak een keuze —</option>
             <option v-for="c in opties.categorie" :key="c" :value="c">{{ label(DATATYPE_CATEGORIE, c) }}</option>
           </select>
-          <span v-if="fouten.categorie" id="dt-fout-categorie" role="alert" data-testid="dt-fout-categorie" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.categorie }}</span>
+          <span v-if="fouten.categorie" id="dt-fout-categorie" role="alert" data-testid="dt-fout-categorie" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten.categorie }}</span>
         </div>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="dt-omvang" class="font-semibold">Omvang-indicatie</label>
           <InputText id="dt-omvang" v-model="form.omvang_indicatie" data-testid="dt-veld-omvang" :aria-invalid="!!fouten.omvang_indicatie" aria-describedby="dt-fout-omvang" />
-          <span v-if="fouten.omvang_indicatie" id="dt-fout-omvang" role="alert" data-testid="dt-fout-omvang" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.omvang_indicatie }}</span>
+          <span v-if="fouten.omvang_indicatie" id="dt-fout-omvang" role="alert" data-testid="dt-fout-omvang" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten.omvang_indicatie }}</span>
         </div>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="dt-omschrijving" class="font-semibold">Omschrijving</label>
           <Textarea id="dt-omschrijving" v-model="form.omschrijving" rows="3" data-testid="dt-veld-omschrijving" />
         </div>
-        <div class="flex gap-[var(--cd-space-md)]">
+        <div class="flex gap-[var(--lk-space-md)]">
           <Button type="submit" label="Opslaan" data-testid="dt-opslaan" :disabled="bezig" />
           <Button type="button" label="Annuleren" severity="secondary" @click="dialogOpen = false" />
         </div>
@@ -252,8 +252,8 @@ laad({ reset: true })
 
     <!-- Verwijderen -->
     <Dialog v-model:visible="verwijderOpen" modal header="Datatype verwijderen" data-testid="dt-verwijder-dialog" @hide="onHide">
-      <p class="mb-[var(--cd-space-md)] max-w-prose">Dit datatype definitief verwijderen?</p>
-      <div class="flex justify-end gap-[var(--cd-space-md)]">
+      <p class="mb-[var(--lk-space-md)] max-w-prose">Dit datatype definitief verwijderen?</p>
+      <div class="flex justify-end gap-[var(--lk-space-md)]">
         <Button label="Annuleren" severity="secondary" @click="verwijderOpen = false" />
         <Button label="Verwijderen" severity="danger" data-testid="dt-verwijder-bevestig" :disabled="bezig" @click="bevestigVerwijder" />
       </div>

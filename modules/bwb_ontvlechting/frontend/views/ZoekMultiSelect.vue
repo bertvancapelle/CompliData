@@ -58,20 +58,20 @@ function wisAlles() {
 </script>
 
 <template>
-  <div class="flex flex-col gap-[var(--cd-space-xs)]">
+  <div class="flex flex-col gap-[var(--lk-space-xs)]">
     <ul v-if="modelValue.length" :data-testid="`${testid}-chips`" class="flex flex-wrap gap-1">
       <li
         v-for="v in modelValue"
         :key="v"
         :data-testid="`${testid}-chip-${v}`"
-        class="flex items-center gap-1 rounded bg-[var(--cd-color-accent)] px-[var(--cd-space-xs)] py-0.5 text-[length:var(--cd-text-xs)]"
+        class="flex items-center gap-1 rounded bg-[var(--lk-color-accent)] px-[var(--lk-space-xs)] py-0.5 text-[length:var(--lk-text-xs)]"
       >
         {{ toonChip(v) }}
         <button
           type="button"
           :data-testid="`${testid}-chip-verwijder-${v}`"
           aria-label="Verwijder filter"
-          class="leading-none text-[var(--cd-color-text-muted)] hover:text-[var(--cd-color-danger)]"
+          class="leading-none text-[var(--lk-color-text-muted)] hover:text-[var(--lk-color-danger)]"
           @click="verwijder(v)"
         >×</button>
       </li>
@@ -79,7 +79,7 @@ function wisAlles() {
         <button
           type="button"
           :data-testid="`${testid}-wis`"
-          class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)] hover:text-[var(--cd-color-danger)] hover:underline"
+          class="text-[length:var(--lk-text-xs)] text-[var(--lk-color-text-muted)] hover:text-[var(--lk-color-danger)] hover:underline"
           @click="wisAlles"
         >× Wis</button>
       </li>

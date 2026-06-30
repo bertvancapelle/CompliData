@@ -218,25 +218,25 @@ const RIJEN = [
 
 <template>
   <section aria-labelledby="partij-detail-titel">
-    <button v-if="terugLabel" type="button" data-testid="terug-knop" class="mb-[var(--cd-space-md)] inline-flex items-center text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)] hover:text-[var(--cd-color-primary)] hover:underline focus:outline-2 focus:outline-offset-2 focus:outline-[var(--cd-color-primary)]" @click="gaTerug">{{ terugLabel }}</button>
-    <p v-if="fout" role="alert" data-testid="detail-fout" class="text-[var(--cd-color-danger)]">{{ fout }}</p>
+    <button v-if="terugLabel" type="button" data-testid="terug-knop" class="mb-[var(--lk-space-md)] inline-flex items-center text-[length:var(--lk-text-sm)] text-[var(--lk-color-text-muted)] hover:text-[var(--lk-color-primary)] hover:underline focus:outline-2 focus:outline-offset-2 focus:outline-[var(--lk-color-primary)]" @click="gaTerug">{{ terugLabel }}</button>
+    <p v-if="fout" role="alert" data-testid="detail-fout" class="text-[var(--lk-color-danger)]">{{ fout }}</p>
 
     <template v-if="partij">
-      <div class="mb-[var(--cd-space-md)]">
-        <div class="flex items-center gap-[var(--cd-space-md)]">
-          <h1 id="partij-detail-titel" class="text-[length:var(--cd-text-2xl)] font-semibold text-[var(--cd-color-primary)]">
+      <div class="mb-[var(--lk-space-md)]">
+        <div class="flex items-center gap-[var(--lk-space-md)]">
+          <h1 id="partij-detail-titel" class="text-[length:var(--lk-text-2xl)] font-semibold text-[var(--lk-color-primary)]">
             {{ partij.naam }}
           </h1>
           <Tag data-testid="detail-aard" :value="aardLabel(partij.aard)" severity="info" />
         </div>
         <!-- Parent-context als subtitelregel in de header (ADR-024) -->
-        <p v-if="ouderOrgNaam" data-testid="partij-hoortbij" class="mt-1 text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]">
+        <p v-if="ouderOrgNaam" data-testid="partij-hoortbij" class="mt-1 text-[length:var(--lk-text-sm)] text-[var(--lk-color-text-muted)]">
           Hoort bij:
-          <router-link :to="{ name: 'partij-detail', params: { id: partij.organisatie_id } }" data-testid="hoortbij-org-link" class="rounded px-1 text-[var(--cd-color-primary)] hover:bg-[var(--cd-color-accent)] hover:underline">{{ ouderOrgNaam }}</router-link><span v-if="ouderAfdelingNaam"> › <router-link :to="{ name: 'partij-detail', params: { id: partij.afdeling_id } }" data-testid="hoortbij-afd-link" class="rounded px-1 text-[var(--cd-color-primary)] hover:bg-[var(--cd-color-accent)] hover:underline">{{ ouderAfdelingNaam }}</router-link></span>
+          <router-link :to="{ name: 'partij-detail', params: { id: partij.organisatie_id } }" data-testid="hoortbij-org-link" class="rounded px-1 text-[var(--lk-color-primary)] hover:bg-[var(--lk-color-accent)] hover:underline">{{ ouderOrgNaam }}</router-link><span v-if="ouderAfdelingNaam"> › <router-link :to="{ name: 'partij-detail', params: { id: partij.afdeling_id } }" data-testid="hoortbij-afd-link" class="rounded px-1 text-[var(--lk-color-primary)] hover:bg-[var(--lk-color-accent)] hover:underline">{{ ouderAfdelingNaam }}</router-link></span>
         </p>
       </div>
 
-      <dl class="card grid grid-cols-[max-content_1fr] gap-x-[var(--cd-space-lg)] gap-y-[var(--cd-space-sm)]">
+      <dl class="card grid grid-cols-[max-content_1fr] gap-x-[var(--lk-space-lg)] gap-y-[var(--lk-space-sm)]">
         <template v-for="r in RIJEN" :key="r.veld">
           <dt class="font-semibold">{{ r.label }}</dt>
           <dd class="whitespace-pre-wrap">{{ partij[r.veld] || '—' }}</dd>
@@ -248,7 +248,7 @@ const RIJEN = [
         </template>
       </dl>
 
-      <div class="mt-[var(--cd-space-lg)] flex flex-wrap gap-[var(--cd-space-md)]">
+      <div class="mt-[var(--lk-space-lg)] flex flex-wrap gap-[var(--lk-space-md)]">
         <ObjectHistoriePaneel :key="props.id" entiteit-type="partij" :entiteit-id="props.id" />
         <Button
           v-if="magBewerken"
@@ -262,58 +262,58 @@ const RIJEN = [
       <!-- Onderdelen ("hoort bij", andere kant) — gesplitst in Afdelingen + Personen -->
       <template v-if="heeftLeden">
         <!-- Afdelingen — alleen onder een organisatie(-achtige) -->
-        <section v-if="isOrganisatieAchtig" class="card mt-[var(--cd-space-lg)]" data-testid="partij-afdelingen-sectie" aria-labelledby="sectie-partij-afdelingen">
-          <div class="flex items-center gap-[var(--cd-space-sm)] mb-[var(--cd-space-sm)]">
-            <h2 id="sectie-partij-afdelingen" class="text-[length:var(--cd-text-lg)] font-semibold">Afdelingen</h2>
+        <section v-if="isOrganisatieAchtig" class="card mt-[var(--lk-space-lg)]" data-testid="partij-afdelingen-sectie" aria-labelledby="sectie-partij-afdelingen">
+          <div class="flex items-center gap-[var(--lk-space-sm)] mb-[var(--lk-space-sm)]">
+            <h2 id="sectie-partij-afdelingen" class="text-[length:var(--lk-text-lg)] font-semibold">Afdelingen</h2>
             <Button v-if="magAanmaken" label="+ Afdeling" severity="secondary" data-testid="lid-afdeling" class="ml-auto" @click="nieuwLid('organisatie_eenheid')" />
           </div>
           <DataTable :value="afdelingen.items" data-testid="partij-afdelingen-tabel" lazy :sort-field="afdelingen.sortVeld" :sort-order="primeSort(afdelingen)" @sort="onAfdelingenSort">
             <Column field="naam" header="Naam" sortable>
               <template #body="{ data }">
-                <router-link :to="{ name: 'partij-detail', params: { id: data.id } }" data-testid="partij-afdeling-link" class="text-[var(--cd-color-primary)] hover:underline">{{ data.naam }}</router-link>
+                <router-link :to="{ name: 'partij-detail', params: { id: data.id } }" data-testid="partij-afdeling-link" class="text-[var(--lk-color-primary)] hover:underline">{{ data.naam }}</router-link>
               </template>
             </Column>
             <template #empty><span data-testid="partij-afdelingen-leeg">Geen afdelingen.</span></template>
           </DataTable>
-          <div v-if="afdelingen.cursor" class="mt-[var(--cd-space-sm)]">
+          <div v-if="afdelingen.cursor" class="mt-[var(--lk-space-sm)]">
             <Button label="Meer laden" severity="secondary" data-testid="afdelingen-meer-laden" :loading="afdelingen.laden" @click="laadAfdelingen()" />
           </div>
         </section>
 
         <!-- Personen — onder een organisatie of afdeling; met e-mail + telefoon -->
-        <section class="card mt-[var(--cd-space-lg)]" data-testid="partij-personen-sectie" aria-labelledby="sectie-partij-personen">
-          <div class="flex items-center gap-[var(--cd-space-sm)] mb-[var(--cd-space-sm)]">
-            <h2 id="sectie-partij-personen" class="text-[length:var(--cd-text-lg)] font-semibold">Personen</h2>
+        <section class="card mt-[var(--lk-space-lg)]" data-testid="partij-personen-sectie" aria-labelledby="sectie-partij-personen">
+          <div class="flex items-center gap-[var(--lk-space-sm)] mb-[var(--lk-space-sm)]">
+            <h2 id="sectie-partij-personen" class="text-[length:var(--lk-text-lg)] font-semibold">Personen</h2>
             <Button v-if="magAanmaken" label="+ Persoon" severity="secondary" data-testid="lid-persoon" class="ml-auto" @click="nieuwLid('persoon')" />
           </div>
           <DataTable :value="personen.items" data-testid="partij-personen-tabel" lazy :sort-field="personen.sortVeld" :sort-order="primeSort(personen)" @sort="onPersonenSort">
             <Column field="naam" header="Naam" sortable>
               <template #body="{ data }">
-                <router-link :to="{ name: 'partij-detail', params: { id: data.id } }" data-testid="partij-persoon-link" class="text-[var(--cd-color-primary)] hover:underline">{{ data.naam }}</router-link>
+                <router-link :to="{ name: 'partij-detail', params: { id: data.id } }" data-testid="partij-persoon-link" class="text-[var(--lk-color-primary)] hover:underline">{{ data.naam }}</router-link>
               </template>
             </Column>
             <Column header="E-mail"><template #body="{ data }">{{ data.email || '—' }}</template></Column>
             <Column header="Telefoon"><template #body="{ data }">{{ data.telefoon || '—' }}</template></Column>
             <template #empty><span data-testid="partij-personen-leeg">Geen personen.</span></template>
           </DataTable>
-          <div v-if="personen.cursor" class="mt-[var(--cd-space-sm)]">
+          <div v-if="personen.cursor" class="mt-[var(--lk-space-sm)]">
             <Button label="Meer laden" severity="secondary" data-testid="personen-meer-laden" :loading="personen.laden" @click="laadPersonen()" />
           </div>
         </section>
       </template>
 
       <!-- ADR-024 slice 2b — rollen die deze partij vervult op objecten (alleen-lezen) -->
-      <div class="mt-[var(--cd-space-lg)]">
+      <div class="mt-[var(--lk-space-lg)]">
         <PartijRollenSectie :key="props.id" :partij-id="props.id" />
       </div>
 
       <!-- Contracten (tegenpartij-koppeling) — alleen voor een externe partij -->
-      <section v-if="isExternePartij" class="card mt-[var(--cd-space-lg)]" aria-labelledby="sectie-partij-contracten" data-testid="partij-contracten-sectie">
-        <h2 id="sectie-partij-contracten" class="text-[length:var(--cd-text-lg)] font-semibold mb-[var(--cd-space-sm)]">Contracten</h2>
+      <section v-if="isExternePartij" class="card mt-[var(--lk-space-lg)]" aria-labelledby="sectie-partij-contracten" data-testid="partij-contracten-sectie">
+        <h2 id="sectie-partij-contracten" class="text-[length:var(--lk-text-lg)] font-semibold mb-[var(--lk-space-sm)]">Contracten</h2>
         <DataTable :value="contracten" data-testid="partij-contracten-tabel">
           <Column header="Contractnaam">
             <template #body="{ data }">
-              <router-link :to="{ name: 'contract-detail', params: { id: data.id } }" data-testid="partij-contract-link" class="text-[var(--cd-color-primary)] hover:underline">{{ data.contractnaam }}</router-link>
+              <router-link :to="{ name: 'contract-detail', params: { id: data.id } }" data-testid="partij-contract-link" class="text-[var(--lk-color-primary)] hover:underline">{{ data.contractnaam }}</router-link>
             </template>
           </Column>
           <Column header="Type"><template #body="{ data }"><Tag :value="label(CONTRACTTYPE, data.contracttype)" :severity="CONTRACTTYPE_SEVERITY[data.contracttype] || 'info'" /></template></Column>
@@ -321,28 +321,28 @@ const RIJEN = [
           <Column header="Einddatum"><template #body="{ data }">{{ data.einddatum || '—' }}</template></Column>
           <template #empty><span data-testid="partij-contracten-leeg">Geen contracten van deze partij.</span></template>
         </DataTable>
-        <Button v-if="contractenCursor" label="Meer laden" severity="secondary" data-testid="partij-contracten-meer" :disabled="contractenLaden" class="mt-[var(--cd-space-sm)]" @click="laadContracten()" />
+        <Button v-if="contractenCursor" label="Meer laden" severity="secondary" data-testid="partij-contracten-meer" :disabled="contractenLaden" class="mt-[var(--lk-space-sm)]" @click="laadContracten()" />
       </section>
 
       <!-- LI019 — Componenten via de contract-keten — alleen voor een externe partij (leverancier) -->
-      <section v-if="isExternePartij" class="card mt-[var(--cd-space-lg)]" aria-labelledby="sectie-partij-componenten" data-testid="partij-componenten-sectie">
-        <h2 id="sectie-partij-componenten" class="text-[length:var(--cd-text-lg)] font-semibold mb-[var(--cd-space-sm)]">Componenten</h2>
-        <ul v-if="leverancierComponenten.length" class="flex flex-col gap-[var(--cd-space-xs)]">
-          <li v-for="r in leverancierComponenten" :key="`${r.component_id}-${r.contract_id}`" :data-testid="`partij-component-${r.component_id}`" class="text-[length:var(--cd-text-sm)]">
-            <router-link :to="{ name: 'component-detail', params: { id: r.component_id } }" data-testid="partij-component-link" class="text-[var(--cd-color-primary)] hover:underline">{{ r.component_naam }}</router-link>
-            <span class="text-[var(--cd-color-text-muted)]"> (via {{ r.contract_naam }})</span>
+      <section v-if="isExternePartij" class="card mt-[var(--lk-space-lg)]" aria-labelledby="sectie-partij-componenten" data-testid="partij-componenten-sectie">
+        <h2 id="sectie-partij-componenten" class="text-[length:var(--lk-text-lg)] font-semibold mb-[var(--lk-space-sm)]">Componenten</h2>
+        <ul v-if="leverancierComponenten.length" class="flex flex-col gap-[var(--lk-space-xs)]">
+          <li v-for="r in leverancierComponenten" :key="`${r.component_id}-${r.contract_id}`" :data-testid="`partij-component-${r.component_id}`" class="text-[length:var(--lk-text-sm)]">
+            <router-link :to="{ name: 'component-detail', params: { id: r.component_id } }" data-testid="partij-component-link" class="text-[var(--lk-color-primary)] hover:underline">{{ r.component_naam }}</router-link>
+            <span class="text-[var(--lk-color-text-muted)]"> (via {{ r.contract_naam }})</span>
           </li>
         </ul>
-        <p v-else data-testid="partij-componenten-leeg" class="text-[var(--cd-color-text-muted)]">Geen componenten via een contract van deze leverancier.</p>
+        <p v-else data-testid="partij-componenten-leeg" class="text-[var(--lk-color-text-muted)]">Geen componenten via een contract van deze leverancier.</p>
       </section>
     </template>
 
     <Dialog v-model:visible="verwijderDialog" modal header="Partij verwijderen" data-testid="verwijder-dialog">
-      <p class="mb-[var(--cd-space-md)] max-w-prose">
+      <p class="mb-[var(--lk-space-md)] max-w-prose">
         Weet je zeker dat je <strong>{{ partij?.naam }}</strong> wilt verwijderen? Een partij met
         gekoppelde contracten kan niet worden verwijderd.
       </p>
-      <div class="flex justify-end gap-[var(--cd-space-md)]">
+      <div class="flex justify-end gap-[var(--lk-space-md)]">
         <Button label="Annuleren" severity="secondary" data-testid="verwijder-annuleer" @click="verwijderDialog = false" />
         <Button label="Definitief verwijderen" severity="danger" data-testid="verwijder-bevestig" :disabled="bezig" @click="bevestigVerwijderen" />
       </div>

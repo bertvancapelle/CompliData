@@ -112,46 +112,46 @@ onMounted(() => { if (weergave.value === 'tabel') laad({ reset: true }) })
   <section aria-labelledby="arch-titel">
     <h1
       id="arch-titel"
-      class="mb-[var(--cd-space-md)] text-[length:var(--cd-text-2xl)] font-semibold text-[var(--cd-color-primary)]"
+      class="mb-[var(--lk-space-md)] text-[length:var(--lk-text-2xl)] font-semibold text-[var(--lk-color-primary)]"
     >
       Architectuur — lagen
     </h1>
 
     <!-- LI025 — weergave-toggle Lagen/Tabel (default Lagen). -->
-    <div class="mb-[var(--cd-space-md)] flex w-fit gap-1 rounded-[var(--cd-radius-btn)] bg-[var(--cd-color-accent)] p-1">
-      <button v-for="m in ['lagen', 'tabel']" :key="m" type="button" :data-testid="`arch-weergave-${m}`" :aria-pressed="weergave === m" :class="['rounded-[var(--cd-radius-btn)] px-[var(--cd-space-md)] py-1 text-[length:var(--cd-text-sm)]', weergave === m ? 'bg-[var(--cd-color-primary)] text-white' : '']" @click="setWeergave(m)">{{ m === 'lagen' ? 'Lagen' : 'Tabel' }}</button>
+    <div class="mb-[var(--lk-space-md)] flex w-fit gap-1 rounded-[var(--lk-radius-btn)] bg-[var(--lk-color-accent)] p-1">
+      <button v-for="m in ['lagen', 'tabel']" :key="m" type="button" :data-testid="`arch-weergave-${m}`" :aria-pressed="weergave === m" :class="['rounded-[var(--lk-radius-btn)] px-[var(--lk-space-md)] py-1 text-[length:var(--lk-text-sm)]', weergave === m ? 'bg-[var(--lk-color-primary)] text-white' : '']" @click="setWeergave(m)">{{ m === 'lagen' ? 'Lagen' : 'Tabel' }}</button>
     </div>
 
     <ArchitectuurLagenView v-if="weergave === 'lagen'" />
     <template v-else>
     <div
       data-testid="arch-filterbalk"
-      class="mb-[var(--cd-space-md)] flex flex-wrap items-end gap-[var(--cd-space-md)] rounded-[var(--cd-radius-card)] bg-[var(--cd-color-surface)] p-[var(--cd-space-md)] shadow-[var(--cd-shadow-sm)]"
+      class="mb-[var(--lk-space-md)] flex flex-wrap items-end gap-[var(--lk-space-md)] rounded-[var(--lk-radius-card)] bg-[var(--lk-color-surface)] p-[var(--lk-space-md)] shadow-[var(--lk-shadow-sm)]"
     >
-      <label class="flex flex-col gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
-        <span class="text-[length:var(--cd-text-xs)] font-semibold uppercase tracking-wide text-[var(--cd-color-text-muted)]">Laag</span>
-        <select v-model="filterLaag" data-testid="arch-filter-laag" aria-label="Filter op ArchiMate-laag" class="rounded-[var(--cd-radius-btn)] border border-[var(--cd-color-border)] bg-[var(--cd-color-surface)] px-[var(--cd-space-sm)] py-1 focus:outline-2 focus:outline-offset-2 focus:outline-[var(--cd-color-primary)]" @change="herfilter">
+      <label class="flex flex-col gap-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]">
+        <span class="text-[length:var(--lk-text-xs)] font-semibold uppercase tracking-wide text-[var(--lk-color-text-muted)]">Laag</span>
+        <select v-model="filterLaag" data-testid="arch-filter-laag" aria-label="Filter op ArchiMate-laag" class="rounded-[var(--lk-radius-btn)] border border-[var(--lk-color-border)] bg-[var(--lk-color-surface)] px-[var(--lk-space-sm)] py-1 focus:outline-2 focus:outline-offset-2 focus:outline-[var(--lk-color-primary)]" @change="herfilter">
           <option value="">Alle</option>
           <option v-for="l in LAAG_OPTIES" :key="l" :value="l">{{ laagLabel(l) }}</option>
         </select>
       </label>
-      <label class="flex flex-col gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
-        <span class="text-[length:var(--cd-text-xs)] font-semibold uppercase tracking-wide text-[var(--cd-color-text-muted)]">Aspect</span>
-        <select v-model="filterAspect" data-testid="arch-filter-aspect" aria-label="Filter op ArchiMate-aspect" class="rounded-[var(--cd-radius-btn)] border border-[var(--cd-color-border)] bg-[var(--cd-color-surface)] px-[var(--cd-space-sm)] py-1 focus:outline-2 focus:outline-offset-2 focus:outline-[var(--cd-color-primary)]" @change="herfilter">
+      <label class="flex flex-col gap-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]">
+        <span class="text-[length:var(--lk-text-xs)] font-semibold uppercase tracking-wide text-[var(--lk-color-text-muted)]">Aspect</span>
+        <select v-model="filterAspect" data-testid="arch-filter-aspect" aria-label="Filter op ArchiMate-aspect" class="rounded-[var(--lk-radius-btn)] border border-[var(--lk-color-border)] bg-[var(--lk-color-surface)] px-[var(--lk-space-sm)] py-1 focus:outline-2 focus:outline-offset-2 focus:outline-[var(--lk-color-primary)]" @change="herfilter">
           <option value="">Alle</option>
           <option v-for="a in ASPECT_OPTIES" :key="a" :value="a">{{ aspectLabel(a) }}</option>
         </select>
       </label>
-      <label class="flex flex-col gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
-        <span class="text-[length:var(--cd-text-xs)] font-semibold uppercase tracking-wide text-[var(--cd-color-text-muted)]">Type</span>
-        <select v-model="filterType" data-testid="arch-filter-type" aria-label="Filter op element-type" class="rounded-[var(--cd-radius-btn)] border border-[var(--cd-color-border)] bg-[var(--cd-color-surface)] px-[var(--cd-space-sm)] py-1 focus:outline-2 focus:outline-offset-2 focus:outline-[var(--cd-color-primary)]" @change="herfilter">
+      <label class="flex flex-col gap-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]">
+        <span class="text-[length:var(--lk-text-xs)] font-semibold uppercase tracking-wide text-[var(--lk-color-text-muted)]">Type</span>
+        <select v-model="filterType" data-testid="arch-filter-type" aria-label="Filter op element-type" class="rounded-[var(--lk-radius-btn)] border border-[var(--lk-color-border)] bg-[var(--lk-color-surface)] px-[var(--lk-space-sm)] py-1 focus:outline-2 focus:outline-offset-2 focus:outline-[var(--lk-color-primary)]" @change="herfilter">
           <option value="">Alle</option>
           <option v-for="t in TYPE_OPTIES" :key="t" :value="t">{{ typeLabel(t) }}</option>
         </select>
       </label>
     </div>
 
-    <p v-if="fout" role="alert" data-testid="arch-fout" class="mb-[var(--cd-space-md)] rounded-[var(--cd-radius-badge)] border border-[var(--cd-color-danger)] bg-[var(--cd-color-danger)]/10 px-[var(--cd-space-md)] py-[var(--cd-space-sm)] text-[var(--cd-color-danger)]">
+    <p v-if="fout" role="alert" data-testid="arch-fout" class="mb-[var(--lk-space-md)] rounded-[var(--lk-radius-badge)] border border-[var(--lk-color-danger)] bg-[var(--lk-color-danger)]/10 px-[var(--lk-space-md)] py-[var(--lk-space-sm)] text-[var(--lk-color-danger)]">
       {{ fout }}
     </p>
 
@@ -161,7 +161,7 @@ onMounted(() => { if (weergave.value === 'tabel') laad({ reset: true }) })
       lazy
       :sort-field="sortVeld"
       :sort-order="primeSortOrder"
-      class="bg-[var(--cd-color-surface)] rounded-[var(--cd-radius-card)] shadow-[var(--cd-shadow-sm)]"
+      class="bg-[var(--lk-color-surface)] rounded-[var(--lk-radius-card)] shadow-[var(--lk-shadow-sm)]"
       @sort="onSort"
     >
       <Column header="Naam" sort-field="naam" sortable>
@@ -170,12 +170,12 @@ onMounted(() => { if (weergave.value === 'tabel') laad({ reset: true }) })
             v-if="elementRoute(data)"
             :to="elementRoute(data)"
             :data-testid="`arch-link-${data.id}`"
-            class="font-medium text-[var(--cd-color-primary)] hover:underline focus:outline-2 focus:outline-offset-2 focus:outline-[var(--cd-color-primary)]"
+            class="font-medium text-[var(--lk-color-primary)] hover:underline focus:outline-2 focus:outline-offset-2 focus:outline-[var(--lk-color-primary)]"
           >
             {{ data.naam }}
           </router-link>
           <span v-else class="font-medium">{{ data.naam }}</span>
-          <span v-if="data.naam_secundair" class="block text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">
+          <span v-if="data.naam_secundair" class="block text-[length:var(--lk-text-xs)] text-[var(--lk-color-text-muted)]">
             {{ data.naam_secundair }}
           </span>
         </template>
@@ -200,7 +200,7 @@ onMounted(() => { if (weergave.value === 'tabel') laad({ reset: true }) })
       </template>
     </DataTable>
 
-    <div class="mt-[var(--cd-space-md)]">
+    <div class="mt-[var(--lk-space-md)]">
       <Button v-if="cursor" label="Meer laden" severity="secondary" data-testid="arch-meer-laden" :disabled="laden" @click="laad()" />
     </div>
     </template>

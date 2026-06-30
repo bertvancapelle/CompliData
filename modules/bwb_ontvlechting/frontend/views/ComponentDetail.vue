@@ -172,12 +172,12 @@ watch(() => props.id, () => laad(), { immediate: true })
 
 <template>
   <section aria-labelledby="detail-titel">
-    <button v-if="terugLabel" type="button" data-testid="terug-knop" class="mb-[var(--cd-space-md)] inline-flex items-center text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)] hover:text-[var(--cd-color-primary)] hover:underline focus:outline-2 focus:outline-offset-2 focus:outline-[var(--cd-color-primary)]" @click="gaTerug">{{ terugLabel }}</button>
-    <p v-if="fout" role="alert" data-testid="detail-fout" class="text-[var(--cd-color-danger)]">{{ fout }}</p>
+    <button v-if="terugLabel" type="button" data-testid="terug-knop" class="mb-[var(--lk-space-md)] inline-flex items-center text-[length:var(--lk-text-sm)] text-[var(--lk-color-text-muted)] hover:text-[var(--lk-color-primary)] hover:underline focus:outline-2 focus:outline-offset-2 focus:outline-[var(--lk-color-primary)]" @click="gaTerug">{{ terugLabel }}</button>
+    <p v-if="fout" role="alert" data-testid="detail-fout" class="text-[var(--lk-color-danger)]">{{ fout }}</p>
 
     <template v-if="component">
-      <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-md)]">
-        <h1 id="detail-titel" class="text-[length:var(--cd-text-2xl)] font-semibold text-[var(--cd-color-primary)]">
+      <div class="flex items-center gap-[var(--lk-space-md)] mb-[var(--lk-space-md)]">
+        <h1 id="detail-titel" class="text-[length:var(--lk-text-2xl)] font-semibold text-[var(--lk-color-primary)]">
           {{ component.naam }}
         </h1>
         <Tag data-testid="detail-type" :value="component.componenttype_label" :severity="isSubtype ? 'info' : 'secondary'" />
@@ -195,14 +195,14 @@ watch(() => props.id, () => laad(), { immediate: true })
       <p
         v-if="isSubtype"
         data-testid="detail-subtype-hint"
-        class="card mb-[var(--cd-space-md)] border-l-4 border-[var(--cd-color-primary)] text-[length:var(--cd-text-sm)]"
+        class="card mb-[var(--lk-space-md)] border-l-4 border-[var(--lk-color-primary)] text-[length:var(--lk-text-sm)]"
       >
         Dit component is een applicatie. Beheer de applicatie-velden op
-        <router-link :to="{ name: 'applicatie-detail', params: { id: component.id } }" class="text-[var(--cd-color-primary)] hover:underline">de applicatie zelf</router-link>.
+        <router-link :to="{ name: 'applicatie-detail', params: { id: component.id } }" class="text-[var(--lk-color-primary)] hover:underline">de applicatie zelf</router-link>.
       </p>
 
-      <div class="flex flex-col gap-[var(--cd-space-lg)] md:flex-row md:items-start">
-      <dl class="card grid grid-cols-[max-content_1fr] gap-x-[var(--cd-space-lg)] gap-y-[var(--cd-space-sm)] md:flex-1">
+      <div class="flex flex-col gap-[var(--lk-space-lg)] md:flex-row md:items-start">
+      <dl class="card grid grid-cols-[max-content_1fr] gap-x-[var(--lk-space-lg)] gap-y-[var(--lk-space-sm)] md:flex-1">
         <dt class="font-semibold">Type</dt>
         <dd>{{ component.componenttype_label }}</dd>
         <dt class="font-semibold">Hostingmodel</dt>
@@ -213,7 +213,7 @@ watch(() => props.id, () => laad(), { immediate: true })
             v-if="component.eigenaar_organisatie_id"
             :to="{ name: 'partij-detail', params: { id: component.eigenaar_organisatie_id } }"
             data-testid="comp-eigenaar-org-link"
-            class="text-[var(--cd-color-primary)] hover:underline"
+            class="text-[var(--lk-color-primary)] hover:underline"
           >{{ component.eigenaar_organisatie_naam }}</router-link>
           <span v-else>—</span>
         </dd>
@@ -232,7 +232,7 @@ watch(() => props.id, () => laad(), { immediate: true })
         />
       </div>
 
-      <div class="mt-[var(--cd-space-lg)] flex flex-wrap gap-[var(--cd-space-md)]">
+      <div class="mt-[var(--lk-space-lg)] flex flex-wrap gap-[var(--lk-space-md)]">
         <Button
           v-if="magKaartZien"
           label="Bekijk op kaart"
@@ -260,7 +260,7 @@ watch(() => props.id, () => laad(), { immediate: true })
         <Button v-if="magVerwijderen" label="Verwijderen" severity="danger" data-testid="verwijder-knop" @click="openVerwijderDialog" />
       </div>
 
-      <div class="mt-[var(--cd-space-lg)] flex flex-col gap-[var(--cd-space-lg)]">
+      <div class="mt-[var(--lk-space-lg)] flex flex-col gap-[var(--lk-space-lg)]">
         <StructuurSectie :component-id="props.id" />
         <ContractSectie :applicatie-id="props.id" :app-naam="component?.naam || ''" />
         <VerantwoordelijkheidSectie :object-id="props.id" />
@@ -289,20 +289,20 @@ watch(() => props.id, () => laad(), { immediate: true })
     </template>
 
     <Dialog v-model:visible="verwijderDialog" modal header="Component verwijderen" data-testid="verwijder-dialog">
-      <p class="mb-[var(--cd-space-md)] max-w-prose">
+      <p class="mb-[var(--lk-space-md)] max-w-prose">
         Weet je zeker dat je <strong>{{ component?.naam }}</strong> wilt verwijderen? Een component
         met nog bestaande relaties (structuur of contracten) kan niet worden verwijderd.
       </p>
       <p
         v-if="verwijderHeeftData"
         data-testid="verwijder-samenvatting"
-        class="mb-[var(--cd-space-md)] max-w-prose text-[length:var(--cd-text-sm)] text-[var(--cd-color-danger)]"
+        class="mb-[var(--lk-space-md)] max-w-prose text-[length:var(--lk-text-sm)] text-[var(--lk-color-danger)]"
       >
         Dit verwijdert ook: {{ verwijderImpact.beantwoorde_scores }} beantwoorde score(s),
         {{ verwijderImpact.blokkades }} blokkade(s), {{ verwijderImpact.datatypes }} datatype(s) en
         {{ verwijderImpact.gebruikersgroepen }} gebruikersgroep(en).
       </p>
-      <div class="flex justify-end gap-[var(--cd-space-md)]">
+      <div class="flex justify-end gap-[var(--lk-space-md)]">
         <Button label="Annuleren" severity="secondary" data-testid="verwijder-annuleer" @click="verwijderDialog = false" />
         <Button label="Definitief verwijderen" severity="danger" data-testid="verwijder-bevestig" :disabled="bezig" @click="bevestigVerwijderen" />
       </div>

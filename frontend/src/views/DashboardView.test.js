@@ -225,7 +225,7 @@ describe('DashboardView — ADR-027 slice 3 klaarverklaring-voortgang', () => {
     const w = await mountDashboard()
     const afw = w.find('[data-testid="telling-klaar-afwijking"]')
     expect(afw.text()).toContain('checklist nog niet compleet') // tekstueel, niet alleen kleur
-    expect(afw.html()).toContain('var(--cd-color-warn)')
+    expect(afw.html()).toContain('var(--lk-color-warn)')
   })
 
   it('afwijkingstegel zonder afwijking: neutrale weergave (0)', async () => {
@@ -234,7 +234,7 @@ describe('DashboardView — ADR-027 slice 3 klaarverklaring-voortgang', () => {
     const afw = w.find('[data-testid="telling-klaar-afwijking"]')
     expect(afw.text()).toContain('0')
     // bij 0: neutrale (muted) telling i.p.v. warn-nadruk
-    expect(afw.html()).toContain('var(--cd-color-text-muted)')
-    expect(afw.attributes('class')).toContain('var(--cd-color-surface)')
+    expect(afw.html()).toContain('var(--lk-color-text-muted)')
+    expect(afw.attributes('class')).toContain('var(--lk-color-surface)')
   })
 })

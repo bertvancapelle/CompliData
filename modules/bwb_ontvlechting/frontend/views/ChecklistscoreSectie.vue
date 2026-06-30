@@ -340,20 +340,20 @@ laad()
 
 <template>
   <section class="card" aria-labelledby="sectie-checklist">
-    <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
-      <h2 id="sectie-checklist" class="text-[length:var(--cd-text-lg)] font-semibold">Checklist</h2>
-      <span data-testid="cs-voortgang" class="ml-auto text-[var(--cd-color-text-muted)] text-[length:var(--cd-text-sm)]">
+    <div class="flex items-center gap-[var(--lk-space-md)] mb-[var(--lk-space-sm)]">
+      <h2 id="sectie-checklist" class="text-[length:var(--lk-text-lg)] font-semibold">Checklist</h2>
+      <span data-testid="cs-voortgang" class="ml-auto text-[var(--lk-color-text-muted)] text-[length:var(--lk-text-sm)]">
         {{ aantalGescoord }}/{{ aantalVragen }} gescoord
       </span>
     </div>
 
-    <p v-if="fout" role="alert" data-testid="cs-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ fout }}</p>
+    <p v-if="fout" role="alert" data-testid="cs-fout" class="text-[var(--lk-color-danger)] mb-[var(--lk-space-sm)]">{{ fout }}</p>
 
     <p
       v-if="toonGeslotenMelding"
       role="status"
       data-testid="cs-gesloten"
-      class="mb-[var(--cd-space-sm)] flex items-center gap-[var(--cd-space-xs)] rounded-[var(--cd-radius-input)] bg-[color-mix(in_srgb,var(--cd-color-warn)_12%,transparent)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)] text-[var(--cd-color-warn)]"
+      class="mb-[var(--lk-space-sm)] flex items-center gap-[var(--lk-space-xs)] rounded-[var(--lk-radius-input)] bg-[color-mix(in_srgb,var(--lk-color-warn)_12%,transparent)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)] text-[var(--lk-color-warn)]"
     >
       <span aria-hidden="true">🔒</span>
       De checklist voor dit componenttype is gesloten voor bewerking. Bestaande antwoorden blijven leesbaar.
@@ -386,7 +386,7 @@ laad()
           <tr
             :id="`cs-rij-${v.code}`"
             :data-testid="`cs-rij-${v.code}`"
-            :class="gemarkeerd === v.code ? 'bg-[var(--cd-color-accent)]' : ''"
+            :class="gemarkeerd === v.code ? 'bg-[var(--lk-color-accent)]' : ''"
           >
             <td>{{ v.code }}</td>
             <td>{{ v.vraag }}</td>
@@ -398,7 +398,7 @@ laad()
                 :aria-label="`Afgehandeld voor vraag ${v.code}`"
                 :aria-invalid="!!rijFout[v.code]"
                 :data-testid="`cs-score-${v.code}`"
-                :class="['rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white disabled:opacity-60 font-semibold', scoreKleur(huidigeScore(v.code))]"
+                :class="['rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white disabled:opacity-60 font-semibold', scoreKleur(huidigeScore(v.code))]"
                 @change="onScoreChange(v.code, $event.target.value)"
               >
                 <option value="" disabled>— niet gescoord —</option>
@@ -406,9 +406,9 @@ laad()
               </select>
             </td>
             <td>
-              <span v-if="rijStatus[v.code] === 'bezig'" :data-testid="`cs-status-${v.code}`" class="text-[var(--cd-color-text-muted)] text-[length:var(--cd-text-xs)]">bezig…</span>
-              <span v-else-if="rijStatus[v.code] === 'opgeslagen'" :data-testid="`cs-status-${v.code}`" class="text-[var(--cd-color-success)] text-[length:var(--cd-text-xs)]">opgeslagen</span>
-              <span v-else-if="rijFout[v.code]" role="alert" :data-testid="`cs-fout-${v.code}`" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-xs)]">{{ rijFout[v.code] }}</span>
+              <span v-if="rijStatus[v.code] === 'bezig'" :data-testid="`cs-status-${v.code}`" class="text-[var(--lk-color-text-muted)] text-[length:var(--lk-text-xs)]">bezig…</span>
+              <span v-else-if="rijStatus[v.code] === 'opgeslagen'" :data-testid="`cs-status-${v.code}`" class="text-[var(--lk-color-success)] text-[length:var(--lk-text-xs)]">opgeslagen</span>
+              <span v-else-if="rijFout[v.code]" role="alert" :data-testid="`cs-fout-${v.code}`" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-xs)]">{{ rijFout[v.code] }}</span>
             </td>
             <td>
               <button
@@ -417,7 +417,7 @@ laad()
                 :aria-expanded="!!uitgeklapt[v.code]"
                 :aria-controls="`cs-detail-${v.code}`"
                 :aria-label="`Details vraag ${v.code}`"
-                class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white"
+                class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white"
                 @click="toggleDetail(v.code)"
               >
                 {{ uitgeklapt[v.code] ? '▾' : '▸' }}
@@ -430,14 +430,14 @@ laad()
               <p
                 v-if="!isGescoord(v.code)"
                 :data-testid="`cs-detail-hint-${v.code}`"
-                class="text-[var(--cd-color-text-muted)] text-[length:var(--cd-text-sm)]"
+                class="text-[var(--lk-color-text-muted)] text-[length:var(--lk-text-sm)]"
               >
                 Scoor eerst deze vraag om bevinding, eigenaar en actie vast te leggen.
               </p>
-              <div v-else class="flex flex-col gap-[var(--cd-space-sm)]">
+              <div v-else class="flex flex-col gap-[var(--lk-space-sm)]">
                 <!-- ADR-019: gestructureerd antwoordveld, alleen waar geconfigureerd -->
-                <div v-if="antwoordType(v.code) !== 'geen'" class="flex flex-col gap-[var(--cd-space-xs)]">
-                  <label :for="`cs-antwoord-${v.code}`" class="text-[length:var(--cd-text-sm)] font-medium">Antwoord</label>
+                <div v-if="antwoordType(v.code) !== 'geen'" class="flex flex-col gap-[var(--lk-space-xs)]">
+                  <label :for="`cs-antwoord-${v.code}`" class="text-[length:var(--lk-text-sm)] font-medium">Antwoord</label>
 
                   <select
                     v-if="antwoordType(v.code) === 'enkelvoudige_keuze'"
@@ -445,7 +445,7 @@ laad()
                     :data-testid="`cs-antwoord-${v.code}`"
                     v-model="bewerk[v.code].antwoord_optie"
                     :disabled="!mag"
-                    class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white disabled:opacity-60"
+                    class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white disabled:opacity-60"
                   >
                     <option value="">— geen —</option>
                     <option v-for="o in actieveOpties(v.code)" :key="o.optie_sleutel" :value="o.optie_sleutel">{{ o.label }}</option>
@@ -454,9 +454,9 @@ laad()
                   <div
                     v-else-if="antwoordType(v.code) === 'meerkeuze'"
                     :data-testid="`cs-antwoord-${v.code}`"
-                    class="flex flex-col gap-[var(--cd-space-xs)]"
+                    class="flex flex-col gap-[var(--lk-space-xs)]"
                   >
-                    <label v-for="o in actieveOpties(v.code)" :key="o.optie_sleutel" class="flex items-center gap-[var(--cd-space-xs)]">
+                    <label v-for="o in actieveOpties(v.code)" :key="o.optie_sleutel" class="flex items-center gap-[var(--lk-space-xs)]">
                       <input
                         type="checkbox"
                         :data-testid="`cs-antwoord-${v.code}-${o.optie_sleutel}`"
@@ -477,55 +477,55 @@ laad()
                     :data-testid="`cs-antwoord-${v.code}`"
                     v-model="bewerk[v.code].antwoord_getal"
                     :disabled="!mag"
-                    class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white disabled:opacity-60 w-32"
+                    class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white disabled:opacity-60 w-32"
                   />
                 </div>
 
-                <div class="flex flex-col gap-[var(--cd-space-xs)]">
-                  <label :for="`cs-bevinding-${v.code}`" class="text-[length:var(--cd-text-sm)] font-medium">Bevinding</label>
+                <div class="flex flex-col gap-[var(--lk-space-xs)]">
+                  <label :for="`cs-bevinding-${v.code}`" class="text-[length:var(--lk-text-sm)] font-medium">Bevinding</label>
                   <textarea
                     :id="`cs-bevinding-${v.code}`"
                     :data-testid="`cs-bevinding-${v.code}`"
                     v-model="bewerk[v.code].bevinding"
                     :disabled="!mag"
                     rows="2"
-                    class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white disabled:opacity-60"
+                    class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white disabled:opacity-60"
                   ></textarea>
                 </div>
-                <div class="flex flex-col gap-[var(--cd-space-xs)]">
-                  <label :for="`cs-eigenaar-${v.code}`" class="text-[length:var(--cd-text-sm)] font-medium">Eigenaar</label>
+                <div class="flex flex-col gap-[var(--lk-space-xs)]">
+                  <label :for="`cs-eigenaar-${v.code}`" class="text-[length:var(--lk-text-sm)] font-medium">Eigenaar</label>
                   <input
                     :id="`cs-eigenaar-${v.code}`"
                     :data-testid="`cs-eigenaar-${v.code}`"
                     v-model="bewerk[v.code].eigenaar"
                     :disabled="!mag"
                     type="text"
-                    class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white disabled:opacity-60"
+                    class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white disabled:opacity-60"
                   />
                 </div>
-                <div class="flex flex-col gap-[var(--cd-space-xs)]">
-                  <label :for="`cs-actie-${v.code}`" class="text-[length:var(--cd-text-sm)] font-medium">Actie</label>
+                <div class="flex flex-col gap-[var(--lk-space-xs)]">
+                  <label :for="`cs-actie-${v.code}`" class="text-[length:var(--lk-text-sm)] font-medium">Actie</label>
                   <textarea
                     :id="`cs-actie-${v.code}`"
                     :data-testid="`cs-actie-${v.code}`"
                     v-model="bewerk[v.code].actie"
                     :disabled="!mag"
                     rows="2"
-                    class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white disabled:opacity-60"
+                    class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white disabled:opacity-60"
                   ></textarea>
                 </div>
-                <div v-if="mag" class="flex items-center gap-[var(--cd-space-sm)]">
+                <div v-if="mag" class="flex items-center gap-[var(--lk-space-sm)]">
                   <button
                     type="button"
                     :data-testid="`cs-velden-opslaan-${v.code}`"
-                    class="rounded-[var(--cd-radius-input)] bg-[var(--cd-color-accent)] text-white px-[var(--cd-space-md)] py-[var(--cd-space-xs)]"
+                    class="rounded-[var(--lk-radius-input)] bg-[var(--lk-color-accent)] text-white px-[var(--lk-space-md)] py-[var(--lk-space-xs)]"
                     @click="opslaanVelden(v.code)"
                   >
                     Opslaan
                   </button>
-                  <span v-if="veldStatus[v.code] === 'bezig'" :data-testid="`cs-velden-status-${v.code}`" class="text-[var(--cd-color-text-muted)] text-[length:var(--cd-text-xs)]">bezig…</span>
-                  <span v-else-if="veldStatus[v.code] === 'opgeslagen'" :data-testid="`cs-velden-status-${v.code}`" class="text-[var(--cd-color-success)] text-[length:var(--cd-text-xs)]">opgeslagen</span>
-                  <span v-else-if="veldFout[v.code]" role="alert" :data-testid="`cs-velden-fout-${v.code}`" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-xs)]">{{ veldFout[v.code] }}</span>
+                  <span v-if="veldStatus[v.code] === 'bezig'" :data-testid="`cs-velden-status-${v.code}`" class="text-[var(--lk-color-text-muted)] text-[length:var(--lk-text-xs)]">bezig…</span>
+                  <span v-else-if="veldStatus[v.code] === 'opgeslagen'" :data-testid="`cs-velden-status-${v.code}`" class="text-[var(--lk-color-success)] text-[length:var(--lk-text-xs)]">opgeslagen</span>
+                  <span v-else-if="veldFout[v.code]" role="alert" :data-testid="`cs-velden-fout-${v.code}`" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-xs)]">{{ veldFout[v.code] }}</span>
                 </div>
               </div>
             </td>

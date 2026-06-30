@@ -6,7 +6,7 @@
  * account + koppeling, server-side). Het server-gegenereerde tijdelijk wachtwoord wordt ÉÉNMALIG
  * getoond in een tweede dialog-staat met kopieerknop — nergens gepersisteerd (alleen component-
  * state tot de dialog sluit). Beheerder-only (affordance via hasRole; backend handhaaft via
- * GEBRUIKERSBEHEER). `--cd-`-tokens, geen `<style>`.
+ * GEBRUIKERSBEHEER). `--lk-`-tokens, geen `<style>`.
  */
 import { computed, onMounted, reactive, ref } from 'vue'
 import { Button, DataTable, Column, Dialog, InputText, Tag, useToast } from '@/primevue'
@@ -278,8 +278,8 @@ onMounted(laad)
 
 <template>
   <section aria-labelledby="gebr-titel">
-    <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-md)]">
-      <h1 id="gebr-titel" class="text-[length:var(--cd-text-xl)] font-semibold">Gebruikersbeheer</h1>
+    <div class="flex items-center gap-[var(--lk-space-md)] mb-[var(--lk-space-md)]">
+      <h1 id="gebr-titel" class="text-[length:var(--lk-text-xl)] font-semibold">Gebruikersbeheer</h1>
       <Button
         v-if="magBeheren"
         label="Gebruiker toevoegen"
@@ -289,12 +289,12 @@ onMounted(laad)
       />
     </div>
 
-    <p v-if="fout" role="alert" data-testid="gebr-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ fout }}</p>
-    <p v-if="laden" data-testid="gebr-laden" class="text-[var(--cd-color-text-muted)]">Laden…</p>
+    <p v-if="fout" role="alert" data-testid="gebr-fout" class="text-[var(--lk-color-danger)] mb-[var(--lk-space-sm)]">{{ fout }}</p>
+    <p v-if="laden" data-testid="gebr-laden" class="text-[var(--lk-color-text-muted)]">Laden…</p>
 
-    <DataTable :value="gebruikers" data-testid="gebruikers-tabel" class="bg-[var(--cd-color-surface)] rounded-[var(--cd-radius-card)] shadow-[var(--cd-shadow-sm)]">
+    <DataTable :value="gebruikers" data-testid="gebruikers-tabel" class="bg-[var(--lk-color-surface)] rounded-[var(--lk-radius-card)] shadow-[var(--lk-shadow-sm)]">
       <template #empty>
-        <span data-testid="gebr-leeg" class="text-[var(--cd-color-text-muted)]">Nog geen gekoppelde gebruikers.</span>
+        <span data-testid="gebr-leeg" class="text-[var(--lk-color-text-muted)]">Nog geen gekoppelde gebruikers.</span>
       </template>
       <Column header="Naam"><template #body="{ data }">{{ data.naam }}</template></Column>
       <Column header="E-mail"><template #body="{ data }">{{ data.email || '—' }}</template></Column>
@@ -345,18 +345,18 @@ onMounted(laad)
       @hide="sluitDialog"
     >
       <!-- Staat 1: formulier -->
-      <form v-if="!resultaat" class="flex flex-col gap-[var(--cd-space-md)] min-w-[24rem]" data-testid="gebr-form" @submit.prevent="bevestig">
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+      <form v-if="!resultaat" class="flex flex-col gap-[var(--lk-space-md)] min-w-[24rem]" data-testid="gebr-form" @submit.prevent="bevestig">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="gebr-naam" class="font-semibold">Naam *</label>
           <InputText id="gebr-naam" ref="eersteVeld" v-model="form.naam" data-testid="gebr-naam" :aria-invalid="!!fouten.naam" aria-describedby="gebr-fout-naam" />
-          <span v-if="fouten.naam" id="gebr-fout-naam" role="alert" data-testid="gebr-fout-naam" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.naam }}</span>
+          <span v-if="fouten.naam" id="gebr-fout-naam" role="alert" data-testid="gebr-fout-naam" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten.naam }}</span>
         </div>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="gebr-email" class="font-semibold">E-mail *</label>
           <InputText id="gebr-email" v-model="form.email" type="email" data-testid="gebr-email" :aria-invalid="!!fouten.email" aria-describedby="gebr-fout-email" />
-          <span v-if="fouten.email" id="gebr-fout-email" role="alert" data-testid="gebr-fout-email" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.email }}</span>
+          <span v-if="fouten.email" id="gebr-fout-email" role="alert" data-testid="gebr-fout-email" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten.email }}</span>
         </div>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="gebr-afdeling" class="font-semibold">Afdeling *</label>
           <ZoekSelect
             v-model="form.afdelingId"
@@ -364,32 +364,32 @@ onMounted(laad)
             placeholder="Zoek een afdeling…"
             testid="gebr-afdeling"
           />
-          <span v-if="fouten.afdeling" role="alert" data-testid="gebr-fout-afdeling" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.afdeling }}</span>
+          <span v-if="fouten.afdeling" role="alert" data-testid="gebr-fout-afdeling" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten.afdeling }}</span>
         </div>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="gebr-functietitel" class="font-semibold">Functietitel</label>
           <InputText id="gebr-functietitel" v-model="form.functietitel" data-testid="gebr-functietitel" />
         </div>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="gebr-rol" class="font-semibold">Rol *</label>
-          <select id="gebr-rol" v-model="form.rol" data-testid="gebr-rol" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white">
+          <select id="gebr-rol" v-model="form.rol" data-testid="gebr-rol" class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white">
             <option v-for="r in ['medewerker', 'viewer']" :key="r" :value="r">{{ label(GEBRUIKER_ROL, r) }}</option>
           </select>
         </div>
-        <div class="flex justify-end gap-[var(--cd-space-md)]">
+        <div class="flex justify-end gap-[var(--lk-space-md)]">
           <Button label="Annuleren" severity="secondary" data-testid="gebr-annuleer" @click="sluitDialog" />
           <Button label="Aanmaken" type="submit" :disabled="bezig" data-testid="gebr-opslaan" />
         </div>
       </form>
 
       <!-- Staat 2: eenmalig tijdelijk wachtwoord -->
-      <div v-else class="flex flex-col gap-[var(--cd-space-md)] min-w-[24rem]" data-testid="gebr-wachtwoord-staat">
+      <div v-else class="flex flex-col gap-[var(--lk-space-md)] min-w-[24rem]" data-testid="gebr-wachtwoord-staat">
         <p class="max-w-prose">
           Dit tijdelijke wachtwoord wordt <strong>eenmalig</strong> getoond. Geef het door aan
           <strong>{{ resultaat.naam }}</strong>; bij de eerste login moet het worden gewijzigd.
         </p>
-        <div class="flex items-center gap-[var(--cd-space-sm)]">
-          <code data-testid="gebr-wachtwoord" class="flex-1 rounded-[var(--cd-radius-input)] bg-[var(--cd-color-accent)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] font-mono select-all">{{ resultaat.wachtwoord }}</code>
+        <div class="flex items-center gap-[var(--lk-space-sm)]">
+          <code data-testid="gebr-wachtwoord" class="flex-1 rounded-[var(--lk-radius-input)] bg-[var(--lk-color-accent)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] font-mono select-all">{{ resultaat.wachtwoord }}</code>
           <Button label="Kopiëren" severity="secondary" data-testid="gebr-kopieer" @click="kopieer" />
         </div>
         <div class="flex justify-end">
@@ -407,37 +407,37 @@ onMounted(laad)
       data-testid="gebr-beheer-dialog"
       @hide="sluitBeheer"
     >
-      <div v-if="geselecteerd" class="flex flex-col gap-[var(--cd-space-lg)] min-w-[26rem]">
+      <div v-if="geselecteerd" class="flex flex-col gap-[var(--lk-space-lg)] min-w-[26rem]">
         <!-- 1. Wachtwoord opnieuw instellen -->
-        <section class="flex flex-col gap-[var(--cd-space-sm)]" data-testid="gebr-beheer-wachtwoord">
+        <section class="flex flex-col gap-[var(--lk-space-sm)]" data-testid="gebr-beheer-wachtwoord">
           <h2 class="font-semibold">Wachtwoord opnieuw instellen</h2>
           <template v-if="!resetWachtwoord">
-            <p class="text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)] max-w-prose">
+            <p class="text-[length:var(--lk-text-sm)] text-[var(--lk-color-text-muted)] max-w-prose">
               Genereert een nieuw eenmalig wachtwoord; de gebruiker wijzigt het verplicht bij de eerstvolgende login.
             </p>
             <Button label="Wachtwoord opnieuw instellen" severity="secondary" :disabled="beheerBezig" data-testid="gebr-wachtwoord-reset" class="self-start" @click="doeWachtwoordReset" />
           </template>
           <template v-else>
-            <p class="text-[length:var(--cd-text-sm)] max-w-prose">
+            <p class="text-[length:var(--lk-text-sm)] max-w-prose">
               Dit tijdelijke wachtwoord wordt <strong>eenmalig</strong> getoond. Geef het door; bij de eerste login moet het worden gewijzigd.
             </p>
-            <div class="flex items-center gap-[var(--cd-space-sm)]">
-              <code data-testid="gebr-reset-wachtwoord" class="flex-1 rounded-[var(--cd-radius-input)] bg-[var(--cd-color-accent)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] font-mono select-all">{{ resetWachtwoord }}</code>
+            <div class="flex items-center gap-[var(--lk-space-sm)]">
+              <code data-testid="gebr-reset-wachtwoord" class="flex-1 rounded-[var(--lk-radius-input)] bg-[var(--lk-color-accent)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] font-mono select-all">{{ resetWachtwoord }}</code>
               <Button label="Kopiëren" severity="secondary" data-testid="gebr-reset-kopieer" @click="kopieerReset" />
             </div>
           </template>
         </section>
 
         <!-- 2. Rol wijzigen -->
-        <section class="flex flex-col gap-[var(--cd-space-sm)] border-t border-[var(--cd-color-border)] pt-[var(--cd-space-md)]" data-testid="gebr-beheer-rol">
+        <section class="flex flex-col gap-[var(--lk-space-sm)] border-t border-[var(--lk-color-border)] pt-[var(--lk-space-md)]" data-testid="gebr-beheer-rol">
           <h2 class="font-semibold">Rol</h2>
           <template v-if="isEigenAccount && isBeheerderRij">
-            <p class="text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]" data-testid="gebr-rol-eigen-note">Je kunt jezelf niet de beheerrol ontnemen.</p>
+            <p class="text-[length:var(--lk-text-sm)] text-[var(--lk-color-text-muted)]" data-testid="gebr-rol-eigen-note">Je kunt jezelf niet de beheerrol ontnemen.</p>
           </template>
           <template v-else>
-            <div class="flex items-center gap-[var(--cd-space-sm)]">
+            <div class="flex items-center gap-[var(--lk-space-sm)]">
               <label for="gebr-beheer-rol-select" class="sr-only">Rol</label>
-              <select id="gebr-beheer-rol-select" v-model="beheerRol" data-testid="gebr-beheer-rol-select" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white">
+              <select id="gebr-beheer-rol-select" v-model="beheerRol" data-testid="gebr-beheer-rol-select" class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white">
                 <option v-for="r in ROL_OPTIES" :key="r" :value="r">{{ label(GEBRUIKER_ROL, r) }}</option>
               </select>
               <Button label="Rol wijzigen" severity="secondary" :disabled="beheerBezig || beheerRol === geselecteerd.rol" data-testid="gebr-rol-opslaan" @click="doeRolWijzigen" />
@@ -446,38 +446,38 @@ onMounted(laad)
         </section>
 
         <!-- 3. Uit-/inschakelen -->
-        <section v-if="!isEigenAccount" class="flex flex-col gap-[var(--cd-space-sm)] border-t border-[var(--cd-color-border)] pt-[var(--cd-space-md)]" data-testid="gebr-beheer-status">
+        <section v-if="!isEigenAccount" class="flex flex-col gap-[var(--lk-space-sm)] border-t border-[var(--lk-color-border)] pt-[var(--lk-space-md)]" data-testid="gebr-beheer-status">
           <h2 class="font-semibold">Toegang</h2>
           <template v-if="geselecteerd.enabled === false">
             <Button label="Inschakelen" severity="secondary" :disabled="beheerBezig" data-testid="gebr-inschakelen" class="self-start" @click="doeStatus(true)" />
           </template>
           <template v-else>
-            <p v-if="bevestigUit" class="text-[length:var(--cd-text-sm)] text-[var(--cd-color-danger)]" data-testid="gebr-uit-bevestig">Toegang wordt per direct ingetrokken. Doorgaan?</p>
-            <div class="flex gap-[var(--cd-space-sm)]">
+            <p v-if="bevestigUit" class="text-[length:var(--lk-text-sm)] text-[var(--lk-color-danger)]" data-testid="gebr-uit-bevestig">Toegang wordt per direct ingetrokken. Doorgaan?</p>
+            <div class="flex gap-[var(--lk-space-sm)]">
               <Button :label="bevestigUit ? 'Ja, uitschakelen' : 'Uitschakelen'" severity="danger" :disabled="beheerBezig" data-testid="gebr-uitschakelen" class="self-start" @click="doeStatus(false)" />
               <Button v-if="bevestigUit" label="Annuleren" severity="secondary" data-testid="gebr-uit-annuleer" @click="bevestigUit = false" />
             </div>
           </template>
         </section>
-        <p v-else class="text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)] border-t border-[var(--cd-color-border)] pt-[var(--cd-space-md)]" data-testid="gebr-status-eigen-note">Je kunt je eigen account niet uitschakelen.</p>
+        <p v-else class="text-[length:var(--lk-text-sm)] text-[var(--lk-color-text-muted)] border-t border-[var(--lk-color-border)] pt-[var(--lk-space-md)]" data-testid="gebr-status-eigen-note">Je kunt je eigen account niet uitschakelen.</p>
 
         <!-- 4. Gegevens corrigeren -->
-        <section class="flex flex-col gap-[var(--cd-space-sm)] border-t border-[var(--cd-color-border)] pt-[var(--cd-space-md)]" data-testid="gebr-beheer-gegevens">
+        <section class="flex flex-col gap-[var(--lk-space-sm)] border-t border-[var(--lk-color-border)] pt-[var(--lk-space-md)]" data-testid="gebr-beheer-gegevens">
           <h2 class="font-semibold">Gegevens</h2>
-          <div class="flex flex-col gap-[var(--cd-space-xs)]">
+          <div class="flex flex-col gap-[var(--lk-space-xs)]">
             <label for="gebr-beheer-naam" class="font-semibold">Naam *</label>
             <InputText id="gebr-beheer-naam" v-model="beheerNaam" data-testid="gebr-beheer-naam" :aria-invalid="!!beheerFouten.naam" aria-describedby="gebr-beheer-fout-naam" />
-            <span v-if="beheerFouten.naam" id="gebr-beheer-fout-naam" role="alert" data-testid="gebr-beheer-fout-naam" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ beheerFouten.naam }}</span>
+            <span v-if="beheerFouten.naam" id="gebr-beheer-fout-naam" role="alert" data-testid="gebr-beheer-fout-naam" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ beheerFouten.naam }}</span>
           </div>
-          <div class="flex flex-col gap-[var(--cd-space-xs)]">
+          <div class="flex flex-col gap-[var(--lk-space-xs)]">
             <label for="gebr-beheer-email" class="font-semibold">E-mail *</label>
             <InputText id="gebr-beheer-email" v-model="beheerEmail" type="email" data-testid="gebr-beheer-email" :aria-invalid="!!beheerFouten.email" aria-describedby="gebr-beheer-fout-email" />
-            <span v-if="beheerFouten.email" id="gebr-beheer-fout-email" role="alert" data-testid="gebr-beheer-fout-email" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ beheerFouten.email }}</span>
+            <span v-if="beheerFouten.email" id="gebr-beheer-fout-email" role="alert" data-testid="gebr-beheer-fout-email" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ beheerFouten.email }}</span>
           </div>
           <Button label="Gegevens opslaan" severity="secondary" :disabled="beheerBezig" data-testid="gebr-gegevens-opslaan" class="self-start" @click="doeCorrectie" />
         </section>
 
-        <div class="flex justify-end border-t border-[var(--cd-color-border)] pt-[var(--cd-space-md)]">
+        <div class="flex justify-end border-t border-[var(--lk-color-border)] pt-[var(--lk-space-md)]">
           <Button label="Sluiten" data-testid="gebr-beheer-sluit" @click="sluitBeheer" />
         </div>
       </div>

@@ -2,10 +2,10 @@
 /**
  * Laag A — Token-contracttest (UI-borging interactiestates).
  *
- * Faalt als een afgesproken `--cd-`-token dat de knop-/tab-standaard draagt
+ * Faalt als een afgesproken `--lk-`-token dat de knop-/tab-standaard draagt
  * ontbreekt of een lege waarde heeft in `themes/base.css`. Zo kan een toekomstige
  * wijziging die een token hernoemt/verwijdert niet meer stil een interactie-state
- * breken (bv. tab-hover die op `--cd-color-primary-50` leunt).
+ * breken (bv. tab-hover die op `--lk-color-primary-50` leunt).
  *
  * Uitbreiden = een token aan VEREISTE_TOKENS toevoegen.
  */
@@ -15,16 +15,16 @@ import { describe, expect, it } from 'vitest'
 
 // Tokens die de knop- + tab-interactiestandaard dragen (zie likara-frontend).
 const VEREISTE_TOKENS = [
-  '--cd-color-primary',
-  '--cd-color-primary-50',
-  '--cd-color-primary-100',
-  '--cd-color-primary-700',
-  '--cd-color-danger',
-  '--cd-color-border',
-  '--cd-color-text',
-  '--cd-radius-btn',
-  '--cd-text-sm',
-  '--cd-text-xs',
+  '--lk-color-primary',
+  '--lk-color-primary-50',
+  '--lk-color-primary-100',
+  '--lk-color-primary-700',
+  '--lk-color-danger',
+  '--lk-color-border',
+  '--lk-color-text',
+  '--lk-radius-btn',
+  '--lk-text-sm',
+  '--lk-text-xs',
 ]
 
 const BASE_CSS = readFileSync(
@@ -35,7 +35,7 @@ const BASE_CSS = readFileSync(
 /** Parseer alle `--token: waarde;`-definities uit base.css naar een map. */
 function parseTokens(css) {
   const map = {}
-  for (const m of css.matchAll(/(--cd-[a-z0-9-]+)\s*:\s*([^;]+);/gi)) {
+  for (const m of css.matchAll(/(--lk-[a-z0-9-]+)\s*:\s*([^;]+);/gi)) {
     map[m[1]] = m[2].trim()
   }
   return map

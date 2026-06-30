@@ -220,16 +220,16 @@ const typeLabel = (c) => label(CONTRACTTYPE, c)
 
 <template>
   <section aria-labelledby="contract-form-titel">
-    <h1 id="contract-form-titel" class="text-[length:var(--cd-text-2xl)] font-semibold text-[var(--cd-color-primary)] mb-[var(--cd-space-lg)]">
+    <h1 id="contract-form-titel" class="text-[length:var(--lk-text-2xl)] font-semibold text-[var(--lk-color-primary)] mb-[var(--lk-space-lg)]">
       {{ bewerken ? 'Contract bewerken' : 'Nieuw contract' }}
     </h1>
 
-    <p v-if="registerFout" role="alert" data-testid="register-fout" class="mb-[var(--cd-space-md)] max-w-2xl rounded-[var(--cd-radius-badge)] border border-[var(--cd-color-danger)] bg-[var(--cd-color-danger)]/10 px-[var(--cd-space-md)] py-[var(--cd-space-sm)] text-[var(--cd-color-danger)]">
+    <p v-if="registerFout" role="alert" data-testid="register-fout" class="mb-[var(--lk-space-md)] max-w-2xl rounded-[var(--lk-radius-badge)] border border-[var(--lk-color-danger)] bg-[var(--lk-color-danger)]/10 px-[var(--lk-space-md)] py-[var(--lk-space-sm)] text-[var(--lk-color-danger)]">
       {{ registerFout }}
     </p>
 
-    <form class="card flex flex-col gap-[var(--cd-space-md)] max-w-2xl" data-testid="contract-form" @submit.prevent="opslaan">
-      <div class="flex flex-col gap-[var(--cd-space-xs)]">
+    <form class="card flex flex-col gap-[var(--lk-space-md)] max-w-2xl" data-testid="contract-form" @submit.prevent="opslaan">
+      <div class="flex flex-col gap-[var(--lk-space-xs)]">
         <label for="cf-leverancier" class="font-semibold">Leverancier *</label>
         <ZoekSelect
           id="cf-leverancier"
@@ -241,19 +241,19 @@ const typeLabel = (c) => label(CONTRACTTYPE, c)
           aria-describedby="fout-leverancier"
           placeholder="Zoek een leverancier…"
         />
-        <span v-if="fouten.leverancier_id" id="fout-leverancier" role="alert" data-testid="fout-leverancier_id" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.leverancier_id }}</span>
+        <span v-if="fouten.leverancier_id" id="fout-leverancier" role="alert" data-testid="fout-leverancier_id" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten.leverancier_id }}</span>
       </div>
 
-      <div class="flex flex-col gap-[var(--cd-space-xs)]">
+      <div class="flex flex-col gap-[var(--lk-space-xs)]">
         <label for="cf-type" class="font-semibold">Contracttype *</label>
-        <select id="cf-type" v-model="form.contracttype" data-testid="veld-contracttype" :aria-invalid="!!fouten.contracttype" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white">
+        <select id="cf-type" v-model="form.contracttype" data-testid="veld-contracttype" :aria-invalid="!!fouten.contracttype" class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white">
           <option value="" disabled>— maak een keuze —</option>
           <option v-for="t in TYPE_OPTIES" :key="t" :value="t">{{ typeLabel(t) }}</option>
         </select>
-        <span v-if="fouten.contracttype" role="alert" data-testid="fout-contracttype" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.contracttype }}</span>
+        <span v-if="fouten.contracttype" role="alert" data-testid="fout-contracttype" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten.contracttype }}</span>
       </div>
 
-      <div v-if="isDeel" class="flex flex-col gap-[var(--cd-space-xs)]">
+      <div v-if="isDeel" class="flex flex-col gap-[var(--lk-space-xs)]">
         <label for="cf-mantel" class="font-semibold">Mantelcontract *</label>
         <ZoekSelect
           id="cf-mantel"
@@ -266,52 +266,52 @@ const typeLabel = (c) => label(CONTRACTTYPE, c)
           aria-describedby="fout-mantel"
           placeholder="Zoek een mantelcontract van deze leverancier…"
         />
-        <span v-if="fouten.mantelcontract_id" id="fout-mantel" role="alert" data-testid="fout-mantelcontract_id" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.mantelcontract_id }}</span>
-        <span v-else class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">Een deelcontract erft de leverancier van zijn mantel.</span>
+        <span v-if="fouten.mantelcontract_id" id="fout-mantel" role="alert" data-testid="fout-mantelcontract_id" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten.mantelcontract_id }}</span>
+        <span v-else class="text-[length:var(--lk-text-xs)] text-[var(--lk-color-text-muted)]">Een deelcontract erft de leverancier van zijn mantel.</span>
       </div>
 
-      <div class="flex flex-col gap-[var(--cd-space-xs)]">
+      <div class="flex flex-col gap-[var(--lk-space-xs)]">
         <label for="cf-naam" class="font-semibold">Contractnaam *</label>
         <InputText id="cf-naam" v-model="form.contractnaam" data-testid="veld-contractnaam" :aria-invalid="!!fouten.contractnaam" aria-describedby="fout-contractnaam" />
-        <span v-if="fouten.contractnaam" id="fout-contractnaam" role="alert" data-testid="fout-contractnaam" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.contractnaam }}</span>
+        <span v-if="fouten.contractnaam" id="fout-contractnaam" role="alert" data-testid="fout-contractnaam" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten.contractnaam }}</span>
       </div>
 
-      <div v-for="v in TEKSTVELDEN" :key="v.veld" class="flex flex-col gap-[var(--cd-space-xs)]">
+      <div v-for="v in TEKSTVELDEN" :key="v.veld" class="flex flex-col gap-[var(--lk-space-xs)]">
         <label :for="`cf-${v.veld}`" class="font-semibold">{{ v.label }}</label>
         <InputText :id="`cf-${v.veld}`" v-model="form[v.veld]" :data-testid="`veld-${v.veld}`" />
       </div>
 
-      <fieldset class="flex flex-col gap-[var(--cd-space-xs)]">
+      <fieldset class="flex flex-col gap-[var(--lk-space-xs)]">
         <legend class="font-semibold">Dekking</legend>
-        <label v-for="o in dekkingOpties" :key="o.optie_sleutel" class="flex items-center gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
+        <label v-for="o in dekkingOpties" :key="o.optie_sleutel" class="flex items-center gap-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]">
           <input v-model="gekozenDekking" type="checkbox" :value="o.optie_sleutel" :data-testid="`dekking-${o.optie_sleutel}`" />
           {{ o.label }}
         </label>
       </fieldset>
 
-      <fieldset class="flex flex-col gap-[var(--cd-space-xs)]">
+      <fieldset class="flex flex-col gap-[var(--lk-space-xs)]">
         <legend class="font-semibold">Kostenmodel</legend>
-        <label v-for="o in kostenmodelOpties" :key="o.optie_sleutel" class="flex items-center gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
+        <label v-for="o in kostenmodelOpties" :key="o.optie_sleutel" class="flex items-center gap-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]">
           <input v-model="gekozenKostenmodel" type="checkbox" :value="o.optie_sleutel" :data-testid="`kostenmodel-${o.optie_sleutel}`" />
           {{ o.label }}
         </label>
       </fieldset>
 
-      <div v-for="d in DATUMVELDEN" :key="d.veld" class="flex flex-col gap-[var(--cd-space-xs)]">
+      <div v-for="d in DATUMVELDEN" :key="d.veld" class="flex flex-col gap-[var(--lk-space-xs)]">
         <label :for="`cf-${d.veld}`" class="font-semibold">{{ d.label }}</label>
-        <input :id="`cf-${d.veld}`" v-model="form[d.veld]" type="date" :data-testid="`veld-${d.veld}`" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white" />
+        <input :id="`cf-${d.veld}`" v-model="form[d.veld]" type="date" :data-testid="`veld-${d.veld}`" class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white" />
       </div>
 
-      <div class="flex flex-col gap-[var(--cd-space-xs)]">
+      <div class="flex flex-col gap-[var(--lk-space-xs)]">
         <label for="cf-omschrijving" class="font-semibold">Omschrijving</label>
         <Textarea id="cf-omschrijving" v-model="form.omschrijving" rows="2" data-testid="veld-omschrijving" />
       </div>
-      <div class="flex flex-col gap-[var(--cd-space-xs)]">
+      <div class="flex flex-col gap-[var(--lk-space-xs)]">
         <label for="cf-toelichting" class="font-semibold">Toelichting</label>
         <Textarea id="cf-toelichting" v-model="form.toelichting" rows="3" data-testid="veld-toelichting" />
       </div>
 
-      <div class="flex gap-[var(--cd-space-md)] mt-[var(--cd-space-sm)]">
+      <div class="flex gap-[var(--lk-space-md)] mt-[var(--lk-space-sm)]">
         <Button type="submit" label="Opslaan" data-testid="opslaan-knop" :disabled="bezig" />
         <Button type="button" label="Annuleren" severity="secondary" data-testid="annuleer-knop" @click="annuleer" />
       </div>

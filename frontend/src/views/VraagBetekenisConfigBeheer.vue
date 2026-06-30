@@ -171,26 +171,26 @@ laad()
 
 <template>
   <section aria-labelledby="vb-titel">
-    <h1 id="vb-titel" class="text-[length:var(--cd-text-xl)] font-semibold mb-[var(--cd-space-md)]">
+    <h1 id="vb-titel" class="text-[length:var(--lk-text-xl)] font-semibold mb-[var(--lk-space-md)]">
       Vraagbetekenis-catalogus
     </h1>
-    <p class="mb-[var(--cd-space-md)] max-w-prose text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]">
+    <p class="mb-[var(--lk-space-md)] max-w-prose text-[length:var(--lk-text-sm)] text-[var(--lk-color-text-muted)]">
       De betekenis-markers achter de betekenis-keuze van een checklistvraag.
     </p>
 
-    <p v-if="fout" role="alert" data-testid="vb-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ fout }}</p>
-    <p v-if="laden" data-testid="vb-laden" class="text-[var(--cd-color-text-muted)]">Laden…</p>
+    <p v-if="fout" role="alert" data-testid="vb-fout" class="text-[var(--lk-color-danger)] mb-[var(--lk-space-sm)]">{{ fout }}</p>
+    <p v-if="laden" data-testid="vb-laden" class="text-[var(--lk-color-text-muted)]">Laden…</p>
 
     <section class="card" data-testid="vb-sectie">
-      <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
-        <h2 class="text-[length:var(--cd-text-lg)] font-semibold">Betekenis-opties</h2>
+      <div class="flex items-center gap-[var(--lk-space-md)] mb-[var(--lk-space-sm)]">
+        <h2 class="text-[length:var(--lk-text-lg)] font-semibold">Betekenis-opties</h2>
         <Button v-if="magBeheren" label="Optie toevoegen" data-testid="vb-toevoegen" class="ml-auto" @click="openToevoegen" />
       </div>
 
-      <table class="w-full text-[length:var(--cd-text-sm)]" data-testid="vb-tabel">
+      <table class="w-full text-[length:var(--lk-text-sm)]" data-testid="vb-tabel">
         <thead>
-          <tr class="text-left text-[var(--cd-color-text-muted)]">
-            <th class="py-[var(--cd-space-xs)]">Label</th>
+          <tr class="text-left text-[var(--lk-color-text-muted)]">
+            <th class="py-[var(--lk-space-xs)]">Label</th>
             <th>Sleutel</th>
             <th>Volgorde</th>
             <th>Status</th>
@@ -202,17 +202,17 @@ laad()
             v-for="optie in gesorteerd"
             :key="optie.id"
             :data-testid="`vb-rij-${optie.id}`"
-            class="border-t border-[var(--cd-color-border)]"
+            class="border-t border-[var(--lk-color-border)]"
             :class="optie.actief ? '' : 'opacity-50'"
           >
-            <td class="py-[var(--cd-space-xs)]">{{ optie.label }}</td>
+            <td class="py-[var(--lk-space-xs)]">{{ optie.label }}</td>
             <td class="font-mono">{{ optie.optie_sleutel }}</td>
             <td>{{ optie.volgorde }}</td>
             <td>
               <Tag :data-testid="`vb-status-${optie.id}`" :value="optie.actief ? 'Actief' : 'Gedeactiveerd'" :severity="optie.actief ? 'success' : 'secondary'" />
             </td>
             <td class="text-right">
-              <div v-if="magBeheren" class="flex items-center justify-end gap-[var(--cd-space-xs)]">
+              <div v-if="magBeheren" class="flex items-center justify-end gap-[var(--lk-space-xs)]">
                 <Button label="Bewerken" severity="secondary" :data-testid="`vb-bewerk-${optie.id}`" @click="openBewerken(optie)" />
                 <Button v-if="optie.actief" label="Deactiveren" severity="danger" :data-testid="`vb-deactiveer-${optie.id}`" @click="vraagDeactiveren(optie)" />
                 <Button v-else label="Reactiveren" :data-testid="`vb-reactiveer-${optie.id}`" @click="reactiveer(optie)" />
@@ -220,7 +220,7 @@ laad()
             </td>
           </tr>
           <tr v-if="!gesorteerd.length">
-            <td colspan="5" data-testid="vb-leeg" class="py-[var(--cd-space-sm)] text-[var(--cd-color-text-muted)]">Nog geen betekenis-opties.</td>
+            <td colspan="5" data-testid="vb-leeg" class="py-[var(--lk-space-sm)] text-[var(--lk-color-text-muted)]">Nog geen betekenis-opties.</td>
           </tr>
         </tbody>
       </table>
@@ -228,23 +228,23 @@ laad()
 
     <!-- Toevoegen -->
     <Dialog v-model:visible="addOpen" modal :closable="false" header="Betekenis-optie toevoegen" data-testid="vb-add-dialog">
-      <form class="flex flex-col gap-[var(--cd-space-md)] min-w-[22rem]" data-testid="vb-add-form" @submit.prevent="bevestigToevoegen">
-        <p v-if="addFormFout" role="alert" data-testid="vb-add-formfout" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ addFormFout }}</p>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+      <form class="flex flex-col gap-[var(--lk-space-md)] min-w-[22rem]" data-testid="vb-add-form" @submit.prevent="bevestigToevoegen">
+        <p v-if="addFormFout" role="alert" data-testid="vb-add-formfout" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ addFormFout }}</p>
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="vb-add-sleutel" class="font-semibold">Sleutel *</label>
-          <input id="vb-add-sleutel" v-model="addForm.optie_sleutel" type="text" data-testid="vb-add-sleutel" :aria-invalid="!!addFouten.optie_sleutel" placeholder="bv. risico" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white font-mono" />
-          <span v-if="addFouten.optie_sleutel" role="alert" data-testid="vb-add-fout-optie_sleutel" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ addFouten.optie_sleutel }}</span>
+          <input id="vb-add-sleutel" v-model="addForm.optie_sleutel" type="text" data-testid="vb-add-sleutel" :aria-invalid="!!addFouten.optie_sleutel" placeholder="bv. risico" class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white font-mono" />
+          <span v-if="addFouten.optie_sleutel" role="alert" data-testid="vb-add-fout-optie_sleutel" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ addFouten.optie_sleutel }}</span>
         </div>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="vb-add-label" class="font-semibold">Label *</label>
-          <input id="vb-add-label" v-model="addForm.label" type="text" data-testid="vb-add-label" :aria-invalid="!!addFouten.label" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white" />
-          <span v-if="addFouten.label" role="alert" data-testid="vb-add-fout-label" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ addFouten.label }}</span>
+          <input id="vb-add-label" v-model="addForm.label" type="text" data-testid="vb-add-label" :aria-invalid="!!addFouten.label" class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white" />
+          <span v-if="addFouten.label" role="alert" data-testid="vb-add-fout-label" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ addFouten.label }}</span>
         </div>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="vb-add-volgorde" class="font-semibold">Volgorde</label>
-          <input id="vb-add-volgorde" v-model="addForm.volgorde" type="number" data-testid="vb-add-volgorde" placeholder="leeg = achteraan" class="w-32 rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white" />
+          <input id="vb-add-volgorde" v-model="addForm.volgorde" type="number" data-testid="vb-add-volgorde" placeholder="leeg = achteraan" class="w-32 rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white" />
         </div>
-        <div class="flex gap-[var(--cd-space-md)]">
+        <div class="flex gap-[var(--lk-space-md)]">
           <Button type="submit" label="Toevoegen" data-testid="vb-add-opslaan" :disabled="bezig" />
           <Button type="button" label="Annuleren" severity="secondary" @click="addOpen = false" />
         </div>
@@ -253,22 +253,22 @@ laad()
 
     <!-- Bewerken -->
     <Dialog v-model:visible="editOpen" modal :closable="false" header="Optie bewerken" data-testid="vb-edit-dialog">
-      <form class="flex flex-col gap-[var(--cd-space-md)] min-w-[22rem]" data-testid="vb-edit-form" @submit.prevent="bevestigBewerken">
-        <dl class="grid grid-cols-[max-content_1fr] gap-x-[var(--cd-space-md)] gap-y-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
+      <form class="flex flex-col gap-[var(--lk-space-md)] min-w-[22rem]" data-testid="vb-edit-form" @submit.prevent="bevestigBewerken">
+        <dl class="grid grid-cols-[max-content_1fr] gap-x-[var(--lk-space-md)] gap-y-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]">
           <dt class="font-semibold">Sleutel</dt>
           <dd data-testid="vb-edit-sleutel-readonly" class="font-mono">{{ editOptie?.optie_sleutel }}</dd>
         </dl>
-        <p class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">De sleutel ligt vast (stabiele referentie) en is niet bewerkbaar.</p>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <p class="text-[length:var(--lk-text-xs)] text-[var(--lk-color-text-muted)]">De sleutel ligt vast (stabiele referentie) en is niet bewerkbaar.</p>
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="vb-edit-label" class="font-semibold">Label *</label>
-          <input id="vb-edit-label" v-model="editForm.label" type="text" data-testid="vb-edit-label" :aria-invalid="!!editFouten.label" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white" />
-          <span v-if="editFouten.label" role="alert" data-testid="vb-edit-fout-label" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ editFouten.label }}</span>
+          <input id="vb-edit-label" v-model="editForm.label" type="text" data-testid="vb-edit-label" :aria-invalid="!!editFouten.label" class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white" />
+          <span v-if="editFouten.label" role="alert" data-testid="vb-edit-fout-label" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ editFouten.label }}</span>
         </div>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="vb-edit-volgorde" class="font-semibold">Volgorde</label>
-          <input id="vb-edit-volgorde" v-model="editForm.volgorde" type="number" data-testid="vb-edit-volgorde" class="w-32 rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white" />
+          <input id="vb-edit-volgorde" v-model="editForm.volgorde" type="number" data-testid="vb-edit-volgorde" class="w-32 rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white" />
         </div>
-        <div class="flex gap-[var(--cd-space-md)]">
+        <div class="flex gap-[var(--lk-space-md)]">
           <Button type="submit" label="Opslaan" data-testid="vb-edit-opslaan" :disabled="bezig" />
           <Button type="button" label="Annuleren" severity="secondary" @click="editOpen = false" />
         </div>
@@ -277,13 +277,13 @@ laad()
 
     <!-- Deactiveren -->
     <Dialog v-model:visible="deactOpen" modal header="Optie deactiveren" data-testid="vb-deact-dialog">
-      <p class="mb-[var(--cd-space-sm)] max-w-prose">
+      <p class="mb-[var(--lk-space-sm)] max-w-prose">
         Wil je <strong>{{ deactOptie?.label }}</strong> (<span class="font-mono">{{ deactOptie?.optie_sleutel }}</span>) deactiveren?
       </p>
-      <p data-testid="vb-deact-uitleg" class="mb-[var(--cd-space-md)] max-w-prose text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]">
+      <p data-testid="vb-deact-uitleg" class="mb-[var(--lk-space-md)] max-w-prose text-[length:var(--lk-text-sm)] text-[var(--lk-color-text-muted)]">
         Bestaande registraties blijven leesbaar; de optie is alleen niet meer kiesbaar voor nieuwe registraties.
       </p>
-      <div class="flex justify-end gap-[var(--cd-space-md)]">
+      <div class="flex justify-end gap-[var(--lk-space-md)]">
         <Button label="Annuleren" severity="secondary" @click="deactOpen = false" />
         <Button label="Deactiveren" severity="danger" data-testid="vb-deact-bevestig" :disabled="bezig" @click="bevestigDeactiveren" />
       </div>

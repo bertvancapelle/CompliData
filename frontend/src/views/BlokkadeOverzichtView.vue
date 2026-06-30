@@ -115,20 +115,20 @@ onMounted(() => laad({ reset: true }))
 
 <template>
   <section aria-labelledby="blokkades-titel">
-    <div class="flex items-center flex-wrap gap-[var(--cd-space-md)] mb-[var(--cd-space-md)]">
+    <div class="flex items-center flex-wrap gap-[var(--lk-space-md)] mb-[var(--lk-space-md)]">
       <h1
         id="blokkades-titel"
-        class="text-[length:var(--cd-text-2xl)] font-semibold text-[var(--cd-color-primary)]"
+        class="text-[length:var(--lk-text-2xl)] font-semibold text-[var(--lk-color-primary)]"
       >
         Blokkades
       </h1>
-      <label class="ml-auto flex items-center gap-[var(--cd-space-sm)] text-[length:var(--cd-text-sm)]">
-        <span class="text-[var(--cd-color-text-muted)]">Status</span>
+      <label class="ml-auto flex items-center gap-[var(--lk-space-sm)] text-[length:var(--lk-text-sm)]">
+        <span class="text-[var(--lk-color-text-muted)]">Status</span>
         <select
           v-model="statusFilter"
           data-testid="status-filter"
           aria-label="Filter op blokkade-status"
-          class="rounded-[var(--cd-radius-btn)] border border-[var(--cd-color-border)] bg-[var(--cd-color-surface)] px-[var(--cd-space-sm)] py-1 focus:outline-2 focus:outline-offset-2 focus:outline-[var(--cd-color-primary)]"
+          class="rounded-[var(--lk-radius-btn)] border border-[var(--lk-color-border)] bg-[var(--lk-color-surface)] px-[var(--lk-space-sm)] py-1 focus:outline-2 focus:outline-offset-2 focus:outline-[var(--lk-color-primary)]"
           @change="onFilterWijziging"
         >
           <option v-for="o in STATUS_OPTIES" :key="o.waarde" :value="o.waarde">{{ o.tekst }}</option>
@@ -140,7 +140,7 @@ onMounted(() => laad({ reset: true }))
       v-if="fout"
       role="alert"
       data-testid="overzicht-fout"
-      class="mb-[var(--cd-space-md)] rounded-[var(--cd-radius-badge)] border border-[var(--cd-color-danger)] bg-[var(--cd-color-danger)]/10 px-[var(--cd-space-md)] py-[var(--cd-space-sm)] text-[var(--cd-color-danger)]"
+      class="mb-[var(--lk-space-md)] rounded-[var(--lk-radius-badge)] border border-[var(--lk-color-danger)] bg-[var(--lk-color-danger)]/10 px-[var(--lk-space-md)] py-[var(--lk-space-sm)] text-[var(--lk-color-danger)]"
     >
       {{ fout }}
     </p>
@@ -151,7 +151,7 @@ onMounted(() => laad({ reset: true }))
       :sort-field="sortVeld"
       :sort-order="primeSortOrder"
       data-testid="blokkades-tabel"
-      class="bg-[var(--cd-color-surface)] rounded-[var(--cd-radius-card)] shadow-[var(--cd-shadow-sm)]"
+      class="bg-[var(--lk-color-surface)] rounded-[var(--lk-radius-card)] shadow-[var(--lk-shadow-sm)]"
       @sort="onSort"
     >
       <Column field="applicatie_naam" header="Component" sortable>
@@ -159,11 +159,11 @@ onMounted(() => laad({ reset: true }))
           <router-link
             :to="detailDoel(data)"
             data-testid="blokkade-app-link"
-            class="text-[var(--cd-color-primary)] font-medium hover:underline focus:outline-2 focus:outline-offset-2 focus:outline-[var(--cd-color-primary)]"
+            class="text-[var(--lk-color-primary)] font-medium hover:underline focus:outline-2 focus:outline-offset-2 focus:outline-[var(--lk-color-primary)]"
           >
             {{ data.applicatie_naam }}
           </router-link>
-          <span data-testid="blokkade-type" class="ml-[var(--cd-space-sm)] text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]">
+          <span data-testid="blokkade-type" class="ml-[var(--lk-space-sm)] text-[length:var(--lk-text-sm)] text-[var(--lk-color-text-muted)]">
             {{ data.componenttype_label }}
           </span>
         </template>
@@ -173,7 +173,7 @@ onMounted(() => laad({ reset: true }))
           <router-link
             :to="detailDoel(data, { markeer: true })"
             data-testid="blokkade-vraag-link"
-            class="text-[var(--cd-color-primary)] font-medium hover:underline focus:outline-2 focus:outline-offset-2 focus:outline-[var(--cd-color-primary)]"
+            class="text-[var(--lk-color-primary)] font-medium hover:underline focus:outline-2 focus:outline-offset-2 focus:outline-[var(--lk-color-primary)]"
           >
             {{ data.vraag_code }}
           </router-link>
@@ -208,7 +208,7 @@ onMounted(() => laad({ reset: true }))
       </template>
     </DataTable>
 
-    <div class="mt-[var(--cd-space-md)] flex items-center gap-[var(--cd-space-md)]">
+    <div class="mt-[var(--lk-space-md)] flex items-center gap-[var(--lk-space-md)]">
       <Button
         v-if="cursor"
         label="Meer laden"
@@ -220,7 +220,7 @@ onMounted(() => laad({ reset: true }))
       <span
         v-if="laden && items.length"
         data-testid="overzicht-laden"
-        class="text-[var(--cd-color-text-muted)] text-[length:var(--cd-text-sm)]"
+        class="text-[var(--lk-color-text-muted)] text-[length:var(--lk-text-sm)]"
       >
         Laden…
       </span>

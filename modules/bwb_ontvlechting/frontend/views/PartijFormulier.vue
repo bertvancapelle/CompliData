@@ -192,14 +192,14 @@ const TEKSTVELDEN = [
   <section aria-labelledby="partij-form-titel">
     <h1
       id="partij-form-titel"
-      class="text-[length:var(--cd-text-2xl)] font-semibold text-[var(--cd-color-primary)] mb-[var(--cd-space-lg)]"
+      class="text-[length:var(--lk-text-2xl)] font-semibold text-[var(--lk-color-primary)] mb-[var(--lk-space-lg)]"
     >
       {{ bewerken ? 'Partij bewerken' : 'Nieuwe partij' }}
     </h1>
 
-    <form class="card flex flex-col gap-[var(--cd-space-md)] max-w-2xl" data-testid="partij-form" @submit.prevent="opslaan">
+    <form class="card flex flex-col gap-[var(--lk-space-md)] max-w-2xl" data-testid="partij-form" @submit.prevent="opslaan">
       <!-- Aard: keuze bij aanmaken, vast (read-only) bij bewerken -->
-      <div class="flex flex-col gap-[var(--cd-space-xs)]">
+      <div class="flex flex-col gap-[var(--lk-space-xs)]">
         <label for="pf-aard" class="font-semibold">Aard *</label>
         <select
           v-if="!bewerken"
@@ -207,18 +207,18 @@ const TEKSTVELDEN = [
           v-model="aard"
           data-testid="veld-aard"
           :aria-invalid="!!fouten.aard"
-          class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white"
+          class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white"
         >
           <option value="">— kies —</option>
           <option v-for="a in AARD_OPTIES" :key="a" :value="a">{{ aardLabel(a) }}</option>
         </select>
-        <span v-else data-testid="aard-readonly" class="text-[var(--cd-color-text-muted)]">{{ aardLabel(aard) }} (vast)</span>
-        <span v-if="fouten.aard" role="alert" data-testid="fout-aard" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.aard }}</span>
+        <span v-else data-testid="aard-readonly" class="text-[var(--lk-color-text-muted)]">{{ aardLabel(aard) }} (vast)</span>
+        <span v-if="fouten.aard" role="alert" data-testid="fout-aard" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten.aard }}</span>
       </div>
 
       <!-- "Hoort bij": organisatie verplicht voor persoon/afdeling; afdeling optioneel voor persoon.
            CD049/ZoekSelect-standaard: server-side zoekend (onbegrensd), geen voor-geladen lijst. -->
-      <div v-if="heeftOrgOuder" class="flex flex-col gap-[var(--cd-space-xs)]">
+      <div v-if="heeftOrgOuder" class="flex flex-col gap-[var(--lk-space-xs)]">
         <label for="pf-organisatie" class="font-semibold">Organisatie *</label>
         <ZoekSelect
           id="pf-organisatie"
@@ -231,10 +231,10 @@ const TEKSTVELDEN = [
           placeholder="Zoek een organisatie…"
           @update:model-value="onOrgKies"
         />
-        <span v-if="fouten.organisatie_id" id="fout-organisatie_id" role="alert" data-testid="fout-organisatie_id" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.organisatie_id }}</span>
+        <span v-if="fouten.organisatie_id" id="fout-organisatie_id" role="alert" data-testid="fout-organisatie_id" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten.organisatie_id }}</span>
       </div>
 
-      <div v-if="magAfdeling && organisatieId" class="flex flex-col gap-[var(--cd-space-xs)]">
+      <div v-if="magAfdeling && organisatieId" class="flex flex-col gap-[var(--lk-space-xs)]">
         <label for="pf-afdeling" class="font-semibold">Afdeling (optioneel)</label>
         <ZoekSelect
           id="pf-afdeling"
@@ -247,49 +247,49 @@ const TEKSTVELDEN = [
           aria-describedby="fout-afdeling_id"
           placeholder="Zoek een afdeling…"
         />
-        <span v-if="fouten.afdeling_id" id="fout-afdeling_id" role="alert" data-testid="fout-afdeling_id" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.afdeling_id }}</span>
+        <span v-if="fouten.afdeling_id" id="fout-afdeling_id" role="alert" data-testid="fout-afdeling_id" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten.afdeling_id }}</span>
       </div>
 
-      <div class="flex flex-col gap-[var(--cd-space-xs)]">
+      <div class="flex flex-col gap-[var(--lk-space-xs)]">
         <label for="pf-naam" class="font-semibold">Naam *</label>
         <InputText id="pf-naam" v-model="form.naam" data-testid="veld-naam" :aria-invalid="!!fouten.naam" aria-describedby="fout-naam" />
-        <span v-if="fouten.naam" id="fout-naam" role="alert" data-testid="fout-naam" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.naam }}</span>
+        <span v-if="fouten.naam" id="fout-naam" role="alert" data-testid="fout-naam" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten.naam }}</span>
       </div>
 
       <!-- Soort: optioneel (platform-catalogus) -->
-      <div class="flex flex-col gap-[var(--cd-space-xs)]">
+      <div class="flex flex-col gap-[var(--lk-space-xs)]">
         <label for="pf-soort" class="font-semibold">Soort</label>
         <select
           id="pf-soort"
           v-model="soort"
           data-testid="veld-soort"
-          class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white"
+          class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white"
         >
           <option value="">— geen —</option>
           <option v-for="o in soortOpties" :key="o.optie_sleutel" :value="o.optie_sleutel">{{ o.label }}</option>
         </select>
-        <span v-if="fouten.soort" role="alert" data-testid="fout-soort" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.soort }}</span>
+        <span v-if="fouten.soort" role="alert" data-testid="fout-soort" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten.soort }}</span>
       </div>
 
-      <div v-for="v in TEKSTVELDEN" :key="v.veld" class="flex flex-col gap-[var(--cd-space-xs)]">
+      <div v-for="v in TEKSTVELDEN" :key="v.veld" class="flex flex-col gap-[var(--lk-space-xs)]">
         <label :for="`pf-${v.veld}`" class="font-semibold">{{ v.label }}</label>
         <InputText :id="`pf-${v.veld}`" v-model="form[v.veld]" :data-testid="`veld-${v.veld}`" :aria-invalid="!!fouten[v.veld]" :aria-describedby="`fout-${v.veld}`" />
-        <span v-if="fouten[v.veld]" :id="`fout-${v.veld}`" role="alert" :data-testid="`fout-${v.veld}`" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten[v.veld] }}</span>
+        <span v-if="fouten[v.veld]" :id="`fout-${v.veld}`" role="alert" :data-testid="`fout-${v.veld}`" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten[v.veld] }}</span>
       </div>
 
       <!-- ADR-024 (Optie 1) — functietitel uitsluitend voor een persoon. -->
-      <div v-if="aard === 'persoon'" class="flex flex-col gap-[var(--cd-space-xs)]" data-testid="veld-functietitel-wrap">
+      <div v-if="aard === 'persoon'" class="flex flex-col gap-[var(--lk-space-xs)]" data-testid="veld-functietitel-wrap">
         <label for="pf-functietitel" class="font-semibold">Functietitel (optioneel)</label>
         <InputText id="pf-functietitel" v-model="form.functietitel" data-testid="veld-functietitel" :aria-invalid="!!fouten.functietitel" aria-describedby="fout-functietitel" />
-        <span v-if="fouten.functietitel" id="fout-functietitel" role="alert" data-testid="fout-functietitel" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.functietitel }}</span>
+        <span v-if="fouten.functietitel" id="fout-functietitel" role="alert" data-testid="fout-functietitel" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten.functietitel }}</span>
       </div>
 
-      <div class="flex flex-col gap-[var(--cd-space-xs)]">
+      <div class="flex flex-col gap-[var(--lk-space-xs)]">
         <label for="pf-omschrijving" class="font-semibold">Omschrijving</label>
         <Textarea id="pf-omschrijving" v-model="form.omschrijving" rows="3" data-testid="veld-omschrijving" />
       </div>
 
-      <div class="flex gap-[var(--cd-space-md)] mt-[var(--cd-space-sm)]">
+      <div class="flex gap-[var(--lk-space-md)] mt-[var(--lk-space-sm)]">
         <Button type="submit" label="Opslaan" data-testid="opslaan-knop" :disabled="bezig" />
         <Button type="button" label="Annuleren" severity="secondary" data-testid="annuleer-knop" @click="annuleer" />
       </div>

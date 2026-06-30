@@ -135,29 +135,29 @@ defineExpose({ items, laad })
 
 <template>
   <section class="card" aria-labelledby="sectie-verantwoordelijkheden" data-testid="vw-sectie">
-    <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
-      <h2 id="sectie-verantwoordelijkheden" class="text-[length:var(--cd-text-lg)] font-semibold">
+    <div class="flex items-center gap-[var(--lk-space-md)] mb-[var(--lk-space-sm)]">
+      <h2 id="sectie-verantwoordelijkheden" class="text-[length:var(--lk-text-lg)] font-semibold">
         Verantwoordelijkheden
       </h2>
       <Button v-if="mag" label="Toewijzing toevoegen" severity="secondary" data-testid="vw-toevoegen" class="ml-auto" @click="openToevoegen" />
     </div>
 
-    <p v-if="fout" role="alert" data-testid="vw-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ fout }}</p>
+    <p v-if="fout" role="alert" data-testid="vw-fout" class="text-[var(--lk-color-danger)] mb-[var(--lk-space-sm)]">{{ fout }}</p>
 
-    <table v-if="items.length" class="w-full text-[length:var(--cd-text-sm)]" data-testid="vw-tabel">
+    <table v-if="items.length" class="w-full text-[length:var(--lk-text-sm)]" data-testid="vw-tabel">
       <thead>
-        <tr class="text-left text-[var(--cd-color-text-muted)]">
-          <th class="py-[var(--cd-space-xs)]">Rol</th>
+        <tr class="text-left text-[var(--lk-color-text-muted)]">
+          <th class="py-[var(--lk-space-xs)]">Rol</th>
           <th>Partij</th>
           <th>Aard</th>
           <th></th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="rij in items" :key="rij.toewijzing_id" class="border-t border-[var(--cd-color-border)]">
-          <td class="py-[var(--cd-space-xs)] font-semibold">{{ rij.rol_label }}</td>
+        <tr v-for="rij in items" :key="rij.toewijzing_id" class="border-t border-[var(--lk-color-border)]">
+          <td class="py-[var(--lk-space-xs)] font-semibold">{{ rij.rol_label }}</td>
           <td>
-            <router-link :to="{ name: 'partij-detail', params: { id: rij.partij_id } }" class="text-[var(--cd-color-primary)] hover:underline">{{ rij.partij_naam }}</router-link>
+            <router-link :to="{ name: 'partij-detail', params: { id: rij.partij_id } }" class="text-[var(--lk-color-primary)] hover:underline">{{ rij.partij_naam }}</router-link>
           </td>
           <td><Tag :value="aardLabel(rij.partij_aard)" severity="info" /></td>
           <td class="text-right">
@@ -166,11 +166,11 @@ defineExpose({ items, laad })
         </tr>
       </tbody>
     </table>
-    <p v-else-if="!laden" data-testid="vw-leeg" class="text-[var(--cd-color-text-muted)]">Nog geen toegewezen verantwoordelijkheden.</p>
+    <p v-else-if="!laden" data-testid="vw-leeg" class="text-[var(--lk-color-text-muted)]">Nog geen toegewezen verantwoordelijkheden.</p>
 
     <Dialog v-model:visible="dialogOpen" modal :closable="false" header="Verantwoordelijkheid toewijzen" data-testid="vw-dialog" @show="focusEerste" @hide="onHide">
-      <form class="flex flex-col gap-[var(--cd-space-md)] min-w-[22rem]" data-testid="vw-form" @submit.prevent="voegToe">
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+      <form class="flex flex-col gap-[var(--lk-space-md)] min-w-[22rem]" data-testid="vw-form" @submit.prevent="voegToe">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="vw-partij" class="font-semibold">Partij *</label>
           <ZoekSelect
             id="vw-partij"
@@ -182,17 +182,17 @@ defineExpose({ items, laad })
             :invalid="!!fouten.partij_id"
             placeholder="Zoek een partij…"
           />
-          <span v-if="fouten.partij_id" role="alert" data-testid="vw-fout-partij" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.partij_id }}</span>
+          <span v-if="fouten.partij_id" role="alert" data-testid="vw-fout-partij" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten.partij_id }}</span>
         </div>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="vw-rol" class="font-semibold">Rol *</label>
-          <select id="vw-rol" v-model="form.rol" data-testid="vw-veld-rol" :aria-invalid="!!fouten.rol" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white">
+          <select id="vw-rol" v-model="form.rol" data-testid="vw-veld-rol" :aria-invalid="!!fouten.rol" class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white">
             <option value="" disabled>— kies een rol —</option>
             <option v-for="o in rolOpties" :key="o.optie_sleutel" :value="o.optie_sleutel">{{ o.label }}</option>
           </select>
-          <span v-if="fouten.rol" role="alert" data-testid="vw-fout-rol" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.rol }}</span>
+          <span v-if="fouten.rol" role="alert" data-testid="vw-fout-rol" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten.rol }}</span>
         </div>
-        <div class="flex gap-[var(--cd-space-md)]">
+        <div class="flex gap-[var(--lk-space-md)]">
           <Button type="submit" label="Toewijzen" data-testid="vw-opslaan" :disabled="bezig" />
           <Button type="button" label="Annuleren" severity="secondary" @click="dialogOpen = false" />
         </div>
@@ -200,10 +200,10 @@ defineExpose({ items, laad })
     </Dialog>
 
     <Dialog v-model:visible="verwijderOpen" modal header="Toewijzing verwijderen" data-testid="vw-verwijder-dialog" @hide="onHide">
-      <p class="mb-[var(--cd-space-md)] max-w-prose">
+      <p class="mb-[var(--lk-space-md)] max-w-prose">
         De toewijzing <strong>{{ teVerwijderen?.rol_label }}</strong> van <strong>{{ teVerwijderen?.partij_naam }}</strong> verwijderen?
       </p>
-      <div class="flex justify-end gap-[var(--cd-space-md)]">
+      <div class="flex justify-end gap-[var(--lk-space-md)]">
         <Button label="Annuleren" severity="secondary" @click="verwijderOpen = false" />
         <Button label="Verwijderen" severity="danger" data-testid="vw-verwijder-bevestig" :disabled="bezig" @click="bevestigVerwijder" />
       </div>

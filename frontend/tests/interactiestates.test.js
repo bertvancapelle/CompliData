@@ -31,26 +31,26 @@ function rootClass(props) {
 describe('Laag B — Button-preset varianten', () => {
   it('primary (default): donkerblauwe vulling + witte tekst', () => {
     const c = rootClass({})
-    expect(c).toContain('bg-[var(--cd-color-primary)]')
+    expect(c).toContain('bg-[var(--lk-color-primary)]')
     expect(c).toContain('text-white')
   })
 
   it('secondary: lichtblauwe vulling + mid-blauwe tekst (token-klassen)', () => {
     const c = rootClass({ severity: 'secondary' })
-    expect(c).toContain('bg-[var(--cd-color-primary-50)]')
-    expect(c).toContain('text-[var(--cd-color-primary-700)]')
+    expect(c).toContain('bg-[var(--lk-color-primary-50)]')
+    expect(c).toContain('text-[var(--lk-color-primary-700)]')
   })
 
-  it('danger: rode vulling via --cd-color-danger', () => {
-    expect(rootClass({ severity: 'danger' })).toContain('bg-[var(--cd-color-danger)]')
+  it('danger: rode vulling via --lk-color-danger', () => {
+    expect(rootClass({ severity: 'danger' })).toContain('bg-[var(--lk-color-danger)]')
   })
 
   it('text (ghost): transparant + primary-tekst, wint van severity', () => {
     const c = rootClass({ text: true, severity: 'secondary' })
     expect(c).toContain('bg-transparent')
-    expect(c).toContain('text-[var(--cd-color-primary)]')
+    expect(c).toContain('text-[var(--lk-color-primary)]')
     // ghost wint: geen secondary-vulling
-    expect(c).not.toContain('bg-[var(--cd-color-primary-50)]')
+    expect(c).not.toContain('bg-[var(--lk-color-primary-50)]')
   })
 
   it('één vaste hoogte h-10 op élke variant; geen h-8/size-variatie', () => {
@@ -78,7 +78,7 @@ describe('Laag B — AppTabs render-states', () => {
   it('gekozen tab: donkerblauwe token-vulling + witte tekst', () => {
     const el = tabClass('t-tab-a')
     expect(el.exists()).toBe(true)
-    expect(el.classes().join(' ')).toContain('bg-[var(--cd-color-primary)]')
+    expect(el.classes().join(' ')).toContain('bg-[var(--lk-color-primary)]')
     expect(el.classes().join(' ')).toContain('text-white')
   })
 
@@ -89,9 +89,9 @@ describe('Laag B — AppTabs render-states', () => {
     expect(el.attributes('role')).toBe('tab')
     // omlijning (beschikbaar-status) — module-uniek, gede-vervuild
     expect(c).toContain(cls('border-[0.5px', ']'))
-    expect(c).toContain('border-[var(--cd-color-border)]')
+    expect(c).toContain('border-[var(--lk-color-border)]')
     // hover-states staan op deze button — module-uniek, gede-vervuild
-    expect(c).toContain(cls('hover:bg-[var(--cd-color-primary-50)', ']'))
-    expect(c).toContain(cls('hover:text-[var(--cd-color-primary-700)', ']'))
+    expect(c).toContain(cls('hover:bg-[var(--lk-color-primary-50)', ']'))
+    expect(c).toContain(cls('hover:text-[var(--lk-color-primary-700)', ']'))
   })
 })

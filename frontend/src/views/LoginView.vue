@@ -44,19 +44,19 @@ function inloggen() {
 
 <template>
   <main
-    class="min-h-screen flex items-center justify-center bg-[var(--cd-color-bg)] p-[var(--cd-space-lg)]"
+    class="min-h-screen flex items-center justify-center bg-[var(--lk-color-bg)] p-[var(--lk-space-lg)]"
   >
     <section
-      class="w-full max-w-md bg-[var(--cd-color-surface)] shadow-[var(--cd-shadow-lg)] rounded-[var(--cd-radius-card)] p-[var(--cd-space-2xl)]"
+      class="w-full max-w-md bg-[var(--lk-color-surface)] shadow-[var(--lk-shadow-lg)] rounded-[var(--lk-radius-card)] p-[var(--lk-space-2xl)]"
       aria-labelledby="login-titel"
     >
       <h1
         id="login-titel"
-        class="text-[length:var(--cd-text-2xl)] font-semibold text-[var(--cd-color-primary)] mb-[var(--cd-space-sm)]"
+        class="text-[length:var(--lk-text-2xl)] font-semibold text-[var(--lk-color-primary)] mb-[var(--lk-space-sm)]"
       >
         LIKARA
       </h1>
-      <p class="text-[var(--cd-color-text-muted)] mb-[var(--cd-space-lg)]">
+      <p class="text-[var(--lk-color-text-muted)] mb-[var(--lk-space-lg)]">
         Logische ICT Kaart Afhankelijkheden Relaties Analyse — logisch inzicht in uw ICT-landschap.
       </p>
 
@@ -64,7 +64,7 @@ function inloggen() {
         v-if="sessieVerlopen"
         role="alert"
         data-testid="sessie-verlopen"
-        class="mb-[var(--cd-space-md)] rounded-[var(--cd-radius-badge)] border border-[var(--cd-color-warning)] bg-[var(--cd-color-accent)] px-[var(--cd-space-md)] py-[var(--cd-space-sm)] text-[length:var(--cd-text-sm)] text-[var(--cd-color-text)]"
+        class="mb-[var(--lk-space-md)] rounded-[var(--lk-radius-badge)] border border-[var(--lk-color-warning)] bg-[var(--lk-color-accent)] px-[var(--lk-space-md)] py-[var(--lk-space-sm)] text-[length:var(--lk-text-sm)] text-[var(--lk-color-text)]"
       >
         Je sessie is verlopen. Log opnieuw in om verder te gaan.
       </p>
@@ -81,13 +81,13 @@ function inloggen() {
       <p
         v-if="bezig"
         data-testid="bezig"
-        class="mt-[var(--cd-space-sm)] text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]"
+        class="mt-[var(--lk-space-sm)] text-[length:var(--lk-text-sm)] text-[var(--lk-color-text-muted)]"
       >
         Bezig met doorsturen naar de beveiligde inlogpagina…
       </p>
 
       <p
-        class="mt-[var(--cd-space-lg)] text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]"
+        class="mt-[var(--lk-space-lg)] text-[length:var(--lk-text-xs)] text-[var(--lk-color-text-muted)]"
       >
         Je wordt doorgestuurd naar de beveiligde inlogomgeving van de organisatie.
       </p>

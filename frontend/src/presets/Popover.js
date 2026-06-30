@@ -9,18 +9,18 @@
 export default {
   root: {
     class: [
-      'bg-[var(--cd-color-surface)]',
-      'rounded-[var(--cd-radius-md,8px)]',
-      'shadow-[var(--cd-shadow-lg)]',
-      'border border-[var(--cd-color-border)]',
+      'bg-[var(--lk-color-surface)]',
+      'rounded-[var(--lk-radius-md,8px)]',
+      'shadow-[var(--lk-shadow-lg)]',
+      'border border-[var(--lk-color-border)]',
       'z-50',
     ],
   },
   content: {
     class: [
       'px-4 py-3',
-      'text-[length:var(--cd-text-sm)]',
-      'text-[var(--cd-color-text)]',
+      'text-[length:var(--lk-text-sm)]',
+      'text-[var(--lk-color-text)]',
     ],
   },
 }

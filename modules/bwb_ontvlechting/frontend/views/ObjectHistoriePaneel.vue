@@ -4,7 +4,7 @@
  *
  * Toont per gebeurtenis wie (naam, e-mail-fallback) · wanneer · handeling, en — anders dan de
  * centrale auditview — de **detail-diff per record** ("veld: oud → nieuw"). Voor iedereen die het
- * scherm ziet (geen rol-gating op de knop); de backend handhaaft de objecttoegang. `--cd-`-tokens.
+ * scherm ziet (geen rol-gating op de knop); de backend handhaaft de objecttoegang. `--lk-`-tokens.
  */
 import { ref } from 'vue'
 import { Button, Dialog } from '@/primevue'
@@ -85,21 +85,21 @@ function toon() {
     >
       <!-- Statusregels: volledige laad-/lege-status alleen als er nog niets staat; bij naladen
            blijft de lijst zichtbaar en toont de "Meer laden"-knop de bezig-staat. -->
-      <p v-if="laden && !gebeurtenissen.length" data-testid="oh-laden" class="text-[var(--cd-color-text-muted)]">Laden…</p>
-      <p v-else-if="fout && !gebeurtenissen.length" role="alert" data-testid="oh-fout" class="text-[var(--cd-color-danger)]">{{ fout }}</p>
-      <p v-else-if="!laden && !gebeurtenissen.length" data-testid="oh-leeg" class="text-[var(--cd-color-text-muted)]">Nog geen geschiedenis voor dit object.</p>
+      <p v-if="laden && !gebeurtenissen.length" data-testid="oh-laden" class="text-[var(--lk-color-text-muted)]">Laden…</p>
+      <p v-else-if="fout && !gebeurtenissen.length" role="alert" data-testid="oh-fout" class="text-[var(--lk-color-danger)]">{{ fout }}</p>
+      <p v-else-if="!laden && !gebeurtenissen.length" data-testid="oh-leeg" class="text-[var(--lk-color-text-muted)]">Nog geen geschiedenis voor dit object.</p>
 
       <template v-else>
-        <p v-if="fout" role="alert" data-testid="oh-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ fout }}</p>
-        <ol class="flex flex-col gap-[var(--cd-space-md)]">
-          <li v-for="g in gebeurtenissen" :key="g.correlatie_id" data-testid="oh-gebeurtenis" class="border-b border-[var(--cd-color-border)] pb-[var(--cd-space-sm)]">
-            <p class="text-[length:var(--cd-text-sm)]">
+        <p v-if="fout" role="alert" data-testid="oh-fout" class="text-[var(--lk-color-danger)] mb-[var(--lk-space-sm)]">{{ fout }}</p>
+        <ol class="flex flex-col gap-[var(--lk-space-md)]">
+          <li v-for="g in gebeurtenissen" :key="g.correlatie_id" data-testid="oh-gebeurtenis" class="border-b border-[var(--lk-color-border)] pb-[var(--lk-space-sm)]">
+            <p class="text-[length:var(--lk-text-sm)]">
               <strong data-testid="oh-wie">{{ _wie(g) }}</strong> · {{ _datum(g.tijdstip) }}
             </p>
-            <ul class="mt-[var(--cd-space-xs)] flex flex-col gap-[var(--cd-space-xs)]">
-              <li v-for="r in g.records" :key="r.id" class="text-[length:var(--cd-text-sm)]">
+            <ul class="mt-[var(--lk-space-xs)] flex flex-col gap-[var(--lk-space-xs)]">
+              <li v-for="r in g.records" :key="r.id" class="text-[length:var(--lk-text-sm)]">
                 <span class="font-semibold">{{ label(AUDIT_ENTITEIT, r.entiteit_type) }} — {{ label(AUDIT_ACTIE, r.actie) }}</span>
-                <ul v-if="_diffRegels(r).length" class="ml-[var(--cd-space-md)] text-[var(--cd-color-text-muted)]">
+                <ul v-if="_diffRegels(r).length" class="ml-[var(--lk-space-md)] text-[var(--lk-color-text-muted)]">
                   <li v-for="d in _diffRegels(r)" :key="d.veld" data-testid="oh-diff">{{ d.veld }}: {{ d.oud }} → {{ d.nieuw }}</li>
                 </ul>
               </li>
@@ -107,7 +107,7 @@ function toon() {
           </li>
         </ol>
 
-        <div v-if="cursor" class="mt-[var(--cd-space-md)] flex justify-center">
+        <div v-if="cursor" class="mt-[var(--lk-space-md)] flex justify-center">
           <Button :label="laden ? 'Laden…' : 'Meer laden'" severity="secondary" :disabled="laden" data-testid="oh-meer" @click="laad({ meer: true })" />
         </div>
       </template>

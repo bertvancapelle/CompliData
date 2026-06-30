@@ -15,12 +15,12 @@ defineProps({
     v-if="kritiek > 0"
     data-testid="signalering-badge"
     :title="`${kritiek} kritiek(e) registratiegat(en)`"
-    class="inline-flex items-center gap-0.5 rounded-[var(--cd-radius-badge)] bg-[var(--cd-color-danger)]/15 px-[var(--cd-space-xs)] py-0.5 text-[length:var(--cd-text-xs)] text-[var(--cd-color-danger)]"
+    class="inline-flex items-center gap-0.5 rounded-[var(--lk-radius-badge)] bg-[var(--lk-color-danger)]/15 px-[var(--lk-space-xs)] py-0.5 text-[length:var(--lk-text-xs)] text-[var(--lk-color-danger)]"
   >🔴 {{ kritiek }}</span>
   <span
     v-else-if="aandacht > 0"
     data-testid="signalering-badge"
     :title="`${aandacht} aandachtspunt(en)`"
-    class="inline-flex items-center gap-0.5 rounded-[var(--cd-radius-badge)] bg-[var(--cd-color-warning)]/15 px-[var(--cd-space-xs)] py-0.5 text-[length:var(--cd-text-xs)]"
+    class="inline-flex items-center gap-0.5 rounded-[var(--lk-radius-badge)] bg-[var(--lk-color-warning)]/15 px-[var(--lk-space-xs)] py-0.5 text-[length:var(--lk-text-xs)]"
   >🟡 {{ aandacht }}</span>
 </template>

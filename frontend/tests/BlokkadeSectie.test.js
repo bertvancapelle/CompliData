@@ -59,7 +59,7 @@ describe('BlokkadeSectie', () => {
     // Onderdeel 3: de score via de gedeelde ScoreBadge (deels = oranje), tekst zichtbaar.
     const badge = w.find('[data-testid="score-badge-deels"]')
     expect(badge.exists()).toBe(true)
-    expect(badge.classes()).toContain('text-[var(--cd-color-warning)]')
+    expect(badge.classes()).toContain('text-[var(--lk-color-warning)]')
   })
 
   it('emit naar-vraag met code + afgeleide categorie bij klik op de herkomst', async () => {

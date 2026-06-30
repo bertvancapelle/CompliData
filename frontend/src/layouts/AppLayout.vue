@@ -56,10 +56,10 @@ async function uitloggen() {
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-[var(--cd-color-bg)] text-[var(--cd-color-text)]">
+  <div class="min-h-screen flex flex-col bg-[var(--lk-color-bg)] text-[var(--lk-color-text)]">
     <!-- Topbar -->
     <header
-      class="flex items-center gap-[var(--cd-space-md)] px-[var(--cd-space-lg)] py-[var(--cd-space-sm)] bg-[var(--cd-color-primary)] text-white shadow-[var(--cd-shadow-md)]"
+      class="flex items-center gap-[var(--lk-space-md)] px-[var(--lk-space-lg)] py-[var(--lk-space-sm)] bg-[var(--lk-color-primary)] text-white shadow-[var(--lk-shadow-md)]"
     >
       <button
         type="button"
@@ -67,15 +67,15 @@ async function uitloggen() {
         :aria-expanded="(!ingeklapt).toString()"
         aria-controls="hoofd-navigatie"
         aria-label="Navigatie in- of uitklappen"
-        class="rounded-[var(--cd-radius-btn)] px-[var(--cd-space-sm)] py-1 text-[length:var(--cd-text-lg)] leading-none hover:bg-white/15 focus:outline-2 focus:outline-offset-2 focus:outline-white"
+        class="rounded-[var(--lk-radius-btn)] px-[var(--lk-space-sm)] py-1 text-[length:var(--lk-text-lg)] leading-none hover:bg-white/15 focus:outline-2 focus:outline-offset-2 focus:outline-white"
         @click="toggleSidebar"
       >
         ☰
       </button>
-      <span class="font-semibold text-[length:var(--cd-text-lg)]">LIKARA</span>
+      <span class="font-semibold text-[length:var(--lk-text-lg)]">LIKARA</span>
 
-      <div class="ml-auto flex items-center gap-[var(--cd-space-md)]">
-        <span data-testid="gebruiker-email" class="text-[length:var(--cd-text-sm)]">
+      <div class="ml-auto flex items-center gap-[var(--lk-space-md)]">
+        <span data-testid="gebruiker-email" class="text-[length:var(--lk-text-sm)]">
           {{ auth.user?.email }}
         </span>
         <Button
@@ -93,19 +93,19 @@ async function uitloggen() {
       <aside
         v-show="!ingeklapt"
         id="hoofd-navigatie"
-        class="w-60 shrink-0 bg-[var(--cd-color-surface)] border-r border-[var(--cd-color-border)] p-[var(--cd-space-md)]"
+        class="w-60 shrink-0 bg-[var(--lk-color-surface)] border-r border-[var(--lk-color-border)] p-[var(--lk-space-md)]"
       >
-        <nav aria-label="Hoofdnavigatie" class="flex flex-col gap-[var(--cd-space-xs)]">
+        <nav aria-label="Hoofdnavigatie" class="flex flex-col gap-[var(--lk-space-xs)]">
           <router-link
             :to="{ name: 'dashboard' }"
             data-testid="nav-dashboard"
-            class="rounded-[var(--cd-radius-nav)] px-[var(--cd-space-md)] py-[var(--cd-space-sm)] text-[var(--cd-color-text)] hover:bg-[var(--cd-color-accent)] aria-[current=page]:bg-[var(--cd-color-accent)] aria-[current=page]:font-semibold"
+            class="rounded-[var(--lk-radius-nav)] px-[var(--lk-space-md)] py-[var(--lk-space-sm)] text-[var(--lk-color-text)] hover:bg-[var(--lk-color-accent)] aria-[current=page]:bg-[var(--lk-color-accent)] aria-[current=page]:font-semibold"
           >
             Dashboard
           </router-link>
 
           <span
-            class="mt-[var(--cd-space-md)] px-[var(--cd-space-md)] text-[length:var(--cd-text-xs)] font-semibold uppercase tracking-wide text-[var(--cd-color-text-muted)]"
+            class="mt-[var(--lk-space-md)] px-[var(--lk-space-md)] text-[length:var(--lk-text-xs)] font-semibold uppercase tracking-wide text-[var(--lk-color-text-muted)]"
           >
             BWB-ontvlechting
           </span>
@@ -114,14 +114,14 @@ async function uitloggen() {
           <router-link
             :to="{ name: 'component-lijst' }"
             data-testid="nav-componenten"
-            class="rounded-[var(--cd-radius-nav)] px-[var(--cd-space-md)] py-[var(--cd-space-sm)] text-[var(--cd-color-text)] hover:bg-[var(--cd-color-accent)] aria-[current=page]:bg-[var(--cd-color-accent)] aria-[current=page]:font-semibold"
+            class="rounded-[var(--lk-radius-nav)] px-[var(--lk-space-md)] py-[var(--lk-space-sm)] text-[var(--lk-color-text)] hover:bg-[var(--lk-color-accent)] aria-[current=page]:bg-[var(--lk-color-accent)] aria-[current=page]:font-semibold"
           >
             Componenten
           </router-link>
           <router-link
             :to="{ name: 'partij-lijst' }"
             data-testid="nav-partijen"
-            class="rounded-[var(--cd-radius-nav)] px-[var(--cd-space-md)] py-[var(--cd-space-sm)] text-[var(--cd-color-text)] hover:bg-[var(--cd-color-accent)] aria-[current=page]:bg-[var(--cd-color-accent)] aria-[current=page]:font-semibold"
+            class="rounded-[var(--lk-radius-nav)] px-[var(--lk-space-md)] py-[var(--lk-space-sm)] text-[var(--lk-color-text)] hover:bg-[var(--lk-color-accent)] aria-[current=page]:bg-[var(--lk-color-accent)] aria-[current=page]:font-semibold"
           >
             Partijen
           </router-link>
@@ -129,7 +129,7 @@ async function uitloggen() {
             v-if="magGebruikersbeheer"
             :to="{ name: 'gebruikersbeheer' }"
             data-testid="nav-gebruikersbeheer"
-            class="rounded-[var(--cd-radius-nav)] px-[var(--cd-space-md)] py-[var(--cd-space-sm)] text-[var(--cd-color-text)] hover:bg-[var(--cd-color-accent)] aria-[current=page]:bg-[var(--cd-color-accent)] aria-[current=page]:font-semibold"
+            class="rounded-[var(--lk-radius-nav)] px-[var(--lk-space-md)] py-[var(--lk-space-sm)] text-[var(--lk-color-text)] hover:bg-[var(--lk-color-accent)] aria-[current=page]:bg-[var(--lk-color-accent)] aria-[current=page]:font-semibold"
           >
             Gebruikersbeheer
           </router-link>
@@ -137,21 +137,21 @@ async function uitloggen() {
             v-if="magAuditlog"
             :to="{ name: 'auditlog' }"
             data-testid="nav-auditlog"
-            class="rounded-[var(--cd-radius-nav)] px-[var(--cd-space-md)] py-[var(--cd-space-sm)] text-[var(--cd-color-text)] hover:bg-[var(--cd-color-accent)] aria-[current=page]:bg-[var(--cd-color-accent)] aria-[current=page]:font-semibold"
+            class="rounded-[var(--lk-radius-nav)] px-[var(--lk-space-md)] py-[var(--lk-space-sm)] text-[var(--lk-color-text)] hover:bg-[var(--lk-color-accent)] aria-[current=page]:bg-[var(--lk-color-accent)] aria-[current=page]:font-semibold"
           >
             Auditlog
           </router-link>
           <router-link
             :to="{ name: 'contract-lijst' }"
             data-testid="nav-contracten"
-            class="rounded-[var(--cd-radius-nav)] px-[var(--cd-space-md)] py-[var(--cd-space-sm)] text-[var(--cd-color-text)] hover:bg-[var(--cd-color-accent)] aria-[current=page]:bg-[var(--cd-color-accent)] aria-[current=page]:font-semibold"
+            class="rounded-[var(--lk-radius-nav)] px-[var(--lk-space-md)] py-[var(--lk-space-sm)] text-[var(--lk-color-text)] hover:bg-[var(--lk-color-accent)] aria-[current=page]:bg-[var(--lk-color-accent)] aria-[current=page]:font-semibold"
           >
             Contracten
           </router-link>
           <router-link
             :to="{ name: 'blokkades' }"
             data-testid="nav-blokkades"
-            class="rounded-[var(--cd-radius-nav)] px-[var(--cd-space-md)] py-[var(--cd-space-sm)] text-[var(--cd-color-text)] hover:bg-[var(--cd-color-accent)] aria-[current=page]:bg-[var(--cd-color-accent)] aria-[current=page]:font-semibold"
+            class="rounded-[var(--lk-radius-nav)] px-[var(--lk-space-md)] py-[var(--lk-space-sm)] text-[var(--lk-color-text)] hover:bg-[var(--lk-color-accent)] aria-[current=page]:bg-[var(--lk-color-accent)] aria-[current=page]:font-semibold"
           >
             Blokkades
           </router-link>
@@ -159,7 +159,7 @@ async function uitloggen() {
             v-if="magArchitectuurZien"
             :to="{ name: 'architectuur' }"
             data-testid="nav-architectuur"
-            class="rounded-[var(--cd-radius-nav)] px-[var(--cd-space-md)] py-[var(--cd-space-sm)] text-[var(--cd-color-text)] hover:bg-[var(--cd-color-accent)] aria-[current=page]:bg-[var(--cd-color-accent)] aria-[current=page]:font-semibold"
+            class="rounded-[var(--lk-radius-nav)] px-[var(--lk-space-md)] py-[var(--lk-space-sm)] text-[var(--lk-color-text)] hover:bg-[var(--lk-color-accent)] aria-[current=page]:bg-[var(--lk-color-accent)] aria-[current=page]:font-semibold"
           >
             Architectuur
           </router-link>
@@ -167,7 +167,7 @@ async function uitloggen() {
             v-if="magArchitectuurZien"
             :to="{ name: 'landschapskaart' }"
             data-testid="nav-landschapskaart"
-            class="rounded-[var(--cd-radius-nav)] px-[var(--cd-space-md)] py-[var(--cd-space-sm)] text-[var(--cd-color-text)] hover:bg-[var(--cd-color-accent)] aria-[current=page]:bg-[var(--cd-color-accent)] aria-[current=page]:font-semibold"
+            class="rounded-[var(--lk-radius-nav)] px-[var(--lk-space-md)] py-[var(--lk-space-sm)] text-[var(--lk-color-text)] hover:bg-[var(--lk-color-accent)] aria-[current=page]:bg-[var(--lk-color-accent)] aria-[current=page]:font-semibold"
           >
             Landschapskaart
           </router-link>
@@ -175,14 +175,14 @@ async function uitloggen() {
             v-if="magArchitectuurZien"
             :to="{ name: 'signalering' }"
             data-testid="nav-signalering"
-            class="rounded-[var(--cd-radius-nav)] px-[var(--cd-space-md)] py-[var(--cd-space-sm)] text-[var(--cd-color-text)] hover:bg-[var(--cd-color-accent)] aria-[current=page]:bg-[var(--cd-color-accent)] aria-[current=page]:font-semibold"
+            class="rounded-[var(--lk-radius-nav)] px-[var(--lk-space-md)] py-[var(--lk-space-sm)] text-[var(--lk-color-text)] hover:bg-[var(--lk-color-accent)] aria-[current=page]:bg-[var(--lk-color-accent)] aria-[current=page]:font-semibold"
           >
             Signalering
           </router-link>
           <router-link
             :to="{ name: 'checklistvragen' }"
             data-testid="nav-checklistvragen"
-            class="rounded-[var(--cd-radius-nav)] px-[var(--cd-space-md)] py-[var(--cd-space-sm)] text-[var(--cd-color-text)] hover:bg-[var(--cd-color-accent)] aria-[current=page]:bg-[var(--cd-color-accent)] aria-[current=page]:font-semibold"
+            class="rounded-[var(--lk-radius-nav)] px-[var(--lk-space-md)] py-[var(--lk-space-sm)] text-[var(--lk-color-text)] hover:bg-[var(--lk-color-accent)] aria-[current=page]:bg-[var(--lk-color-accent)] aria-[current=page]:font-semibold"
           >
             Checklistvragen
           </router-link>
@@ -192,35 +192,35 @@ async function uitloggen() {
           <template v-if="magMigratieZien">
             <span
               data-testid="nav-migratie-groep"
-              class="mt-[var(--cd-space-md)] px-[var(--cd-space-md)] text-[length:var(--cd-text-xs)] font-semibold uppercase tracking-wide text-[var(--cd-color-text-muted)]"
+              class="mt-[var(--lk-space-md)] px-[var(--lk-space-md)] text-[length:var(--lk-text-xs)] font-semibold uppercase tracking-wide text-[var(--lk-color-text-muted)]"
             >
               Migratie
             </span>
             <router-link
               :to="{ name: 'plateau-lijst' }"
               data-testid="nav-plateaus"
-              class="rounded-[var(--cd-radius-nav)] px-[var(--cd-space-md)] py-[var(--cd-space-sm)] text-[var(--cd-color-text)] hover:bg-[var(--cd-color-accent)] aria-[current=page]:bg-[var(--cd-color-accent)] aria-[current=page]:font-semibold"
+              class="rounded-[var(--lk-radius-nav)] px-[var(--lk-space-md)] py-[var(--lk-space-sm)] text-[var(--lk-color-text)] hover:bg-[var(--lk-color-accent)] aria-[current=page]:bg-[var(--lk-color-accent)] aria-[current=page]:font-semibold"
             >
               Plateaus
             </router-link>
             <router-link
               :to="{ name: 'gap-lijst' }"
               data-testid="nav-gaps"
-              class="rounded-[var(--cd-radius-nav)] px-[var(--cd-space-md)] py-[var(--cd-space-sm)] text-[var(--cd-color-text)] hover:bg-[var(--cd-color-accent)] aria-[current=page]:bg-[var(--cd-color-accent)] aria-[current=page]:font-semibold"
+              class="rounded-[var(--lk-radius-nav)] px-[var(--lk-space-md)] py-[var(--lk-space-sm)] text-[var(--lk-color-text)] hover:bg-[var(--lk-color-accent)] aria-[current=page]:bg-[var(--lk-color-accent)] aria-[current=page]:font-semibold"
             >
               Gaps
             </router-link>
             <router-link
               :to="{ name: 'work-package-lijst' }"
               data-testid="nav-werkpakketten"
-              class="rounded-[var(--cd-radius-nav)] px-[var(--cd-space-md)] py-[var(--cd-space-sm)] text-[var(--cd-color-text)] hover:bg-[var(--cd-color-accent)] aria-[current=page]:bg-[var(--cd-color-accent)] aria-[current=page]:font-semibold"
+              class="rounded-[var(--lk-radius-nav)] px-[var(--lk-space-md)] py-[var(--lk-space-sm)] text-[var(--lk-color-text)] hover:bg-[var(--lk-color-accent)] aria-[current=page]:bg-[var(--lk-color-accent)] aria-[current=page]:font-semibold"
             >
               Werkpakketten
             </router-link>
             <router-link
               :to="{ name: 'deliverable-lijst' }"
               data-testid="nav-deliverables"
-              class="rounded-[var(--cd-radius-nav)] px-[var(--cd-space-md)] py-[var(--cd-space-sm)] text-[var(--cd-color-text)] hover:bg-[var(--cd-color-accent)] aria-[current=page]:bg-[var(--cd-color-accent)] aria-[current=page]:font-semibold"
+              class="rounded-[var(--lk-radius-nav)] px-[var(--lk-space-md)] py-[var(--lk-space-sm)] text-[var(--lk-color-text)] hover:bg-[var(--lk-color-accent)] aria-[current=page]:bg-[var(--lk-color-accent)] aria-[current=page]:font-semibold"
             >
               Deliverables
             </router-link>
@@ -229,7 +229,7 @@ async function uitloggen() {
       </aside>
 
       <!-- Hoofdinhoud -->
-      <main class="flex-1 min-w-0 p-[var(--cd-space-xl)]">
+      <main class="flex-1 min-w-0 p-[var(--lk-space-xl)]">
         <router-view />
       </main>
     </div>

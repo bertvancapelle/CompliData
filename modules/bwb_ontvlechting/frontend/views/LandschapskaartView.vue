@@ -1759,7 +1759,7 @@ const CY_STYLE = [
       width: 'data(w)', 'line-color': 'data(lc)', 'line-style': 'data(ls)',
       'target-arrow-shape': 'triangle', 'target-arrow-color': 'data(lc)', 'curve-style': 'bezier',
       // Koppelingsdetail-label (flow-edges): protocol + richting.
-      label: 'data(label)', 'font-size': 8, color: 'var(--cd-color-text-muted)', 'text-wrap': 'none',
+      label: 'data(label)', 'font-size': 8, color: 'var(--lk-color-text-muted)', 'text-wrap': 'none',
       'text-opacity': 0, // LI023 — default verborgen; zichtbaar bij hover (mouseover-handler)
       'text-rotation': 'autorotate', 'text-background-color': '#fff', 'text-background-opacity': 0.8,
     },
@@ -1954,20 +1954,20 @@ const typeLabel = (t) => humaniseer(t)
 
 <template>
   <div
-    :class="['flex w-full flex-col', fullscreen ? 'fixed inset-0 z-[400] bg-[var(--cd-color-bg)]' : '']"
+    :class="['flex w-full flex-col', fullscreen ? 'fixed inset-0 z-[400] bg-[var(--lk-color-bg)]' : '']"
     data-testid="lk-wrapper"
     :style="fullscreen ? 'height: 100vh' : 'height: calc(100vh - 9rem)'"
   >
     <!-- ADR-033 — Topbar: de weergave is AFGELEID uit de actieve set (geen handmatige tabs).
          Deze indicator toont alleen wélke weergave nu actief is; kiezen doe je via selecteren. -->
-    <div class="flex items-center gap-[var(--cd-space-sm)] border-b border-[var(--cd-color-border)] bg-white p-[var(--cd-space-sm)]">
-      <p data-testid="lk-weergave-indicator" class="rounded-[var(--cd-radius-btn)] bg-[var(--cd-color-primary)] px-[var(--cd-space-md)] py-1 text-[length:var(--cd-text-sm)] font-semibold text-white">
+    <div class="flex items-center gap-[var(--lk-space-sm)] border-b border-[var(--lk-color-border)] bg-white p-[var(--lk-space-sm)]">
+      <p data-testid="lk-weergave-indicator" class="rounded-[var(--lk-radius-btn)] bg-[var(--lk-color-primary)] px-[var(--lk-space-md)] py-1 text-[length:var(--lk-text-sm)] font-semibold text-white">
         {{ modus === 'geheel' ? 'Geheel model' : modus === 'ego' ? 'Ego-view' : modus === 'impact' ? 'Impact-verkenner' : 'Beginscherm' }}
       </p>
-      <span class="text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]">Weergave volgt je selectie</span>
+      <span class="text-[length:var(--lk-text-sm)] text-[var(--lk-color-text-muted)]">Weergave volgt je selectie</span>
       <!-- Fase B — "Begin opnieuw": enige harde reset → terug naar het lege beginscherm. -->
-      <button v-if="!beginscherm" type="button" data-testid="lk-begin-opnieuw" class="rounded-[var(--cd-radius-btn)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-1 text-[length:var(--cd-text-sm)] hover:bg-[var(--cd-color-accent)]" @click="wisSet">Begin opnieuw</button>
-      <span class="ml-auto text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]" data-testid="lk-zichtbaar-aantal">{{ zichtbaarAantal }} in beeld</span>
+      <button v-if="!beginscherm" type="button" data-testid="lk-begin-opnieuw" class="rounded-[var(--lk-radius-btn)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-1 text-[length:var(--lk-text-sm)] hover:bg-[var(--lk-color-accent)]" @click="wisSet">Begin opnieuw</button>
+      <span class="ml-auto text-[length:var(--lk-text-sm)] text-[var(--lk-color-text-muted)]" data-testid="lk-zichtbaar-aantal">{{ zichtbaarAantal }} in beeld</span>
     </div>
 
     <!-- Fase B slice 2b (LI023) — "in beeld"-chips: één chip per component in de set (≥1), zichtbaar
@@ -1976,21 +1976,21 @@ const typeLabel = (t) => humaniseer(t)
     <div
       v-if="actieveSet.size"
       data-testid="lk-chips"
-      class="flex flex-wrap items-center gap-1 border-b border-[var(--cd-color-border)] bg-white px-[var(--cd-space-md)] py-[var(--cd-space-xs)]"
+      class="flex flex-wrap items-center gap-1 border-b border-[var(--lk-color-border)] bg-white px-[var(--lk-space-md)] py-[var(--lk-space-xs)]"
     >
-      <span class="text-[length:var(--cd-text-xs)] font-semibold text-[var(--cd-color-text-muted)]">In beeld:</span>
+      <span class="text-[length:var(--lk-text-xs)] font-semibold text-[var(--lk-color-text-muted)]">In beeld:</span>
       <span
         v-for="n in actieveSetNodes"
         :key="n.id"
         :data-testid="`lk-chip-${n.id}`"
-        class="flex items-center gap-1 rounded bg-[var(--cd-color-accent)] px-[var(--cd-space-xs)] py-0.5 text-[length:var(--cd-text-xs)]"
+        class="flex items-center gap-1 rounded bg-[var(--lk-color-accent)] px-[var(--lk-space-xs)] py-0.5 text-[length:var(--lk-text-xs)]"
       >
         {{ n.naam }}
         <button
           type="button"
           :data-testid="`lk-chip-verwijder-${n.id}`"
           :aria-label="`Verwijder ${n.naam} uit beeld`"
-          class="leading-none text-[var(--cd-color-text-muted)] hover:text-[var(--cd-color-danger)]"
+          class="leading-none text-[var(--lk-color-text-muted)] hover:text-[var(--lk-color-danger)]"
           @click="toggleSet(n.id)"
         >×</button>
       </span>
@@ -1998,34 +1998,34 @@ const typeLabel = (t) => humaniseer(t)
 
     <div class="flex min-h-0 flex-1">
       <!-- Linkerpaneel: zoek + filters + resultaten -->
-      <aside class="flex w-60 flex-shrink-0 flex-col gap-[var(--cd-space-sm)] overflow-y-auto border-r border-[var(--cd-color-border)] bg-white p-[var(--cd-space-md)]" data-testid="lk-links">
+      <aside class="flex w-60 flex-shrink-0 flex-col gap-[var(--lk-space-sm)] overflow-y-auto border-r border-[var(--lk-color-border)] bg-white p-[var(--lk-space-md)]" data-testid="lk-links">
         <!-- ADR-033 2c — opgeslagen views (eigen + gedeeld; server filtert). Openen = de bewaarde
              selectie wordt de actieve set → de adaptieve weergave volgt. Beheer (✎/×) alleen voor
              de maker (is_eigenaar) mét beheer-recht. -->
-        <div v-if="opgeslagenViews.length" data-testid="lk-views" class="flex flex-col gap-1 border-b border-[var(--cd-color-border)] pb-[var(--cd-space-sm)]">
-          <p class="font-semibold text-[length:var(--cd-text-sm)]">Opgeslagen views</p>
+        <div v-if="opgeslagenViews.length" data-testid="lk-views" class="flex flex-col gap-1 border-b border-[var(--lk-color-border)] pb-[var(--lk-space-sm)]">
+          <p class="font-semibold text-[length:var(--lk-text-sm)]">Opgeslagen views</p>
           <ul class="flex flex-col gap-0.5">
-            <li v-for="v in opgeslagenViews" :key="v.id" :data-testid="`lk-view-${v.id}`" class="flex items-center gap-1 text-[length:var(--cd-text-sm)]">
+            <li v-for="v in opgeslagenViews" :key="v.id" :data-testid="`lk-view-${v.id}`" class="flex items-center gap-1 text-[length:var(--lk-text-sm)]">
               <button type="button" class="grow truncate text-left hover:underline" :data-testid="`lk-view-open-${v.id}`" :title="v.naam" @click="openView(v)">{{ v.naam }}</button>
-              <span v-if="!v.is_eigenaar && v.gedeeld" :data-testid="`lk-view-gedeeld-${v.id}`" class="shrink-0 text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]" :title="`gedeeld door ${v.maker_naam || '—'}`">gedeeld door {{ v.maker_naam || '—' }}</span>
+              <span v-if="!v.is_eigenaar && v.gedeeld" :data-testid="`lk-view-gedeeld-${v.id}`" class="shrink-0 text-[length:var(--lk-text-xs)] text-[var(--lk-color-text-muted)]" :title="`gedeeld door ${v.maker_naam || '—'}`">gedeeld door {{ v.maker_naam || '—' }}</span>
               <template v-if="v.is_eigenaar && magViewsBeheren">
-                <button type="button" class="shrink-0 text-[var(--cd-color-text-muted)] hover:text-[var(--cd-color-primary)]" :data-testid="`lk-view-bewerk-${v.id}`" aria-label="View bewerken" title="Bewerken" @click="openBewerk(v)">✎</button>
-                <button type="button" class="shrink-0 text-[var(--cd-color-text-muted)] hover:text-[var(--cd-color-danger)]" :data-testid="`lk-view-verwijder-${v.id}`" aria-label="View verwijderen" title="Verwijderen" @click="verwijderView(v)">×</button>
+                <button type="button" class="shrink-0 text-[var(--lk-color-text-muted)] hover:text-[var(--lk-color-primary)]" :data-testid="`lk-view-bewerk-${v.id}`" aria-label="View bewerken" title="Bewerken" @click="openBewerk(v)">✎</button>
+                <button type="button" class="shrink-0 text-[var(--lk-color-text-muted)] hover:text-[var(--lk-color-danger)]" :data-testid="`lk-view-verwijder-${v.id}`" aria-label="View verwijderen" title="Verwijderen" @click="verwijderView(v)">×</button>
               </template>
             </li>
           </ul>
         </div>
 
-        <input v-model="zoekterm" type="search" data-testid="lk-zoek" placeholder="🔍 Zoek naam/domein/leverancier…" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-1 text-[length:var(--cd-text-sm)]" />
+        <input v-model="zoekterm" type="search" data-testid="lk-zoek" placeholder="🔍 Zoek naam/domein/leverancier…" class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-1 text-[length:var(--lk-text-sm)]" />
 
         <!-- LI029 — zoekresultaten direct onder de zoekbalk. Alleen in kaart-modus (beginscherm dicht)
              én bij een actieve zoekopdracht óf filter (het beginscherm heeft zijn eigen zoek). -->
         <div
           v-if="!beginschermOpen && (zoekterm.trim() || filterActief)"
           data-testid="lk-kaartzoek"
-          class="flex flex-col gap-[var(--cd-space-xs)] rounded-[var(--cd-radius-card)] border border-[var(--cd-color-border)] bg-[var(--cd-color-accent)]/30 p-[var(--cd-space-sm)]"
+          class="flex flex-col gap-[var(--lk-space-xs)] rounded-[var(--lk-radius-card)] border border-[var(--lk-color-border)] bg-[var(--lk-color-accent)]/30 p-[var(--lk-space-sm)]"
         >
-          <p class="font-semibold text-[length:var(--cd-text-sm)]">
+          <p class="font-semibold text-[length:var(--lk-text-sm)]">
             Componenten ({{ zoekResultaten.trim() ? `${gefilterdeResultaten.length} van ${gefilterdeNodes.length}` : gefilterdeNodes.length }})
           </p>
           <input
@@ -2034,12 +2034,12 @@ const typeLabel = (t) => humaniseer(t)
             placeholder="Zoek in resultaten…"
             data-testid="lk-zoek-resultaten"
             aria-label="Zoek in resultaten"
-            class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-1 text-[length:var(--cd-text-sm)] focus:outline-2 focus:outline-offset-2 focus:outline-[var(--cd-color-primary)]"
+            class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-1 text-[length:var(--lk-text-sm)] focus:outline-2 focus:outline-offset-2 focus:outline-[var(--lk-color-primary)]"
           />
           <ul class="flex max-h-64 flex-col gap-1 overflow-y-auto" data-testid="lk-resultaten">
             <!-- Klikken op de naam = toevoegen/verwijderen uit de set + detail tonen (kiesComponent);
                  de "+"-knop voegt alleen toe (✓ als het al in beeld is). -->
-            <li v-for="n in gefilterdeResultaten" :key="n.id" :data-testid="`lk-res-${n.id}`" :class="['flex items-center gap-1 rounded px-1 py-0.5 text-[length:var(--cd-text-sm)]', inSet(n.id) ? 'bg-[var(--cd-color-accent)]' : '']">
+            <li v-for="n in gefilterdeResultaten" :key="n.id" :data-testid="`lk-res-${n.id}`" :class="['flex items-center gap-1 rounded px-1 py-0.5 text-[length:var(--lk-text-sm)]', inSet(n.id) ? 'bg-[var(--lk-color-accent)]' : '']">
               <span class="inline-block h-3 w-3 shrink-0 rounded-full" :style="{ background: lcStyle(n.lifecycle_status).bg, border: `1px solid ${lcStyle(n.lifecycle_status).border}` }"></span>
               <button type="button" :aria-pressed="inSet(n.id)" class="grow truncate text-left hover:underline" :data-testid="`lk-res-naam-${n.id}`" @click="kiesComponent(n.id)">{{ n.naam }}</button>
               <span v-if="n.blokkades_open > 0" :data-testid="`lk-res-blok-${n.id}`" title="Open blokkade(s)">⚠</span>
@@ -2048,19 +2048,19 @@ const typeLabel = (t) => humaniseer(t)
                 v-if="!inSet(n.id)"
                 type="button"
                 :data-testid="`lk-res-voegtoe-${n.id}`"
-                class="shrink-0 rounded px-1.5 font-semibold text-[var(--cd-color-primary)] hover:bg-[var(--cd-color-accent)]"
+                class="shrink-0 rounded px-1.5 font-semibold text-[var(--lk-color-primary)] hover:bg-[var(--lk-color-accent)]"
                 :title="`${n.naam} toevoegen aan beeld`"
                 :aria-label="`${n.naam} toevoegen aan beeld`"
                 @click="toggleSet(n.id)"
               >+</button>
-              <span v-else :data-testid="`lk-res-gekozen-${n.id}`" class="text-[var(--cd-color-primary)]" title="Al in beeld">✓</span>
+              <span v-else :data-testid="`lk-res-gekozen-${n.id}`" class="text-[var(--lk-color-primary)]" title="Al in beeld">✓</span>
             </li>
-            <li v-if="!gefilterdeResultaten.length" class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">Geen resultaten.</li>
+            <li v-if="!gefilterdeResultaten.length" class="text-[length:var(--lk-text-xs)] text-[var(--lk-color-text-muted)]">Geen resultaten.</li>
           </ul>
-          <button type="button" data-testid="lk-voeg-alle" class="mt-1 rounded-[var(--cd-radius-btn)] bg-[var(--cd-color-primary)] px-[var(--cd-space-sm)] py-1 text-[length:var(--cd-text-sm)] text-white" @click="voegAlleGefilterdeToe">+ Voeg alle gefilterde toe</button>
+          <button type="button" data-testid="lk-voeg-alle" class="mt-1 rounded-[var(--lk-radius-btn)] bg-[var(--lk-color-primary)] px-[var(--lk-space-sm)] py-1 text-[length:var(--lk-text-sm)] text-white" @click="voegAlleGefilterdeToe">+ Voeg alle gefilterde toe</button>
         </div>
 
-        <label class="flex flex-col gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
+        <label class="flex flex-col gap-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]">
           <span class="font-semibold">Type</span>
           <ZoekMultiSelect
             v-model="filterTypes"
@@ -2072,7 +2072,7 @@ const typeLabel = (t) => humaniseer(t)
             testid="lk-filter-type"
           />
         </label>
-        <label class="flex flex-col gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
+        <label class="flex flex-col gap-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]">
           <span class="font-semibold">Leverancier</span>
           <ZoekMultiSelect
             v-model="filterLeveranciers"
@@ -2084,7 +2084,7 @@ const typeLabel = (t) => humaniseer(t)
             testid="lk-filter-leverancier"
           />
         </label>
-        <label class="flex flex-col gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
+        <label class="flex flex-col gap-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]">
           <span class="font-semibold">Hosting</span>
           <ZoekMultiSelect
             v-model="filterHosting"
@@ -2097,7 +2097,7 @@ const typeLabel = (t) => humaniseer(t)
             testid="lk-filter-hosting"
           />
         </label>
-        <label class="flex flex-col gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
+        <label class="flex flex-col gap-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]">
           <span class="font-semibold">Lifecycle</span>
           <ZoekMultiSelect
             v-model="filterLifecycle"
@@ -2111,40 +2111,40 @@ const typeLabel = (t) => humaniseer(t)
           />
         </label>
 
-        <label v-if="modus === 'geheel'" class="flex items-center gap-2 text-[length:var(--cd-text-sm)]">
+        <label v-if="modus === 'geheel'" class="flex items-center gap-2 text-[length:var(--lk-text-sm)]">
           <input type="checkbox" :checked="!opbouwModus" data-testid="lk-afpel-toggle" @change="opbouwModus = !opbouwModus" />Afpel-modus (begint vol)
         </label>
 
         <!-- Diepte-toggle (ego + geheel): 1 stap = directe buren, 2 stappen = ook indirecte. -->
         <div v-if="modus === 'ego' || modus === 'geheel'" class="flex flex-col gap-1" data-testid="lk-diepte">
-          <p class="font-semibold text-[length:var(--cd-text-sm)]">Diepte</p>
+          <p class="font-semibold text-[length:var(--lk-text-sm)]">Diepte</p>
           <div class="flex gap-1">
-            <button type="button" data-testid="lk-diepte-1" :aria-pressed="diepte === 1" :class="['rounded-[var(--cd-radius-btn)] px-[var(--cd-space-sm)] py-0.5 text-[length:var(--cd-text-xs)]', diepte === 1 ? 'bg-[var(--cd-color-primary)] text-white' : 'bg-[var(--cd-color-accent)]']" @click="zetDiepte(1)">1 stap (direct)</button>
-            <button type="button" data-testid="lk-diepte-2" :aria-pressed="diepte === 2" :class="['rounded-[var(--cd-radius-btn)] px-[var(--cd-space-sm)] py-0.5 text-[length:var(--cd-text-xs)]', diepte === 2 ? 'bg-[var(--cd-color-primary)] text-white' : 'bg-[var(--cd-color-accent)]']" @click="zetDiepte(2)">2 stappen</button>
+            <button type="button" data-testid="lk-diepte-1" :aria-pressed="diepte === 1" :class="['rounded-[var(--lk-radius-btn)] px-[var(--lk-space-sm)] py-0.5 text-[length:var(--lk-text-xs)]', diepte === 1 ? 'bg-[var(--lk-color-primary)] text-white' : 'bg-[var(--lk-color-accent)]']" @click="zetDiepte(1)">1 stap (direct)</button>
+            <button type="button" data-testid="lk-diepte-2" :aria-pressed="diepte === 2" :class="['rounded-[var(--lk-radius-btn)] px-[var(--lk-space-sm)] py-0.5 text-[length:var(--lk-text-xs)]', diepte === 2 ? 'bg-[var(--lk-color-primary)] text-white' : 'bg-[var(--lk-color-accent)]']" @click="zetDiepte(2)">2 stappen</button>
           </div>
         </div>
 
         <!-- Fix 4 — ring-checkboxes in alle modi (globale laagfilters). Geen wrapper-<template>
              zonder directive: Vue rendert die niet → checkboxes verdwenen (LI018-regressie). -->
-        <p class="font-semibold text-[length:var(--cd-text-sm)]">Ringen</p>
+        <p class="font-semibold text-[length:var(--lk-text-sm)]">Ringen</p>
         <template v-for="r in RINGEN" :key="r">
-          <label class="flex items-center gap-2 text-[length:var(--cd-text-sm)]">
+          <label class="flex items-center gap-2 text-[length:var(--lk-text-sm)]">
             <input type="checkbox" :checked="ringAan.has(r)" :data-testid="`lk-ring-${r}`" @change="toggleRing(r)" />{{ RING_LABELS[r] || typeLabel(r) }}
           </label>
           <!-- ADR-031 — sub-granulariteit: alleen zichtbaar als de Gebruikers-ring aan staat. -->
-          <label v-if="r === 'gebruikers' && ringAan.has('gebruikers')" class="ml-5 flex items-center gap-2 text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">
+          <label v-if="r === 'gebruikers' && ringAan.has('gebruikers')" class="ml-5 flex items-center gap-2 text-[length:var(--lk-text-xs)] text-[var(--lk-color-text-muted)]">
             <input type="checkbox" :checked="groepeerPerOrg" data-testid="lk-groepeer-org" @change="groepeerPerOrg = !groepeerPerOrg" />Groepeer per organisatie
           </label>
         </template>
 
         <!-- LI019 1d-v7 — registratiegaps: standaard toont de kaart (radiaal én swimlane) dezelfde
              node-set (edge-rakend). Aan = óók losse nodes zonder relatie (registratiegaps). -->
-        <label class="mt-[var(--cd-space-sm)] flex items-center gap-2 text-[length:var(--cd-text-sm)]">
+        <label class="mt-[var(--lk-space-sm)] flex items-center gap-2 text-[length:var(--lk-text-sm)]">
           <input type="checkbox" v-model="toonRegistratiegaps" data-testid="lk-registratiegaps" />Toon registratiegaps
         </label>
         <!-- LI019 1d-v3 — swimlane-optie: lege lanes verbergen. De lanevolgorde wijzig je nu door de
              lane-header op het canvas te verslepen (geen zijbalk-lijst meer). -->
-        <label v-if="layoutModus === 'swimlane'" class="flex items-center gap-2 text-[length:var(--cd-text-sm)]">
+        <label v-if="layoutModus === 'swimlane'" class="flex items-center gap-2 text-[length:var(--lk-text-sm)]">
           <input type="checkbox" v-model="verbergLegeLanes" data-testid="lk-verberg-lege" />Verberg lege lanes
         </label>
 
@@ -2158,10 +2158,10 @@ const typeLabel = (t) => humaniseer(t)
         <div
           v-if="organisatieNodes.length"
           data-testid="lk-scopebalk" role="group" aria-label="Organisatie-scope"
-          class="flex flex-wrap items-center gap-x-[var(--cd-space-md)] gap-y-1 border-b border-[var(--cd-color-border)] bg-white px-[var(--cd-space-md)] py-[var(--cd-space-xs)]"
+          class="flex flex-wrap items-center gap-x-[var(--lk-space-md)] gap-y-1 border-b border-[var(--lk-color-border)] bg-white px-[var(--lk-space-md)] py-[var(--lk-space-xs)]"
         >
-          <span class="text-[length:var(--cd-text-sm)] font-semibold">Scope:</span>
-          <label v-for="o in organisatieNodes" :key="o.id" class="flex items-center gap-1 text-[length:var(--cd-text-sm)]">
+          <span class="text-[length:var(--lk-text-sm)] font-semibold">Scope:</span>
+          <label v-for="o in organisatieNodes" :key="o.id" class="flex items-center gap-1 text-[length:var(--lk-text-sm)]">
             <input type="checkbox" :checked="scopeOrgs.has(o.id)" :data-testid="`lk-scope-org-${o.id}`" @change="toggleScopeOrg(o.id)" />{{ o.naam }}
           </label>
           <!-- LI023 — de Biedt/Gebruikt-as scoopt application-componenten en geldt alléén in de
@@ -2169,27 +2169,27 @@ const typeLabel = (t) => humaniseer(t)
           <div v-if="actieveSet.size === 0" class="ml-auto flex items-center gap-1" role="radiogroup" aria-label="Biedt aan of gebruikt">
             <button
               type="button" data-testid="lk-scope-biedt" role="radio" :aria-checked="scopeModus === 'biedt'"
-              :class="['rounded-[var(--cd-radius-btn)] px-2 py-1 text-[length:var(--cd-text-sm)]', scopeModus === 'biedt' ? 'bg-[var(--cd-color-primary)] text-white' : 'bg-[var(--cd-color-accent)]']"
+              :class="['rounded-[var(--lk-radius-btn)] px-2 py-1 text-[length:var(--lk-text-sm)]', scopeModus === 'biedt' ? 'bg-[var(--lk-color-primary)] text-white' : 'bg-[var(--lk-color-accent)]']"
               @click="scopeModus = 'biedt'"
             >Biedt aan</button>
             <button
               type="button" data-testid="lk-scope-gebruikt" role="radio" :aria-checked="scopeModus === 'gebruikt'"
-              :class="['rounded-[var(--cd-radius-btn)] px-2 py-1 text-[length:var(--cd-text-sm)]', scopeModus === 'gebruikt' ? 'bg-[var(--cd-color-primary)] text-white' : 'bg-[var(--cd-color-accent)]']"
+              :class="['rounded-[var(--lk-radius-btn)] px-2 py-1 text-[length:var(--lk-text-sm)]', scopeModus === 'gebruikt' ? 'bg-[var(--lk-color-primary)] text-white' : 'bg-[var(--lk-color-accent)]']"
               @click="scopeModus = 'gebruikt'"
             >Gebruikt</button>
           </div>
           <!-- Gat eerlijk tonen: componenten die in deze modus buiten élke organisatie-scope vallen. -->
-          <span v-if="actieveSet.size === 0 && scopeModus === 'biedt' && zonderEigenaarAantal" data-testid="lk-scope-gap" class="basis-full text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">
+          <span v-if="actieveSet.size === 0 && scopeModus === 'biedt' && zonderEigenaarAantal" data-testid="lk-scope-gap" class="basis-full text-[length:var(--lk-text-xs)] text-[var(--lk-color-text-muted)]">
             {{ zonderEigenaarAantal }} component(en) zonder eigenaar — niet in scope
           </span>
-          <span v-else-if="actieveSet.size === 0 && scopeModus === 'gebruikt' && organisatieloosGebruiktAantal" data-testid="lk-scope-gap" class="basis-full text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">
+          <span v-else-if="actieveSet.size === 0 && scopeModus === 'gebruikt' && organisatieloosGebruiktAantal" data-testid="lk-scope-gap" class="basis-full text-[length:var(--lk-text-xs)] text-[var(--lk-color-text-muted)]">
             {{ organisatieloosGebruiktAantal }} component(en) alleen door een organisatieloze groep gebruikt — niet in scope
           </span>
         </div>
 
       <!-- Canvas — min-h-0 is kritiek: zonder negeert een flex-child de height:100% van de parent,
            waardoor Cytoscape op hoogte 0 initialiseert en de graaf leeg/onzichtbaar blijft. -->
-      <div class="relative min-h-0 min-w-0 flex-1 bg-[var(--cd-color-surface)]">
+      <div class="relative min-h-0 min-w-0 flex-1 bg-[var(--lk-color-surface)]">
         <!-- LI019 1d-v4 — swimlane-banden in TWEE HTML-lagen ROND het canvas (geen compound-nodes,
              zodat Cytoscape uitsluitend gewone nodes + edges bevat — edges en node-clicks werken
              normaal). (1) band-ACHTERGRONDEN onder het canvas (z-0, niet-interactief, translucent). -->
@@ -2198,7 +2198,7 @@ const typeLabel = (t) => humaniseer(t)
             v-for="b in laneBanden"
             :key="b.key"
             :data-testid="`lk-lane-${b.key}`"
-            class="absolute left-0 right-0 border-b border-[var(--cd-color-border)]"
+            class="absolute left-0 right-0 border-b border-[var(--lk-color-border)]"
             :style="{ top: (bandPx[b.index]?.top ?? 0) + 'px', height: (bandPx[b.index]?.height ?? 0) + 'px', background: b.bg, opacity: 0.5 }"
           ></div>
         </div>
@@ -2208,17 +2208,17 @@ const typeLabel = (t) => humaniseer(t)
         <!-- Toestand-geschiedenis: heen-en-weer door bezochte kaarttoestanden (selectie/centrering,
              ringen, filters). De impact-drill loopt via dezelfde geschiedenis — geen aparte drill-terug.
              "← Terug naar Landschapskaart" (de kaart verlaten) is een andere actie en blijft elders. -->
-        <div class="absolute left-3 top-3 z-10 flex gap-[var(--cd-space-xs)]">
+        <div class="absolute left-3 top-3 z-10 flex gap-[var(--lk-space-xs)]">
           <button
             type="button" data-testid="lk-hist-terug" aria-label="Vorige kaarttoestand"
             :disabled="!kanTerug"
-            class="h-10 rounded-[var(--cd-radius-btn)] bg-white/90 px-3 text-[length:var(--cd-text-sm)] shadow-[var(--cd-shadow-sm)] hover:bg-[var(--cd-color-accent)] disabled:opacity-40 disabled:cursor-not-allowed"
+            class="h-10 rounded-[var(--lk-radius-btn)] bg-white/90 px-3 text-[length:var(--lk-text-sm)] shadow-[var(--lk-shadow-sm)] hover:bg-[var(--lk-color-accent)] disabled:opacity-40 disabled:cursor-not-allowed"
             @click="terugInHistorie"
           >← Terug</button>
           <button
             type="button" data-testid="lk-hist-vooruit" aria-label="Volgende kaarttoestand"
             :disabled="!kanVooruit"
-            class="h-10 rounded-[var(--cd-radius-btn)] bg-white/90 px-3 text-[length:var(--cd-text-sm)] shadow-[var(--cd-shadow-sm)] hover:bg-[var(--cd-color-accent)] disabled:opacity-40 disabled:cursor-not-allowed"
+            class="h-10 rounded-[var(--lk-radius-btn)] bg-white/90 px-3 text-[length:var(--lk-text-sm)] shadow-[var(--lk-shadow-sm)] hover:bg-[var(--lk-color-accent)] disabled:opacity-40 disabled:cursor-not-allowed"
             @click="vooruitInHistorie"
           >Vooruit →</button>
         </div>
@@ -2229,23 +2229,23 @@ const typeLabel = (t) => humaniseer(t)
           <button
             v-if="!legendaOpen"
             type="button" data-testid="lk-legenda-toggle" aria-expanded="false"
-            class="h-10 rounded-[var(--cd-radius-btn)] bg-white/90 px-3 text-[length:var(--cd-text-sm)] shadow-[var(--cd-shadow-sm)] hover:bg-[var(--cd-color-accent)]"
+            class="h-10 rounded-[var(--lk-radius-btn)] bg-white/90 px-3 text-[length:var(--lk-text-sm)] shadow-[var(--lk-shadow-sm)] hover:bg-[var(--lk-color-accent)]"
             @click="toggleLegenda"
           >Legenda</button>
           <div
             v-else
             data-testid="lk-legenda-paneel"
             :style="legendaPos.x !== null ? { position: 'fixed', left: legendaPos.x + 'px', top: legendaPos.y + 'px', bottom: 'auto', right: 'auto', zIndex: 30 } : {}"
-            :class="['max-h-[70%] w-60 overflow-auto rounded-[var(--cd-radius-card)] border border-[var(--cd-color-border)] bg-white/95 p-[var(--cd-space-sm)] shadow-[var(--cd-shadow-lg)]', legendaDragging ? 'cursor-grabbing' : 'cursor-grab']"
+            :class="['max-h-[70%] w-60 overflow-auto rounded-[var(--lk-radius-card)] border border-[var(--lk-color-border)] bg-white/95 p-[var(--lk-space-sm)] shadow-[var(--lk-shadow-lg)]', legendaDragging ? 'cursor-grabbing' : 'cursor-grab']"
             @mousedown="onLegendaMousedown"
           >
             <div class="mb-1 flex items-center justify-between">
-              <span class="font-semibold text-[length:var(--cd-text-sm)]">Legenda</span>
-              <button type="button" data-testid="lk-legenda-sluit" aria-label="Legenda inklappen" class="px-1 text-[var(--cd-color-text-muted)] hover:text-[var(--cd-color-text)]" @click="toggleLegenda">×</button>
+              <span class="font-semibold text-[length:var(--lk-text-sm)]">Legenda</span>
+              <button type="button" data-testid="lk-legenda-sluit" aria-label="Legenda inklappen" class="px-1 text-[var(--lk-color-text-muted)] hover:text-[var(--lk-color-text)]" @click="toggleLegenda">×</button>
             </div>
             <!-- Vorm = type -->
             <div data-testid="lk-legenda-vorm" class="flex flex-col gap-1">
-              <p class="text-[length:var(--cd-text-xs)] font-semibold text-[var(--cd-color-text-muted)]">Vorm = type</p>
+              <p class="text-[length:var(--lk-text-xs)] font-semibold text-[var(--lk-color-text-muted)]">Vorm = type</p>
               <button
                 v-for="v in VORM_LEGENDA"
                 :key="v.label"
@@ -2253,19 +2253,19 @@ const typeLabel = (t) => humaniseer(t)
                 :data-testid="`lk-legenda-type-${v.label}`"
                 :aria-pressed="legendaTypeFilter === v.label"
                 :title="legendaTypeFilter === v.label ? 'Filter opheffen' : `Toon alleen: ${v.label}`"
-                :class="['flex items-center gap-2 text-left text-[length:var(--cd-text-sm)] cursor-pointer rounded px-1 hover:bg-[var(--cd-color-accent)]', legendaTypeFilter === v.label ? 'bg-[var(--cd-color-accent)] font-semibold' : '']"
+                :class="['flex items-center gap-2 text-left text-[length:var(--lk-text-sm)] cursor-pointer rounded px-1 hover:bg-[var(--lk-color-accent)]', legendaTypeFilter === v.label ? 'bg-[var(--lk-color-accent)] font-semibold' : '']"
                 @click="toggleLegendaFilter(v.label)"
               >
-                <span class="inline-block h-3.5 w-3.5 shrink-0 bg-[var(--cd-color-text-muted)]" :style="v.stijl" aria-hidden="true"></span>{{ v.label }}
+                <span class="inline-block h-3.5 w-3.5 shrink-0 bg-[var(--lk-color-text-muted)]" :style="v.stijl" aria-hidden="true"></span>{{ v.label }}
               </button>
             </div>
             <!-- Kleur = status -->
-            <div data-testid="lk-legenda-status" class="mt-[var(--cd-space-sm)] flex flex-col gap-1 border-t border-[var(--cd-color-border)] pt-[var(--cd-space-sm)]">
-              <p class="text-[length:var(--cd-text-xs)] font-semibold text-[var(--cd-color-text-muted)]">Kleur = status</p>
-              <span v-for="lc in LIFECYCLE_OPTIES.concat(['null'])" :key="lc" class="flex items-center gap-2 text-[length:var(--cd-text-sm)]">
+            <div data-testid="lk-legenda-status" class="mt-[var(--lk-space-sm)] flex flex-col gap-1 border-t border-[var(--lk-color-border)] pt-[var(--lk-space-sm)]">
+              <p class="text-[length:var(--lk-text-xs)] font-semibold text-[var(--lk-color-text-muted)]">Kleur = status</p>
+              <span v-for="lc in LIFECYCLE_OPTIES.concat(['null'])" :key="lc" class="flex items-center gap-2 text-[length:var(--lk-text-sm)]">
                 <span class="inline-block h-3 w-3 shrink-0 rounded-full" :style="{ background: lcStyle(lc).bg, border: `1px solid ${lcStyle(lc).border}` }"></span>{{ lc === 'null' ? 'geen profiel' : typeLabel(lc) }}
               </span>
-              <span class="flex items-center gap-2 text-[length:var(--cd-text-sm)]">⚠ Open blokkade(s)</span>
+              <span class="flex items-center gap-2 text-[length:var(--lk-text-sm)]">⚠ Open blokkade(s)</span>
             </div>
           </div>
         </div>
@@ -2278,17 +2278,17 @@ const typeLabel = (t) => humaniseer(t)
             v-for="b in laneBanden"
             :key="b.key"
             class="absolute left-0 right-0"
-            :class="sleepLane === b.key ? 'ring-2 ring-[var(--cd-color-primary)] ring-inset' : ''"
+            :class="sleepLane === b.key ? 'ring-2 ring-[var(--lk-color-primary)] ring-inset' : ''"
             :style="{ top: (bandPx[b.index]?.top ?? 0) + 'px', height: (bandPx[b.index]?.height ?? 0) + 'px' }"
           >
             <span
               :data-testid="`lk-lane-header-${b.key}`"
-              class="pointer-events-auto absolute left-2 top-1 flex cursor-grab touch-none select-none items-center gap-1 rounded bg-white/80 px-1 text-[length:var(--cd-text-sm)] font-semibold text-[var(--cd-color-text-muted)] shadow-[var(--cd-shadow-sm)] active:cursor-grabbing"
+              class="pointer-events-auto absolute left-2 top-1 flex cursor-grab touch-none select-none items-center gap-1 rounded bg-white/80 px-1 text-[length:var(--lk-text-sm)] font-semibold text-[var(--lk-color-text-muted)] shadow-[var(--lk-shadow-sm)] active:cursor-grabbing"
               title="Versleep om de lanevolgorde te wijzigen"
               @pointerdown="onLaneSleepStart($event, b.key)"
               @pointerup="onLaneSleepEinde"
             ><span aria-hidden="true" class="opacity-60">⠿</span>{{ b.label }}</span>
-            <span v-if="b.leeg" :data-testid="`lk-lane-leeg-${b.key}`" class="absolute inset-0 flex items-center justify-center text-[length:var(--cd-text-xs)] italic text-[var(--cd-color-text-muted)]">Geen objecten geregistreerd</span>
+            <span v-if="b.leeg" :data-testid="`lk-lane-leeg-${b.key}`" class="absolute inset-0 flex items-center justify-center text-[length:var(--lk-text-xs)] italic text-[var(--lk-color-text-muted)]">Geen objecten geregistreerd</span>
           </div>
         </div>
 
@@ -2297,14 +2297,14 @@ const typeLabel = (t) => humaniseer(t)
           <!-- LI019 1d — layout-wisselaar: Radiaal (concentric) ↔ Swimlanes (lane-banden).
                LI019 swimlane-parkeren — UI verborgen (v-if="false"); Radiaal is de enige actieve layout.
                De swimlane-logica blijft in de code voor een toekomstige herwrite. -->
-          <div v-if="false" class="flex gap-0.5 rounded-[var(--cd-radius-btn)] bg-white/90 p-0.5 shadow-[var(--cd-shadow-sm)]" data-testid="lk-layout-toggle">
-            <button type="button" data-testid="lk-layout-radiaal" :aria-pressed="layoutModus === 'radiaal'" :class="['rounded-[var(--cd-radius-btn)] px-2 py-1 text-[length:var(--cd-text-sm)]', layoutModus === 'radiaal' ? 'bg-[var(--cd-color-primary)] text-white' : '']" @click="setLayoutModus('radiaal')">Radiaal</button>
-            <button type="button" data-testid="lk-layout-swimlane" :aria-pressed="layoutModus === 'swimlane'" :class="['rounded-[var(--cd-radius-btn)] px-2 py-1 text-[length:var(--cd-text-sm)]', layoutModus === 'swimlane' ? 'bg-[var(--cd-color-primary)] text-white' : '']" @click="setLayoutModus('swimlane')">Swimlanes</button>
+          <div v-if="false" class="flex gap-0.5 rounded-[var(--lk-radius-btn)] bg-white/90 p-0.5 shadow-[var(--lk-shadow-sm)]" data-testid="lk-layout-toggle">
+            <button type="button" data-testid="lk-layout-radiaal" :aria-pressed="layoutModus === 'radiaal'" :class="['rounded-[var(--lk-radius-btn)] px-2 py-1 text-[length:var(--lk-text-sm)]', layoutModus === 'radiaal' ? 'bg-[var(--lk-color-primary)] text-white' : '']" @click="setLayoutModus('radiaal')">Radiaal</button>
+            <button type="button" data-testid="lk-layout-swimlane" :aria-pressed="layoutModus === 'swimlane'" :class="['rounded-[var(--lk-radius-btn)] px-2 py-1 text-[length:var(--lk-text-sm)]', layoutModus === 'swimlane' ? 'bg-[var(--lk-color-primary)] text-white' : '']" @click="setLayoutModus('swimlane')">Swimlanes</button>
           </div>
-          <button type="button" data-testid="lk-centreer" class="rounded-[var(--cd-radius-btn)] bg-white/90 px-2 py-1 text-[length:var(--cd-text-sm)] shadow-[var(--cd-shadow-sm)]" @click="centreer">⊡ Centreer</button>
-          <button type="button" data-testid="lk-kleur-domein" :aria-pressed="kleurOpDomein" :class="['rounded-[var(--cd-radius-btn)] px-2 py-1 text-[length:var(--cd-text-sm)] shadow-[var(--cd-shadow-sm)]', kleurOpDomein ? 'bg-[var(--cd-color-primary)] text-white' : 'bg-white/90']" @click="kleurOpDomein = !kleurOpDomein">Kleur op domein</button>
+          <button type="button" data-testid="lk-centreer" class="rounded-[var(--lk-radius-btn)] bg-white/90 px-2 py-1 text-[length:var(--lk-text-sm)] shadow-[var(--lk-shadow-sm)]" @click="centreer">⊡ Centreer</button>
+          <button type="button" data-testid="lk-kleur-domein" :aria-pressed="kleurOpDomein" :class="['rounded-[var(--lk-radius-btn)] px-2 py-1 text-[length:var(--lk-text-sm)] shadow-[var(--lk-shadow-sm)]', kleurOpDomein ? 'bg-[var(--lk-color-primary)] text-white' : 'bg-white/90']" @click="kleurOpDomein = !kleurOpDomein">Kleur op domein</button>
           <!-- Fullscreen-overlay (in-app): één toggle — vergroten ingebed, verkleinen in de overlay. -->
-          <button type="button" :data-testid="fullscreen ? 'lk-fullscreen-sluit' : 'lk-fullscreen-open'" :aria-pressed="fullscreen" class="rounded-[var(--cd-radius-btn)] bg-white/90 px-2 py-1 text-[length:var(--cd-text-sm)] shadow-[var(--cd-shadow-sm)]" @click="toggleFullscreen">{{ fullscreen ? '✕ Verkleinen' : '⛶ Vergroten' }}</button>
+          <button type="button" :data-testid="fullscreen ? 'lk-fullscreen-sluit' : 'lk-fullscreen-open'" :aria-pressed="fullscreen" class="rounded-[var(--lk-radius-btn)] bg-white/90 px-2 py-1 text-[length:var(--lk-text-sm)] shadow-[var(--lk-shadow-sm)]" @click="toggleFullscreen">{{ fullscreen ? '✕ Verkleinen' : '⛶ Vergroten' }}</button>
         </div>
 
         <!-- Klik-detail-popup (koppeling of knoop) — gedeelde vorm; sluiten via knop, Escape
@@ -2314,52 +2314,52 @@ const typeLabel = (t) => humaniseer(t)
           data-testid="lk-popup"
           role="dialog"
           aria-label="Detail"
-          :class="['absolute left-3 top-3 z-20 max-w-[90%] rounded-[var(--cd-radius-card)] border border-[var(--cd-color-border)] bg-white p-[var(--cd-space-md)] shadow-[var(--cd-shadow-lg)]', popupKind === 'edge' ? 'w-[34rem]' : 'w-72']"
+          :class="['absolute left-3 top-3 z-20 max-w-[90%] rounded-[var(--lk-radius-card)] border border-[var(--lk-color-border)] bg-white p-[var(--lk-space-md)] shadow-[var(--lk-shadow-lg)]', popupKind === 'edge' ? 'w-[34rem]' : 'w-72']"
         >
           <div class="flex items-start justify-between gap-2">
             <div>
-              <p v-if="popupBadge" data-testid="lk-popup-badge" class="text-[length:var(--cd-text-xs)] font-semibold uppercase text-[var(--cd-color-primary-700)]">{{ popupBadge }}</p>
+              <p v-if="popupBadge" data-testid="lk-popup-badge" class="text-[length:var(--lk-text-xs)] font-semibold uppercase text-[var(--lk-color-primary-700)]">{{ popupBadge }}</p>
               <p class="font-semibold" data-testid="lk-popup-titel">{{ popupTitel }}</p>
             </div>
-            <button type="button" data-testid="lk-popup-sluit" aria-label="Sluiten" class="shrink-0 text-[var(--cd-color-text-muted)] hover:text-[var(--cd-color-text)]" @click="sluitPopup">✕</button>
+            <button type="button" data-testid="lk-popup-sluit" aria-label="Sluiten" class="shrink-0 text-[var(--lk-color-text-muted)] hover:text-[var(--lk-color-text)]" @click="sluitPopup">✕</button>
           </div>
-          <p v-if="popupLaden" data-testid="lk-popup-laden" class="mt-2 text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]">Laden…</p>
-          <dl v-if="popupVelden.length" data-testid="lk-popup-velden" class="mt-2 grid grid-cols-[auto_1fr] gap-x-[var(--cd-space-sm)] gap-y-0.5 text-[length:var(--cd-text-sm)]">
+          <p v-if="popupLaden" data-testid="lk-popup-laden" class="mt-2 text-[length:var(--lk-text-sm)] text-[var(--lk-color-text-muted)]">Laden…</p>
+          <dl v-if="popupVelden.length" data-testid="lk-popup-velden" class="mt-2 grid grid-cols-[auto_1fr] gap-x-[var(--lk-space-sm)] gap-y-0.5 text-[length:var(--lk-text-sm)]">
             <template v-for="v in popupVelden" :key="v.label">
-              <dt class="text-[var(--cd-color-text-muted)]">{{ v.label }}</dt>
+              <dt class="text-[var(--lk-color-text-muted)]">{{ v.label }}</dt>
               <dd class="break-words">{{ v.waarde }}</dd>
             </template>
           </dl>
           <!-- Koppeling-popup (flow-edge) — master-detail: links de flow-lijst (naam + richting-
                icoon), rechts het detail van de geselecteerde flow. Ook bij n=1 (ADR-023a Fase 4). -->
-          <div v-if="popupKind === 'edge' && popupFlows.length" data-testid="lk-popup-md" class="mt-2 flex gap-[var(--cd-space-md)]">
-            <ul data-testid="lk-popup-lijst" class="w-2/5 shrink-0 flex flex-col gap-0.5 border-r border-[var(--cd-color-border)] pr-[var(--cd-space-sm)] text-[length:var(--cd-text-sm)]">
+          <div v-if="popupKind === 'edge' && popupFlows.length" data-testid="lk-popup-md" class="mt-2 flex gap-[var(--lk-space-md)]">
+            <ul data-testid="lk-popup-lijst" class="w-2/5 shrink-0 flex flex-col gap-0.5 border-r border-[var(--lk-color-border)] pr-[var(--lk-space-sm)] text-[length:var(--lk-text-sm)]">
               <li v-for="f in popupFlows" :key="f.id">
                 <button
                   type="button"
                   :data-testid="`lk-popup-flow-${f.id}`"
                   :aria-selected="popupGeselecteerd && f.id === popupGeselecteerd.id"
-                  :class="['flex w-full items-center gap-1 rounded px-1 py-0.5 text-left', popupGeselecteerd && f.id === popupGeselecteerd.id ? 'bg-[var(--cd-color-accent)] font-semibold' : 'hover:bg-[var(--cd-color-accent)]']"
+                  :class="['flex w-full items-center gap-1 rounded px-1 py-0.5 text-left', popupGeselecteerd && f.id === popupGeselecteerd.id ? 'bg-[var(--lk-color-accent)] font-semibold' : 'hover:bg-[var(--lk-color-accent)]']"
                   @click="selecteerFlow(f.id)"
                 >
-                  <span :class="['shrink-0', f.positie === 'uit' ? 'text-[var(--cd-color-success,#16a34a)]' : 'text-[var(--cd-color-danger)]']" :title="f.positie === 'uit' ? 'Uitgaand' : 'Inkomend'">{{ f.positie === 'uit' ? '→' : '←' }}</span>
+                  <span :class="['shrink-0', f.positie === 'uit' ? 'text-[var(--lk-color-success,#16a34a)]' : 'text-[var(--lk-color-danger)]']" :title="f.positie === 'uit' ? 'Uitgaand' : 'Inkomend'">{{ f.positie === 'uit' ? '→' : '←' }}</span>
                   <span class="grow truncate">{{ f.naam }}</span>
                 </button>
               </li>
             </ul>
-            <dl v-if="popupGeselecteerd" data-testid="lk-popup-detail" class="grid w-3/5 grid-cols-[auto_1fr] content-start gap-x-[var(--cd-space-sm)] gap-y-0.5 text-[length:var(--cd-text-sm)]">
-              <dt class="col-span-2 font-semibold text-[length:var(--cd-text-base)]" data-testid="lk-popup-detail-naam">{{ popupGeselecteerd.naam }}</dt>
-              <dt class="text-[var(--cd-color-text-muted)]">Tegenpartij</dt><dd class="break-words">{{ popupGeselecteerd.tegenNaam || '—' }}</dd>
-              <dt class="text-[var(--cd-color-text-muted)]">Datastroom</dt><dd>{{ popupGeselecteerd.richting ? typeLabel(popupGeselecteerd.richting) : '—' }}</dd>
-              <dt class="text-[var(--cd-color-text-muted)]">Protocol</dt><dd>{{ popupGeselecteerd.protocol ? typeLabel(popupGeselecteerd.protocol) : '—' }}</dd>
-              <dt class="text-[var(--cd-color-text-muted)]">Impact bij verbreking</dt><dd>{{ popupGeselecteerd.impact ? typeLabel(popupGeselecteerd.impact) : '—' }}</dd>
-              <template v-if="popupGeselecteerd.omschrijving"><dt class="text-[var(--cd-color-text-muted)]">Omschrijving</dt><dd class="break-words">{{ popupGeselecteerd.omschrijving }}</dd></template>
+            <dl v-if="popupGeselecteerd" data-testid="lk-popup-detail" class="grid w-3/5 grid-cols-[auto_1fr] content-start gap-x-[var(--lk-space-sm)] gap-y-0.5 text-[length:var(--lk-text-sm)]">
+              <dt class="col-span-2 font-semibold text-[length:var(--lk-text-base)]" data-testid="lk-popup-detail-naam">{{ popupGeselecteerd.naam }}</dt>
+              <dt class="text-[var(--lk-color-text-muted)]">Tegenpartij</dt><dd class="break-words">{{ popupGeselecteerd.tegenNaam || '—' }}</dd>
+              <dt class="text-[var(--lk-color-text-muted)]">Datastroom</dt><dd>{{ popupGeselecteerd.richting ? typeLabel(popupGeselecteerd.richting) : '—' }}</dd>
+              <dt class="text-[var(--lk-color-text-muted)]">Protocol</dt><dd>{{ popupGeselecteerd.protocol ? typeLabel(popupGeselecteerd.protocol) : '—' }}</dd>
+              <dt class="text-[var(--lk-color-text-muted)]">Impact bij verbreking</dt><dd>{{ popupGeselecteerd.impact ? typeLabel(popupGeselecteerd.impact) : '—' }}</dd>
+              <template v-if="popupGeselecteerd.omschrijving"><dt class="text-[var(--lk-color-text-muted)]">Omschrijving</dt><dd class="break-words">{{ popupGeselecteerd.omschrijving }}</dd></template>
             </dl>
           </div>
-          <p v-else-if="popupKind === 'edge' && !popupLaden && !popupMelding" data-testid="lk-popup-md-leeg" class="mt-2 text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]">Geen koppelingen gevonden.</p>
-          <p v-if="popupMelding" data-testid="lk-popup-melding" class="mt-2 text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">{{ popupMelding }}</p>
+          <p v-else-if="popupKind === 'edge' && !popupLaden && !popupMelding" data-testid="lk-popup-md-leeg" class="mt-2 text-[length:var(--lk-text-sm)] text-[var(--lk-color-text-muted)]">Geen koppelingen gevonden.</p>
+          <p v-if="popupMelding" data-testid="lk-popup-melding" class="mt-2 text-[length:var(--lk-text-xs)] text-[var(--lk-color-text-muted)]">{{ popupMelding }}</p>
           <div v-if="popupActies.length" class="mt-2 flex flex-col items-start gap-1">
-            <button v-for="(a, i) in popupActies" :key="i" type="button" :data-testid="i === 0 ? 'lk-popup-actie' : `lk-popup-actie-${i}`" class="rounded-[var(--cd-radius-btn)] bg-[var(--cd-color-primary)] px-[var(--cd-space-sm)] py-1 text-[length:var(--cd-text-sm)] text-white" @click="a.fn">{{ a.label }}</button>
+            <button v-for="(a, i) in popupActies" :key="i" type="button" :data-testid="i === 0 ? 'lk-popup-actie' : `lk-popup-actie-${i}`" class="rounded-[var(--lk-radius-btn)] bg-[var(--lk-color-primary)] px-[var(--lk-space-sm)] py-1 text-[length:var(--lk-text-sm)] text-white" @click="a.fn">{{ a.label }}</button>
           </div>
         </div>
 
@@ -2371,7 +2371,7 @@ const typeLabel = (t) => humaniseer(t)
              De component-root draagt data-testid="lk-beginscherm". -->
         <KaartBeginscherm
           v-if="beginschermOpen"
-          class="absolute inset-0 z-20 bg-[var(--cd-color-bg)]"
+          class="absolute inset-0 z-20 bg-[var(--lk-color-bg)]"
           :opgeslagen-views="opgeslagenViews"
           :component-opties="typeCatalogus"
           :eigenaar-opties="[]"
@@ -2381,63 +2381,63 @@ const typeLabel = (t) => humaniseer(t)
           @toon-hele-landschap="toonHeleLandschap"
           @sluit="beginschermOpen = false"
         />
-        <p v-else-if="tekenVoortgang" data-testid="lk-voortgang" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[var(--cd-color-text-muted)]">{{ tekenVoortgang.gedaan }} van {{ tekenVoortgang.totaal }} componenten geladen…</p>
-        <p v-else-if="laden" data-testid="lk-laden" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[var(--cd-color-text-muted)]">Landschap laden…</p>
-        <p v-else-if="fout" role="alert" data-testid="lk-fout" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[var(--cd-color-danger)]">{{ fout }}</p>
-        <p v-else-if="!heeftData" data-testid="lk-leeg" class="absolute left-1/2 top-1/2 max-w-md -translate-x-1/2 -translate-y-1/2 text-center text-[var(--cd-color-text-muted)]">Geen componenten in deze selectie.</p>
+        <p v-else-if="tekenVoortgang" data-testid="lk-voortgang" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[var(--lk-color-text-muted)]">{{ tekenVoortgang.gedaan }} van {{ tekenVoortgang.totaal }} componenten geladen…</p>
+        <p v-else-if="laden" data-testid="lk-laden" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[var(--lk-color-text-muted)]">Landschap laden…</p>
+        <p v-else-if="fout" role="alert" data-testid="lk-fout" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[var(--lk-color-danger)]">{{ fout }}</p>
+        <p v-else-if="!heeftData" data-testid="lk-leeg" class="absolute left-1/2 top-1/2 max-w-md -translate-x-1/2 -translate-y-1/2 text-center text-[var(--lk-color-text-muted)]">Geen componenten in deze selectie.</p>
       </div>
       </div>
 
       <!-- Rechterpaneel: actieve set + detail + legenda -->
-      <aside class="flex w-56 flex-shrink-0 flex-col gap-[var(--cd-space-md)] overflow-y-auto border-l border-[var(--cd-color-border)] bg-white p-[var(--cd-space-md)]" data-testid="lk-rechts">
+      <aside class="flex w-56 flex-shrink-0 flex-col gap-[var(--lk-space-md)] overflow-y-auto border-l border-[var(--lk-color-border)] bg-white p-[var(--lk-space-md)]" data-testid="lk-rechts">
         <div>
           <div class="mb-1 flex items-center gap-2">
-            <p class="font-semibold text-[length:var(--cd-text-sm)]">Actieve set ({{ actieveSet.size }})</p>
-            <button v-if="actieveSet.size > 0" type="button" data-testid="lk-set-wis" class="ml-auto text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)] hover:text-[var(--cd-color-danger)] hover:underline" @click="wisSet">Wis alles</button>
+            <p class="font-semibold text-[length:var(--lk-text-sm)]">Actieve set ({{ actieveSet.size }})</p>
+            <button v-if="actieveSet.size > 0" type="button" data-testid="lk-set-wis" class="ml-auto text-[length:var(--lk-text-xs)] text-[var(--lk-color-text-muted)] hover:text-[var(--lk-color-danger)] hover:underline" @click="wisSet">Wis alles</button>
           </div>
-          <label v-if="actieveSet.size > 0" class="mb-1 flex items-center gap-2 text-[length:var(--cd-text-sm)]">
+          <label v-if="actieveSet.size > 0" class="mb-1 flex items-center gap-2 text-[length:var(--lk-text-sm)]">
             <input type="checkbox" v-model="focusOpSet" data-testid="lk-focus-set" />Focus op actieve set
           </label>
           <ul class="flex max-h-40 flex-col gap-1 overflow-y-auto" data-testid="lk-set">
-            <li v-for="n in actieveSetNodes" :key="n.id" :data-testid="`lk-set-${n.id}`" class="flex items-center gap-1 text-[length:var(--cd-text-sm)]">
+            <li v-for="n in actieveSetNodes" :key="n.id" :data-testid="`lk-set-${n.id}`" class="flex items-center gap-1 text-[length:var(--lk-text-sm)]">
               <span class="inline-block h-3 w-3 shrink-0 rounded-full" :style="{ background: lcStyle(n.lifecycle_status).bg }"></span>
               <button type="button" class="grow truncate text-left hover:underline" @click="selecteerNode(n.id)">{{ n.naam }}</button>
               <span v-if="n.blokkades_open > 0">⚠</span>
-              <button type="button" class="text-[var(--cd-color-danger)]" :data-testid="`lk-set-verwijder-${n.id}`" @click="toggleSet(n.id)">×</button>
+              <button type="button" class="text-[var(--lk-color-danger)]" :data-testid="`lk-set-verwijder-${n.id}`" @click="toggleSet(n.id)">×</button>
             </li>
-            <li v-if="!actieveSet.size" class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">Nog niets geselecteerd.</li>
+            <li v-if="!actieveSet.size" class="text-[length:var(--lk-text-xs)] text-[var(--lk-color-text-muted)]">Nog niets geselecteerd.</li>
           </ul>
           <!-- ADR-033 2c — huidige actieve set bewaren als view (alleen met beheer-recht op views). -->
-          <button v-if="actieveSet.size > 0 && magViewsBeheren" type="button" data-testid="lk-view-opslaan" class="mt-1 w-full rounded-[var(--cd-radius-btn)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-1 text-[length:var(--cd-text-sm)] hover:bg-[var(--cd-color-accent)]" @click="openOpslaan">💾 View opslaan</button>
+          <button v-if="actieveSet.size > 0 && magViewsBeheren" type="button" data-testid="lk-view-opslaan" class="mt-1 w-full rounded-[var(--lk-radius-btn)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-1 text-[length:var(--lk-text-sm)] hover:bg-[var(--lk-color-accent)]" @click="openOpslaan">💾 View opslaan</button>
         </div>
 
-        <div class="border-t border-[var(--cd-color-border)] pt-[var(--cd-space-sm)]">
-          <p class="mb-1 font-semibold text-[length:var(--cd-text-sm)]">Detail</p>
+        <div class="border-t border-[var(--lk-color-border)] pt-[var(--lk-space-sm)]">
+          <p class="mb-1 font-semibold text-[length:var(--lk-text-sm)]">Detail</p>
           <div
             v-if="detailNode"
             data-testid="lk-detail"
             :style="detailPos.x !== null ? { position: 'fixed', left: detailPos.x + 'px', top: detailPos.y + 'px', zIndex: 30 } : {}"
-            :class="['flex flex-col gap-1 text-[length:var(--cd-text-sm)]', detailPos.x !== null ? 'w-56 rounded-[var(--cd-radius-card)] border border-[var(--cd-color-border)] bg-white p-[var(--cd-space-sm)] shadow-[var(--cd-shadow-lg)]' : '', detailDragging ? 'cursor-grabbing' : 'cursor-grab']"
+            :class="['flex flex-col gap-1 text-[length:var(--lk-text-sm)]', detailPos.x !== null ? 'w-56 rounded-[var(--lk-radius-card)] border border-[var(--lk-color-border)] bg-white p-[var(--lk-space-sm)] shadow-[var(--lk-shadow-lg)]' : '', detailDragging ? 'cursor-grabbing' : 'cursor-grab']"
             @mousedown="onDetailMousedown"
           >
             <p class="font-semibold" data-testid="lk-detail-naam">{{ detailNode.naam }}</p>
             <!-- LI021 — partij: aard; gebruikersgroep: ledental; anders de component-velden. -->
-            <p v-if="detailNode.element_type === 'partij'" data-testid="lk-detail-aard"><span class="text-[var(--cd-color-text-muted)]">Aard:</span> {{ detailNode.soort ? typeLabel(detailNode.soort) : '—' }}</p>
-            <p v-else-if="detailNode.element_type === 'gebruikersgroep'"><span class="text-[var(--cd-color-text-muted)]">Leden:</span> {{ detailNode.aantal_leden ?? 0 }}</p>
+            <p v-if="detailNode.element_type === 'partij'" data-testid="lk-detail-aard"><span class="text-[var(--lk-color-text-muted)]">Aard:</span> {{ detailNode.soort ? typeLabel(detailNode.soort) : '—' }}</p>
+            <p v-else-if="detailNode.element_type === 'gebruikersgroep'"><span class="text-[var(--lk-color-text-muted)]">Leden:</span> {{ detailNode.aantal_leden ?? 0 }}</p>
             <template v-else>
-              <p><span class="text-[var(--cd-color-text-muted)]">Domein:</span> {{ detailNode.domein || '—' }}</p>
-              <p><span class="text-[var(--cd-color-text-muted)]">Leverancier:</span> {{ detailNode.leverancier_naam || '—' }}</p>
-              <p><span class="text-[var(--cd-color-text-muted)]">Hosting:</span> {{ detailNode.hosting_model ? typeLabel(detailNode.hosting_model) : '—' }}</p>
-              <p><span class="text-[var(--cd-color-text-muted)]">Lifecycle:</span> <span class="inline-block rounded px-1" :style="{ background: lcStyle(detailNode.lifecycle_status).bg }">{{ detailNode.lifecycle_status ? typeLabel(detailNode.lifecycle_status) : '—' }}</span></p>
-              <p><span class="text-[var(--cd-color-text-muted)]">Blokkades:</span> {{ detailNode.blokkades_open }}</p>
+              <p><span class="text-[var(--lk-color-text-muted)]">Domein:</span> {{ detailNode.domein || '—' }}</p>
+              <p><span class="text-[var(--lk-color-text-muted)]">Leverancier:</span> {{ detailNode.leverancier_naam || '—' }}</p>
+              <p><span class="text-[var(--lk-color-text-muted)]">Hosting:</span> {{ detailNode.hosting_model ? typeLabel(detailNode.hosting_model) : '—' }}</p>
+              <p><span class="text-[var(--lk-color-text-muted)]">Lifecycle:</span> <span class="inline-block rounded px-1" :style="{ background: lcStyle(detailNode.lifecycle_status).bg }">{{ detailNode.lifecycle_status ? typeLabel(detailNode.lifecycle_status) : '—' }}</span></p>
+              <p><span class="text-[var(--lk-color-text-muted)]">Blokkades:</span> {{ detailNode.blokkades_open }}</p>
             </template>
-            <p><span class="text-[var(--cd-color-text-muted)]">Koppelingen:</span> {{ detailKoppelingen }}</p>
+            <p><span class="text-[var(--lk-color-text-muted)]">Koppelingen:</span> {{ detailKoppelingen }}</p>
             <!-- ADR-025 v4 — migratieplaatsing (alleen tonen indien gevuld). -->
             <p v-if="detailNode.plateau_naam" data-testid="lk-detail-plateau">
-              <span class="text-[var(--cd-color-text-muted)]">Plateau:</span> {{ detailNode.plateau_naam }}<template v-if="detailNode.plateau_dispositie"> · Dispositie: {{ detailNode.plateau_dispositie }}</template>
+              <span class="text-[var(--lk-color-text-muted)]">Plateau:</span> {{ detailNode.plateau_naam }}<template v-if="detailNode.plateau_dispositie"> · Dispositie: {{ detailNode.plateau_dispositie }}</template>
             </p>
-            <button v-if="isApplicatie(detailNode)" type="button" data-testid="lk-detail-open" class="mt-1 rounded-[var(--cd-radius-btn)] bg-[var(--cd-color-primary)] px-[var(--cd-space-sm)] py-1 text-white" @click="openApplicatie">Open component →</button>
-            <button type="button" :data-testid="`lk-detail-set`" class="rounded-[var(--cd-radius-btn)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-1" @click="toggleSet(detailNode.id)">{{ inSet(detailNode.id) ? '× Verwijder uit set' : '+ Voeg toe aan set' }}</button>
+            <button v-if="isApplicatie(detailNode)" type="button" data-testid="lk-detail-open" class="mt-1 rounded-[var(--lk-radius-btn)] bg-[var(--lk-color-primary)] px-[var(--lk-space-sm)] py-1 text-white" @click="openApplicatie">Open component →</button>
+            <button type="button" :data-testid="`lk-detail-set`" class="rounded-[var(--lk-radius-btn)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-1" @click="toggleSet(detailNode.id)">{{ inSet(detailNode.id) ? '× Verwijder uit set' : '+ Voeg toe aan set' }}</button>
             <!-- Slice 5 (LI023) — set-acties: component-node = zichzelf + directe component-buren;
                  context-node = alle component-buren. Disabled (grayed) als er geen component-buren zijn. -->
             <button
@@ -2445,7 +2445,7 @@ const typeLabel = (t) => humaniseer(t)
               type="button"
               data-testid="haal-buren-erbij-knop"
               :disabled="geselecteerdNodeBuren.length === 0"
-              class="rounded-[var(--cd-radius-btn)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-1 disabled:cursor-not-allowed disabled:opacity-50"
+              class="rounded-[var(--lk-radius-btn)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-1 disabled:cursor-not-allowed disabled:opacity-50"
               @click="voegBurenToe(detailNode.id)"
             >+ Haal buren erbij<span v-if="geselecteerdNodeBuren.length"> ({{ geselecteerdNodeBuren.length }})</span></button>
             <button
@@ -2453,11 +2453,11 @@ const typeLabel = (t) => humaniseer(t)
               type="button"
               data-testid="voeg-context-componenten-toe-knop"
               :disabled="geselecteerdNodeBuren.length === 0"
-              class="rounded-[var(--cd-radius-btn)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-1 disabled:cursor-not-allowed disabled:opacity-50"
+              class="rounded-[var(--lk-radius-btn)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-1 disabled:cursor-not-allowed disabled:opacity-50"
               @click="voegContextComponentenToe(detailNode.id)"
             >+ Voeg alle componenten toe<span v-if="geselecteerdNodeBuren.length"> ({{ geselecteerdNodeBuren.length }})</span></button>
           </div>
-          <p v-else class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]" data-testid="lk-detail-leeg">Klik een node voor detail.</p>
+          <p v-else class="text-[length:var(--lk-text-xs)] text-[var(--lk-color-text-muted)]" data-testid="lk-detail-leeg">Klik een node voor detail.</p>
         </div>
 
       </aside>
@@ -2471,11 +2471,11 @@ const typeLabel = (t) => humaniseer(t)
       aria-modal="true"
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
     >
-      <div class="card flex max-w-sm flex-col gap-[var(--cd-space-md)] bg-white p-[var(--cd-space-lg)]">
+      <div class="card flex max-w-sm flex-col gap-[var(--lk-space-md)] bg-white p-[var(--lk-space-lg)]">
         <p>Het geselecteerde filter verbergt het huidige centrum-component. Wil je doorgaan?</p>
-        <div class="flex justify-end gap-[var(--cd-space-sm)]">
-          <button type="button" data-testid="lk-ego-filter-annuleer" class="rounded-[var(--cd-radius-btn)] border border-[var(--cd-color-border)] px-[var(--cd-space-md)] py-1" @click="egoFilterAnnuleer">Annuleren</button>
-          <button type="button" data-testid="lk-ego-filter-doorgaan" class="rounded-[var(--cd-radius-btn)] bg-[var(--cd-color-primary)] px-[var(--cd-space-md)] py-1 text-white" @click="egoFilterDoorgaan">Doorgaan</button>
+        <div class="flex justify-end gap-[var(--lk-space-sm)]">
+          <button type="button" data-testid="lk-ego-filter-annuleer" class="rounded-[var(--lk-radius-btn)] border border-[var(--lk-color-border)] px-[var(--lk-space-md)] py-1" @click="egoFilterAnnuleer">Annuleren</button>
+          <button type="button" data-testid="lk-ego-filter-doorgaan" class="rounded-[var(--lk-radius-btn)] bg-[var(--lk-color-primary)] px-[var(--lk-space-md)] py-1 text-white" @click="egoFilterDoorgaan">Doorgaan</button>
         </div>
       </div>
     </div>
@@ -2490,9 +2490,9 @@ const typeLabel = (t) => humaniseer(t)
       aria-labelledby="lk-view-dialog-titel"
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
     >
-      <div class="card flex w-80 max-w-[90%] flex-col gap-[var(--cd-space-md)] bg-white p-[var(--cd-space-lg)]">
+      <div class="card flex w-80 max-w-[90%] flex-col gap-[var(--lk-space-md)] bg-white p-[var(--lk-space-lg)]">
         <p id="lk-view-dialog-titel" class="font-semibold">{{ viewBewerkId ? 'View bewerken' : 'View opslaan' }}</p>
-        <label class="flex flex-col gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
+        <label class="flex flex-col gap-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]">
           <span class="font-semibold" for="lk-view-naam">Naam</span>
           <input
             id="lk-view-naam"
@@ -2502,20 +2502,20 @@ const typeLabel = (t) => humaniseer(t)
             maxlength="150"
             :aria-invalid="!!viewNaamFout"
             aria-describedby="lk-view-naam-fout"
-            class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-1"
+            class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-1"
             @keyup.enter="bewaarView"
           />
-          <span v-if="viewNaamFout" id="lk-view-naam-fout" role="alert" data-testid="lk-view-naam-fout" class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-danger)]">{{ viewNaamFout }}</span>
+          <span v-if="viewNaamFout" id="lk-view-naam-fout" role="alert" data-testid="lk-view-naam-fout" class="text-[length:var(--lk-text-xs)] text-[var(--lk-color-danger)]">{{ viewNaamFout }}</span>
         </label>
-        <label class="flex items-center gap-2 text-[length:var(--cd-text-sm)]">
+        <label class="flex items-center gap-2 text-[length:var(--lk-text-sm)]">
           <input type="checkbox" v-model="viewGedeeld" data-testid="lk-view-gedeeld-toggle" />Delen met collega's (anders privé)
         </label>
-        <label v-if="viewBewerkId && actieveSet.size" class="flex items-center gap-2 text-[length:var(--cd-text-sm)]">
+        <label v-if="viewBewerkId && actieveSet.size" class="flex items-center gap-2 text-[length:var(--lk-text-sm)]">
           <input type="checkbox" v-model="viewSelectieBijwerken" data-testid="lk-view-selectie-bijwerken" />Selectie bijwerken naar de huidige actieve set ({{ actieveSet.size }})
         </label>
-        <div class="flex justify-end gap-[var(--cd-space-sm)]">
-          <button type="button" data-testid="lk-view-annuleer" class="rounded-[var(--cd-radius-btn)] border border-[var(--cd-color-border)] px-[var(--cd-space-md)] py-1" @click="sluitViewDialog">Annuleren</button>
-          <button type="button" data-testid="lk-view-bewaar" :disabled="viewBezig" class="rounded-[var(--cd-radius-btn)] bg-[var(--cd-color-primary)] px-[var(--cd-space-md)] py-1 text-white disabled:opacity-50" @click="bewaarView">Opslaan</button>
+        <div class="flex justify-end gap-[var(--lk-space-sm)]">
+          <button type="button" data-testid="lk-view-annuleer" class="rounded-[var(--lk-radius-btn)] border border-[var(--lk-color-border)] px-[var(--lk-space-md)] py-1" @click="sluitViewDialog">Annuleren</button>
+          <button type="button" data-testid="lk-view-bewaar" :disabled="viewBezig" class="rounded-[var(--lk-radius-btn)] bg-[var(--lk-color-primary)] px-[var(--lk-space-md)] py-1 text-white disabled:opacity-50" @click="bewaarView">Opslaan</button>
         </div>
       </div>
     </div>
@@ -2530,17 +2530,17 @@ const typeLabel = (t) => humaniseer(t)
       aria-labelledby="lk-startscherm-titel"
       class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40"
     >
-      <div class="card flex w-96 max-w-[90%] flex-col gap-[var(--cd-space-md)] bg-white p-[var(--cd-space-lg)]">
+      <div class="card flex w-96 max-w-[90%] flex-col gap-[var(--lk-space-md)] bg-white p-[var(--lk-space-lg)]">
         <p id="lk-startscherm-titel" class="font-semibold">Verdergaan met een opgeslagen view?</p>
         <ul class="flex max-h-72 flex-col gap-1 overflow-y-auto" data-testid="lk-startscherm-lijst">
           <li v-for="v in opgeslagenViews" :key="v.id">
-            <button type="button" :data-testid="`lk-startscherm-open-${v.id}`" class="flex w-full items-center gap-2 rounded-[var(--cd-radius-btn)] border border-[var(--cd-color-border)] px-[var(--cd-space-md)] py-2 text-left text-[length:var(--cd-text-sm)] hover:bg-[var(--cd-color-accent)]" @click="openView(v)">
+            <button type="button" :data-testid="`lk-startscherm-open-${v.id}`" class="flex w-full items-center gap-2 rounded-[var(--lk-radius-btn)] border border-[var(--lk-color-border)] px-[var(--lk-space-md)] py-2 text-left text-[length:var(--lk-text-sm)] hover:bg-[var(--lk-color-accent)]" @click="openView(v)">
               <span class="grow truncate">{{ v.naam }}</span>
-              <span v-if="!v.is_eigenaar && v.gedeeld" class="shrink-0 text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">gedeeld door {{ v.maker_naam || '—' }}</span>
+              <span v-if="!v.is_eigenaar && v.gedeeld" class="shrink-0 text-[length:var(--lk-text-xs)] text-[var(--lk-color-text-muted)]">gedeeld door {{ v.maker_naam || '—' }}</span>
             </button>
           </li>
         </ul>
-        <button type="button" data-testid="lk-startscherm-hele-kaart" class="rounded-[var(--cd-radius-btn)] bg-[var(--cd-color-primary)] px-[var(--cd-space-md)] py-2 text-white" @click="beginMetHeleKaart">Begin met de hele kaart →</button>
+        <button type="button" data-testid="lk-startscherm-hele-kaart" class="rounded-[var(--lk-radius-btn)] bg-[var(--lk-color-primary)] px-[var(--lk-space-md)] py-2 text-white" @click="beginMetHeleKaart">Begin met de hele kaart →</button>
       </div>
     </div>
   </div>

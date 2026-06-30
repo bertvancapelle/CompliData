@@ -245,16 +245,16 @@ watch(() => props.id, async () => { await laad(); _initVanafQuery() }, { immedia
 
 <template>
   <section aria-labelledby="detail-titel">
-    <button v-if="terugLabel" type="button" data-testid="terug-knop" class="mb-[var(--cd-space-md)] inline-flex items-center text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)] hover:text-[var(--cd-color-primary)] hover:underline focus:outline-2 focus:outline-offset-2 focus:outline-[var(--cd-color-primary)]" @click="gaTerug">{{ terugLabel }}</button>
-    <p v-if="fout" role="alert" data-testid="detail-fout" class="text-[var(--cd-color-danger)]">
+    <button v-if="terugLabel" type="button" data-testid="terug-knop" class="mb-[var(--lk-space-md)] inline-flex items-center text-[length:var(--lk-text-sm)] text-[var(--lk-color-text-muted)] hover:text-[var(--lk-color-primary)] hover:underline focus:outline-2 focus:outline-offset-2 focus:outline-[var(--lk-color-primary)]" @click="gaTerug">{{ terugLabel }}</button>
+    <p v-if="fout" role="alert" data-testid="detail-fout" class="text-[var(--lk-color-danger)]">
       {{ fout }}
     </p>
 
     <template v-if="applicatie">
-      <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-md)]">
+      <div class="flex items-center gap-[var(--lk-space-md)] mb-[var(--lk-space-md)]">
         <h1
           id="detail-titel"
-          class="text-[length:var(--cd-text-2xl)] font-semibold text-[var(--cd-color-primary)]"
+          class="text-[length:var(--lk-text-2xl)] font-semibold text-[var(--lk-color-primary)]"
         >
           {{ applicatie.naam }}
         </h1>
@@ -265,7 +265,7 @@ watch(() => props.id, async () => { await laad(); _initVanafQuery() }, { immedia
         />
       </div>
 
-      <p data-testid="detail-voortgang" class="mb-[var(--cd-space-md)] text-[var(--cd-color-text-muted)]">
+      <p data-testid="detail-voortgang" class="mb-[var(--lk-space-md)] text-[var(--lk-color-text-muted)]">
         {{ scoreSectie?.aantalGescoord ?? 0 }}/{{ scoreSectie?.aantalVragen ?? 0 }} vragen gescoord ·
         {{ blokkadeSectie?.aantalOpen ?? 0 }} open blokkade(s)
       </p>
@@ -275,7 +275,7 @@ watch(() => props.id, async () => { await laad(); _initVanafQuery() }, { immedia
         :tabs="TOP_TABS"
         aria-label="Component-detail onderdelen"
         id-prefix="detailtabs"
-        class="mt-[var(--cd-space-lg)] mb-[var(--cd-space-md)]"
+        class="mt-[var(--lk-space-lg)] mb-[var(--lk-space-md)]"
       />
 
       <!-- Overzicht: metadata + acties -->
@@ -286,15 +286,15 @@ watch(() => props.id, async () => { await laad(); _initVanafQuery() }, { immedia
         aria-labelledby="detailtabs-tab-overzicht"
         data-testid="panel-overzicht"
       >
-        <div class="flex flex-col gap-[var(--cd-space-lg)] md:flex-row md:items-start">
-        <dl class="card grid grid-cols-[max-content_1fr] gap-x-[var(--cd-space-lg)] gap-y-[var(--cd-space-sm)] md:flex-1">
+        <div class="flex flex-col gap-[var(--lk-space-lg)] md:flex-row md:items-start">
+        <dl class="card grid grid-cols-[max-content_1fr] gap-x-[var(--lk-space-lg)] gap-y-[var(--lk-space-sm)] md:flex-1">
           <dt class="font-semibold">Eigenaar-organisatie</dt>
           <dd>
             <router-link
               v-if="applicatie.eigenaar_organisatie_id"
               :to="{ name: 'partij-detail', params: { id: applicatie.eigenaar_organisatie_id } }"
               data-testid="app-eigenaar-org-link"
-              class="text-[var(--cd-color-primary)] hover:underline"
+              class="text-[var(--lk-color-primary)] hover:underline"
             >{{ applicatie.eigenaar_organisatie_naam }}</router-link>
             <span v-else>—</span>
           </dd>
@@ -319,7 +319,7 @@ watch(() => props.id, async () => { await laad(); _initVanafQuery() }, { immedia
         />
         </div>
 
-        <div class="mt-[var(--cd-space-lg)] flex flex-wrap gap-[var(--cd-space-md)]">
+        <div class="mt-[var(--lk-space-lg)] flex flex-wrap gap-[var(--lk-space-md)]">
           <Button
             label="Bekijk op kaart"
             severity="secondary"
@@ -360,7 +360,7 @@ watch(() => props.id, async () => { await laad(); _initVanafQuery() }, { immedia
         role="tabpanel"
         aria-labelledby="detailtabs-tab-checklist"
         data-testid="panel-checklist"
-        class="flex flex-col gap-[var(--cd-space-md)] md:flex-row md:gap-[var(--cd-space-lg)]"
+        class="flex flex-col gap-[var(--lk-space-md)] md:flex-row md:gap-[var(--lk-space-lg)]"
       >
         <AppTabs
           v-model="activeCat"
@@ -383,16 +383,16 @@ watch(() => props.id, async () => { await laad(); _initVanafQuery() }, { immedia
             role="complementary"
             aria-label="Geregistreerde contracten bij dit component"
             data-testid="context-paneel-cat8"
-            class="card mb-[var(--cd-space-md)] border-l-4 border-[var(--cd-color-primary)]"
+            class="card mb-[var(--lk-space-md)] border-l-4 border-[var(--lk-color-primary)]"
           >
             <h3 class="font-semibold">Geregistreerde contracten (registratie)</h3>
-            <p class="mb-[var(--cd-space-sm)] text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">
+            <p class="mb-[var(--lk-space-sm)] text-[length:var(--lk-text-xs)] text-[var(--lk-color-text-muted)]">
               Ter context bij het beoordelen — registratie, geen oordeel.
             </p>
             <ul
               v-if="contractenVoorContext.length"
               data-testid="context-paneel-lijst"
-              class="flex flex-col gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]"
+              class="flex flex-col gap-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]"
             >
               <li v-for="r in contractenVoorContext" :key="r.koppeling_id">
                 <span class="font-medium">{{ r.contractnaam }}</span> — {{ r.leverancier_naam }} ·
@@ -400,12 +400,12 @@ watch(() => props.id, async () => { await laad(); _initVanafQuery() }, { immedia
                 {{ r.begindatum || '—' }} t/m {{ r.einddatum || '—' }}
               </li>
             </ul>
-            <p v-else data-testid="context-paneel-leeg" class="text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]">
+            <p v-else data-testid="context-paneel-leeg" class="text-[length:var(--lk-text-sm)] text-[var(--lk-color-text-muted)]">
               Geen contracten geregistreerd.
               <button
                 type="button"
                 data-testid="context-paneel-naar-sectie"
-                class="text-[var(--cd-color-primary)] hover:underline focus:outline-2 focus:outline-offset-2 focus:outline-[var(--cd-color-primary)]"
+                class="text-[var(--lk-color-primary)] hover:underline focus:outline-2 focus:outline-offset-2 focus:outline-[var(--lk-color-primary)]"
                 @click="activeTop = 'contracten'"
               >
                 Naar de Contracten-sectie
@@ -503,7 +503,7 @@ watch(() => props.id, async () => { await laad(); _initVanafQuery() }, { immedia
       header="Component verwijderen"
       data-testid="verwijder-dialog"
     >
-      <p class="mb-[var(--cd-space-md)] max-w-prose">
+      <p class="mb-[var(--lk-space-md)] max-w-prose">
         Weet je zeker dat je <strong>{{ applicatie?.naam }}</strong> wilt verwijderen? Dit
         verwijdert ook alle gekoppelde datatypes, gebruikersgroepen, koppelingen,
         checklistscores en blokkades. Dit kan niet ongedaan worden gemaakt.
@@ -511,13 +511,13 @@ watch(() => props.id, async () => { await laad(); _initVanafQuery() }, { immedia
       <p
         v-if="verwijderHeeftData"
         data-testid="verwijder-samenvatting"
-        class="mb-[var(--cd-space-md)] max-w-prose text-[length:var(--cd-text-sm)] text-[var(--cd-color-danger)]"
+        class="mb-[var(--lk-space-md)] max-w-prose text-[length:var(--lk-text-sm)] text-[var(--lk-color-danger)]"
       >
         Dit verwijdert: {{ verwijderImpact.beantwoorde_scores }} beantwoorde score(s),
         {{ verwijderImpact.blokkades }} blokkade(s), {{ verwijderImpact.datatypes }} datatype(s) en
         {{ verwijderImpact.gebruikersgroepen }} gebruikersgroep(en).
       </p>
-      <div class="flex justify-end gap-[var(--cd-space-md)]">
+      <div class="flex justify-end gap-[var(--lk-space-md)]">
         <Button
           label="Annuleren"
           severity="secondary"

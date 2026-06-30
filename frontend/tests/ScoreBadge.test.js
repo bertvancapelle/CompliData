@@ -9,11 +9,11 @@ import ScoreBadge from '@modules/bwb_ontvlechting/frontend/views/ScoreBadge.vue'
 import { SCORE_KLEUR, scoreKleur } from '@modules/bwb_ontvlechting/frontend/labels'
 
 describe('scoreKleur (gedeelde bron)', () => {
-  it('mapt elke score op de juiste --cd-kleur', () => {
-    expect(scoreKleur('ja')).toBe('text-[var(--cd-color-success)]')
-    expect(scoreKleur('deels')).toBe('text-[var(--cd-color-warning)]')
-    expect(scoreKleur('nee')).toBe('text-[var(--cd-color-danger)]')
-    expect(scoreKleur('nvt')).toBe('text-[var(--cd-color-text-muted)]')
+  it('mapt elke score op de juiste --lk-kleur', () => {
+    expect(scoreKleur('ja')).toBe('text-[var(--lk-color-success)]')
+    expect(scoreKleur('deels')).toBe('text-[var(--lk-color-warning)]')
+    expect(scoreKleur('nee')).toBe('text-[var(--lk-color-danger)]')
+    expect(scoreKleur('nvt')).toBe('text-[var(--lk-color-text-muted)]')
     expect(scoreKleur('onbekend')).toBe('') // geen kleur voor onbekend/leeg
     expect(scoreKleur(null)).toBe('')
   })
@@ -25,10 +25,10 @@ describe('scoreKleur (gedeelde bron)', () => {
 
 describe('ScoreBadge', () => {
   it.each([
-    ['ja', 'Ja', 'text-[var(--cd-color-success)]'],
-    ['deels', 'Deels', 'text-[var(--cd-color-warning)]'],
-    ['nee', 'Nee', 'text-[var(--cd-color-danger)]'],
-    ['nvt', 'N.v.t.', 'text-[var(--cd-color-text-muted)]'],
+    ['ja', 'Ja', 'text-[var(--lk-color-success)]'],
+    ['deels', 'Deels', 'text-[var(--lk-color-warning)]'],
+    ['nee', 'Nee', 'text-[var(--lk-color-danger)]'],
+    ['nvt', 'N.v.t.', 'text-[var(--lk-color-text-muted)]'],
   ])('toont %s gekleurd mét zichtbare tekst (a11y)', (score, tekst, klasse) => {
     const w = mount(ScoreBadge, { props: { score } })
     const span = w.find(`[data-testid="score-badge-${score}"]`)

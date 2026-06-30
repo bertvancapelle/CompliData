@@ -185,33 +185,33 @@ onMounted(laad)
 
 <template>
   <section aria-labelledby="del-detail-titel">
-    <router-link :to="{ name: 'deliverable-lijst' }" class="text-[length:var(--cd-text-sm)] text-[var(--cd-color-primary)] hover:underline">
+    <router-link :to="{ name: 'deliverable-lijst' }" class="text-[length:var(--lk-text-sm)] text-[var(--lk-color-primary)] hover:underline">
       ← Deliverables
     </router-link>
 
-    <p v-if="fout" role="alert" data-testid="del-detail-fout" class="my-[var(--cd-space-md)] text-[var(--cd-color-danger)]">{{ fout }}</p>
-    <p v-else-if="laden" data-testid="del-detail-laden" class="my-[var(--cd-space-md)] text-[var(--cd-color-text-muted)]">Laden…</p>
+    <p v-if="fout" role="alert" data-testid="del-detail-fout" class="my-[var(--lk-space-md)] text-[var(--lk-color-danger)]">{{ fout }}</p>
+    <p v-else-if="laden" data-testid="del-detail-laden" class="my-[var(--lk-space-md)] text-[var(--lk-color-text-muted)]">Laden…</p>
 
     <template v-else-if="deliverable">
-      <div class="mt-[var(--cd-space-sm)] mb-[var(--cd-space-sm)] flex items-center gap-[var(--cd-space-md)]">
-        <h1 id="del-detail-titel" data-testid="del-naam" class="text-[length:var(--cd-text-2xl)] font-semibold text-[var(--cd-color-primary)]">
+      <div class="mt-[var(--lk-space-sm)] mb-[var(--lk-space-sm)] flex items-center gap-[var(--lk-space-md)]">
+        <h1 id="del-detail-titel" data-testid="del-naam" class="text-[length:var(--lk-text-2xl)] font-semibold text-[var(--lk-color-primary)]">
           {{ deliverable.naam }}
         </h1>
         <ObjectHistoriePaneel entiteit-type="deliverable" :entiteit-id="props.id" class="ml-auto" />
         <Button v-if="magBeheren" label="Bewerken" data-testid="del-bewerken" @click="openBewerken" />
         <Button v-if="magVerwijderen" label="Verwijderen" severity="danger" data-testid="del-verwijderen" @click="verwijderOpen = true" />
       </div>
-      <p v-if="deliverable.toelichting" class="mb-[var(--cd-space-lg)] text-[var(--cd-color-text)]">{{ deliverable.toelichting }}</p>
+      <p v-if="deliverable.toelichting" class="mb-[var(--lk-space-lg)] text-[var(--lk-color-text)]">{{ deliverable.toelichting }}</p>
 
       <!-- Opgeleverd door werkpakketten -->
-      <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
-        <h2 class="text-[length:var(--cd-text-lg)] font-semibold">Opgeleverd door (werkpakketten)</h2>
+      <div class="flex items-center gap-[var(--lk-space-md)] mb-[var(--lk-space-sm)]">
+        <h2 class="text-[length:var(--lk-text-lg)] font-semibold">Opgeleverd door (werkpakketten)</h2>
         <Button v-if="magBeheren" label="+ Werkpakket koppelen" severity="secondary" data-testid="del-wp-koppelen" class="ml-auto" @click="openWpKoppel" />
       </div>
-      <DataTable :value="keten.werkpakketten" data-testid="del-werkpakketten-tabel" class="mb-[var(--cd-space-lg)] bg-[var(--cd-color-surface)] rounded-[var(--cd-radius-card)] shadow-[var(--cd-shadow-sm)]">
+      <DataTable :value="keten.werkpakketten" data-testid="del-werkpakketten-tabel" class="mb-[var(--lk-space-lg)] bg-[var(--lk-color-surface)] rounded-[var(--lk-radius-card)] shadow-[var(--lk-shadow-sm)]">
         <Column field="naam" header="Werkpakket">
           <template #body="{ data }">
-            <router-link :to="{ name: 'work-package-detail', params: { id: data.element_id } }" class="text-[var(--cd-color-primary)] hover:underline">{{ data.naam }}</router-link>
+            <router-link :to="{ name: 'work-package-detail', params: { id: data.element_id } }" class="text-[var(--lk-color-primary)] hover:underline">{{ data.naam }}</router-link>
           </template>
         </Column>
         <Column header="">
@@ -227,14 +227,14 @@ onMounted(laad)
       </DataTable>
 
       <!-- Helpt realiseren (plateaus) -->
-      <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
-        <h2 class="text-[length:var(--cd-text-lg)] font-semibold">Helpt realiseren (plateaus)</h2>
+      <div class="flex items-center gap-[var(--lk-space-md)] mb-[var(--lk-space-sm)]">
+        <h2 class="text-[length:var(--lk-text-lg)] font-semibold">Helpt realiseren (plateaus)</h2>
         <Button v-if="magBeheren" label="+ Plateau koppelen" severity="secondary" data-testid="del-pl-koppelen" class="ml-auto" @click="openPlKoppel" />
       </div>
-      <DataTable :value="keten.plateaus" data-testid="del-plateaus-tabel" class="bg-[var(--cd-color-surface)] rounded-[var(--cd-radius-card)] shadow-[var(--cd-shadow-sm)]">
+      <DataTable :value="keten.plateaus" data-testid="del-plateaus-tabel" class="bg-[var(--lk-color-surface)] rounded-[var(--lk-radius-card)] shadow-[var(--lk-shadow-sm)]">
         <Column field="naam" header="Plateau">
           <template #body="{ data }">
-            <router-link :to="{ name: 'plateau-detail', params: { id: data.element_id } }" class="text-[var(--cd-color-primary)] hover:underline">{{ data.naam }}</router-link>
+            <router-link :to="{ name: 'plateau-detail', params: { id: data.element_id } }" class="text-[var(--lk-color-primary)] hover:underline">{{ data.naam }}</router-link>
           </template>
         </Column>
         <Column header="">
@@ -252,17 +252,17 @@ onMounted(laad)
 
     <!-- Bewerken -->
     <Dialog v-model:visible="editOpen" modal :closable="false" header="Deliverable bewerken" data-testid="del-edit-dialog">
-      <form class="flex flex-col gap-[var(--cd-space-md)] min-w-[24rem]" data-testid="del-edit-form" @submit.prevent="bevestigBewerken">
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+      <form class="flex flex-col gap-[var(--lk-space-md)] min-w-[24rem]" data-testid="del-edit-form" @submit.prevent="bevestigBewerken">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="de-naam" class="font-semibold">Naam *</label>
           <InputText id="de-naam" v-model="editForm.naam" data-testid="de-naam" :aria-invalid="!!editFout" />
-          <span v-if="editFout" role="alert" data-testid="de-fout" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ editFout }}</span>
+          <span v-if="editFout" role="alert" data-testid="de-fout" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ editFout }}</span>
         </div>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="de-toelichting" class="font-semibold">Toelichting</label>
           <Textarea id="de-toelichting" v-model="editForm.toelichting" rows="3" data-testid="de-toelichting" />
         </div>
-        <div class="flex gap-[var(--cd-space-md)]">
+        <div class="flex gap-[var(--lk-space-md)]">
           <Button type="submit" label="Opslaan" data-testid="de-opslaan" :disabled="bezig" />
           <Button type="button" label="Annuleren" severity="secondary" @click="editOpen = false" />
         </div>
@@ -271,11 +271,11 @@ onMounted(laad)
 
     <!-- Verwijderen -->
     <Dialog v-model:visible="verwijderOpen" modal header="Deliverable verwijderen" data-testid="del-verwijder-dialog">
-      <p class="mb-[var(--cd-space-md)] max-w-prose">
+      <p class="mb-[var(--lk-space-md)] max-w-prose">
         Weet je zeker dat je <strong>{{ deliverable?.naam }}</strong> wilt verwijderen? De keten-koppelingen
         vervallen; de werkpakketten en plateaus zelf blijven bestaan.
       </p>
-      <div class="flex justify-end gap-[var(--cd-space-md)]">
+      <div class="flex justify-end gap-[var(--lk-space-md)]">
         <Button label="Annuleren" severity="secondary" @click="verwijderOpen = false" />
         <Button label="Definitief verwijderen" severity="danger" data-testid="del-verwijder-bevestig" :disabled="bezig" @click="bevestigVerwijderen" />
       </div>
@@ -283,13 +283,13 @@ onMounted(laad)
 
     <!-- Werkpakket koppelen -->
     <Dialog v-model:visible="wpOpen" modal :closable="false" header="Werkpakket koppelen" data-testid="del-wp-dialog">
-      <form class="flex flex-col gap-[var(--cd-space-md)] min-w-[24rem]" data-testid="del-wp-form" @submit.prevent="bevestigWpKoppel">
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+      <form class="flex flex-col gap-[var(--lk-space-md)] min-w-[24rem]" data-testid="del-wp-form" @submit.prevent="bevestigWpKoppel">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="dwp-veld" class="font-semibold">Werkpakket *</label>
           <ZoekSelect id="dwp-veld" testid="del-wp-zoek" v-model="wpKeuze" :zoek-functie="zoekWerkpakketten" :invalid="!!wpFout" placeholder="Zoek een werkpakket…" />
-          <span v-if="wpFout" role="alert" data-testid="del-wp-fout" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ wpFout }}</span>
+          <span v-if="wpFout" role="alert" data-testid="del-wp-fout" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ wpFout }}</span>
         </div>
-        <div class="flex gap-[var(--cd-space-md)]">
+        <div class="flex gap-[var(--lk-space-md)]">
           <Button type="submit" label="Koppelen" data-testid="del-wp-opslaan" :disabled="bezig" />
           <Button type="button" label="Annuleren" severity="secondary" @click="wpOpen = false" />
         </div>
@@ -298,13 +298,13 @@ onMounted(laad)
 
     <!-- Plateau koppelen -->
     <Dialog v-model:visible="plOpen" modal :closable="false" header="Plateau koppelen" data-testid="del-pl-dialog">
-      <form class="flex flex-col gap-[var(--cd-space-md)] min-w-[24rem]" data-testid="del-pl-form" @submit.prevent="bevestigPlKoppel">
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+      <form class="flex flex-col gap-[var(--lk-space-md)] min-w-[24rem]" data-testid="del-pl-form" @submit.prevent="bevestigPlKoppel">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="dpl-veld" class="font-semibold">Plateau *</label>
           <ZoekSelect id="dpl-veld" testid="del-pl-zoek" v-model="plKeuze" :zoek-functie="zoekPlateaus" :invalid="!!plFout" placeholder="Zoek een plateau…" />
-          <span v-if="plFout" role="alert" data-testid="del-pl-fout" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ plFout }}</span>
+          <span v-if="plFout" role="alert" data-testid="del-pl-fout" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ plFout }}</span>
         </div>
-        <div class="flex gap-[var(--cd-space-md)]">
+        <div class="flex gap-[var(--lk-space-md)]">
           <Button type="submit" label="Koppelen" data-testid="del-pl-opslaan" :disabled="bezig" />
           <Button type="button" label="Annuleren" severity="secondary" @click="plOpen = false" />
         </div>

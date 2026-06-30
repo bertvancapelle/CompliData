@@ -199,7 +199,7 @@ watch(
       :placeholder="props.placeholder"
       :disabled="props.disabled"
       :data-testid="`${props.testid}-input`"
-      class="w-full rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white disabled:opacity-60 focus:outline-2 focus:outline-offset-2 focus:outline-[var(--cd-color-primary)]"
+      class="w-full rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white disabled:opacity-60 focus:outline-2 focus:outline-offset-2 focus:outline-[var(--lk-color-primary)]"
       @focus="openen"
       @input="onInput"
       @blur="onBlur"
@@ -211,12 +211,12 @@ watch(
       :id="listboxId"
       role="listbox"
       :data-testid="`${props.testid}-listbox`"
-      class="absolute z-10 mt-1 max-h-72 w-full overflow-auto rounded-[var(--cd-radius-card)] border border-[var(--cd-color-border)] bg-[var(--cd-color-surface)] shadow-[var(--cd-shadow-md)]"
+      class="absolute z-10 mt-1 max-h-72 w-full overflow-auto rounded-[var(--lk-radius-card)] border border-[var(--lk-color-border)] bg-[var(--lk-color-surface)] shadow-[var(--lk-shadow-md)]"
     >
-      <li v-if="laden" :data-testid="`${props.testid}-laden`" class="px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] text-[var(--cd-color-text-muted)] text-[length:var(--cd-text-sm)]">
+      <li v-if="laden" :data-testid="`${props.testid}-laden`" class="px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] text-[var(--lk-color-text-muted)] text-[length:var(--lk-text-sm)]">
         Laden…
       </li>
-      <li v-else-if="fout" role="alert" :data-testid="`${props.testid}-fout`" class="px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">
+      <li v-else-if="fout" role="alert" :data-testid="`${props.testid}-fout`" class="px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">
         {{ fout }}
       </li>
       <template v-else>
@@ -228,18 +228,18 @@ watch(
           :aria-selected="item[props.idVeld] === props.modelValue ? 'true' : 'false'"
           :data-testid="`${props.testid}-optie-${item[props.idVeld]}`"
           :class="[
-            'cursor-pointer px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]',
-            i === actieveIndex ? 'bg-[var(--cd-color-accent)]' : 'hover:bg-[var(--cd-color-accent)]',
+            'cursor-pointer px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]',
+            i === actieveIndex ? 'bg-[var(--lk-color-accent)]' : 'hover:bg-[var(--lk-color-accent)]',
           ]"
           @mousedown.prevent="selecteer(item)"
           @mousemove="actieveIndex = i"
         >
           {{ _label(item) }}
         </li>
-        <li v-if="!resultaten.length" :data-testid="`${props.testid}-leeg`" class="px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] text-[var(--cd-color-text-muted)] text-[length:var(--cd-text-sm)]">
+        <li v-if="!resultaten.length" :data-testid="`${props.testid}-leeg`" class="px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] text-[var(--lk-color-text-muted)] text-[length:var(--lk-text-sm)]">
           Geen resultaten.
         </li>
-        <li v-if="meer" :data-testid="`${props.testid}-meer`" class="border-t border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] text-[var(--cd-color-text-muted)] text-[length:var(--cd-text-xs)]">
+        <li v-if="meer" :data-testid="`${props.testid}-meer`" class="border-t border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] text-[var(--lk-color-text-muted)] text-[length:var(--lk-text-xs)]">
           Meer resultaten — verfijn je zoekopdracht.
         </li>
         <li
@@ -249,8 +249,8 @@ watch(
           :aria-selected="vasteOptie[props.idVeld] === props.modelValue ? 'true' : 'false'"
           :data-testid="`${props.testid}-optie-${vasteOptie[props.idVeld]}`"
           :class="[
-            'cursor-pointer border-t border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)] italic',
-            resultaten.length === actieveIndex ? 'bg-[var(--cd-color-accent)]' : 'hover:bg-[var(--cd-color-accent)]',
+            'cursor-pointer border-t border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)] text-[var(--lk-color-text-muted)] italic',
+            resultaten.length === actieveIndex ? 'bg-[var(--lk-color-accent)]' : 'hover:bg-[var(--lk-color-accent)]',
           ]"
           @mousedown.prevent="selecteer(vasteOptie)"
           @mousemove="actieveIndex = resultaten.length"

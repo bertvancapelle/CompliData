@@ -262,14 +262,14 @@ laadTyperingOpties()
 
 <template>
   <section aria-labelledby="cat-titel">
-    <h1 id="cat-titel" class="text-[length:var(--cd-text-xl)] font-semibold mb-[var(--cd-space-md)]">
+    <h1 id="cat-titel" class="text-[length:var(--lk-text-xl)] font-semibold mb-[var(--lk-space-md)]">
       Componentcatalogus
     </h1>
 
-    <p v-if="fout" role="alert" data-testid="cat-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ fout }}</p>
-    <p v-if="laden" data-testid="cat-laden" class="text-[var(--cd-color-text-muted)]">Laden…</p>
+    <p v-if="fout" role="alert" data-testid="cat-fout" class="text-[var(--lk-color-danger)] mb-[var(--lk-space-sm)]">{{ fout }}</p>
+    <p v-if="laden" data-testid="cat-laden" class="text-[var(--lk-color-text-muted)]">Laden…</p>
 
-    <div class="flex flex-col gap-[var(--cd-space-lg)]">
+    <div class="flex flex-col gap-[var(--lk-space-lg)]">
       <section
         v-for="dim in DIMENSIES"
         :key="dim.key"
@@ -277,8 +277,8 @@ laadTyperingOpties()
         :data-testid="`cat-sectie-${dim.key}`"
         :aria-labelledby="`cat-kop-${dim.key}`"
       >
-        <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
-          <h2 :id="`cat-kop-${dim.key}`" class="text-[length:var(--cd-text-lg)] font-semibold">{{ dim.label }}</h2>
+        <div class="flex items-center gap-[var(--lk-space-md)] mb-[var(--lk-space-sm)]">
+          <h2 :id="`cat-kop-${dim.key}`" class="text-[length:var(--lk-text-lg)] font-semibold">{{ dim.label }}</h2>
           <Button
             v-if="magBeheren"
             label="Optie toevoegen"
@@ -288,10 +288,10 @@ laadTyperingOpties()
           />
         </div>
 
-        <table class="w-full text-[length:var(--cd-text-sm)]" :data-testid="`cat-tabel-${dim.key}`">
+        <table class="w-full text-[length:var(--lk-text-sm)]" :data-testid="`cat-tabel-${dim.key}`">
           <thead>
-            <tr class="text-left text-[var(--cd-color-text-muted)]">
-              <th class="py-[var(--cd-space-xs)]">Label</th>
+            <tr class="text-left text-[var(--lk-color-text-muted)]">
+              <th class="py-[var(--lk-space-xs)]">Label</th>
               <th>Sleutel</th>
               <th>Volgorde</th>
               <template v-if="isComponenttype(dim.key)">
@@ -309,10 +309,10 @@ laadTyperingOpties()
               v-for="optie in perDimensie(dim.key)"
               :key="optie.id"
               :data-testid="`cat-rij-${optie.id}`"
-              class="border-t border-[var(--cd-color-border)]"
+              class="border-t border-[var(--lk-color-border)]"
               :class="optie.actief ? '' : 'opacity-50'"
             >
-              <td class="py-[var(--cd-space-xs)]">{{ optie.label }}</td>
+              <td class="py-[var(--lk-space-xs)]">{{ optie.label }}</td>
               <td class="font-mono">{{ optie.optie_sleutel }}</td>
               <td>{{ optie.volgorde }}</td>
               <template v-if="isComponenttype(dim.key)">
@@ -335,7 +335,7 @@ laadTyperingOpties()
                 />
               </td>
               <td class="text-right">
-                <div v-if="magBeheren" class="flex items-center justify-end gap-[var(--cd-space-xs)]">
+                <div v-if="magBeheren" class="flex items-center justify-end gap-[var(--lk-space-xs)]">
                   <Button label="Bewerken" severity="secondary" :data-testid="`cat-bewerk-${optie.id}`" @click="openBewerken(optie)" />
                   <Tag
                     v-if="isSysteem(optie)"
@@ -363,7 +363,7 @@ laadTyperingOpties()
               </td>
             </tr>
             <tr v-if="!perDimensie(dim.key).length">
-              <td :colspan="isComponenttype(dim.key) ? 9 : 5" :data-testid="`cat-leeg-${dim.key}`" class="py-[var(--cd-space-sm)] text-[var(--cd-color-text-muted)]">
+              <td :colspan="isComponenttype(dim.key) ? 9 : 5" :data-testid="`cat-leeg-${dim.key}`" class="py-[var(--lk-space-sm)] text-[var(--lk-color-text-muted)]">
                 Nog geen opties in deze dimensie.
               </td>
             </tr>
@@ -373,25 +373,25 @@ laadTyperingOpties()
 
       <!-- ADR-027 Deel 4 — kenmerk-definitie per relatietype: READ-ONLY inzage (code-eigendom). -->
       <section class="card" data-testid="cat-kenmerk-viewer" aria-labelledby="cat-kenmerk-kop">
-        <h2 id="cat-kenmerk-kop" class="text-[length:var(--cd-text-lg)] font-semibold mb-[var(--cd-space-xs)]">
+        <h2 id="cat-kenmerk-kop" class="text-[length:var(--lk-text-lg)] font-semibold mb-[var(--lk-space-xs)]">
           Relatie-kenmerken per relatietype
         </h2>
-        <p class="mb-[var(--cd-space-sm)] max-w-prose text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]">
+        <p class="mb-[var(--lk-space-sm)] max-w-prose text-[length:var(--lk-text-sm)] text-[var(--lk-color-text-muted)]">
           Deze kenmerk-definities horen bij het relatiemodel (ADR-023) en zijn <strong>code-eigendom</strong> —
           alleen ter inzage, niet bewerkbaar. De <em>inhoud</em> van de catalogus-verwijzingen (disposities,
           relatie-rollen) beheer je wél, via de Relatie-kenmerk-catalogus.
         </p>
-        <div class="flex flex-col gap-[var(--cd-space-md)]">
+        <div class="flex flex-col gap-[var(--lk-space-md)]">
           <div v-for="rel in kenmerkRelaties" :key="rel.id" :data-testid="`cat-kenmerk-${rel.optie_sleutel}`">
-            <h3 class="font-semibold">{{ rel.label }} <span class="font-mono text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">{{ rel.optie_sleutel }}</span></h3>
+            <h3 class="font-semibold">{{ rel.label }} <span class="font-mono text-[length:var(--lk-text-xs)] text-[var(--lk-color-text-muted)]">{{ rel.optie_sleutel }}</span></h3>
             <p
               v-if="!kenmerkRijen(rel.kenmerk_definitie).length"
               :data-testid="`cat-kenmerk-leeg-${rel.optie_sleutel}`"
-              class="text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]"
+              class="text-[length:var(--lk-text-sm)] text-[var(--lk-color-text-muted)]"
             >
               Geen kenmerken (kale relatie).
             </p>
-            <ul v-else class="list-disc pl-[var(--cd-space-lg)] text-[length:var(--cd-text-sm)]">
+            <ul v-else class="list-disc pl-[var(--lk-space-lg)] text-[length:var(--lk-text-sm)]">
               <li v-for="k in kenmerkRijen(rel.kenmerk_definitie)" :key="k.sleutel" :data-testid="`cat-kenmerk-${rel.optie_sleutel}-${k.sleutel}`">
                 <span class="font-mono">{{ k.sleutel }}</span> — {{ k.type }}<span v-if="k.detail"> ({{ k.detail }})</span>
               </li>
@@ -403,55 +403,55 @@ laadTyperingOpties()
 
     <!-- Toevoegen -->
     <Dialog v-model:visible="addOpen" modal :closable="false" :header="`Optie toevoegen — ${dimLabel(addDim)}`" data-testid="cat-add-dialog">
-      <form class="flex flex-col gap-[var(--cd-space-md)] min-w-[22rem]" data-testid="cat-add-form" @submit.prevent="bevestigToevoegen">
-        <p v-if="addFormFout" role="alert" data-testid="cat-add-formfout" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ addFormFout }}</p>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+      <form class="flex flex-col gap-[var(--lk-space-md)] min-w-[22rem]" data-testid="cat-add-form" @submit.prevent="bevestigToevoegen">
+        <p v-if="addFormFout" role="alert" data-testid="cat-add-formfout" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ addFormFout }}</p>
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="cat-add-sleutel" class="font-semibold">Sleutel *</label>
-          <input id="cat-add-sleutel" v-model="addForm.optie_sleutel" type="text" data-testid="cat-add-sleutel" :aria-invalid="!!addFouten.optie_sleutel" aria-describedby="cat-add-fout-sleutel" placeholder="bv. etl_tool" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white font-mono" />
-          <span v-if="addFouten.optie_sleutel" id="cat-add-fout-sleutel" role="alert" data-testid="cat-add-fout-optie_sleutel" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ addFouten.optie_sleutel }}</span>
+          <input id="cat-add-sleutel" v-model="addForm.optie_sleutel" type="text" data-testid="cat-add-sleutel" :aria-invalid="!!addFouten.optie_sleutel" aria-describedby="cat-add-fout-sleutel" placeholder="bv. etl_tool" class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white font-mono" />
+          <span v-if="addFouten.optie_sleutel" id="cat-add-fout-sleutel" role="alert" data-testid="cat-add-fout-optie_sleutel" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ addFouten.optie_sleutel }}</span>
         </div>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="cat-add-label" class="font-semibold">Label *</label>
-          <input id="cat-add-label" v-model="addForm.label" type="text" data-testid="cat-add-label" :aria-invalid="!!addFouten.label" aria-describedby="cat-add-fout-label" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white" />
-          <span v-if="addFouten.label" id="cat-add-fout-label" role="alert" data-testid="cat-add-fout-label" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ addFouten.label }}</span>
+          <input id="cat-add-label" v-model="addForm.label" type="text" data-testid="cat-add-label" :aria-invalid="!!addFouten.label" aria-describedby="cat-add-fout-label" class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white" />
+          <span v-if="addFouten.label" id="cat-add-fout-label" role="alert" data-testid="cat-add-fout-label" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ addFouten.label }}</span>
         </div>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="cat-add-volgorde" class="font-semibold">Volgorde</label>
-          <input id="cat-add-volgorde" v-model="addForm.volgorde" type="number" data-testid="cat-add-volgorde" placeholder="leeg = achteraan" class="w-32 rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white" />
+          <input id="cat-add-volgorde" v-model="addForm.volgorde" type="number" data-testid="cat-add-volgorde" placeholder="leeg = achteraan" class="w-32 rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white" />
         </div>
         <!-- ADR-026: ArchiMate-typering — alleen voor dimensie componenttype, verplicht. -->
         <template v-if="isComponenttype(addDim)">
-          <div class="flex flex-col gap-[var(--cd-space-xs)]">
+          <div class="flex flex-col gap-[var(--lk-space-xs)]">
             <label for="cat-add-element" class="font-semibold">ArchiMate-element *</label>
-            <select id="cat-add-element" v-model="addForm.archimate_element" data-testid="cat-add-element" :aria-invalid="!!addFouten.archimate_element" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white">
+            <select id="cat-add-element" v-model="addForm.archimate_element" data-testid="cat-add-element" :aria-invalid="!!addFouten.archimate_element" class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white">
               <option value="">— kies —</option>
               <option v-for="el in typeringOpties.elementen" :key="el" :value="el">{{ el }}</option>
             </select>
-            <span v-if="addFouten.archimate_element" role="alert" data-testid="cat-add-fout-archimate_element" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ addFouten.archimate_element }}</span>
+            <span v-if="addFouten.archimate_element" role="alert" data-testid="cat-add-fout-archimate_element" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ addFouten.archimate_element }}</span>
           </div>
-          <div class="flex flex-col gap-[var(--cd-space-xs)]">
+          <div class="flex flex-col gap-[var(--lk-space-xs)]">
             <label for="cat-add-laag" class="font-semibold">Laag *</label>
-            <select id="cat-add-laag" v-model="addForm.archimate_laag" data-testid="cat-add-laag" :aria-invalid="!!addFouten.archimate_laag" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white">
+            <select id="cat-add-laag" v-model="addForm.archimate_laag" data-testid="cat-add-laag" :aria-invalid="!!addFouten.archimate_laag" class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white">
               <option value="">— kies —</option>
               <option v-for="l in typeringOpties.lagen" :key="l" :value="l">{{ l }}</option>
             </select>
-            <span v-if="addFouten.archimate_laag" role="alert" data-testid="cat-add-fout-archimate_laag" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ addFouten.archimate_laag }}</span>
+            <span v-if="addFouten.archimate_laag" role="alert" data-testid="cat-add-fout-archimate_laag" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ addFouten.archimate_laag }}</span>
           </div>
-          <div class="flex flex-col gap-[var(--cd-space-xs)]">
+          <div class="flex flex-col gap-[var(--lk-space-xs)]">
             <label for="cat-add-aspect" class="font-semibold">Aspect *</label>
-            <select id="cat-add-aspect" v-model="addForm.archimate_aspect" data-testid="cat-add-aspect" :aria-invalid="!!addFouten.archimate_aspect" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white">
+            <select id="cat-add-aspect" v-model="addForm.archimate_aspect" data-testid="cat-add-aspect" :aria-invalid="!!addFouten.archimate_aspect" class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white">
               <option value="">— kies —</option>
               <option v-for="a in typeringOpties.aspecten" :key="a" :value="a">{{ a }}</option>
             </select>
-            <span v-if="addFouten.archimate_aspect" role="alert" data-testid="cat-add-fout-archimate_aspect" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ addFouten.archimate_aspect }}</span>
+            <span v-if="addFouten.archimate_aspect" role="alert" data-testid="cat-add-fout-archimate_aspect" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ addFouten.archimate_aspect }}</span>
           </div>
-          <label class="flex items-center gap-[var(--cd-space-sm)]">
+          <label class="flex items-center gap-[var(--lk-space-sm)]">
             <input type="checkbox" v-model="addForm.checklist_dragend" data-testid="cat-add-checklist_dragend" />
             <span class="font-semibold">Checklist-dragend</span>
-            <span class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">— componenten van dit type krijgen een checklist</span>
+            <span class="text-[length:var(--lk-text-xs)] text-[var(--lk-color-text-muted)]">— componenten van dit type krijgen een checklist</span>
           </label>
         </template>
-        <div class="flex gap-[var(--cd-space-md)]">
+        <div class="flex gap-[var(--lk-space-md)]">
           <Button type="submit" label="Toevoegen" data-testid="cat-add-opslaan" :disabled="bezig" />
           <Button type="button" label="Annuleren" severity="secondary" @click="addOpen = false" />
         </div>
@@ -460,56 +460,56 @@ laadTyperingOpties()
 
     <!-- Bewerken (sleutel + dimensie read-only) -->
     <Dialog v-model:visible="editOpen" modal :closable="false" header="Optie bewerken" data-testid="cat-edit-dialog">
-      <form class="flex flex-col gap-[var(--cd-space-md)] min-w-[22rem]" data-testid="cat-edit-form" @submit.prevent="bevestigBewerken">
-        <dl class="grid grid-cols-[max-content_1fr] gap-x-[var(--cd-space-md)] gap-y-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
+      <form class="flex flex-col gap-[var(--lk-space-md)] min-w-[22rem]" data-testid="cat-edit-form" @submit.prevent="bevestigBewerken">
+        <dl class="grid grid-cols-[max-content_1fr] gap-x-[var(--lk-space-md)] gap-y-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]">
           <dt class="font-semibold">Dimensie</dt>
           <dd data-testid="cat-edit-dimensie-readonly">{{ dimLabel(editOptie?.dimensie) }}</dd>
           <dt class="font-semibold">Sleutel</dt>
           <dd data-testid="cat-edit-sleutel-readonly" class="font-mono">{{ editOptie?.optie_sleutel }}</dd>
         </dl>
-        <p class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">Dimensie en sleutel liggen vast (stabiele referentie) en zijn niet bewerkbaar.</p>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <p class="text-[length:var(--lk-text-xs)] text-[var(--lk-color-text-muted)]">Dimensie en sleutel liggen vast (stabiele referentie) en zijn niet bewerkbaar.</p>
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="cat-edit-label" class="font-semibold">Label *</label>
-          <input id="cat-edit-label" v-model="editForm.label" type="text" data-testid="cat-edit-label" :aria-invalid="!!editFouten.label" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white" />
-          <span v-if="editFouten.label" role="alert" data-testid="cat-edit-fout-label" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ editFouten.label }}</span>
+          <input id="cat-edit-label" v-model="editForm.label" type="text" data-testid="cat-edit-label" :aria-invalid="!!editFouten.label" class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white" />
+          <span v-if="editFouten.label" role="alert" data-testid="cat-edit-fout-label" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ editFouten.label }}</span>
         </div>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="cat-edit-volgorde" class="font-semibold">Volgorde</label>
-          <input id="cat-edit-volgorde" v-model="editForm.volgorde" type="number" data-testid="cat-edit-volgorde" class="w-32 rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white" />
+          <input id="cat-edit-volgorde" v-model="editForm.volgorde" type="number" data-testid="cat-edit-volgorde" class="w-32 rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white" />
         </div>
         <!-- ADR-026: typering bewerkbaar voor componenttype; leegmaken niet toegestaan. -->
         <template v-if="editIsComponenttype">
-          <div class="flex flex-col gap-[var(--cd-space-xs)]">
+          <div class="flex flex-col gap-[var(--lk-space-xs)]">
             <label for="cat-edit-element" class="font-semibold">ArchiMate-element *</label>
-            <select id="cat-edit-element" v-model="editForm.archimate_element" data-testid="cat-edit-element" :aria-invalid="!!editFouten.archimate_element" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white">
+            <select id="cat-edit-element" v-model="editForm.archimate_element" data-testid="cat-edit-element" :aria-invalid="!!editFouten.archimate_element" class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white">
               <option value="">— kies —</option>
               <option v-for="el in typeringOpties.elementen" :key="el" :value="el">{{ el }}</option>
             </select>
-            <span v-if="editFouten.archimate_element" role="alert" data-testid="cat-edit-fout-archimate_element" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ editFouten.archimate_element }}</span>
+            <span v-if="editFouten.archimate_element" role="alert" data-testid="cat-edit-fout-archimate_element" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ editFouten.archimate_element }}</span>
           </div>
-          <div class="flex flex-col gap-[var(--cd-space-xs)]">
+          <div class="flex flex-col gap-[var(--lk-space-xs)]">
             <label for="cat-edit-laag" class="font-semibold">Laag *</label>
-            <select id="cat-edit-laag" v-model="editForm.archimate_laag" data-testid="cat-edit-laag" :aria-invalid="!!editFouten.archimate_laag" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white">
+            <select id="cat-edit-laag" v-model="editForm.archimate_laag" data-testid="cat-edit-laag" :aria-invalid="!!editFouten.archimate_laag" class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white">
               <option value="">— kies —</option>
               <option v-for="l in typeringOpties.lagen" :key="l" :value="l">{{ l }}</option>
             </select>
-            <span v-if="editFouten.archimate_laag" role="alert" data-testid="cat-edit-fout-archimate_laag" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ editFouten.archimate_laag }}</span>
+            <span v-if="editFouten.archimate_laag" role="alert" data-testid="cat-edit-fout-archimate_laag" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ editFouten.archimate_laag }}</span>
           </div>
-          <div class="flex flex-col gap-[var(--cd-space-xs)]">
+          <div class="flex flex-col gap-[var(--lk-space-xs)]">
             <label for="cat-edit-aspect" class="font-semibold">Aspect *</label>
-            <select id="cat-edit-aspect" v-model="editForm.archimate_aspect" data-testid="cat-edit-aspect" :aria-invalid="!!editFouten.archimate_aspect" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white">
+            <select id="cat-edit-aspect" v-model="editForm.archimate_aspect" data-testid="cat-edit-aspect" :aria-invalid="!!editFouten.archimate_aspect" class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white">
               <option value="">— kies —</option>
               <option v-for="a in typeringOpties.aspecten" :key="a" :value="a">{{ a }}</option>
             </select>
-            <span v-if="editFouten.archimate_aspect" role="alert" data-testid="cat-edit-fout-archimate_aspect" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ editFouten.archimate_aspect }}</span>
+            <span v-if="editFouten.archimate_aspect" role="alert" data-testid="cat-edit-fout-archimate_aspect" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ editFouten.archimate_aspect }}</span>
           </div>
-          <label class="flex items-center gap-[var(--cd-space-sm)]">
+          <label class="flex items-center gap-[var(--lk-space-sm)]">
             <input type="checkbox" v-model="editForm.checklist_dragend" data-testid="cat-edit-checklist_dragend" />
             <span class="font-semibold">Checklist-dragend</span>
-            <span class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">— uitzetten sluit de invoer (bestaande antwoorden blijven leesbaar)</span>
+            <span class="text-[length:var(--lk-text-xs)] text-[var(--lk-color-text-muted)]">— uitzetten sluit de invoer (bestaande antwoorden blijven leesbaar)</span>
           </label>
         </template>
-        <div class="flex gap-[var(--cd-space-md)]">
+        <div class="flex gap-[var(--lk-space-md)]">
           <Button type="submit" label="Opslaan" data-testid="cat-edit-opslaan" :disabled="bezig" />
           <Button type="button" label="Annuleren" severity="secondary" @click="editOpen = false" />
         </div>
@@ -518,13 +518,13 @@ laadTyperingOpties()
 
     <!-- Deactiveren -->
     <Dialog v-model:visible="deactOpen" modal header="Optie deactiveren" data-testid="cat-deact-dialog">
-      <p class="mb-[var(--cd-space-sm)] max-w-prose">
+      <p class="mb-[var(--lk-space-sm)] max-w-prose">
         Wil je <strong>{{ deactOptie?.label }}</strong> (<span class="font-mono">{{ deactOptie?.optie_sleutel }}</span>) deactiveren?
       </p>
-      <p data-testid="cat-deact-uitleg" class="mb-[var(--cd-space-md)] max-w-prose text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]">
+      <p data-testid="cat-deact-uitleg" class="mb-[var(--lk-space-md)] max-w-prose text-[length:var(--lk-text-sm)] text-[var(--lk-color-text-muted)]">
         Bestaande registraties blijven leesbaar; de optie is alleen niet meer kiesbaar voor nieuwe registraties.
       </p>
-      <div class="flex justify-end gap-[var(--cd-space-md)]">
+      <div class="flex justify-end gap-[var(--lk-space-md)]">
         <Button label="Annuleren" severity="secondary" @click="deactOpen = false" />
         <Button label="Deactiveren" severity="danger" data-testid="cat-deact-bevestig" :disabled="bezig" @click="bevestigDeactiveren" />
       </div>

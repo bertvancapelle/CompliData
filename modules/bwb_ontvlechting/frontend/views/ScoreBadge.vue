@@ -19,5 +19,5 @@ defineProps({ score: { type: String, default: null } })
   >
     {{ label(SCORE, score) }}
   </span>
-  <span v-else class="text-[var(--cd-color-text-muted)]">—</span>
+  <span v-else class="text-[var(--lk-color-text-muted)]">—</span>
 </template>

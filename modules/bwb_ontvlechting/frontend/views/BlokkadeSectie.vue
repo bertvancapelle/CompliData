@@ -178,12 +178,12 @@ laad({ reset: true })
 
 <template>
   <section class="card" aria-labelledby="sectie-blokkades">
-    <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
-      <h2 id="sectie-blokkades" class="text-[length:var(--cd-text-lg)] font-semibold">Blokkades</h2>
-      <span data-testid="bk-open-teller" class="ml-auto text-[var(--cd-color-text-muted)] text-[length:var(--cd-text-sm)]">{{ aantalOpen }} open</span>
+    <div class="flex items-center gap-[var(--lk-space-md)] mb-[var(--lk-space-sm)]">
+      <h2 id="sectie-blokkades" class="text-[length:var(--lk-text-lg)] font-semibold">Blokkades</h2>
+      <span data-testid="bk-open-teller" class="ml-auto text-[var(--lk-color-text-muted)] text-[length:var(--lk-text-sm)]">{{ aantalOpen }} open</span>
     </div>
 
-    <p v-if="fout" role="alert" data-testid="bk-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ fout }}</p>
+    <p v-if="fout" role="alert" data-testid="bk-fout" class="text-[var(--lk-color-danger)] mb-[var(--lk-space-sm)]">{{ fout }}</p>
 
     <DataTable
       :value="items"
@@ -201,13 +201,13 @@ laad({ reset: true })
             type="button"
             :data-testid="`bk-herkomst-${data.id}`"
             :title="`${data.vraag || ''}${data.score ? ` — antwoord: ${label(SCORE, data.score)}` : ''}`"
-            class="text-[var(--cd-color-primary)] font-medium hover:underline focus:outline-2 focus:outline-offset-2 focus:outline-[var(--cd-color-primary)]"
+            class="text-[var(--lk-color-primary)] font-medium hover:underline focus:outline-2 focus:outline-offset-2 focus:outline-[var(--lk-color-primary)]"
             @click="naarVraag(data)"
           >
             Vraag {{ data.vraag_code }}
           </button>
           <span v-if="data.vraag_code && data.score"> (<ScoreBadge :score="data.score" />)</span>
-          <span v-else class="text-[var(--cd-color-text-muted)]">—</span>
+          <span v-else class="text-[var(--lk-color-text-muted)]">—</span>
         </template>
       </Column>
       <Column field="toelichting" header="Toelichting" sortable />
@@ -220,32 +220,32 @@ laad({ reset: true })
       <template #empty><span data-testid="bk-leeg">Geen blokkades.</span></template>
     </DataTable>
 
-    <Button v-if="cursor" label="Meer laden" severity="secondary" data-testid="bk-meer" :disabled="laden" class="mt-[var(--cd-space-sm)]" @click="laad()" />
+    <Button v-if="cursor" label="Meer laden" severity="secondary" data-testid="bk-meer" :disabled="laden" class="mt-[var(--lk-space-sm)]" @click="laad()" />
 
     <Dialog v-model:visible="dialogOpen" modal :closable="false" header="Blokkade bewerken" data-testid="bk-dialog" @show="focusEerste" @hide="onHide">
-      <form class="flex flex-col gap-[var(--cd-space-md)] min-w-[20rem]" data-testid="bk-form" @submit.prevent="opslaan">
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+      <form class="flex flex-col gap-[var(--lk-space-md)] min-w-[20rem]" data-testid="bk-form" @submit.prevent="opslaan">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="bk-status" class="font-semibold">Status<span v-if="!bewerkenOpgelost"> *</span></label>
           <!-- ADR-016: opgelost is read-only (auto-afgeleid), niet handmatig kiesbaar. -->
           <template v-if="bewerkenOpgelost">
             <Tag data-testid="bk-status-readonly" :value="label(BLOKKADE_STATUS, 'opgelost')" :severity="BLOKKADE_STATUS_SEVERITY.opgelost" />
-            <span data-testid="bk-status-readonly-hint" class="text-[var(--cd-color-text-muted)] text-[length:var(--cd-text-sm)]">Auto-opgelost — niet handmatig wijzigbaar.</span>
+            <span data-testid="bk-status-readonly-hint" class="text-[var(--lk-color-text-muted)] text-[length:var(--lk-text-sm)]">Auto-opgelost — niet handmatig wijzigbaar.</span>
           </template>
-          <select v-else id="bk-status" autofocus v-model="form.status" data-testid="bk-veld-status" :aria-invalid="!!fouten.status" aria-describedby="bk-fout-status" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white">
+          <select v-else id="bk-status" autofocus v-model="form.status" data-testid="bk-veld-status" :aria-invalid="!!fouten.status" aria-describedby="bk-fout-status" class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white">
             <option v-for="s in handmatigeStatusOpties" :key="s" :value="s">{{ label(BLOKKADE_STATUS, s) }}</option>
           </select>
-          <span v-if="fouten.status" id="bk-fout-status" role="alert" data-testid="bk-fout-status" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.status }}</span>
+          <span v-if="fouten.status" id="bk-fout-status" role="alert" data-testid="bk-fout-status" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten.status }}</span>
         </div>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="bk-eigenaar" class="font-semibold">Eigenaar</label>
           <InputText id="bk-eigenaar" v-model="form.eigenaar" data-testid="bk-veld-eigenaar" :aria-invalid="!!fouten.eigenaar" aria-describedby="bk-fout-eigenaar" />
-          <span v-if="fouten.eigenaar" id="bk-fout-eigenaar" role="alert" data-testid="bk-fout-eigenaar" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.eigenaar }}</span>
+          <span v-if="fouten.eigenaar" id="bk-fout-eigenaar" role="alert" data-testid="bk-fout-eigenaar" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten.eigenaar }}</span>
         </div>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="bk-toelichting" class="font-semibold">Toelichting</label>
           <Textarea id="bk-toelichting" v-model="form.toelichting" rows="3" data-testid="bk-veld-toelichting" />
         </div>
-        <div class="flex gap-[var(--cd-space-md)]">
+        <div class="flex gap-[var(--lk-space-md)]">
           <Button type="submit" label="Opslaan" data-testid="bk-opslaan" :disabled="bezig" />
           <Button type="button" label="Annuleren" severity="secondary" @click="dialogOpen = false" />
         </div>

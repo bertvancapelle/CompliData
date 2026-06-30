@@ -31,12 +31,12 @@ const FRONTEND = fileURLToPath(new URL('..', import.meta.url))
 // niets geseeded. De runtime-join levert alsnog de volledige selector om op te grep'en.
 const j = (...delen) => delen.join('')
 const VEREIST = [
-  { naam: 'tab-hover-bg',      match: j('hover:bg-[var(--cd-color-primary-50)', ']:hover') },
-  { naam: 'tab-hover-text',    match: j('hover:text-[var(--cd-color-primary-700)', ']:hover') },
+  { naam: 'tab-hover-bg',      match: j('hover:bg-[var(--lk-color-primary-50)', ']:hover') },
+  { naam: 'tab-hover-text',    match: j('hover:text-[var(--lk-color-primary-700)', ']:hover') },
   { naam: 'tab-omlijning',     match: j('border-[0.5px', ']') },
-  { naam: 'secondary-vulling', match: j('bg-[var(--cd-color-primary-50)', ']') },
-  { naam: 'primary-vulling',   match: j('bg-[var(--cd-color-primary)', ']') },
-  { naam: 'danger-vulling',    match: j('bg-[var(--cd-color-danger)', ']') },
+  { naam: 'secondary-vulling', match: j('bg-[var(--lk-color-primary-50)', ']') },
+  { naam: 'primary-vulling',   match: j('bg-[var(--lk-color-primary)', ']') },
+  { naam: 'danger-vulling',    match: j('bg-[var(--lk-color-danger)', ']') },
 ]
 
 console.log('[css-build-check] productie-build draaien…')

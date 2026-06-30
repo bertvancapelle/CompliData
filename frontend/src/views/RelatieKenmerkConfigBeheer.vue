@@ -185,14 +185,14 @@ laad()
 
 <template>
   <section aria-labelledby="rk-titel">
-    <h1 id="rk-titel" class="text-[length:var(--cd-text-xl)] font-semibold mb-[var(--cd-space-md)]">
+    <h1 id="rk-titel" class="text-[length:var(--lk-text-xl)] font-semibold mb-[var(--lk-space-md)]">
       Relatie-kenmerk-catalogus
     </h1>
 
-    <p v-if="fout" role="alert" data-testid="rk-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ fout }}</p>
-    <p v-if="laden" data-testid="rk-laden" class="text-[var(--cd-color-text-muted)]">Laden…</p>
+    <p v-if="fout" role="alert" data-testid="rk-fout" class="text-[var(--lk-color-danger)] mb-[var(--lk-space-sm)]">{{ fout }}</p>
+    <p v-if="laden" data-testid="rk-laden" class="text-[var(--lk-color-text-muted)]">Laden…</p>
 
-    <div class="flex flex-col gap-[var(--cd-space-lg)]">
+    <div class="flex flex-col gap-[var(--lk-space-lg)]">
       <section
         v-for="dim in DIMENSIES"
         :key="dim.key"
@@ -200,8 +200,8 @@ laad()
         :data-testid="`rk-sectie-${dim.key}`"
         :aria-labelledby="`rk-kop-${dim.key}`"
       >
-        <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
-          <h2 :id="`rk-kop-${dim.key}`" class="text-[length:var(--cd-text-lg)] font-semibold">{{ dim.label }}</h2>
+        <div class="flex items-center gap-[var(--lk-space-md)] mb-[var(--lk-space-sm)]">
+          <h2 :id="`rk-kop-${dim.key}`" class="text-[length:var(--lk-text-lg)] font-semibold">{{ dim.label }}</h2>
           <Button
             v-if="magBeheren"
             label="Optie toevoegen"
@@ -211,10 +211,10 @@ laad()
           />
         </div>
 
-        <table class="w-full text-[length:var(--cd-text-sm)]" :data-testid="`rk-tabel-${dim.key}`">
+        <table class="w-full text-[length:var(--lk-text-sm)]" :data-testid="`rk-tabel-${dim.key}`">
           <thead>
-            <tr class="text-left text-[var(--cd-color-text-muted)]">
-              <th class="py-[var(--cd-space-xs)]">Label</th>
+            <tr class="text-left text-[var(--lk-color-text-muted)]">
+              <th class="py-[var(--lk-space-xs)]">Label</th>
               <th>Sleutel</th>
               <th>Volgorde</th>
               <th>Status</th>
@@ -226,10 +226,10 @@ laad()
               v-for="optie in perDimensie(dim.key)"
               :key="optie.id"
               :data-testid="`rk-rij-${optie.id}`"
-              class="border-t border-[var(--cd-color-border)]"
+              class="border-t border-[var(--lk-color-border)]"
               :class="optie.actief ? '' : 'opacity-50'"
             >
-              <td class="py-[var(--cd-space-xs)]">{{ optie.label }}</td>
+              <td class="py-[var(--lk-space-xs)]">{{ optie.label }}</td>
               <td class="font-mono">{{ optie.optie_sleutel }}</td>
               <td>{{ optie.volgorde }}</td>
               <td>
@@ -240,7 +240,7 @@ laad()
                 />
               </td>
               <td class="text-right">
-                <div v-if="magBeheren" class="flex items-center justify-end gap-[var(--cd-space-xs)]">
+                <div v-if="magBeheren" class="flex items-center justify-end gap-[var(--lk-space-xs)]">
                   <Button label="Bewerken" severity="secondary" :data-testid="`rk-bewerk-${optie.id}`" @click="openBewerken(optie)" />
                   <Button
                     v-if="optie.actief"
@@ -259,7 +259,7 @@ laad()
               </td>
             </tr>
             <tr v-if="!perDimensie(dim.key).length">
-              <td colspan="5" :data-testid="`rk-leeg-${dim.key}`" class="py-[var(--cd-space-sm)] text-[var(--cd-color-text-muted)]">
+              <td colspan="5" :data-testid="`rk-leeg-${dim.key}`" class="py-[var(--lk-space-sm)] text-[var(--lk-color-text-muted)]">
                 Nog geen opties in deze dimensie.
               </td>
             </tr>
@@ -270,23 +270,23 @@ laad()
 
     <!-- Toevoegen -->
     <Dialog v-model:visible="addOpen" modal :closable="false" :header="`Optie toevoegen — ${dimLabel(addDim)}`" data-testid="rk-add-dialog">
-      <form class="flex flex-col gap-[var(--cd-space-md)] min-w-[22rem]" data-testid="rk-add-form" @submit.prevent="bevestigToevoegen">
-        <p v-if="addFormFout" role="alert" data-testid="rk-add-formfout" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ addFormFout }}</p>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+      <form class="flex flex-col gap-[var(--lk-space-md)] min-w-[22rem]" data-testid="rk-add-form" @submit.prevent="bevestigToevoegen">
+        <p v-if="addFormFout" role="alert" data-testid="rk-add-formfout" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ addFormFout }}</p>
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="rk-add-sleutel" class="font-semibold">Sleutel *</label>
-          <input id="rk-add-sleutel" v-model="addForm.optie_sleutel" type="text" data-testid="rk-add-sleutel" :aria-invalid="!!addFouten.optie_sleutel" aria-describedby="rk-add-fout-sleutel" placeholder="bv. herzien" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white font-mono" />
-          <span v-if="addFouten.optie_sleutel" id="rk-add-fout-sleutel" role="alert" data-testid="rk-add-fout-optie_sleutel" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ addFouten.optie_sleutel }}</span>
+          <input id="rk-add-sleutel" v-model="addForm.optie_sleutel" type="text" data-testid="rk-add-sleutel" :aria-invalid="!!addFouten.optie_sleutel" aria-describedby="rk-add-fout-sleutel" placeholder="bv. herzien" class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white font-mono" />
+          <span v-if="addFouten.optie_sleutel" id="rk-add-fout-sleutel" role="alert" data-testid="rk-add-fout-optie_sleutel" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ addFouten.optie_sleutel }}</span>
         </div>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="rk-add-label" class="font-semibold">Label *</label>
-          <input id="rk-add-label" v-model="addForm.label" type="text" data-testid="rk-add-label" :aria-invalid="!!addFouten.label" aria-describedby="rk-add-fout-label" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white" />
-          <span v-if="addFouten.label" id="rk-add-fout-label" role="alert" data-testid="rk-add-fout-label" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ addFouten.label }}</span>
+          <input id="rk-add-label" v-model="addForm.label" type="text" data-testid="rk-add-label" :aria-invalid="!!addFouten.label" aria-describedby="rk-add-fout-label" class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white" />
+          <span v-if="addFouten.label" id="rk-add-fout-label" role="alert" data-testid="rk-add-fout-label" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ addFouten.label }}</span>
         </div>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="rk-add-volgorde" class="font-semibold">Volgorde</label>
-          <input id="rk-add-volgorde" v-model="addForm.volgorde" type="number" data-testid="rk-add-volgorde" placeholder="leeg = achteraan" class="w-32 rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white" />
+          <input id="rk-add-volgorde" v-model="addForm.volgorde" type="number" data-testid="rk-add-volgorde" placeholder="leeg = achteraan" class="w-32 rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white" />
         </div>
-        <div class="flex gap-[var(--cd-space-md)]">
+        <div class="flex gap-[var(--lk-space-md)]">
           <Button type="submit" label="Toevoegen" data-testid="rk-add-opslaan" :disabled="bezig" />
           <Button type="button" label="Annuleren" severity="secondary" @click="addOpen = false" />
         </div>
@@ -295,24 +295,24 @@ laad()
 
     <!-- Bewerken (sleutel + dimensie read-only) -->
     <Dialog v-model:visible="editOpen" modal :closable="false" header="Optie bewerken" data-testid="rk-edit-dialog">
-      <form class="flex flex-col gap-[var(--cd-space-md)] min-w-[22rem]" data-testid="rk-edit-form" @submit.prevent="bevestigBewerken">
-        <dl class="grid grid-cols-[max-content_1fr] gap-x-[var(--cd-space-md)] gap-y-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
+      <form class="flex flex-col gap-[var(--lk-space-md)] min-w-[22rem]" data-testid="rk-edit-form" @submit.prevent="bevestigBewerken">
+        <dl class="grid grid-cols-[max-content_1fr] gap-x-[var(--lk-space-md)] gap-y-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]">
           <dt class="font-semibold">Dimensie</dt>
           <dd data-testid="rk-edit-dimensie-readonly">{{ dimLabel(editOptie?.dimensie) }}</dd>
           <dt class="font-semibold">Sleutel</dt>
           <dd data-testid="rk-edit-sleutel-readonly" class="font-mono">{{ editOptie?.optie_sleutel }}</dd>
         </dl>
-        <p class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">Dimensie en sleutel liggen vast (stabiele referentie) en zijn niet bewerkbaar.</p>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <p class="text-[length:var(--lk-text-xs)] text-[var(--lk-color-text-muted)]">Dimensie en sleutel liggen vast (stabiele referentie) en zijn niet bewerkbaar.</p>
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="rk-edit-label" class="font-semibold">Label *</label>
-          <input id="rk-edit-label" v-model="editForm.label" type="text" data-testid="rk-edit-label" :aria-invalid="!!editFouten.label" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white" />
-          <span v-if="editFouten.label" role="alert" data-testid="rk-edit-fout-label" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ editFouten.label }}</span>
+          <input id="rk-edit-label" v-model="editForm.label" type="text" data-testid="rk-edit-label" :aria-invalid="!!editFouten.label" class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white" />
+          <span v-if="editFouten.label" role="alert" data-testid="rk-edit-fout-label" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ editFouten.label }}</span>
         </div>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="rk-edit-volgorde" class="font-semibold">Volgorde</label>
-          <input id="rk-edit-volgorde" v-model="editForm.volgorde" type="number" data-testid="rk-edit-volgorde" class="w-32 rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white" />
+          <input id="rk-edit-volgorde" v-model="editForm.volgorde" type="number" data-testid="rk-edit-volgorde" class="w-32 rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white" />
         </div>
-        <div class="flex gap-[var(--cd-space-md)]">
+        <div class="flex gap-[var(--lk-space-md)]">
           <Button type="submit" label="Opslaan" data-testid="rk-edit-opslaan" :disabled="bezig" />
           <Button type="button" label="Annuleren" severity="secondary" @click="editOpen = false" />
         </div>
@@ -321,13 +321,13 @@ laad()
 
     <!-- Deactiveren -->
     <Dialog v-model:visible="deactOpen" modal header="Optie deactiveren" data-testid="rk-deact-dialog">
-      <p class="mb-[var(--cd-space-sm)] max-w-prose">
+      <p class="mb-[var(--lk-space-sm)] max-w-prose">
         Wil je <strong>{{ deactOptie?.label }}</strong> (<span class="font-mono">{{ deactOptie?.optie_sleutel }}</span>) deactiveren?
       </p>
-      <p data-testid="rk-deact-uitleg" class="mb-[var(--cd-space-md)] max-w-prose text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]">
+      <p data-testid="rk-deact-uitleg" class="mb-[var(--lk-space-md)] max-w-prose text-[length:var(--lk-text-sm)] text-[var(--lk-color-text-muted)]">
         Bestaande registraties blijven leesbaar; de optie is alleen niet meer kiesbaar voor nieuwe registraties.
       </p>
-      <div class="flex justify-end gap-[var(--cd-space-md)]">
+      <div class="flex justify-end gap-[var(--lk-space-md)]">
         <Button label="Annuleren" severity="secondary" @click="deactOpen = false" />
         <Button label="Deactiveren" severity="danger" data-testid="rk-deact-bevestig" :disabled="bezig" @click="bevestigDeactiveren" />
       </div>

@@ -119,7 +119,7 @@ const _datum = (iso) => (iso ? new Date(iso).toLocaleString('nl-NL', { dateStyle
 
 <template>
   <div class="card" data-testid="mg-leesblok" aria-labelledby="mg-titel">
-    <h3 id="mg-titel" class="mb-[var(--cd-space-sm)] font-semibold text-[var(--cd-color-text)]">Migratiegereedheid</h3>
+    <h3 id="mg-titel" class="mb-[var(--lk-space-sm)] font-semibold text-[var(--lk-color-text)]">Migratiegereedheid</h3>
 
     <Tag
       :value="label(KLAARVERKLARING_STATUS, status || 'open')"
@@ -127,10 +127,10 @@ const _datum = (iso) => (iso ? new Date(iso).toLocaleString('nl-NL', { dateStyle
       data-testid="mg-status"
     />
 
-    <p v-if="verklaring" data-testid="mg-door" class="mt-[var(--cd-space-sm)] text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]">
+    <p v-if="verklaring" data-testid="mg-door" class="mt-[var(--lk-space-sm)] text-[length:var(--lk-text-sm)] text-[var(--lk-color-text-muted)]">
       door {{ verklaring.verklaard_door_naam || verklaring.verklaard_door || 'onbekend' }} · {{ _datum(verklaring.verklaard_op) }}
     </p>
-    <p v-if="verklaring" data-testid="mg-reden" class="mt-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)] whitespace-pre-wrap">
+    <p v-if="verklaring" data-testid="mg-reden" class="mt-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)] whitespace-pre-wrap">
       <span class="font-semibold">Reden:</span> {{ verklaring.reden }}
     </p>
 
@@ -138,7 +138,7 @@ const _datum = (iso) => (iso ? new Date(iso).toLocaleString('nl-NL', { dateStyle
       v-if="heeftAfwijking"
       role="status"
       data-testid="mg-afwijking"
-      class="mt-[var(--cd-space-sm)] flex items-center gap-[var(--cd-space-xs)] rounded-[var(--cd-radius-input)] bg-[color-mix(in_srgb,var(--cd-color-warn)_12%,transparent)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)] text-[var(--cd-color-warn)]"
+      class="mt-[var(--lk-space-sm)] flex items-center gap-[var(--lk-space-xs)] rounded-[var(--lk-radius-input)] bg-[color-mix(in_srgb,var(--lk-color-warn)_12%,transparent)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)] text-[var(--lk-color-warn)]"
     >
       <span aria-hidden="true">⚠</span>
       Klaar verklaard terwijl {{ openVragen }} van {{ aantalVragen }} vragen nog open staan.
@@ -154,15 +154,15 @@ const _datum = (iso) => (iso ? new Date(iso).toLocaleString('nl-NL', { dateStyle
       @show="redenVeld?.$el?.focus?.() ?? redenVeld?.focus?.()"
       @hide="sluit"
     >
-      <form class="flex flex-col gap-[var(--cd-space-md)] min-w-[22rem]" data-testid="mg-form" @submit.prevent="bevestig">
+      <form class="flex flex-col gap-[var(--lk-space-md)] min-w-[22rem]" data-testid="mg-form" @submit.prevent="bevestig">
         <p
           v-if="toontVragenContext"
           data-testid="mg-dialog-context"
-          class="rounded-[var(--cd-radius-input)] bg-[var(--cd-color-accent)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]"
+          class="rounded-[var(--lk-radius-input)] bg-[var(--lk-color-accent)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]"
         >
           Let op: {{ openVragen }} van {{ aantalVragen }} vragen staan nog open.
         </p>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="mg-reden" class="font-semibold">Reden *</label>
           <Textarea
             id="mg-reden"
@@ -173,9 +173,9 @@ const _datum = (iso) => (iso ? new Date(iso).toLocaleString('nl-NL', { dateStyle
             :aria-invalid="!!fouten.reden"
             aria-describedby="mg-fout-reden"
           />
-          <span v-if="fouten.reden" id="mg-fout-reden" role="alert" data-testid="mg-fout-reden" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.reden }}</span>
+          <span v-if="fouten.reden" id="mg-fout-reden" role="alert" data-testid="mg-fout-reden" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten.reden }}</span>
         </div>
-        <div class="flex justify-end gap-[var(--cd-space-md)]">
+        <div class="flex justify-end gap-[var(--lk-space-md)]">
           <Button label="Annuleren" severity="secondary" data-testid="mg-annuleer" @click="sluit" />
           <Button :label="actieLabel" type="submit" :disabled="bezig" data-testid="mg-bevestig" />
         </div>

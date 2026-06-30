@@ -9,30 +9,30 @@
 @layer base {
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: var(--cd-font-family);
-    background: var(--cd-color-bg);
-    color: var(--cd-color-text);
+    font-family: var(--lk-font-family);
+    background: var(--lk-color-bg);
+    color: var(--lk-color-text);
   }
-  h1 { margin-bottom: 1rem; color: var(--cd-color-primary); }
-  h2 { margin-bottom: 0.75rem; font-size: var(--cd-text-lg); }
+  h1 { margin-bottom: 1rem; color: var(--lk-color-primary); }
+  h2 { margin-bottom: 0.75rem; font-size: var(--lk-text-lg); }
   table { width: 100%; border-collapse: collapse; }
-  th, td { text-align: left; padding: 0.75rem 1rem; border-bottom: 1px solid var(--cd-color-border, #e5e7eb); }
-  thead { background: var(--cd-color-primary); }
+  th, td { text-align: left; padding: 0.75rem 1rem; border-bottom: 1px solid var(--lk-color-border, #e5e7eb); }
+  thead { background: var(--lk-color-primary); }
   thead th { color: white; font-weight: 600; }
-  tbody tr:nth-child(even) { background: var(--cd-color-surface, #f9fafb); }
+  tbody tr:nth-child(even) { background: var(--lk-color-surface, #f9fafb); }
   tbody tr:nth-child(odd) { background: white; }
-  tbody tr:hover { background: var(--cd-color-bg-hover, #f3f4f6); }
+  tbody tr:hover { background: var(--lk-color-bg-hover, #f3f4f6); }
 }
 
 /* Utility klassen — gemigreerd uit App.vue */
 @layer components {
   .card {
-    background: var(--cd-color-surface);
-    border-radius: var(--cd-border-radius);
+    background: var(--lk-color-surface);
+    border-radius: var(--lk-border-radius);
     padding: 1.5rem;
     margin-bottom: 1rem;
-    box-shadow: var(--cd-shadow-sm);
+    box-shadow: var(--lk-shadow-sm);
   }
-  .ok { color: var(--cd-color-success); font-weight: 600; }
-  .error { color: var(--cd-color-danger); font-weight: 600; }
+  .ok { color: var(--lk-color-success); font-weight: 600; }
+  .error { color: var(--lk-color-danger); font-weight: 600; }
 }

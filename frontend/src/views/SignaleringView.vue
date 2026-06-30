@@ -72,56 +72,56 @@ onMounted(laadGaten)
   <section aria-labelledby="signalering-titel">
     <h1
       id="signalering-titel"
-      class="mb-[var(--cd-space-sm)] text-[length:var(--cd-text-2xl)] font-semibold text-[var(--cd-color-primary)]"
+      class="mb-[var(--lk-space-sm)] text-[length:var(--lk-text-2xl)] font-semibold text-[var(--lk-color-primary)]"
     >
       Signalering
     </h1>
 
-    <div role="tablist" aria-label="Signalering" class="mb-[var(--cd-space-md)] flex gap-1 border-b border-[var(--cd-color-border)]">
+    <div role="tablist" aria-label="Signalering" class="mb-[var(--lk-space-md)] flex gap-1 border-b border-[var(--lk-color-border)]">
       <button
         type="button" role="tab" data-testid="sig-tab-registratiegaten"
         :aria-selected="tab === 'registratiegaten'"
-        :class="['h-10 rounded-t-[var(--cd-radius-btn)] px-[var(--cd-space-md)] text-[length:var(--cd-text-sm)]', tab === 'registratiegaten' ? 'bg-[var(--cd-color-primary)] font-semibold text-white' : 'hover:bg-[var(--cd-color-accent)]']"
+        :class="['h-10 rounded-t-[var(--lk-radius-btn)] px-[var(--lk-space-md)] text-[length:var(--lk-text-sm)]', tab === 'registratiegaten' ? 'bg-[var(--lk-color-primary)] font-semibold text-white' : 'hover:bg-[var(--lk-color-accent)]']"
         @click="tab = 'registratiegaten'"
       >Registratiegaten</button>
       <button
         type="button" role="tab" data-testid="sig-tab-plaatsing"
         :aria-selected="tab === 'plaatsing'"
-        :class="['h-10 rounded-t-[var(--cd-radius-btn)] px-[var(--cd-space-md)] text-[length:var(--cd-text-sm)]', tab === 'plaatsing' ? 'bg-[var(--cd-color-primary)] font-semibold text-white' : 'hover:bg-[var(--cd-color-accent)]']"
+        :class="['h-10 rounded-t-[var(--lk-radius-btn)] px-[var(--lk-space-md)] text-[length:var(--lk-text-sm)]', tab === 'plaatsing' ? 'bg-[var(--lk-color-primary)] font-semibold text-white' : 'hover:bg-[var(--lk-color-accent)]']"
         @click="tab = 'plaatsing'"
       >Plaatsing</button>
     </div>
 
     <!-- Tab 1 — Registratiegaten (gegroepeerd per ernst) -->
     <div v-show="tab === 'registratiegaten'" role="tabpanel" data-testid="sig-panel-registratiegaten">
-      <p v-if="fout" role="alert" data-testid="sig-fout" class="mb-[var(--cd-space-md)] rounded-[var(--cd-radius-badge)] border border-[var(--cd-color-danger)] bg-[var(--cd-color-danger)]/10 px-[var(--cd-space-md)] py-[var(--cd-space-sm)] text-[var(--cd-color-danger)]">{{ fout }}</p>
-      <p v-if="laden && !eersteGeladen" data-testid="sig-laden" class="text-[var(--cd-color-text-muted)]">Laden…</p>
+      <p v-if="fout" role="alert" data-testid="sig-fout" class="mb-[var(--lk-space-md)] rounded-[var(--lk-radius-badge)] border border-[var(--lk-color-danger)] bg-[var(--lk-color-danger)]/10 px-[var(--lk-space-md)] py-[var(--lk-space-sm)] text-[var(--lk-color-danger)]">{{ fout }}</p>
+      <p v-if="laden && !eersteGeladen" data-testid="sig-laden" class="text-[var(--lk-color-text-muted)]">Laden…</p>
 
       <p
         v-if="eersteGeladen && !laden && totaal === 0"
         data-testid="sig-leeg"
-        class="rounded-[var(--cd-radius-card)] bg-[var(--cd-color-success)]/10 px-[var(--cd-space-md)] py-[var(--cd-space-md)] text-[var(--cd-color-text)]"
+        class="rounded-[var(--lk-radius-card)] bg-[var(--lk-color-success)]/10 px-[var(--lk-space-md)] py-[var(--lk-space-md)] text-[var(--lk-color-text)]"
       >Geen openstaande registratiegaten.</p>
 
       <template v-else-if="eersteGeladen && !laden">
-        <section v-for="ernst in ['kritiek', 'aandacht']" :key="ernst" class="mb-[var(--cd-space-lg)]" :data-testid="`sig-ernst-${ernst}`">
-          <h2 class="mb-[var(--cd-space-sm)] text-[length:var(--cd-text-lg)] font-semibold">
+        <section v-for="ernst in ['kritiek', 'aandacht']" :key="ernst" class="mb-[var(--lk-space-lg)]" :data-testid="`sig-ernst-${ernst}`">
+          <h2 class="mb-[var(--lk-space-sm)] text-[length:var(--lk-text-lg)] font-semibold">
             {{ ernst === 'kritiek' ? '🔴 Kritiek' : '🟡 Aandacht' }}
           </h2>
           <template v-for="g in GROEPEN[ernst]" :key="g.key">
-            <div v-if="items(ernst, g.key).length" class="mb-[var(--cd-space-md)]" :data-testid="`sig-groep-${g.key}`">
-              <p class="mb-1 text-[length:var(--cd-text-sm)] font-semibold">{{ g.label }} ({{ items(ernst, g.key).length }})</p>
+            <div v-if="items(ernst, g.key).length" class="mb-[var(--lk-space-md)]" :data-testid="`sig-groep-${g.key}`">
+              <p class="mb-1 text-[length:var(--lk-text-sm)] font-semibold">{{ g.label }} ({{ items(ernst, g.key).length }})</p>
               <ul class="flex flex-col gap-0.5">
-                <li v-for="c in items(ernst, g.key)" :key="c.id" :data-testid="`sig-${g.key}-${c.id}`" class="flex items-center gap-2 text-[length:var(--cd-text-sm)]">
-                  <router-link v-if="linkVoor(c, g.link)" :to="linkVoor(c, g.link)" class="text-[var(--cd-color-primary)] hover:underline">{{ c.naam }}</router-link>
+                <li v-for="c in items(ernst, g.key)" :key="c.id" :data-testid="`sig-${g.key}-${c.id}`" class="flex items-center gap-2 text-[length:var(--lk-text-sm)]">
+                  <router-link v-if="linkVoor(c, g.link)" :to="linkVoor(c, g.link)" class="text-[var(--lk-color-primary)] hover:underline">{{ c.naam }}</router-link>
                   <span v-else>{{ c.naam }}</span>
-                  <span v-if="c.entiteit_type" class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">· {{ humaniseer(c.entiteit_type) }}</span>
-                  <span v-if="g.lc" class="text-[var(--cd-color-text-muted)]">· {{ lcLabel(c.lifecycle_status) }}</span>
+                  <span v-if="c.entiteit_type" class="text-[length:var(--lk-text-xs)] text-[var(--lk-color-text-muted)]">· {{ humaniseer(c.entiteit_type) }}</span>
+                  <span v-if="g.lc" class="text-[var(--lk-color-text-muted)]">· {{ lcLabel(c.lifecycle_status) }}</span>
                 </li>
               </ul>
             </div>
           </template>
-          <p v-if="GROEPEN[ernst].every((g) => items(ernst, g.key).length === 0)" :data-testid="`sig-ernst-leeg-${ernst}`" class="text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]">Geen {{ ernst === 'kritiek' ? 'kritieke' : 'aandacht' }}-signalen.</p>
+          <p v-if="GROEPEN[ernst].every((g) => items(ernst, g.key).length === 0)" :data-testid="`sig-ernst-leeg-${ernst}`" class="text-[length:var(--lk-text-sm)] text-[var(--lk-color-text-muted)]">Geen {{ ernst === 'kritiek' ? 'kritieke' : 'aandacht' }}-signalen.</p>
         </section>
       </template>
     </div>

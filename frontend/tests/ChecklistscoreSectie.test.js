@@ -69,9 +69,9 @@ describe('ChecklistscoreSectie', () => {
     const w = await mountSectie({ markeerCode: '1.1' })
     await flushPromises()
     const rij = w.find('[data-testid="cs-rij-1.1"]')
-    expect(rij.classes()).toContain('bg-[var(--cd-color-accent)]')
+    expect(rij.classes()).toContain('bg-[var(--lk-color-accent)]')
     // Niet-aangewezen rij krijgt de markering niet.
-    expect(w.find('[data-testid="cs-rij-1.2"]').classes()).not.toContain('bg-[var(--cd-color-accent)]')
+    expect(w.find('[data-testid="cs-rij-1.2"]').classes()).not.toContain('bg-[var(--lk-color-accent)]')
   })
 
   // ── Onderdeel 2: client-side kolomsortering ────────────────────────────────
@@ -91,14 +91,14 @@ describe('ChecklistscoreSectie', () => {
     await flushPromises()
     await w.find('[data-testid="cs-sort-code"]').trigger('click') // volgorde omkeren
     await flushPromises()
-    expect(w.find('[data-testid="cs-rij-1.1"]').classes()).toContain('bg-[var(--cd-color-accent)]')
+    expect(w.find('[data-testid="cs-rij-1.1"]').classes()).toContain('bg-[var(--lk-color-accent)]')
   })
 
   // ── Onderdeel 3: gedeelde score-kleur op het keuzeveld ─────────────────────
   it('kleurt het score-keuzeveld volgens de gedeelde score-kleur (ja = groen)', async () => {
     const w = await mountSectie() // 1.2 is gescoord 'ja', 1.1 ongescoord
-    expect(w.find('[data-testid="cs-score-1.2"]').classes()).toContain('text-[var(--cd-color-success)]')
-    expect(w.find('[data-testid="cs-score-1.1"]').classes()).not.toContain('text-[var(--cd-color-success)]')
+    expect(w.find('[data-testid="cs-score-1.2"]').classes()).toContain('text-[var(--lk-color-success)]')
+    expect(w.find('[data-testid="cs-score-1.1"]').classes()).not.toContain('text-[var(--lk-color-success)]')
   })
 
   // ── ADR-022 Fase E: componenttype-scoping van de vragenset ─────────────────

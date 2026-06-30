@@ -100,12 +100,12 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onDocMousedown))
       :aria-expanded="open"
       :aria-controls="panelId"
       :disabled="disabled"
-      class="flex min-w-[10rem] items-center justify-between gap-[var(--cd-space-sm)] rounded-[var(--cd-radius-btn)] border border-[var(--cd-color-border)] bg-[var(--cd-color-surface)] px-[var(--cd-space-sm)] py-1 text-left text-[length:var(--cd-text-sm)] focus:outline-2 focus:outline-offset-2 focus:outline-[var(--cd-color-primary)] disabled:opacity-60"
+      class="flex min-w-[10rem] items-center justify-between gap-[var(--lk-space-sm)] rounded-[var(--lk-radius-btn)] border border-[var(--lk-color-border)] bg-[var(--lk-color-surface)] px-[var(--lk-space-sm)] py-1 text-left text-[length:var(--lk-text-sm)] focus:outline-2 focus:outline-offset-2 focus:outline-[var(--lk-color-primary)] disabled:opacity-60"
       @click="toggleOpen"
       @keydown="onTriggerKeydown"
     >
-      <span :class="modelValue.length ? '' : 'text-[var(--cd-color-text-muted)]'">{{ samenvatting }}</span>
-      <span aria-hidden="true" class="text-[var(--cd-color-text-muted)]">▾</span>
+      <span :class="modelValue.length ? '' : 'text-[var(--lk-color-text-muted)]'">{{ samenvatting }}</span>
+      <span aria-hidden="true" class="text-[var(--lk-color-text-muted)]">▾</span>
     </button>
 
     <div
@@ -114,14 +114,14 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onDocMousedown))
       :data-testid="`${testid}-panel`"
       role="group"
       :aria-label="ariaLabel"
-      class="absolute z-10 mt-1 min-w-full rounded-[var(--cd-radius-card)] border border-[var(--cd-color-border)] bg-[var(--cd-color-surface)] p-[var(--cd-space-sm)] shadow-[var(--cd-shadow-md)]"
+      class="absolute z-10 mt-1 min-w-full rounded-[var(--lk-radius-card)] border border-[var(--lk-color-border)] bg-[var(--lk-color-surface)] p-[var(--lk-space-sm)] shadow-[var(--lk-shadow-md)]"
       @keydown="onPanelKeydown"
     >
       <label
         v-for="o in opties"
         :key="o"
         :data-testid="`${testid}-optie-${o}`"
-        class="flex items-center gap-[var(--cd-space-xs)] whitespace-nowrap rounded-[var(--cd-radius-nav)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)] hover:bg-[var(--cd-color-accent)]"
+        class="flex items-center gap-[var(--lk-space-xs)] whitespace-nowrap rounded-[var(--lk-radius-nav)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)] hover:bg-[var(--lk-color-accent)]"
       >
         <input
           type="checkbox"

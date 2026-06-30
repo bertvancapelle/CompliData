@@ -230,14 +230,14 @@ laad()
 
 <template>
   <section aria-labelledby="beheer-titel">
-    <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-md)]">
-      <h1 id="beheer-titel" class="text-[length:var(--cd-text-xl)] font-semibold">Checklistvragen</h1>
-      <label class="ml-auto flex items-center gap-[var(--cd-space-sm)] text-[length:var(--cd-text-sm)]">
+    <div class="flex items-center gap-[var(--lk-space-md)] mb-[var(--lk-space-md)]">
+      <h1 id="beheer-titel" class="text-[length:var(--lk-text-xl)] font-semibold">Checklistvragen</h1>
+      <label class="ml-auto flex items-center gap-[var(--lk-space-sm)] text-[length:var(--lk-text-sm)]">
         Categorie
         <select
           v-model="categorieFilter"
           data-testid="cfg-categorie-filter"
-          class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white"
+          class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white"
         >
           <option value="">Alle</option>
           <option v-for="nr in categorieen" :key="nr" :value="String(nr)">Categorie {{ nr }}</option>
@@ -245,106 +245,106 @@ laad()
       </label>
     </div>
 
-    <p v-if="fout" role="alert" data-testid="cfg-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ fout }}</p>
-    <p v-if="actieFout" role="alert" data-testid="cfg-actie-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ actieFout }}</p>
-    <p v-if="laden" data-testid="cfg-laden" class="text-[var(--cd-color-text-muted)]">Laden…</p>
+    <p v-if="fout" role="alert" data-testid="cfg-fout" class="text-[var(--lk-color-danger)] mb-[var(--lk-space-sm)]">{{ fout }}</p>
+    <p v-if="actieFout" role="alert" data-testid="cfg-actie-fout" class="text-[var(--lk-color-danger)] mb-[var(--lk-space-sm)]">{{ actieFout }}</p>
+    <p v-if="laden" data-testid="cfg-laden" class="text-[var(--lk-color-text-muted)]">Laden…</p>
 
     <!-- Vraag toevoegen (ADR-022 W1) — tenant-CRUD. Toont 409 CHECKLISTVRAAG_BESTAAT
          netjes via de actieFout-melding; tellende actie → impact-aankondiging. -->
     <form
       data-testid="cfg-nieuwe-vraag"
-      class="card flex flex-wrap items-end gap-[var(--cd-space-sm)] mb-[var(--cd-space-md)]"
+      class="card flex flex-wrap items-end gap-[var(--lk-space-sm)] mb-[var(--lk-space-md)]"
       @submit.prevent="maakVraag"
     >
-      <label class="flex flex-col gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
+      <label class="flex flex-col gap-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]">
         Type
         <select
           v-model="nieuweVraag.componenttype"
           data-testid="cfg-nieuwe-vraag-type"
-          class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white"
+          class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white"
         >
           <option value="" disabled>— maak een keuze —</option>
           <option v-for="o in componenttypeOpties" :key="o.optie_sleutel" :value="o.optie_sleutel">{{ o.label }}</option>
         </select>
       </label>
-      <label class="flex flex-col gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
+      <label class="flex flex-col gap-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]">
         Code
         <input
           v-model="nieuweVraag.code"
           data-testid="cfg-nieuwe-vraag-code"
           type="text"
           placeholder="bv. 1.4"
-          class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white"
+          class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white"
         />
       </label>
-      <label class="flex flex-col gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)] flex-1 min-w-[12rem]">
+      <label class="flex flex-col gap-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)] flex-1 min-w-[12rem]">
         Vraag
         <input
           v-model="nieuweVraag.vraag"
           data-testid="cfg-nieuwe-vraag-tekst"
           type="text"
-          class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white"
+          class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white"
         />
       </label>
-      <label class="flex flex-col gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
+      <label class="flex flex-col gap-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]">
         Categorie-nr
         <input
           v-model="nieuweVraag.categorie_nr"
           data-testid="cfg-nieuwe-vraag-catnr"
           type="number"
-          class="w-24 rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white"
+          class="w-24 rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white"
         />
       </label>
-      <label class="flex flex-col gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
+      <label class="flex flex-col gap-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]">
         Categorie-naam
         <input
           v-model="nieuweVraag.categorie_naam"
           data-testid="cfg-nieuwe-vraag-catnaam"
           type="text"
-          class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white"
+          class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white"
         />
       </label>
       <button
         type="submit"
         data-testid="cfg-nieuwe-vraag-knop"
-        class="rounded-[var(--cd-radius-input)] bg-[var(--cd-color-accent)] text-white px-[var(--cd-space-md)] py-[var(--cd-space-xs)]"
+        class="rounded-[var(--lk-radius-input)] bg-[var(--lk-color-accent)] text-white px-[var(--lk-space-md)] py-[var(--lk-space-xs)]"
       >
         Vraag toevoegen
       </button>
     </form>
 
-    <ul class="flex flex-col gap-[var(--cd-space-md)]">
+    <ul class="flex flex-col gap-[var(--lk-space-md)]">
       <li
         v-for="vraag in zichtbareVragen"
         :key="vraag.code"
         :data-testid="`cfg-vraag-${vraag.code}`"
-        :class="['card flex flex-col gap-[var(--cd-space-sm)]', vraag.actief ? '' : 'opacity-60']"
+        :class="['card flex flex-col gap-[var(--lk-space-sm)]', vraag.actief ? '' : 'opacity-60']"
       >
-        <div class="flex items-start gap-[var(--cd-space-md)]">
+        <div class="flex items-start gap-[var(--lk-space-md)]">
           <span class="font-mono font-semibold">{{ vraag.code }}</span>
           <span
             :data-testid="`cfg-vraag-type-${vraag.code}`"
-            class="text-[length:var(--cd-text-xs)] rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-xs)] py-[2px]"
+            class="text-[length:var(--lk-text-xs)] rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-xs)] py-[2px]"
           >{{ typeLabel(vraag.componenttype) }}</span>
           <span class="flex-1">{{ vraag.vraag }}</span>
           <span
             :data-testid="`cfg-vraag-status-${vraag.code}`"
-            :class="['text-[length:var(--cd-text-xs)]', vraag.actief ? 'text-[var(--cd-color-success)]' : 'text-[var(--cd-color-danger)]']"
+            :class="['text-[length:var(--lk-text-xs)]', vraag.actief ? 'text-[var(--lk-color-success)]' : 'text-[var(--lk-color-danger)]']"
           >{{ vraag.actief ? 'actief' : 'gedeactiveerd' }}</span>
           <button
             type="button"
             :data-testid="`cfg-vraag-actief-${vraag.code}`"
-            class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white"
+            class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white"
             @click="zetActief(vraag)"
           >
             {{ vraag.actief ? 'Deactiveren' : 'Activeren' }}
           </button>
-          <label class="flex items-center gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
+          <label class="flex items-center gap-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]">
             Antwoordtype
             <select
               :data-testid="`cfg-type-${vraag.code}`"
               :value="vraag.antwoordtype"
-              class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white"
+              class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white"
               @change="zetType(vraag, $event.target.value)"
             >
               <option v-for="t in ANTWOORDTYPES" :key="t" :value="t">{{ TYPE_LABEL[t] }}</option>
@@ -352,12 +352,12 @@ laad()
           </label>
           <!-- ADR-023 Fase F (F-3): betekenis-toekenning. Leeg = geen betekenis; de server
                handhaaft de uniciteit per (tenant, componenttype) en de catalogus-validatie. -->
-          <label class="flex items-center gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
+          <label class="flex items-center gap-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]">
             Betekenis
             <select
               :data-testid="`cfg-betekenis-${vraag.code}`"
               :value="vraag.betekenis || ''"
-              class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white"
+              class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white"
               @change="zetBetekenis(vraag, $event.target.value)"
             >
               <option value="">— geen —</option>
@@ -365,16 +365,16 @@ laad()
             </select>
           </label>
         </div>
-        <p v-if="vraag.antwoordtype !== 'geen'" class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">
+        <p v-if="vraag.antwoordtype !== 'geen'" class="text-[length:var(--lk-text-xs)] text-[var(--lk-color-text-muted)]">
           Een reeds geconfigureerde vraag kan niet van antwoordtype wisselen (de server weigert dat).
         </p>
 
         <!-- Opties-editor (alleen keuze-types) -->
-        <div v-if="heeftOpties(vraag)" class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div v-if="heeftOpties(vraag)" class="flex flex-col gap-[var(--lk-space-xs)]">
           <div
             v-if="isAfgeleideSet(vraag)"
             :data-testid="`cfg-afgeleid-${vraag.code}`"
-            class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]"
+            class="text-[length:var(--lk-text-xs)] text-[var(--lk-color-text-muted)]"
           >
             Afgeleide optieset — structuur is vast; alleen labels zijn aanpasbaar.
           </div>
@@ -396,7 +396,7 @@ laad()
                     :data-testid="`cfg-optie-label-${optie.id}`"
                     v-model="optie.label"
                     type="text"
-                    class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white"
+                    class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white"
                   />
                 </td>
                 <td>
@@ -405,19 +405,19 @@ laad()
                     v-model="optie.volgorde"
                     type="number"
                     :disabled="!!optie.afgeleid_bron"
-                    class="w-20 rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white disabled:opacity-60"
+                    class="w-20 rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white disabled:opacity-60"
                   />
                 </td>
                 <td>
-                  <span v-if="optie.afgeleid_bron" :data-testid="`cfg-bron-${optie.id}`" class="text-[length:var(--cd-text-xs)]">afgeleid · {{ optie.afgeleid_bron }}</span>
-                  <span v-else-if="!optie.actief" class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-danger)]">gedeactiveerd</span>
-                  <span v-else class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-success)]">actief</span>
+                  <span v-if="optie.afgeleid_bron" :data-testid="`cfg-bron-${optie.id}`" class="text-[length:var(--lk-text-xs)]">afgeleid · {{ optie.afgeleid_bron }}</span>
+                  <span v-else-if="!optie.actief" class="text-[length:var(--lk-text-xs)] text-[var(--lk-color-danger)]">gedeactiveerd</span>
+                  <span v-else class="text-[length:var(--lk-text-xs)] text-[var(--lk-color-success)]">actief</span>
                 </td>
-                <td class="flex gap-[var(--cd-space-xs)]">
+                <td class="flex gap-[var(--lk-space-xs)]">
                   <button
                     type="button"
                     :data-testid="`cfg-optie-opslaan-${optie.id}`"
-                    class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white"
+                    class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white"
                     @click="bewaarOptie(vraag, optie)"
                   >
                     Opslaan
@@ -426,7 +426,7 @@ laad()
                     v-if="!optie.afgeleid_bron && optie.actief"
                     type="button"
                     :data-testid="`cfg-optie-deactiveren-${optie.id}`"
-                    class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white"
+                    class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white"
                     @click="deactiveer(vraag, optie)"
                   >
                     Deactiveren
@@ -440,7 +440,7 @@ laad()
           <form
             v-if="!isAfgeleideSet(vraag)"
             :data-testid="`cfg-toevoegen-${vraag.code}`"
-            class="flex items-end gap-[var(--cd-space-sm)] mt-[var(--cd-space-xs)]"
+            class="flex items-end gap-[var(--lk-space-sm)] mt-[var(--lk-space-xs)]"
             @submit.prevent="voegToe(vraag)"
           >
             <input
@@ -448,25 +448,25 @@ laad()
               v-model="buffer(vraag.id).optie_sleutel"
               type="text"
               placeholder="sleutel"
-              class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white"
+              class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white"
             />
             <input
               :data-testid="`cfg-nieuw-label-${vraag.code}`"
               v-model="buffer(vraag.id).label"
               type="text"
               placeholder="label"
-              class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white"
+              class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white"
             />
             <input
               :data-testid="`cfg-nieuw-volgorde-${vraag.code}`"
               v-model="buffer(vraag.id).volgorde"
               type="number"
-              class="w-20 rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white"
+              class="w-20 rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white"
             />
             <button
               type="submit"
               :data-testid="`cfg-toevoegen-knop-${vraag.code}`"
-              class="rounded-[var(--cd-radius-input)] bg-[var(--cd-color-accent)] text-white px-[var(--cd-space-md)] py-[var(--cd-space-xs)]"
+              class="rounded-[var(--lk-radius-input)] bg-[var(--lk-color-accent)] text-white px-[var(--lk-space-md)] py-[var(--lk-space-xs)]"
             >
               Optie toevoegen
             </button>

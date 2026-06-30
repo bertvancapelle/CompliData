@@ -159,19 +159,19 @@ onMounted(init)
   <section aria-labelledby="form-titel">
     <h1
       id="form-titel"
-      class="text-[length:var(--cd-text-2xl)] font-semibold text-[var(--cd-color-primary)] mb-[var(--cd-space-lg)]"
+      class="text-[length:var(--lk-text-2xl)] font-semibold text-[var(--lk-color-primary)] mb-[var(--lk-space-lg)]"
     >
       {{ bewerken ? 'Component bewerken' : 'Nieuw component' }}
     </h1>
 
-    <form class="card flex flex-col gap-[var(--cd-space-md)] max-w-2xl" data-testid="applicatie-form" @submit.prevent="opslaan">
-      <div class="flex flex-col gap-[var(--cd-space-xs)]">
+    <form class="card flex flex-col gap-[var(--lk-space-md)] max-w-2xl" data-testid="applicatie-form" @submit.prevent="opslaan">
+      <div class="flex flex-col gap-[var(--lk-space-xs)]">
         <label for="f-naam" class="font-semibold">Naam *</label>
         <InputText id="f-naam" v-model="form.naam" data-testid="veld-naam" :aria-invalid="!!fouten.naam" aria-describedby="fout-naam" />
-        <span v-if="fouten.naam" id="fout-naam" role="alert" data-testid="fout-naam" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.naam }}</span>
+        <span v-if="fouten.naam" id="fout-naam" role="alert" data-testid="fout-naam" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten.naam }}</span>
       </div>
 
-      <div class="flex flex-col gap-[var(--cd-space-xs)]">
+      <div class="flex flex-col gap-[var(--lk-space-xs)]">
         <label for="f-eigenaar-org" class="font-semibold">Eigenaar-organisatie</label>
         <ZoekSelect
           id="f-eigenaar-org"
@@ -182,13 +182,13 @@ onMounted(init)
           :invalid="!!fouten.eigenaar_organisatie_id"
           placeholder="Zoek een organisatie (optioneel)…"
         />
-        <span v-if="fouten.eigenaar_organisatie_id" id="fout-eigenaar-organisatie" role="alert" data-testid="fout-eigenaar-organisatie" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.eigenaar_organisatie_id }}</span>
+        <span v-if="fouten.eigenaar_organisatie_id" id="fout-eigenaar-organisatie" role="alert" data-testid="fout-eigenaar-organisatie" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten.eigenaar_organisatie_id }}</span>
       </div>
 
       <div
         v-for="veld in ['hostingmodel', 'migratiepad', 'complexiteit', 'prioriteit']"
         :key="veld"
-        class="flex flex-col gap-[var(--cd-space-xs)]"
+        class="flex flex-col gap-[var(--lk-space-xs)]"
       >
         <label :for="`f-${veld}`" class="font-semibold">{{ VELD_LABEL[veld] }} *</label>
         <select
@@ -196,22 +196,22 @@ onMounted(init)
           v-model="form[veld]"
           :data-testid="`veld-${veld}`"
           :aria-invalid="!!fouten[veld]"
-          class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white"
+          class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white"
         >
           <option value="" disabled>— maak een keuze —</option>
           <option v-for="code in opties[veld]" :key="code" :value="code">
             {{ optieLabel(veld, code) }}
           </option>
         </select>
-        <span v-if="fouten[veld]" role="alert" :data-testid="`fout-${veld}`" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten[veld] }}</span>
+        <span v-if="fouten[veld]" role="alert" :data-testid="`fout-${veld}`" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten[veld] }}</span>
       </div>
 
-      <div class="flex flex-col gap-[var(--cd-space-xs)]">
+      <div class="flex flex-col gap-[var(--lk-space-xs)]">
         <label for="f-beschrijving" class="font-semibold">Beschrijving</label>
         <Textarea id="f-beschrijving" v-model="form.beschrijving" rows="4" data-testid="veld-beschrijving" />
       </div>
 
-      <div class="flex gap-[var(--cd-space-md)] mt-[var(--cd-space-sm)]">
+      <div class="flex gap-[var(--lk-space-md)] mt-[var(--lk-space-sm)]">
         <Button type="submit" label="Opslaan" data-testid="opslaan-knop" :disabled="bezig" />
         <Button type="button" label="Annuleren" severity="secondary" data-testid="annuleer-knop" @click="annuleer" />
       </div>

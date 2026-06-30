@@ -19,30 +19,30 @@ export default {
   root: ({ props }) => ({
     class: [
       'inline-flex items-center justify-center gap-2',
-      'rounded-[var(--cd-radius-btn)]',
-      'font-[var(--cd-font-family)]',
-      'cursor-pointer transition-all duration-[var(--cd-transition-fast)]',
+      'rounded-[var(--lk-radius-btn)]',
+      'font-[var(--lk-font-family)]',
+      'cursor-pointer transition-all duration-[var(--lk-transition-fast)]',
       'disabled:opacity-50 disabled:cursor-not-allowed',
 
       // Eén vaste hoogte (h-10) voor élke knop — geen size-variatie. Zo kan er
       // nooit meer een afwijkende knophoogte ontstaan; `items-center` (root) centreert.
-      'h-10 px-4 text-[length:var(--cd-text-sm)]',
+      'h-10 px-4 text-[length:var(--lk-text-sm)]',
 
       // Variant — `text` (ghost/tertiair) wint van `severity`
       props.text
         ? [
-            'bg-transparent text-[var(--cd-color-primary)]',
+            'bg-transparent text-[var(--lk-color-primary)]',
             'hover:underline',
-            'focus:outline-2 focus:outline-offset-2 focus:outline-[var(--cd-color-primary)]',
+            'focus:outline-2 focus:outline-offset-2 focus:outline-[var(--lk-color-primary)]',
           ]
         : props.severity === 'danger'
-          ? 'bg-[var(--cd-color-danger)] text-white hover:opacity-90'
+          ? 'bg-[var(--lk-color-danger)] text-white hover:opacity-90'
           : props.severity === 'secondary'
-            ? 'bg-[var(--cd-color-primary-50)] text-[var(--cd-color-primary-700)] hover:bg-[var(--cd-color-primary-100)]'
+            ? 'bg-[var(--lk-color-primary-50)] text-[var(--lk-color-primary-700)] hover:bg-[var(--lk-color-primary-100)]'
             : [
-                'bg-[var(--cd-color-primary)] text-white',
+                'bg-[var(--lk-color-primary)] text-white',
                 'hover:bg-[#2D6DB5]',
-                'focus:outline-2 focus:outline-offset-2 focus:outline-[var(--cd-color-primary)]',
+                'focus:outline-2 focus:outline-offset-2 focus:outline-[var(--lk-color-primary)]',
               ],
     ],
   }),
@@ -50,6 +50,6 @@ export default {
     class: 'font-semibold',
   },
   icon: {
-    class: 'text-[length:var(--cd-text-base)]',
+    class: 'text-[length:var(--lk-text-base)]',
   },
 }

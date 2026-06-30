@@ -7,23 +7,23 @@ export default {
   },
   message: ({ props }) => ({
     class: [
-      'flex items-start gap-3 p-4 rounded-[var(--cd-border-radius)]',
-      'shadow-[var(--cd-shadow-md)] min-w-[20rem] max-w-[25rem]',
-      'font-[var(--cd-font-family)]',
-      props.message?.severity === 'success' && 'bg-[var(--cd-color-success)] text-white',
-      props.message?.severity === 'error' && 'bg-[var(--cd-color-danger)] text-white',
-      props.message?.severity === 'warn' && 'bg-[var(--cd-color-warning)] text-white',
-      (!props.message?.severity || props.message?.severity === 'info') && 'bg-[var(--cd-color-primary)] text-white',
+      'flex items-start gap-3 p-4 rounded-[var(--lk-border-radius)]',
+      'shadow-[var(--lk-shadow-md)] min-w-[20rem] max-w-[25rem]',
+      'font-[var(--lk-font-family)]',
+      props.message?.severity === 'success' && 'bg-[var(--lk-color-success)] text-white',
+      props.message?.severity === 'error' && 'bg-[var(--lk-color-danger)] text-white',
+      props.message?.severity === 'warn' && 'bg-[var(--lk-color-warning)] text-white',
+      (!props.message?.severity || props.message?.severity === 'info') && 'bg-[var(--lk-color-primary)] text-white',
     ],
   }),
   messageText: {
     class: 'flex flex-col gap-1',
   },
   summary: {
-    class: 'font-semibold text-[length:var(--cd-text-sm)]',
+    class: 'font-semibold text-[length:var(--lk-text-sm)]',
   },
   detail: {
-    class: 'text-[length:var(--cd-text-xs)] opacity-90',
+    class: 'text-[length:var(--lk-text-xs)] opacity-90',
   },
   closeButton: {
     class: 'ml-auto text-white/80 hover:text-white cursor-pointer',

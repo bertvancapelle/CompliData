@@ -21,20 +21,20 @@ async function uitloggen() {
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-[var(--cd-color-bg)] text-[var(--cd-color-text)]">
+  <div class="min-h-screen flex flex-col bg-[var(--lk-color-bg)] text-[var(--lk-color-text)]">
     <header
-      class="flex items-center gap-[var(--cd-space-md)] px-[var(--cd-space-lg)] py-[var(--cd-space-sm)] bg-[var(--cd-color-primary)] text-white shadow-[var(--cd-shadow-md)]"
+      class="flex items-center gap-[var(--lk-space-md)] px-[var(--lk-space-lg)] py-[var(--lk-space-sm)] bg-[var(--lk-color-primary)] text-white shadow-[var(--lk-shadow-md)]"
     >
-      <span class="font-semibold text-[length:var(--cd-text-lg)]">LIKARA</span>
+      <span class="font-semibold text-[length:var(--lk-text-lg)]">LIKARA</span>
       <span
         data-testid="beheer-badge"
-        class="rounded-[var(--cd-radius-nav)] bg-white/20 px-[var(--cd-space-sm)] py-0.5 text-[length:var(--cd-text-xs)] font-semibold uppercase tracking-wide"
+        class="rounded-[var(--lk-radius-nav)] bg-white/20 px-[var(--lk-space-sm)] py-0.5 text-[length:var(--lk-text-xs)] font-semibold uppercase tracking-wide"
       >
         Beheer
       </span>
 
-      <div class="ml-auto flex items-center gap-[var(--cd-space-md)]">
-        <span data-testid="platform-email" class="text-[length:var(--cd-text-sm)]">
+      <div class="ml-auto flex items-center gap-[var(--lk-space-md)]">
+        <span data-testid="platform-email" class="text-[length:var(--lk-text-sm)]">
           {{ auth.user?.email }}
         </span>
         <Button
@@ -50,53 +50,53 @@ async function uitloggen() {
     <div class="flex flex-1 min-h-0">
       <aside
         id="beheer-navigatie"
-        class="w-60 shrink-0 bg-[var(--cd-color-surface)] border-r border-[var(--cd-color-border)] p-[var(--cd-space-md)]"
+        class="w-60 shrink-0 bg-[var(--lk-color-surface)] border-r border-[var(--lk-color-border)] p-[var(--lk-space-md)]"
       >
-        <nav aria-label="Beheernavigatie" class="flex flex-col gap-[var(--cd-space-xs)]">
+        <nav aria-label="Beheernavigatie" class="flex flex-col gap-[var(--lk-space-xs)]">
           <span
-            class="px-[var(--cd-space-md)] text-[length:var(--cd-text-xs)] font-semibold uppercase tracking-wide text-[var(--cd-color-text-muted)]"
+            class="px-[var(--lk-space-md)] text-[length:var(--lk-text-xs)] font-semibold uppercase tracking-wide text-[var(--lk-color-text-muted)]"
           >
             Platformbeheer
           </span>
           <router-link
             :to="{ name: 'beheer-contractconfig' }"
             data-testid="nav-contractconfig"
-            class="rounded-[var(--cd-radius-nav)] px-[var(--cd-space-md)] py-[var(--cd-space-sm)] text-[var(--cd-color-text)] hover:bg-[var(--cd-color-accent)] aria-[current=page]:bg-[var(--cd-color-accent)] aria-[current=page]:font-semibold"
+            class="rounded-[var(--lk-radius-nav)] px-[var(--lk-space-md)] py-[var(--lk-space-sm)] text-[var(--lk-color-text)] hover:bg-[var(--lk-color-accent)] aria-[current=page]:bg-[var(--lk-color-accent)] aria-[current=page]:font-semibold"
           >
             Contractcatalogus
           </router-link>
           <router-link
             :to="{ name: 'beheer-componentconfig' }"
             data-testid="nav-componentconfig"
-            class="rounded-[var(--cd-radius-nav)] px-[var(--cd-space-md)] py-[var(--cd-space-sm)] text-[var(--cd-color-text)] hover:bg-[var(--cd-color-accent)] aria-[current=page]:bg-[var(--cd-color-accent)] aria-[current=page]:font-semibold"
+            class="rounded-[var(--lk-radius-nav)] px-[var(--lk-space-md)] py-[var(--lk-space-sm)] text-[var(--lk-color-text)] hover:bg-[var(--lk-color-accent)] aria-[current=page]:bg-[var(--lk-color-accent)] aria-[current=page]:font-semibold"
           >
             Componentcatalogus
           </router-link>
           <router-link
             :to="{ name: 'beheer-relatiekenmerkconfig' }"
             data-testid="nav-relatiekenmerkconfig"
-            class="rounded-[var(--cd-radius-nav)] px-[var(--cd-space-md)] py-[var(--cd-space-sm)] text-[var(--cd-color-text)] hover:bg-[var(--cd-color-accent)] aria-[current=page]:bg-[var(--cd-color-accent)] aria-[current=page]:font-semibold"
+            class="rounded-[var(--lk-radius-nav)] px-[var(--lk-space-md)] py-[var(--lk-space-sm)] text-[var(--lk-color-text)] hover:bg-[var(--lk-color-accent)] aria-[current=page]:bg-[var(--lk-color-accent)] aria-[current=page]:font-semibold"
           >
             Relatie-kenmerk-catalogus
           </router-link>
           <router-link
             :to="{ name: 'beheer-vraagbetekenisconfig' }"
             data-testid="nav-vraagbetekenisconfig"
-            class="rounded-[var(--cd-radius-nav)] px-[var(--cd-space-md)] py-[var(--cd-space-sm)] text-[var(--cd-color-text)] hover:bg-[var(--cd-color-accent)] aria-[current=page]:bg-[var(--cd-color-accent)] aria-[current=page]:font-semibold"
+            class="rounded-[var(--lk-radius-nav)] px-[var(--lk-space-md)] py-[var(--lk-space-sm)] text-[var(--lk-color-text)] hover:bg-[var(--lk-color-accent)] aria-[current=page]:bg-[var(--lk-color-accent)] aria-[current=page]:font-semibold"
           >
             Vraagbetekenis-catalogus
           </router-link>
           <router-link
             :to="{ name: 'beheer-partijsoortconfig' }"
             data-testid="nav-partijsoortconfig"
-            class="rounded-[var(--cd-radius-nav)] px-[var(--cd-space-md)] py-[var(--cd-space-sm)] text-[var(--cd-color-text)] hover:bg-[var(--cd-color-accent)] aria-[current=page]:bg-[var(--cd-color-accent)] aria-[current=page]:font-semibold"
+            class="rounded-[var(--lk-radius-nav)] px-[var(--lk-space-md)] py-[var(--lk-space-sm)] text-[var(--lk-color-text)] hover:bg-[var(--lk-color-accent)] aria-[current=page]:bg-[var(--lk-color-accent)] aria-[current=page]:font-semibold"
           >
             Partijsoort-catalogus
           </router-link>
         </nav>
       </aside>
 
-      <main class="flex-1 min-w-0 p-[var(--cd-space-xl)]">
+      <main class="flex-1 min-w-0 p-[var(--lk-space-xl)]">
         <router-view />
       </main>
     </div>

@@ -168,26 +168,26 @@ laad()
 
 <template>
   <section class="card" aria-labelledby="sectie-opbouw">
-    <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
-      <h2 id="sectie-opbouw" class="text-[length:var(--cd-text-lg)] font-semibold">Opbouw</h2>
+    <div class="flex items-center gap-[var(--lk-space-md)] mb-[var(--lk-space-sm)]">
+      <h2 id="sectie-opbouw" class="text-[length:var(--lk-text-lg)] font-semibold">Opbouw</h2>
       <Button v-if="mag" label="Draait-op toevoegen" severity="secondary" data-testid="st-toevoegen" class="ml-auto" @click="openNieuw" />
     </div>
 
-    <p v-if="fout" role="alert" data-testid="st-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ fout }}</p>
+    <p v-if="fout" role="alert" data-testid="st-fout" class="text-[var(--lk-color-danger)] mb-[var(--lk-space-sm)]">{{ fout }}</p>
 
     <!-- Draait op: dit component steunt op … -->
-    <h3 class="font-semibold mt-[var(--cd-space-sm)]">Draait op</h3>
+    <h3 class="font-semibold mt-[var(--lk-space-sm)]">Draait op</h3>
     <DataTable :value="draaitOp" data-testid="st-tabel-draait-op">
       <Column header="Component">
         <template #body="{ data }">
-          <router-link :to="buurRoute(data)" class="text-[var(--cd-color-primary)] hover:underline">{{ data.naam }}</router-link>
+          <router-link :to="buurRoute(data)" class="text-[var(--lk-color-primary)] hover:underline">{{ data.naam }}</router-link>
         </template>
       </Column>
       <Column header="Type"><template #body="{ data }"><Tag :value="typeTag(data)" severity="secondary" /></template></Column>
       <Column header="Relatie"><template #body="{ data }">{{ data.relatietype_label }}</template></Column>
       <Column header="">
         <template #body="{ data }">
-          <div v-if="mag" class="flex gap-[var(--cd-space-sm)]">
+          <div v-if="mag" class="flex gap-[var(--lk-space-sm)]">
             <Button label="Bewerken" severity="secondary" :data-testid="`st-bewerk-${data.structuur_id}`" @click="(e) => openBewerken(e, data)" />
             <Button label="Ontkoppelen" severity="danger" :data-testid="`st-ontkoppel-${data.structuur_id}`" @click="(e) => vraagVerwijder(e, data)" />
           </div>
@@ -197,18 +197,18 @@ laad()
     </DataTable>
 
     <!-- Gebruikt door: wie steunt op dit component -->
-    <h3 class="font-semibold mt-[var(--cd-space-md)]">Gebruikt door</h3>
+    <h3 class="font-semibold mt-[var(--lk-space-md)]">Gebruikt door</h3>
     <DataTable :value="gebruiktDoor" data-testid="st-tabel-gebruikt-door">
       <Column header="Component">
         <template #body="{ data }">
-          <router-link :to="buurRoute(data)" class="text-[var(--cd-color-primary)] hover:underline">{{ data.naam }}</router-link>
+          <router-link :to="buurRoute(data)" class="text-[var(--lk-color-primary)] hover:underline">{{ data.naam }}</router-link>
         </template>
       </Column>
       <Column header="Type"><template #body="{ data }"><Tag :value="typeTag(data)" severity="secondary" /></template></Column>
       <Column header="Relatie"><template #body="{ data }">{{ data.relatietype_label }}</template></Column>
       <Column header="">
         <template #body="{ data }">
-          <div v-if="mag" class="flex gap-[var(--cd-space-sm)]">
+          <div v-if="mag" class="flex gap-[var(--lk-space-sm)]">
             <Button label="Bewerken" severity="secondary" :data-testid="`st-bewerk-${data.structuur_id}`" @click="(e) => openBewerken(e, data)" />
             <Button label="Ontkoppelen" severity="danger" :data-testid="`st-ontkoppel-${data.structuur_id}`" @click="(e) => vraagVerwijder(e, data)" />
           </div>
@@ -218,8 +218,8 @@ laad()
     </DataTable>
 
     <Dialog v-model:visible="dialogOpen" modal :closable="false" :header="bewerkenId ? 'Draait-op bewerken' : 'Draait-op toevoegen'" data-testid="st-dialog" @show="focusEerste" @hide="onHide">
-      <form class="flex flex-col gap-[var(--cd-space-md)] min-w-[22rem]" data-testid="st-form" @submit.prevent="opslaan">
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+      <form class="flex flex-col gap-[var(--lk-space-md)] min-w-[22rem]" data-testid="st-form" @submit.prevent="opslaan">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="st-doel" class="font-semibold">Draait op (component) *</label>
           <ZoekSelect
             id="st-doel"
@@ -231,13 +231,13 @@ laad()
             :invalid="!!fouten.op_component_id"
             placeholder="Zoek een component…"
           />
-          <span v-if="fouten.op_component_id" role="alert" data-testid="st-fout-doel" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.op_component_id }}</span>
+          <span v-if="fouten.op_component_id" role="alert" data-testid="st-fout-doel" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten.op_component_id }}</span>
         </div>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="st-omschrijving" class="font-semibold">Omschrijving</label>
           <Textarea id="st-omschrijving" v-model="form.omschrijving" rows="3" data-testid="st-veld-omschrijving" />
         </div>
-        <div class="flex gap-[var(--cd-space-md)]">
+        <div class="flex gap-[var(--lk-space-md)]">
           <Button type="submit" label="Opslaan" data-testid="st-opslaan" :disabled="bezig" />
           <Button type="button" label="Annuleren" severity="secondary" @click="dialogOpen = false" />
         </div>
@@ -245,8 +245,8 @@ laad()
     </Dialog>
 
     <Dialog v-model:visible="verwijderOpen" modal header="Relatie ontkoppelen" data-testid="st-ontkoppel-dialog" @hide="onHide">
-      <p class="mb-[var(--cd-space-md)] max-w-prose">Deze structuurrelatie met <strong>{{ teVerwijderen?.naam }}</strong> verwijderen? De componenten zelf blijven bestaan.</p>
-      <div class="flex justify-end gap-[var(--cd-space-md)]">
+      <p class="mb-[var(--lk-space-md)] max-w-prose">Deze structuurrelatie met <strong>{{ teVerwijderen?.naam }}</strong> verwijderen? De componenten zelf blijven bestaan.</p>
+      <div class="flex justify-end gap-[var(--lk-space-md)]">
         <Button label="Annuleren" severity="secondary" @click="verwijderOpen = false" />
         <Button label="Ontkoppelen" severity="danger" data-testid="st-ontkoppel-bevestig" :disabled="bezig" @click="bevestigVerwijder" />
       </div>

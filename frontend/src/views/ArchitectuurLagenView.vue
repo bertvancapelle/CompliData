@@ -81,20 +81,20 @@ onMounted(laadAlles)
 <template>
   <div data-testid="arch-lagen">
     <!-- Controls: migratie-toggle + aspect-filter -->
-    <div class="mb-[var(--cd-space-md)] flex flex-wrap items-center gap-[var(--cd-space-lg)] rounded-[var(--cd-radius-card)] bg-[var(--cd-color-surface)] p-[var(--cd-space-md)] shadow-[var(--cd-shadow-sm)]">
-      <label class="flex items-center gap-2 text-[length:var(--cd-text-sm)]">
+    <div class="mb-[var(--lk-space-md)] flex flex-wrap items-center gap-[var(--lk-space-lg)] rounded-[var(--lk-radius-card)] bg-[var(--lk-color-surface)] p-[var(--lk-space-md)] shadow-[var(--lk-shadow-sm)]">
+      <label class="flex items-center gap-2 text-[length:var(--lk-text-sm)]">
         <input type="checkbox" :checked="toonMigratie" data-testid="arch-lagen-migratie" @change="toonMigratie = !toonMigratie" />
         Migratie-laag tonen
       </label>
       <div class="flex items-center gap-1" role="group" aria-label="Aspect-filter">
-        <span class="text-[length:var(--cd-text-xs)] font-semibold uppercase tracking-wide text-[var(--cd-color-text-muted)]">Aspect</span>
+        <span class="text-[length:var(--lk-text-xs)] font-semibold uppercase tracking-wide text-[var(--lk-color-text-muted)]">Aspect</span>
         <button
           v-for="o in ASPECT_KNOPPEN"
           :key="o.waarde"
           type="button"
           :data-testid="`arch-lagen-aspect-${o.waarde || 'alle'}`"
           :aria-pressed="aspectFilter === o.waarde"
-          :class="['rounded-[var(--cd-radius-btn)] px-[var(--cd-space-sm)] py-0.5 text-[length:var(--cd-text-sm)]', aspectFilter === o.waarde ? 'bg-[var(--cd-color-primary)] text-white' : 'bg-[var(--cd-color-accent)]']"
+          :class="['rounded-[var(--lk-radius-btn)] px-[var(--lk-space-sm)] py-0.5 text-[length:var(--lk-text-sm)]', aspectFilter === o.waarde ? 'bg-[var(--lk-color-primary)] text-white' : 'bg-[var(--lk-color-accent)]']"
           @click="aspectFilter = o.waarde"
         >
           {{ o.tekst }}
@@ -102,7 +102,7 @@ onMounted(laadAlles)
       </div>
     </div>
 
-    <p v-if="fout" role="alert" data-testid="arch-lagen-fout" class="mb-[var(--cd-space-md)] rounded-[var(--cd-radius-badge)] border border-[var(--cd-color-danger)] bg-[var(--cd-color-danger)]/10 px-[var(--cd-space-md)] py-[var(--cd-space-sm)] text-[var(--cd-color-danger)]">
+    <p v-if="fout" role="alert" data-testid="arch-lagen-fout" class="mb-[var(--lk-space-md)] rounded-[var(--lk-radius-badge)] border border-[var(--lk-color-danger)] bg-[var(--lk-color-danger)]/10 px-[var(--lk-space-md)] py-[var(--lk-space-sm)] text-[var(--lk-color-danger)]">
       {{ fout }}
     </p>
 
@@ -111,10 +111,10 @@ onMounted(laadAlles)
       v-for="b in zichtbareBanden"
       :key="b.laag"
       :data-testid="`arch-band-${b.laag}`"
-      class="mb-[var(--cd-space-sm)] rounded-[var(--cd-radius-card)] border-l-4 p-[var(--cd-space-md)]"
+      class="mb-[var(--lk-space-sm)] rounded-[var(--lk-radius-card)] border-l-4 p-[var(--lk-space-md)]"
       :style="{ borderLeftColor: b.kleur, backgroundColor: b.kleur + '12' }"
     >
-      <p class="mb-[var(--cd-space-sm)] text-[length:var(--cd-text-xs)] font-semibold uppercase tracking-wide" :style="{ color: b.kleur }">
+      <p class="mb-[var(--lk-space-sm)] text-[length:var(--lk-text-xs)] font-semibold uppercase tracking-wide" :style="{ color: b.kleur }">
         {{ laagLabel(b.laag) }}
       </p>
       <div class="flex flex-wrap gap-2">
@@ -125,23 +125,23 @@ onMounted(laadAlles)
           :to="elementRoute(el) || undefined"
           :data-testid="`arch-pill-${el.id}`"
           :title="el.naam_secundair || el.naam"
-          class="inline-flex items-center border-2 bg-[var(--cd-color-surface)] px-[var(--cd-space-sm)] py-0.5 text-[length:var(--cd-text-sm)] focus:outline-2 focus:outline-offset-2 focus:outline-[var(--cd-color-primary)]"
-          :class="[aspectClass(el.aspect), elementRoute(el) ? 'hover:underline cursor-pointer' : '', el.aspect === 'behavior' ? '' : 'rounded-[var(--cd-radius-btn)]']"
+          class="inline-flex items-center border-2 bg-[var(--lk-color-surface)] px-[var(--lk-space-sm)] py-0.5 text-[length:var(--lk-text-sm)] focus:outline-2 focus:outline-offset-2 focus:outline-[var(--lk-color-primary)]"
+          :class="[aspectClass(el.aspect), elementRoute(el) ? 'hover:underline cursor-pointer' : '', el.aspect === 'behavior' ? '' : 'rounded-[var(--lk-radius-btn)]']"
           :style="{ borderColor: b.kleur }"
         >
           {{ el.naam }}
         </component>
-        <span v-if="!(perLaag[b.laag] || []).length" class="text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">— geen elementen</span>
+        <span v-if="!(perLaag[b.laag] || []).length" class="text-[length:var(--lk-text-xs)] text-[var(--lk-color-text-muted)]">— geen elementen</span>
       </div>
     </div>
 
     <!-- Legenda (één keer) -->
-    <div data-testid="arch-lagen-legenda" class="mt-[var(--cd-space-md)] flex flex-wrap items-center gap-[var(--cd-space-lg)] text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]">
-      <span class="flex items-center gap-2"><span class="inline-block rounded-[var(--cd-radius-btn)] border-2 border-solid border-[var(--cd-color-text-muted)] px-2">Aa</span> Actieve structuur</span>
-      <span class="flex items-center gap-2"><span class="inline-block rounded-[var(--cd-radius-btn)] border-2 border-dashed border-[var(--cd-color-text-muted)] px-2">Aa</span> Passieve structuur</span>
-      <span class="flex items-center gap-2"><span class="inline-block rounded-full border-2 border-solid border-[var(--cd-color-text-muted)] px-2">Aa</span> Gedrag</span>
+    <div data-testid="arch-lagen-legenda" class="mt-[var(--lk-space-md)] flex flex-wrap items-center gap-[var(--lk-space-lg)] text-[length:var(--lk-text-sm)] text-[var(--lk-color-text-muted)]">
+      <span class="flex items-center gap-2"><span class="inline-block rounded-[var(--lk-radius-btn)] border-2 border-solid border-[var(--lk-color-text-muted)] px-2">Aa</span> Actieve structuur</span>
+      <span class="flex items-center gap-2"><span class="inline-block rounded-[var(--lk-radius-btn)] border-2 border-dashed border-[var(--lk-color-text-muted)] px-2">Aa</span> Passieve structuur</span>
+      <span class="flex items-center gap-2"><span class="inline-block rounded-full border-2 border-solid border-[var(--lk-color-text-muted)] px-2">Aa</span> Gedrag</span>
     </div>
 
-    <p v-if="laden" data-testid="arch-lagen-laden" class="mt-[var(--cd-space-md)] text-[var(--cd-color-text-muted)]">Laden…</p>
+    <p v-if="laden" data-testid="arch-lagen-laden" class="mt-[var(--lk-space-md)] text-[var(--lk-color-text-muted)]">Laden…</p>
   </div>
 </template>

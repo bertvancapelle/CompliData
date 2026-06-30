@@ -179,10 +179,10 @@ onMounted(async () => {
 
 <template>
   <section aria-labelledby="componenten-titel">
-    <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-md)]">
+    <div class="flex items-center gap-[var(--lk-space-md)] mb-[var(--lk-space-md)]">
       <h1
         id="componenten-titel"
-        class="text-[length:var(--cd-text-2xl)] font-semibold text-[var(--cd-color-primary)]"
+        class="text-[length:var(--lk-text-2xl)] font-semibold text-[var(--lk-color-primary)]"
       >
         Componenten
       </h1>
@@ -198,10 +198,10 @@ onMounted(async () => {
     <!-- Filterbalk (CD017) — AND-gecombineerd; elke wijziging reset de cursor. -->
     <div
       data-testid="filterbalk"
-      class="mb-[var(--cd-space-md)] flex flex-wrap items-end gap-[var(--cd-space-md)] rounded-[var(--cd-radius-card)] bg-[var(--cd-color-surface)] p-[var(--cd-space-md)] shadow-[var(--cd-shadow-sm)]"
+      class="mb-[var(--lk-space-md)] flex flex-wrap items-end gap-[var(--lk-space-md)] rounded-[var(--lk-radius-card)] bg-[var(--lk-color-surface)] p-[var(--lk-space-md)] shadow-[var(--lk-shadow-sm)]"
     >
-      <label class="flex flex-col gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
-        <span class="text-[length:var(--cd-text-xs)] font-semibold uppercase tracking-wide text-[var(--cd-color-text-muted)]">Status</span>
+      <label class="flex flex-col gap-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]">
+        <span class="text-[length:var(--lk-text-xs)] font-semibold uppercase tracking-wide text-[var(--lk-color-text-muted)]">Status</span>
         <!-- Multi-select dropdown (zelfde stijl als Type/Laag/Hosting); meervoudige
              selectie behouden (filterStatus blijft een array → server-side IN). -->
         <MultiSelectDropdown
@@ -215,13 +215,13 @@ onMounted(async () => {
         />
       </label>
 
-      <label class="flex flex-col gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
-        <span class="text-[length:var(--cd-text-xs)] font-semibold uppercase tracking-wide text-[var(--cd-color-text-muted)]">Type</span>
+      <label class="flex flex-col gap-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]">
+        <span class="text-[length:var(--lk-text-xs)] font-semibold uppercase tracking-wide text-[var(--lk-color-text-muted)]">Type</span>
         <select
           v-model="filterType"
           data-testid="filter-type"
           aria-label="Filter op componenttype"
-          class="rounded-[var(--cd-radius-btn)] border border-[var(--cd-color-border)] bg-[var(--cd-color-surface)] px-[var(--cd-space-sm)] py-1 focus:outline-2 focus:outline-offset-2 focus:outline-[var(--cd-color-primary)]"
+          class="rounded-[var(--lk-radius-btn)] border border-[var(--lk-color-border)] bg-[var(--lk-color-surface)] px-[var(--lk-space-sm)] py-1 focus:outline-2 focus:outline-offset-2 focus:outline-[var(--lk-color-primary)]"
           @change="herfilter"
         >
           <option value="">Alle</option>
@@ -229,13 +229,13 @@ onMounted(async () => {
         </select>
       </label>
 
-      <label class="flex flex-col gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
-        <span class="text-[length:var(--cd-text-xs)] font-semibold uppercase tracking-wide text-[var(--cd-color-text-muted)]">Laag</span>
+      <label class="flex flex-col gap-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]">
+        <span class="text-[length:var(--lk-text-xs)] font-semibold uppercase tracking-wide text-[var(--lk-color-text-muted)]">Laag</span>
         <select
           v-model="filterLaag"
           data-testid="filter-laag"
           aria-label="Filter op ArchiMate-laag"
-          class="rounded-[var(--cd-radius-btn)] border border-[var(--cd-color-border)] bg-[var(--cd-color-surface)] px-[var(--cd-space-sm)] py-1 focus:outline-2 focus:outline-offset-2 focus:outline-[var(--cd-color-primary)]"
+          class="rounded-[var(--lk-radius-btn)] border border-[var(--lk-color-border)] bg-[var(--lk-color-surface)] px-[var(--lk-space-sm)] py-1 focus:outline-2 focus:outline-offset-2 focus:outline-[var(--lk-color-primary)]"
           @change="herfilter"
         >
           <option value="">Alle</option>
@@ -243,13 +243,13 @@ onMounted(async () => {
         </select>
       </label>
 
-      <label class="flex flex-col gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
-        <span class="text-[length:var(--cd-text-xs)] font-semibold uppercase tracking-wide text-[var(--cd-color-text-muted)]">Hosting</span>
+      <label class="flex flex-col gap-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]">
+        <span class="text-[length:var(--lk-text-xs)] font-semibold uppercase tracking-wide text-[var(--lk-color-text-muted)]">Hosting</span>
         <select
           v-model="filterHosting"
           data-testid="filter-hosting"
           aria-label="Filter op hostingmodel"
-          class="rounded-[var(--cd-radius-btn)] border border-[var(--cd-color-border)] bg-[var(--cd-color-surface)] px-[var(--cd-space-sm)] py-1 focus:outline-2 focus:outline-offset-2 focus:outline-[var(--cd-color-primary)]"
+          class="rounded-[var(--lk-radius-btn)] border border-[var(--lk-color-border)] bg-[var(--lk-color-surface)] px-[var(--lk-space-sm)] py-1 focus:outline-2 focus:outline-offset-2 focus:outline-[var(--lk-color-primary)]"
           @change="herfilter"
         >
           <option value="">Alle</option>
@@ -257,8 +257,8 @@ onMounted(async () => {
         </select>
       </label>
 
-      <label class="flex flex-col gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
-        <span class="text-[length:var(--cd-text-xs)] font-semibold uppercase tracking-wide text-[var(--cd-color-text-muted)]">Eigenaar</span>
+      <label class="flex flex-col gap-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]">
+        <span class="text-[length:var(--lk-text-xs)] font-semibold uppercase tracking-wide text-[var(--lk-color-text-muted)]">Eigenaar</span>
         <ZoekSelect
           testid="filter-eigenaar"
           v-model="filterEigenaarId"
@@ -268,8 +268,8 @@ onMounted(async () => {
         />
       </label>
 
-      <label class="flex flex-col gap-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]">
-        <span class="text-[length:var(--cd-text-xs)] font-semibold uppercase tracking-wide text-[var(--cd-color-text-muted)]">Naam</span>
+      <label class="flex flex-col gap-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]">
+        <span class="text-[length:var(--lk-text-xs)] font-semibold uppercase tracking-wide text-[var(--lk-color-text-muted)]">Naam</span>
         <input
           v-model="filterZoek"
           type="search"
@@ -277,7 +277,7 @@ onMounted(async () => {
           data-testid="filter-zoek"
           aria-label="Zoek op componentnaam"
           placeholder="zoeken…"
-          class="rounded-[var(--cd-radius-btn)] border border-[var(--cd-color-border)] bg-[var(--cd-color-surface)] px-[var(--cd-space-sm)] py-1 focus:outline-2 focus:outline-offset-2 focus:outline-[var(--cd-color-primary)]"
+          class="rounded-[var(--lk-radius-btn)] border border-[var(--lk-color-border)] bg-[var(--lk-color-surface)] px-[var(--lk-space-sm)] py-1 focus:outline-2 focus:outline-offset-2 focus:outline-[var(--lk-color-primary)]"
           @input="herfilterDebounced"
         />
       </label>
@@ -286,7 +286,7 @@ onMounted(async () => {
         v-if="heeftFilters"
         type="button"
         data-testid="filters-wissen"
-        class="ml-auto rounded-[var(--cd-radius-btn)] border border-[var(--cd-color-border)] px-[var(--cd-space-md)] py-1 text-[length:var(--cd-text-sm)] hover:bg-[var(--cd-color-accent)] focus:outline-2 focus:outline-offset-2 focus:outline-[var(--cd-color-primary)]"
+        class="ml-auto rounded-[var(--lk-radius-btn)] border border-[var(--lk-color-border)] px-[var(--lk-space-md)] py-1 text-[length:var(--lk-text-sm)] hover:bg-[var(--lk-color-accent)] focus:outline-2 focus:outline-offset-2 focus:outline-[var(--lk-color-primary)]"
         @click="wisFilters"
       >
         Filters wissen
@@ -297,7 +297,7 @@ onMounted(async () => {
       v-if="fout"
       role="alert"
       data-testid="lijst-fout"
-      class="mb-[var(--cd-space-md)] rounded-[var(--cd-radius-badge)] border border-[var(--cd-color-danger)] bg-[var(--cd-color-danger)]/10 px-[var(--cd-space-md)] py-[var(--cd-space-sm)] text-[var(--cd-color-danger)]"
+      class="mb-[var(--lk-space-md)] rounded-[var(--lk-radius-badge)] border border-[var(--lk-color-danger)] bg-[var(--lk-color-danger)]/10 px-[var(--lk-space-md)] py-[var(--lk-space-sm)] text-[var(--lk-color-danger)]"
     >
       {{ fout }}
     </p>
@@ -306,7 +306,7 @@ onMounted(async () => {
     <div
       v-if="filterKlaarverklaring || filterAfwijking"
       data-testid="klaarverklaring-filter-chip"
-      class="mb-[var(--cd-space-md)] inline-flex items-center gap-[var(--cd-space-sm)] rounded-[var(--cd-radius-badge)] bg-[var(--cd-color-accent)] px-[var(--cd-space-md)] py-[var(--cd-space-xs)] text-[length:var(--cd-text-sm)]"
+      class="mb-[var(--lk-space-md)] inline-flex items-center gap-[var(--lk-space-sm)] rounded-[var(--lk-radius-badge)] bg-[var(--lk-color-accent)] px-[var(--lk-space-md)] py-[var(--lk-space-xs)] text-[length:var(--lk-text-sm)]"
     >
       <span>{{ filterAfwijking ? 'Klaar verklaard, checklist nog niet compleet' : 'Klaar verklaard' }}</span>
       <button type="button" data-testid="klaarverklaring-filter-wis" aria-label="Filter wissen" class="font-semibold hover:underline" @click="wisKlaarverklaringFilter">×</button>
@@ -320,7 +320,7 @@ onMounted(async () => {
       :sort-field="sortVeld"
       :sort-order="primeSortOrder"
       data-testid="componenten-tabel"
-      class="bg-[var(--cd-color-surface)] rounded-[var(--cd-radius-card)] shadow-[var(--cd-shadow-sm)]"
+      class="bg-[var(--lk-color-surface)] rounded-[var(--lk-radius-card)] shadow-[var(--lk-shadow-sm)]"
       @sort="onSort"
     >
       <Column field="naam" header="Naam" sortable>
@@ -328,7 +328,7 @@ onMounted(async () => {
           <router-link
             :to="rijRoute(data)"
             data-testid="rij-link"
-            class="text-[var(--cd-color-primary)] font-medium hover:underline focus:outline-2 focus:outline-offset-2 focus:outline-[var(--cd-color-primary)]"
+            class="text-[var(--lk-color-primary)] font-medium hover:underline focus:outline-2 focus:outline-offset-2 focus:outline-[var(--lk-color-primary)]"
           >
             {{ data.naam }}
           </router-link>
@@ -344,7 +344,7 @@ onMounted(async () => {
           <span data-testid="rij-laag">{{ laagLabel(data.laag) }}</span>
           <span
             v-if="elementLabel(data.archimate_element)"
-            class="block text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]"
+            class="block text-[length:var(--lk-text-xs)] text-[var(--lk-color-text-muted)]"
           >
             {{ elementLabel(data.archimate_element) }}
           </span>
@@ -356,7 +356,7 @@ onMounted(async () => {
             v-if="data.eigenaar_organisatie_id"
             :to="{ name: 'partij-detail', params: { id: data.eigenaar_organisatie_id } }"
             :data-testid="`comp-eigenaar-org-link-${data.id}`"
-            class="text-[var(--cd-color-primary)] hover:underline"
+            class="text-[var(--lk-color-primary)] hover:underline"
           >{{ data.eigenaar_organisatie_naam }}</router-link>
           <span v-else>—</span>
         </template>
@@ -387,7 +387,7 @@ onMounted(async () => {
       </template>
     </DataTable>
 
-    <div class="mt-[var(--cd-space-md)] flex items-center gap-[var(--cd-space-md)]">
+    <div class="mt-[var(--lk-space-md)] flex items-center gap-[var(--lk-space-md)]">
       <Button
         v-if="cursor"
         label="Meer laden"
@@ -396,7 +396,7 @@ onMounted(async () => {
         :disabled="laden"
         @click="laad()"
       />
-      <span v-if="laden && items.length" data-testid="lijst-laden" class="text-[var(--cd-color-text-muted)] text-[length:var(--cd-text-sm)]">
+      <span v-if="laden && items.length" data-testid="lijst-laden" class="text-[var(--lk-color-text-muted)] text-[length:var(--lk-text-sm)]">
         Laden…
       </span>
     </div>

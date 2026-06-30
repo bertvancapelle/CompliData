@@ -24,11 +24,11 @@ preset nodig (de DataTable-preset stuurt header/body/empty).
 
 ## Design-tokens + styling
 
-- Altijd de **`--cd-`-prefix** (uit `src/themes/base.css`). Geen `<style>`-blokken;
-  uitsluitend Tailwind-utilities + `--cd-`-tokens. `assets/main.css` importeert
+- Altijd de **`--lk-`-prefix** (uit `src/themes/base.css`). Geen `<style>`-blokken;
+  uitsluitend Tailwind-utilities + `--lk-`-tokens. `assets/main.css` importeert
   Tailwind v4 + `base.css` + globale resets/utilities (o.a. `.card`).
 - Tailwind arbitrary aria-variant voor de actieve nav-link:
-  `aria-[current=page]:bg-[var(--cd-color-accent)]`.
+  `aria-[current=page]:bg-[var(--lk-color-accent)]`.
 
 ## Frontend-module-loading (Optie A — V003)
 
@@ -148,13 +148,13 @@ toegestane variatie is:
 (`ml-auto`/`mt-*`) is toegestaan. Alle knoppen lopen via het ene preset; zo kan een
 hoogteafwijking structureel niet meer ontstaan.
 
-**Tabbladen** (`AppTabs.vue`) volgen dezelfde kleurtaal én hoogte (`h-10`, `--cd-radius-btn`):
-omlijnd = beschikbaar, lichtblauw (`--cd-color-primary-50/700`) = hover, donkerblauw
-(`--cd-color-primary`, wit, semibold) = gekozen.
+**Tabbladen** (`AppTabs.vue`) volgen dezelfde kleurtaal én hoogte (`h-10`, `--lk-radius-btn`):
+omlijnd = beschikbaar, lichtblauw (`--lk-color-primary-50/700`) = hover, donkerblauw
+(`--lk-color-primary`, wit, semibold) = gekozen.
 
 ## UI-interactiestates + borging (niet-onderhandelbaar)
 
-**Interactiestates.** Hover/focus/selected lopen uitsluitend via `--cd-`-tokens en de centrale
+**Interactiestates.** Hover/focus/selected lopen uitsluitend via `--lk-`-tokens en de centrale
 componenten (`presets/Button.js`, `AppTabs.vue`). Geen losse kleuren of state-klassen op
 call-sites.
 
@@ -166,7 +166,7 @@ klassen **stil** in de productie-CSS (bewezen: zonder `@source` vallen de tab-ho
 `@source`-regel toevoegen.
 
 **Borging — drie lagen (`frontend/tests/` + `npm run test:css-build`):**
-1. **Token-contracttest** (`tokens.contract.test.js`) — afgesproken `--cd-`-tokens bestaan en zijn
+1. **Token-contracttest** (`tokens.contract.test.js`) — afgesproken `--lk-`-tokens bestaan en zijn
    niet-leeg.
 2. **Component-render-state-test** (`interactiestates.test.js`) — Button-preset (elke variant zet
    de juiste token-klasse + vaste `h-10`) en AppTabs (states op de juiste — klikbare — `role="tab"`,
@@ -358,7 +358,7 @@ Vang een toch-403 netjes af (Toast). Nooit tokens in `localStorage` (httpOnly).
   **Automatic activation**: ←/→ (↑/↓ bij `orientation="vertical"`) + Home/End verplaatsen de focus
   **én** selecteren direct (panelen zijn gemount, dus goedkoop); Enter/Space selecteren het
   gefocuste tabblad eveneens (idempotent — het is dan al geselecteerd). Props
-  `tabs`/`modelValue`/`ariaLabel`/`orientation`/`idPrefix`; `--cd-`-tokens, geen `<style>`. [CD022]
+  `tabs`/`modelValue`/`ariaLabel`/`orientation`/`idPrefix`; `--lk-`-tokens, geen `<style>`. [CD022]
 - **2-laags tabs + deep-link** (ApplicatieDetail, CD022): top- én sub-niveau zijn elk een echte
   `AppTabs`; de actieve tab(s) in de URL via query-params (`?tab=`/`&cat=`), `router.replace`
   (geen history-spam), default = schone URL. Alle panelen blijven **gemount** (`v-show`) → geen
@@ -473,7 +473,7 @@ Vang een toch-403 netjes af (Toast). Nooit tokens in `localStorage` (httpOnly).
   toont de sectie ook read-only voor een gesloten-met-data geval (bv.
   `v-if="dragend === true || lifecycle_status"`).
 - **Dashboard-tegel + doorklik (bestaand patroon).** Een telling = `<router-link class="card …">`
-  met `:to="{ name: 'component-lijst', query: { … } }"`, `--cd-`-tokens, `data-testid="telling-…"`.
+  met `:to="{ name: 'component-lijst', query: { … } }"`, `--lk-`-tokens, `data-testid="telling-…"`.
   Een afwijkings-/waarschuwingstegel krijgt nadruk via **kleur + icoon + tekstueel label**
   (niet alléén kleur — toegankelijk) en is alléén warn-gekleurd bij `> 0`.
 - **Doorklik-filter end-to-end (V012-les, opnieuw).** Een nieuwe filter MOET in de api-client

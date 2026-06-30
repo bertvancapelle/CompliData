@@ -102,25 +102,25 @@ const typeLabel = (c) => label(CONTRACTTYPE, c)
 
 <template>
   <section aria-labelledby="contract-detail-titel">
-    <button v-if="terugLabel" type="button" data-testid="terug-knop" class="mb-[var(--cd-space-md)] inline-flex items-center text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)] hover:text-[var(--cd-color-primary)] hover:underline focus:outline-2 focus:outline-offset-2 focus:outline-[var(--cd-color-primary)]" @click="gaTerug">{{ terugLabel }}</button>
-    <p v-if="fout" role="alert" data-testid="detail-fout" class="text-[var(--cd-color-danger)]">{{ fout }}</p>
+    <button v-if="terugLabel" type="button" data-testid="terug-knop" class="mb-[var(--lk-space-md)] inline-flex items-center text-[length:var(--lk-text-sm)] text-[var(--lk-color-text-muted)] hover:text-[var(--lk-color-primary)] hover:underline focus:outline-2 focus:outline-offset-2 focus:outline-[var(--lk-color-primary)]" @click="gaTerug">{{ terugLabel }}</button>
+    <p v-if="fout" role="alert" data-testid="detail-fout" class="text-[var(--lk-color-danger)]">{{ fout }}</p>
 
     <template v-if="contract">
-      <div class="mb-[var(--cd-space-md)]">
-        <div class="flex items-center gap-[var(--cd-space-md)]">
-          <h1 id="contract-detail-titel" class="text-[length:var(--cd-text-2xl)] font-semibold text-[var(--cd-color-primary)]">
+      <div class="mb-[var(--lk-space-md)]">
+        <div class="flex items-center gap-[var(--lk-space-md)]">
+          <h1 id="contract-detail-titel" class="text-[length:var(--lk-text-2xl)] font-semibold text-[var(--lk-color-primary)]">
             {{ contract.contractnaam }}
           </h1>
           <Tag data-testid="detail-type" :value="typeLabel(contract.contracttype)" :severity="CONTRACTTYPE_SEVERITY[contract.contracttype] || 'info'" />
         </div>
         <!-- Parent-context: deelcontract → mantelcontract (alleen indien aanwezig). -->
-        <p v-if="contract.mantelcontract_id" data-testid="contract-valt-onder" class="mt-1 text-[length:var(--cd-text-sm)] text-[var(--cd-color-text-muted)]">
+        <p v-if="contract.mantelcontract_id" data-testid="contract-valt-onder" class="mt-1 text-[length:var(--lk-text-sm)] text-[var(--lk-color-text-muted)]">
           Valt onder
-          <router-link :to="{ name: 'contract-detail', params: { id: contract.mantelcontract_id } }" data-testid="valt-onder-link" class="rounded px-1 text-[var(--cd-color-primary)] hover:bg-[var(--cd-color-accent)] hover:underline">{{ mantelNaam || 'mantelcontract' }}</router-link>
+          <router-link :to="{ name: 'contract-detail', params: { id: contract.mantelcontract_id } }" data-testid="valt-onder-link" class="rounded px-1 text-[var(--lk-color-primary)] hover:bg-[var(--lk-color-accent)] hover:underline">{{ mantelNaam || 'mantelcontract' }}</router-link>
         </p>
       </div>
 
-      <dl class="card grid grid-cols-[max-content_1fr] gap-x-[var(--cd-space-lg)] gap-y-[var(--cd-space-sm)]">
+      <dl class="card grid grid-cols-[max-content_1fr] gap-x-[var(--lk-space-lg)] gap-y-[var(--lk-space-sm)]">
         <dt class="font-semibold">Leverancier</dt>
         <dd>{{ contract.leverancier_naam }}</dd>
         <template v-if="contract.mantelcontract_id">
@@ -129,7 +129,7 @@ const typeLabel = (c) => label(CONTRACTTYPE, c)
             <router-link
               :to="{ name: 'contract-detail', params: { id: contract.mantelcontract_id } }"
               data-testid="mantel-link"
-              class="text-[var(--cd-color-primary)] hover:underline focus:outline-2 focus:outline-offset-2 focus:outline-[var(--cd-color-primary)]"
+              class="text-[var(--lk-color-primary)] hover:underline focus:outline-2 focus:outline-offset-2 focus:outline-[var(--lk-color-primary)]"
             >
               {{ mantelNaam || 'Naar mantelcontract' }}
             </router-link>
@@ -146,12 +146,12 @@ const typeLabel = (c) => label(CONTRACTTYPE, c)
         <dt class="font-semibold">Vernieuwingsdatum</dt>
         <dd>{{ contract.vernieuwingsdatum || '—' }}</dd>
         <dt class="font-semibold">Dekking</dt>
-        <dd data-testid="detail-dekking" class="flex flex-wrap gap-[var(--cd-space-xs)]">
+        <dd data-testid="detail-dekking" class="flex flex-wrap gap-[var(--lk-space-xs)]">
           <Tag v-for="o in contract.dekking" :key="o.optie_sleutel" :value="o.label" :severity="o.actief ? 'info' : 'secondary'" />
           <span v-if="!contract.dekking?.length">—</span>
         </dd>
         <dt class="font-semibold">Kostenmodel</dt>
-        <dd data-testid="detail-kostenmodel" class="flex flex-wrap gap-[var(--cd-space-xs)]">
+        <dd data-testid="detail-kostenmodel" class="flex flex-wrap gap-[var(--lk-space-xs)]">
           <Tag v-for="o in contract.kostenmodel" :key="o.optie_sleutel" :value="o.label" :severity="o.actief ? 'info' : 'secondary'" />
           <span v-if="!contract.kostenmodel?.length">—</span>
         </dd>
@@ -161,7 +161,7 @@ const typeLabel = (c) => label(CONTRACTTYPE, c)
         <dd class="whitespace-pre-wrap">{{ contract.toelichting || '—' }}</dd>
       </dl>
 
-      <div class="mt-[var(--cd-space-lg)] flex flex-wrap gap-[var(--cd-space-md)]">
+      <div class="mt-[var(--lk-space-lg)] flex flex-wrap gap-[var(--lk-space-md)]">
         <ObjectHistoriePaneel entiteit-type="contract" :entiteit-id="props.id" />
         <Button v-if="magBewerken" label="Bewerken" data-testid="bewerken-knop" @click="router.push({ name: 'contract-bewerken', params: { id: props.id } })" />
         <Button v-if="magVerwijderen" label="Verwijderen" severity="danger" data-testid="verwijder-knop" @click="verwijderDialog = true" />
@@ -170,17 +170,17 @@ const typeLabel = (c) => label(CONTRACTTYPE, c)
       <!-- §1 — deelcontracten (alleen bij een mantelcontract) -->
       <section
         v-if="isMantel"
-        class="card mt-[var(--cd-space-lg)]"
+        class="card mt-[var(--lk-space-lg)]"
         aria-labelledby="sectie-deelcontracten"
         data-testid="deelcontracten-sectie"
       >
-        <h2 id="sectie-deelcontracten" class="text-[length:var(--cd-text-lg)] font-semibold mb-[var(--cd-space-sm)]">
+        <h2 id="sectie-deelcontracten" class="text-[length:var(--lk-text-lg)] font-semibold mb-[var(--lk-space-sm)]">
           Deelcontracten
         </h2>
         <DataTable :value="deelcontracten" data-testid="deelcontracten-tabel">
           <Column header="Contractnaam">
             <template #body="{ data }">
-              <router-link :to="{ name: 'contract-detail', params: { id: data.id } }" data-testid="deel-link" class="text-[var(--cd-color-primary)] hover:underline">{{ data.contractnaam }}</router-link>
+              <router-link :to="{ name: 'contract-detail', params: { id: data.id } }" data-testid="deel-link" class="text-[var(--lk-color-primary)] hover:underline">{{ data.contractnaam }}</router-link>
             </template>
           </Column>
           <Column header="Leverancier"><template #body="{ data }">{{ data.leverancier_naam }}</template></Column>
@@ -188,7 +188,7 @@ const typeLabel = (c) => label(CONTRACTTYPE, c)
           <Column header="Einddatum"><template #body="{ data }">{{ data.einddatum || '—' }}</template></Column>
           <Column header="Dekking">
             <template #body="{ data }">
-              <span class="flex flex-wrap gap-[var(--cd-space-xs)]">
+              <span class="flex flex-wrap gap-[var(--lk-space-xs)]">
                 <Tag v-for="o in data.dekking" :key="o.optie_sleutel" :value="o.label" :severity="o.actief ? 'info' : 'secondary'" />
                 <span v-if="!data.dekking?.length">—</span>
               </span>
@@ -196,8 +196,8 @@ const typeLabel = (c) => label(CONTRACTTYPE, c)
           </Column>
           <Column header="Componenten">
             <template #body="{ data }">
-              <span class="flex flex-wrap gap-x-[var(--cd-space-sm)]">
-                <router-link v-for="a in data.applicaties" :key="a.id" :to="{ name: 'applicatie-detail', params: { id: a.id } }" :data-testid="`deel-app-${a.id}`" class="text-[var(--cd-color-primary)] hover:underline">{{ a.naam }}</router-link>
+              <span class="flex flex-wrap gap-x-[var(--lk-space-sm)]">
+                <router-link v-for="a in data.applicaties" :key="a.id" :to="{ name: 'applicatie-detail', params: { id: a.id } }" :data-testid="`deel-app-${a.id}`" class="text-[var(--lk-color-primary)] hover:underline">{{ a.naam }}</router-link>
                 <span v-if="!data.applicaties?.length">—</span>
               </span>
             </template>
@@ -208,17 +208,17 @@ const typeLabel = (c) => label(CONTRACTTYPE, c)
 
       <!-- §2 — direct gekoppelde applicaties (elk contracttype) -->
       <section
-        class="card mt-[var(--cd-space-lg)]"
+        class="card mt-[var(--lk-space-lg)]"
         aria-labelledby="sectie-gekoppelde-apps"
         data-testid="gekoppelde-apps-sectie"
       >
-        <h2 id="sectie-gekoppelde-apps" class="text-[length:var(--cd-text-lg)] font-semibold mb-[var(--cd-space-sm)]">
+        <h2 id="sectie-gekoppelde-apps" class="text-[length:var(--lk-text-lg)] font-semibold mb-[var(--lk-space-sm)]">
           Gekoppelde componenten
         </h2>
         <DataTable :value="gekoppeldeApps" data-testid="gekoppelde-apps-tabel">
           <Column header="Component">
             <template #body="{ data }">
-              <router-link :to="{ name: 'applicatie-detail', params: { id: data.applicatie_id } }" data-testid="app-link" class="text-[var(--cd-color-primary)] hover:underline">{{ data.applicatie_naam }}</router-link>
+              <router-link :to="{ name: 'applicatie-detail', params: { id: data.applicatie_id } }" data-testid="app-link" class="text-[var(--lk-color-primary)] hover:underline">{{ data.applicatie_naam }}</router-link>
             </template>
           </Column>
           <Column header="Rol"><template #body="{ data }">{{ data.relatie_rol_label }}</template></Column>
@@ -230,18 +230,18 @@ const typeLabel = (c) => label(CONTRACTTYPE, c)
       </section>
 
       <!-- ADR-024 slice 2b — verantwoordelijkheden (rol-toewijzing), náást de leverancier-weergave -->
-      <div class="mt-[var(--cd-space-lg)]">
+      <div class="mt-[var(--lk-space-lg)]">
         <VerantwoordelijkheidSectie :object-id="props.id" />
       </div>
     </template>
 
     <Dialog v-model:visible="verwijderDialog" modal header="Contract verwijderen" data-testid="verwijder-dialog">
-      <p class="mb-[var(--cd-space-md)] max-w-prose">
+      <p class="mb-[var(--lk-space-md)] max-w-prose">
         Weet je zeker dat je <strong>{{ contract?.contractnaam }}</strong> wilt verwijderen? Een
         mantelcontract met deelcontracten of een aan componenten gekoppeld contract kan niet
         worden verwijderd.
       </p>
-      <div class="flex justify-end gap-[var(--cd-space-md)]">
+      <div class="flex justify-end gap-[var(--lk-space-md)]">
         <Button label="Annuleren" severity="secondary" data-testid="verwijder-annuleer" @click="verwijderDialog = false" />
         <Button label="Definitief verwijderen" severity="danger" data-testid="verwijder-bevestig" :disabled="bezig" @click="bevestigVerwijderen" />
       </div>

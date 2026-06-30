@@ -210,39 +210,39 @@ defineExpose({ items, laad, dekking, dekkingOpties, bewerkContractId, bewerkSleu
 
 <template>
   <section class="card" aria-labelledby="sectie-contracten">
-    <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
-      <h2 id="sectie-contracten" class="text-[length:var(--cd-text-lg)] font-semibold">Contracten</h2>
+    <div class="flex items-center gap-[var(--lk-space-md)] mb-[var(--lk-space-sm)]">
+      <h2 id="sectie-contracten" class="text-[length:var(--lk-text-lg)] font-semibold">Contracten</h2>
       <Button v-if="mag" label="Contract koppelen" severity="secondary" data-testid="ct-koppelen" class="ml-auto" @click="openKoppelen" />
     </div>
 
-    <p v-if="fout" role="alert" data-testid="ct-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ fout }}</p>
+    <p v-if="fout" role="alert" data-testid="ct-fout" class="text-[var(--lk-color-danger)] mb-[var(--lk-space-sm)]">{{ fout }}</p>
 
     <!-- §3 — 'valt onder'-samenvatting boven de tabel -->
-    <p data-testid="ct-valt-onder" class="mb-[var(--cd-space-sm)] text-[length:var(--cd-text-sm)]">
+    <p data-testid="ct-valt-onder" class="mb-[var(--lk-space-sm)] text-[length:var(--lk-text-sm)]">
       <template v-if="valtOnder.length">
         <span class="font-semibold">Valt onder:</span>
         <span v-for="(r, i) in valtOnder" :key="r.koppeling_id">
-          <router-link :to="{ name: 'contract-detail', params: { id: r.contract_id } }" class="text-[var(--cd-color-primary)] hover:underline">{{ r.contractnaam }}</router-link>
+          <router-link :to="{ name: 'contract-detail', params: { id: r.contract_id } }" class="text-[var(--lk-color-primary)] hover:underline">{{ r.contractnaam }}</router-link>
           ({{ r.leverancier_naam }}){{ i < valtOnder.length - 1 ? ', ' : '' }}
         </span>
       </template>
-      <span v-else class="text-[var(--cd-color-text-muted)]">Geen valt-onder-contract geregistreerd.</span>
+      <span v-else class="text-[var(--lk-color-text-muted)]">Geen valt-onder-contract geregistreerd.</span>
     </p>
 
     <!-- LI026 — contractketen App → Contract → Mantelcontract (alleen contracten met een mantel). -->
-    <div v-if="ketens.length" data-testid="ct-ketens" class="mb-[var(--cd-space-sm)] flex flex-col gap-0.5 text-[length:var(--cd-text-sm)]">
+    <div v-if="ketens.length" data-testid="ct-ketens" class="mb-[var(--lk-space-sm)] flex flex-col gap-0.5 text-[length:var(--lk-text-sm)]">
       <p v-for="r in ketens" :key="r.koppeling_id" :data-testid="`ct-keten-${r.koppeling_id}`" class="flex flex-wrap items-center gap-1">
-        <template v-if="appNaam"><span class="font-semibold">{{ appNaam }}</span><span class="text-[var(--cd-color-text-muted)]">→</span></template>
-        <router-link :to="{ name: 'contract-detail', params: { id: r.contract_id } }" class="text-[var(--cd-color-primary)] hover:underline">{{ r.contractnaam }}</router-link>
-        <span class="text-[var(--cd-color-text-muted)]">→</span>
-        <router-link :to="{ name: 'contract-detail', params: { id: r.mantelcontract_id } }" class="text-[var(--cd-color-primary)] hover:underline">{{ r.mantelcontract_naam || 'mantelcontract' }}</router-link>
+        <template v-if="appNaam"><span class="font-semibold">{{ appNaam }}</span><span class="text-[var(--lk-color-text-muted)]">→</span></template>
+        <router-link :to="{ name: 'contract-detail', params: { id: r.contract_id } }" class="text-[var(--lk-color-primary)] hover:underline">{{ r.contractnaam }}</router-link>
+        <span class="text-[var(--lk-color-text-muted)]">→</span>
+        <router-link :to="{ name: 'contract-detail', params: { id: r.mantelcontract_id } }" class="text-[var(--lk-color-primary)] hover:underline">{{ r.mantelcontract_naam || 'mantelcontract' }}</router-link>
       </p>
     </div>
 
-    <table v-if="items.length" class="w-full text-[length:var(--cd-text-sm)]" data-testid="ct-tabel">
+    <table v-if="items.length" class="w-full text-[length:var(--lk-text-sm)]" data-testid="ct-tabel">
       <thead>
-        <tr class="text-left text-[var(--cd-color-text-muted)]">
-          <th class="py-[var(--cd-space-xs)]">Contract</th>
+        <tr class="text-left text-[var(--lk-color-text-muted)]">
+          <th class="py-[var(--lk-space-xs)]">Contract</th>
           <th>Leverancier</th>
           <th>Type</th>
           <th>Rol</th>
@@ -250,26 +250,26 @@ defineExpose({ items, laad, dekking, dekkingOpties, bewerkContractId, bewerkSleu
         </tr>
       </thead>
       <tbody>
-        <tr v-for="rij in items" :key="rij.koppeling_id" class="border-t border-[var(--cd-color-border)]">
-          <td class="py-[var(--cd-space-xs)]">
-            <router-link :to="{ name: 'contract-detail', params: { id: rij.contract_id } }" class="text-[var(--cd-color-primary)] hover:underline">{{ rij.contractnaam }}</router-link>
+        <tr v-for="rij in items" :key="rij.koppeling_id" class="border-t border-[var(--lk-color-border)]">
+          <td class="py-[var(--lk-space-xs)]">
+            <router-link :to="{ name: 'contract-detail', params: { id: rij.contract_id } }" class="text-[var(--lk-color-primary)] hover:underline">{{ rij.contractnaam }}</router-link>
             <!-- ADR-030 — dekking: algemeen (contract-breed) + per-band (alleen als afwijkend). -->
-            <div class="mt-0.5 flex flex-col gap-0.5 text-[length:var(--cd-text-xs)] text-[var(--cd-color-text-muted)]">
+            <div class="mt-0.5 flex flex-col gap-0.5 text-[length:var(--lk-text-xs)] text-[var(--lk-color-text-muted)]">
               <span v-if="dekking[rij.contract_id]?.contract_breed?.length" :data-testid="`ct-dekking-breed-${rij.koppeling_id}`">
                 Algemene dekking: {{ dekking[rij.contract_id].contract_breed.join(' · ') }}
               </span>
-              <span v-if="dekking[rij.contract_id]?.toon_per_band" :data-testid="`ct-dekking-band-${rij.koppeling_id}`" class="text-[var(--cd-color-text)]">
+              <span v-if="dekking[rij.contract_id]?.toon_per_band" :data-testid="`ct-dekking-band-${rij.koppeling_id}`" class="text-[var(--lk-color-text)]">
                 Dekking voor dit component: {{ dekking[rij.contract_id].per_band.join(' · ') }}
               </span>
               <button
                 v-if="mag && bewerkContractId !== rij.contract_id"
                 type="button"
                 :data-testid="`ct-dekking-bewerk-${rij.koppeling_id}`"
-                class="self-start text-[var(--cd-color-primary)] hover:underline"
+                class="self-start text-[var(--lk-color-primary)] hover:underline"
                 @click="bewerkBandDekking(rij)"
               >Dekking aanpassen</button>
               <!-- Inline bewerken: multiselect uit de dekking-catalogus -->
-              <div v-if="bewerkContractId === rij.contract_id" :data-testid="`ct-dekking-editor-${rij.koppeling_id}`" class="mt-0.5 flex flex-col gap-0.5 text-[var(--cd-color-text)]">
+              <div v-if="bewerkContractId === rij.contract_id" :data-testid="`ct-dekking-editor-${rij.koppeling_id}`" class="mt-0.5 flex flex-col gap-0.5 text-[var(--lk-color-text)]">
                 <label v-for="o in dekkingOpties" :key="o.optie_sleutel" class="flex items-center gap-1">
                   <input
                     type="checkbox"
@@ -279,9 +279,9 @@ defineExpose({ items, laad, dekking, dekkingOpties, bewerkContractId, bewerkSleu
                   />{{ o.label }}
                 </label>
                 <div class="mt-0.5 flex flex-wrap gap-2">
-                  <button type="button" :data-testid="`ct-dekking-opslaan-${rij.koppeling_id}`" class="text-[var(--cd-color-primary)] hover:underline" @click="slaBandDekkingOp(rij)">Opslaan</button>
-                  <button type="button" :data-testid="`ct-dekking-terug-${rij.koppeling_id}`" class="text-[var(--cd-color-text-muted)] hover:underline" @click="verwijderBandDekking(rij)">Terug naar algemene dekking</button>
-                  <button type="button" :data-testid="`ct-dekking-annuleer-${rij.koppeling_id}`" class="text-[var(--cd-color-text-muted)] hover:underline" @click="bewerkContractId = null">Annuleren</button>
+                  <button type="button" :data-testid="`ct-dekking-opslaan-${rij.koppeling_id}`" class="text-[var(--lk-color-primary)] hover:underline" @click="slaBandDekkingOp(rij)">Opslaan</button>
+                  <button type="button" :data-testid="`ct-dekking-terug-${rij.koppeling_id}`" class="text-[var(--lk-color-text-muted)] hover:underline" @click="verwijderBandDekking(rij)">Terug naar algemene dekking</button>
+                  <button type="button" :data-testid="`ct-dekking-annuleer-${rij.koppeling_id}`" class="text-[var(--lk-color-text-muted)] hover:underline" @click="bewerkContractId = null">Annuleren</button>
                 </div>
               </div>
             </div>
@@ -294,7 +294,7 @@ defineExpose({ items, laad, dekking, dekkingOpties, bewerkContractId, bewerkSleu
               :value="rij.relatie_rol"
               :data-testid="`ct-rol-${rij.koppeling_id}`"
               :aria-label="`Rol van ${rij.contractnaam}`"
-              class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white"
+              class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white"
               @change="(e) => wijzigRol(rij, e)"
             >
               <option v-for="o in rolOpties" :key="o.optie_sleutel" :value="o.optie_sleutel">{{ o.label }}</option>
@@ -308,11 +308,11 @@ defineExpose({ items, laad, dekking, dekkingOpties, bewerkContractId, bewerkSleu
         </tr>
       </tbody>
     </table>
-    <p v-else-if="!laden" data-testid="ct-leeg" class="text-[var(--cd-color-text-muted)]">Nog geen gekoppelde contracten.</p>
+    <p v-else-if="!laden" data-testid="ct-leeg" class="text-[var(--lk-color-text-muted)]">Nog geen gekoppelde contracten.</p>
 
     <Dialog v-model:visible="dialogOpen" modal :closable="false" header="Contract koppelen" data-testid="ct-dialog" @show="focusEerste" @hide="onHide">
-      <form class="flex flex-col gap-[var(--cd-space-md)] min-w-[22rem]" data-testid="ct-form" @submit.prevent="koppel">
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+      <form class="flex flex-col gap-[var(--lk-space-md)] min-w-[22rem]" data-testid="ct-form" @submit.prevent="koppel">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="ct-contract" class="font-semibold">Contract *</label>
           <ZoekSelect
             id="ct-contract"
@@ -324,17 +324,17 @@ defineExpose({ items, laad, dekking, dekkingOpties, bewerkContractId, bewerkSleu
             :invalid="!!fouten.contract_id"
             placeholder="Zoek een contract…"
           />
-          <span v-if="fouten.contract_id" role="alert" data-testid="ct-fout-contract" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.contract_id }}</span>
+          <span v-if="fouten.contract_id" role="alert" data-testid="ct-fout-contract" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten.contract_id }}</span>
         </div>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="ct-rol" class="font-semibold">Rol *</label>
-          <select id="ct-rol" v-model="form.relatie_rol" data-testid="ct-veld-rol" :aria-invalid="!!fouten.relatie_rol" class="rounded-[var(--cd-radius-input)] border border-[var(--cd-color-border)] px-[var(--cd-space-sm)] py-[var(--cd-space-xs)] bg-white">
+          <select id="ct-rol" v-model="form.relatie_rol" data-testid="ct-veld-rol" :aria-invalid="!!fouten.relatie_rol" class="rounded-[var(--lk-radius-input)] border border-[var(--lk-color-border)] px-[var(--lk-space-sm)] py-[var(--lk-space-xs)] bg-white">
             <option value="" disabled>— kies een rol —</option>
             <option v-for="o in rolOpties" :key="o.optie_sleutel" :value="o.optie_sleutel">{{ o.label }}</option>
           </select>
-          <span v-if="fouten.relatie_rol" role="alert" data-testid="ct-fout-rol" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.relatie_rol }}</span>
+          <span v-if="fouten.relatie_rol" role="alert" data-testid="ct-fout-rol" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten.relatie_rol }}</span>
         </div>
-        <div class="flex gap-[var(--cd-space-md)]">
+        <div class="flex gap-[var(--lk-space-md)]">
           <Button type="submit" label="Koppelen" data-testid="ct-opslaan" :disabled="bezig" />
           <Button type="button" label="Annuleren" severity="secondary" @click="dialogOpen = false" />
         </div>
@@ -342,8 +342,8 @@ defineExpose({ items, laad, dekking, dekkingOpties, bewerkContractId, bewerkSleu
     </Dialog>
 
     <Dialog v-model:visible="verwijderOpen" modal header="Contract ontkoppelen" data-testid="ct-ontkoppel-dialog" @hide="onHide">
-      <p class="mb-[var(--cd-space-md)] max-w-prose">Deze koppeling met <strong>{{ teOntkoppelen?.contractnaam }}</strong> verwijderen? Het contract zelf blijft bestaan.</p>
-      <div class="flex justify-end gap-[var(--cd-space-md)]">
+      <p class="mb-[var(--lk-space-md)] max-w-prose">Deze koppeling met <strong>{{ teOntkoppelen?.contractnaam }}</strong> verwijderen? Het contract zelf blijft bestaan.</p>
+      <div class="flex justify-end gap-[var(--lk-space-md)]">
         <Button label="Annuleren" severity="secondary" @click="verwijderOpen = false" />
         <Button label="Ontkoppelen" severity="danger" data-testid="ct-ontkoppel-bevestig" :disabled="bezig" @click="bevestigOntkoppel" />
       </div>

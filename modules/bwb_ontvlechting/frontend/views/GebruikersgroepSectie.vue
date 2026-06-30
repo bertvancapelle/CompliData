@@ -218,12 +218,12 @@ laad({ reset: true })
 
 <template>
   <section class="card" aria-labelledby="sectie-gebruikersgroepen">
-    <div class="flex items-center gap-[var(--cd-space-md)] mb-[var(--cd-space-sm)]">
-      <h2 id="sectie-gebruikersgroepen" class="text-[length:var(--cd-text-lg)] font-semibold">Gebruikersgroepen</h2>
+    <div class="flex items-center gap-[var(--lk-space-md)] mb-[var(--lk-space-sm)]">
+      <h2 id="sectie-gebruikersgroepen" class="text-[length:var(--lk-text-lg)] font-semibold">Gebruikersgroepen</h2>
       <Button v-if="mag" label="Toevoegen" severity="secondary" data-testid="gg-toevoegen" class="ml-auto" @click="openNieuw" />
     </div>
 
-    <p v-if="fout" role="alert" data-testid="gg-fout" class="text-[var(--cd-color-danger)] mb-[var(--cd-space-sm)]">{{ fout }}</p>
+    <p v-if="fout" role="alert" data-testid="gg-fout" class="text-[var(--lk-color-danger)] mb-[var(--lk-space-sm)]">{{ fout }}</p>
 
     <DataTable
       :value="items"
@@ -239,18 +239,18 @@ laad({ reset: true })
             v-if="data.organisatie_id"
             :to="{ name: 'partij-detail', params: { id: data.organisatie_id } }"
             :data-testid="`gg-org-link-${data.id}`"
-            class="text-[var(--cd-color-primary)] hover:underline"
+            class="text-[var(--lk-color-primary)] hover:underline"
           >
             {{ data.organisatie_naam }}
           </router-link>
-          <span v-else class="text-[var(--cd-color-text-muted)]">—</span>
+          <span v-else class="text-[var(--lk-color-text-muted)]">—</span>
         </template>
       </Column>
       <Column field="afdeling" header="Afdeling" sortable />
       <Column field="aantal_gebruikers" header="Aantal gebruikers" sortable />
       <Column header="">
         <template #body="{ data }">
-          <div v-if="mag" class="flex gap-[var(--cd-space-sm)]">
+          <div v-if="mag" class="flex gap-[var(--lk-space-sm)]">
             <Button label="Bewerken" severity="secondary" :data-testid="`gg-bewerk-${data.id}`" @click="(e) => openBewerken(e, data)" />
             <Button label="Verwijderen" severity="danger" :data-testid="`gg-verwijder-${data.id}`" @click="(e) => vraagVerwijder(e, data)" />
           </div>
@@ -259,11 +259,11 @@ laad({ reset: true })
       <template #empty><span data-testid="gg-leeg">Nog geen gebruikersgroepen.</span></template>
     </DataTable>
 
-    <Button v-if="cursor" label="Meer laden" severity="secondary" data-testid="gg-meer" :disabled="laden" class="mt-[var(--cd-space-sm)]" @click="laad()" />
+    <Button v-if="cursor" label="Meer laden" severity="secondary" data-testid="gg-meer" :disabled="laden" class="mt-[var(--lk-space-sm)]" @click="laad()" />
 
     <Dialog v-model:visible="dialogOpen" modal :closable="false" :header="bewerkenId ? 'Gebruikersgroep bewerken' : 'Gebruikersgroep toevoegen'" data-testid="gg-dialog" @show="focusEerste" @hide="onHide">
-      <form class="flex flex-col gap-[var(--cd-space-md)] min-w-[20rem]" data-testid="gg-form" @submit.prevent="opslaan">
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+      <form class="flex flex-col gap-[var(--lk-space-md)] min-w-[20rem]" data-testid="gg-form" @submit.prevent="opslaan">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="gg-organisatie" class="font-semibold">Organisatie</label>
           <ZoekSelect
             id="gg-organisatie"
@@ -275,10 +275,10 @@ laad({ reset: true })
             placeholder="Zoek een organisatie (optioneel)…"
             @update:model-value="onOrgKies"
           />
-          <span v-if="fouten.organisatie_id" id="gg-fout-organisatie" role="alert" data-testid="gg-fout-organisatie" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.organisatie_id }}</span>
+          <span v-if="fouten.organisatie_id" id="gg-fout-organisatie" role="alert" data-testid="gg-fout-organisatie" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten.organisatie_id }}</span>
         </div>
         <!-- Afdeling: ZoekSelect binnen de gekozen organisatie; alleen bij een echte organisatie (niet burger). -->
-        <div v-if="toonAfdeling" class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div v-if="toonAfdeling" class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="gg-afdeling" class="font-semibold">Afdeling</label>
           <ZoekSelect
             id="gg-afdeling"
@@ -291,12 +291,12 @@ laad({ reset: true })
             @update:model-value="onAfdelingKies"
           />
         </div>
-        <div class="flex flex-col gap-[var(--cd-space-xs)]">
+        <div class="flex flex-col gap-[var(--lk-space-xs)]">
           <label for="gg-aantal" class="font-semibold">Aantal gebruikers</label>
           <InputText id="gg-aantal" v-model="form.aantal_gebruikers" type="number" min="0" data-testid="gg-veld-aantal" :aria-invalid="!!fouten.aantal_gebruikers" aria-describedby="gg-fout-aantal" />
-          <span v-if="fouten.aantal_gebruikers" id="gg-fout-aantal" role="alert" data-testid="gg-fout-aantal" class="text-[var(--cd-color-danger)] text-[length:var(--cd-text-sm)]">{{ fouten.aantal_gebruikers }}</span>
+          <span v-if="fouten.aantal_gebruikers" id="gg-fout-aantal" role="alert" data-testid="gg-fout-aantal" class="text-[var(--lk-color-danger)] text-[length:var(--lk-text-sm)]">{{ fouten.aantal_gebruikers }}</span>
         </div>
-        <div class="flex gap-[var(--cd-space-md)]">
+        <div class="flex gap-[var(--lk-space-md)]">
           <Button type="submit" label="Opslaan" data-testid="gg-opslaan" :disabled="bezig" />
           <Button type="button" label="Annuleren" severity="secondary" @click="dialogOpen = false" />
         </div>
@@ -304,8 +304,8 @@ laad({ reset: true })
     </Dialog>
 
     <Dialog v-model:visible="verwijderOpen" modal header="Gebruikersgroep verwijderen" data-testid="gg-verwijder-dialog" @hide="onHide">
-      <p class="mb-[var(--cd-space-md)] max-w-prose">Deze gebruikersgroep definitief verwijderen?</p>
-      <div class="flex justify-end gap-[var(--cd-space-md)]">
+      <p class="mb-[var(--lk-space-md)] max-w-prose">Deze gebruikersgroep definitief verwijderen?</p>
+      <div class="flex justify-end gap-[var(--lk-space-md)]">
         <Button label="Annuleren" severity="secondary" @click="verwijderOpen = false" />
         <Button label="Verwijderen" severity="danger" data-testid="gg-verwijder-bevestig" :disabled="bezig" @click="bevestigVerwijder" />
       </div>

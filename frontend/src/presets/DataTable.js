@@ -3,7 +3,7 @@
  */
 export default {
   root: {
-    class: 'font-[var(--cd-font-family)] text-[length:var(--cd-text-sm)]',
+    class: 'font-[var(--lk-font-family)] text-[length:var(--lk-text-sm)]',
   },
   tableContainer: {
     class: 'overflow-x-auto',
@@ -12,12 +12,12 @@ export default {
     class: 'w-full border-collapse',
   },
   thead: {
-    style: { background: 'var(--cd-color-primary)' },
+    style: { background: 'var(--lk-color-primary)' },
   },
   headerRow: {},
   headerCell: {
     style: {
-      background: 'var(--cd-color-primary)',
+      background: 'var(--lk-color-primary)',
       color: 'white',
       fontWeight: '600',
       padding: '0.75rem 1rem',
@@ -26,18 +26,18 @@ export default {
   },
   bodyRow: ({ context }) => ({
     style: {
-      background: context?.index % 2 === 0 ? 'white' : 'var(--cd-color-surface, #f9fafb)',
+      background: context?.index % 2 === 0 ? 'white' : 'var(--lk-color-surface, #f9fafb)',
     },
-    class: 'border-b border-[var(--cd-color-border,#e5e7eb)] hover:bg-[var(--cd-color-bg-hover,#f3f4f6)] transition-colors',
+    class: 'border-b border-[var(--lk-color-border,#e5e7eb)] hover:bg-[var(--lk-color-bg-hover,#f3f4f6)] transition-colors',
   }),
   bodyCell: {
-    class: 'px-4 py-3 text-[var(--cd-color-text)]',
+    class: 'px-4 py-3 text-[var(--lk-color-text)]',
   },
   emptyMessage: {
     class: 'px-4 py-8 text-center text-gray-400',
   },
   sortIcon: {
-    class: 'ml-1 text-[var(--cd-color-primary)]',
+    class: 'ml-1 text-[var(--lk-color-primary)]',
   },
   paginator: {
     root: {
@@ -49,9 +49,9 @@ export default {
     pageButton: {
       class: [
         'min-w-[2rem] h-8 flex items-center justify-center',
-        'rounded-[var(--cd-border-radius)]',
-        'text-[length:var(--cd-text-sm)] text-[var(--cd-color-text)]',
-        'hover:bg-[var(--cd-color-primary)] hover:text-white',
+        'rounded-[var(--lk-border-radius)]',
+        'text-[length:var(--lk-text-sm)] text-[var(--lk-color-text)]',
+        'hover:bg-[var(--lk-color-primary)] hover:text-white',
         'transition-colors cursor-pointer',
       ],
     },
