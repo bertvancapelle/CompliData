@@ -14,13 +14,13 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.core import tenant_context as tc
 
-_CD_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
+_LK_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
 _TID = "11111111-1111-1111-1111-111111111111"
 
 
 def _db_bereikbaar() -> bool:
     async def _probe():
-        eng = create_async_engine(_CD_APP_URL)
+        eng = create_async_engine(_LK_APP_URL)
         try:
             async with eng.connect():
                 return True
@@ -53,7 +53,7 @@ def test_auditlog_naam_verrijking_en_filters():
     sub_ong = f"audit:onbekend:{merk}"
 
     async def _flow():
-        eng = create_async_engine(_CD_APP_URL)
+        eng = create_async_engine(_LK_APP_URL)
         smf = async_sessionmaker(eng, class_=AsyncSession, expire_on_commit=False)
         t_tok = tc.zet_tenant_context(_TID)
         ids = []

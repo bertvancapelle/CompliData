@@ -166,7 +166,7 @@ def _platform_rol(keycloak_rol: str) -> str | None:
 
     Standaard 1-op-1 met de canonieke namen (viewer/medewerker/beheerder/
     auditor). Met `keycloak_role_prefix` gezet worden uitsluitend rollen mét
-    dat voorvoegsel geaccepteerd (bv. `cd-beheerder`).
+    dat voorvoegsel geaccepteerd (bv. `lk-beheerder`).
     """
     prefix = settings.keycloak_role_prefix
     if prefix:

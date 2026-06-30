@@ -1,6 +1,6 @@
 """Integratie-tests — Applicatie-routes (P5).
 
-Offline guard-integratiepatroon (complidata-tests): kleine `FastAPI()`-test-app
+Offline guard-integratiepatroon (likara-tests): kleine `FastAPI()`-test-app
 met de echte router + handlers; `decode_token` gemonkeypatcht voor payloads
 met/zonder `tenant_id` en `realm_access.roles`; `get_tenant_session`
 overschreven (geen DB); de service-functies gestubd zodat het route-, guard-,

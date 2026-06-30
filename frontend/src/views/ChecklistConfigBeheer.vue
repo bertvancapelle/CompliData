@@ -2,7 +2,7 @@
 /**
  * ChecklistConfigBeheer — TENANT-beheer van de checklist-vragenset + antwoord-
  * configuratie (ADR-022 W1). Schil op de tenant-endpoints (`/checklistconfig`,
- * cd_app): de server handhaaft álle regels (geldig type, actieve optie, orphan-409,
+ * lk_app): de server handhaaft álle regels (geldig type, actieve optie, orphan-409,
  * CHECKLISTVRAAG_BESTAAT-409, afgeleide sets label-only). De UI biedt affordances:
  * vragen aanmaken/(de)activeren, antwoordtypes + opties beheren, en een
  * "raakt N componenten"-aankondiging vóór tellende acties.

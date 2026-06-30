@@ -43,7 +43,7 @@ def test_briefing_krijgt_nieuwe_bouwstatus_na_update(tmp_path, monkeypatch):
     """Gefixte volgorde: update_claude_bouwstatus -> daarna leest de briefing
     het NIEUWE blok (geen stale body)."""
     claude = tmp_path / "CLAUDE.md"
-    claude.write_text(f"# CompliData\n\n{OUD_BLOK}\n\neinde\n")
+    claude.write_text(f"# LIKARA\n\n{OUD_BLOK}\n\neinde\n")
 
     gb = _laad("gen_build")
     sb = _laad("gen_sessie_briefing")

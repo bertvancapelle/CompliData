@@ -68,7 +68,7 @@ function _query(params = {}) {
   return s ? `?${s}` : ''
 }
 
-// Filter-query mét allowlist (borging — zie complidata-frontend "API-client-filterconventie").
+// Filter-query mét allowlist (borging — zie likara-frontend "API-client-filterconventie").
 // Eén conventie: filternamen zijn SNAKE_CASE, exact gelijk aan de backend-query-params, zodat
 // er geen camel/snake-vertaalgrens is waar een filter stil kan verdwijnen. Een doorgegeven
 // key die NIET in de allowlist staat → LUIDE fout (geen stille drop → nooit ongefilterd "alles").
@@ -420,7 +420,7 @@ export const api = {
   },
 
   // ADR-022 W1 — TENANT-beheer van de checklist-vragenset + antwoordconfiguratie
-  // (cd_app, tenant-shell). Vragen worden geadresseerd op hun `id`. Server
+  // (lk_app, tenant-shell). Vragen worden geadresseerd op hun `id`. Server
   // handhaaft alle regels (CHECKLISTVRAAG_BESTAAT-409, orphan-409, afgeleid, type).
   checklistconfig: {
     lijst: () => request('/checklistconfig'),

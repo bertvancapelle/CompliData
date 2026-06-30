@@ -1,6 +1,6 @@
 """Unit-tests — dashboard_service (CD014, #9).
 
-Offline (complidata-tests): een sequentiële fake-sessie levert per `execute`
+Offline (likara-tests): een sequentiële fake-sessie levert per `execute`
 een vooraf bepaald resultaat terug (group-by → `.all()`, count → `.scalar_one()`,
 recent → `.all()`). Geen echte Postgres; de keyset/aggregatie is DB-zijdig en
 valt buiten deze scope — getest wordt de respons-vorming.

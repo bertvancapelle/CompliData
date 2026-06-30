@@ -1,4 +1,4 @@
-"""DEV-ONLY testdata-seed — BWB-ontvlechting (V005, CD-Testdata-seed).
+"""DEV-ONLY testdata-seed — BWB-ontvlechting (V005, LK-Testdata-seed).
 
 ╔══════════════════════════════════════════════════════════════════════════╗
 ║  DIT IS GEEN PRODUCTIE-SEED.                                              ║

@@ -1,6 +1,6 @@
 """Integratie-tests — dashboard-route (CD014, #9).
 
-Offline guard-integratiepatroon (complidata-tests): mini-`FastAPI()` met de echte
+Offline guard-integratiepatroon (likara-tests): mini-`FastAPI()` met de echte
 router + handlers; `decode_token` gemonkeypatcht; `get_tenant_session` overschreven
 (geen DB); de service gestubd. Gedekt: geen sessie → 401, geauthenticeerd zonder
 matchende rol → 403, viewer (LEZEN) → 200 met de juiste respons-vorm.

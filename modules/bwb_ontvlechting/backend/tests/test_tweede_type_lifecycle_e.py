@@ -24,14 +24,14 @@ import app.core.database  # noqa: F401 — registreert de tenant-context-hook
 from app.core.tenant_context import reset_tenant_context, zet_tenant_context
 
 _TID = "11111111-1111-1111-1111-111111111111"
-_CD_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
-_CD_ADMIN_URL = "postgresql+asyncpg://lk_admin:changeme_dev@localhost:5432/likara"
+_LK_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
+_LK_ADMIN_URL = "postgresql+asyncpg://lk_admin:changeme_dev@localhost:5432/likara"
 _TYPE = "saas_dienst"
 
 
 def _db_bereikbaar() -> bool:
     async def _check():
-        eng = create_async_engine(_CD_APP_URL)
+        eng = create_async_engine(_LK_APP_URL)
         try:
             async with eng.connect() as c:
                 await c.execute(text("SELECT 1"))
@@ -49,7 +49,7 @@ integratie = pytest.mark.skipif(not _db_bereikbaar(), reason="lk_app-DB niet ber
 
 
 async def _sessie_run(fn):
-    eng = create_async_engine(_CD_APP_URL)
+    eng = create_async_engine(_LK_APP_URL)
     smf = async_sessionmaker(eng, class_=AsyncSession, expire_on_commit=False)
     tok = zet_tenant_context(_TID)
     try:
@@ -62,7 +62,7 @@ async def _sessie_run(fn):
 
 
 async def _admin_exec(sql: str, params: dict | None = None):
-    eng = create_async_engine(_CD_ADMIN_URL)
+    eng = create_async_engine(_LK_ADMIN_URL)
     try:
         async with eng.begin() as c:
             await c.execute(text(sql), params or {})

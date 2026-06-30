@@ -1,6 +1,6 @@
 """Unit-tests — sorteer-retrofit van de 5 legacy-lijsten (CD020, ADR-017).
 
-Offline (complidata-tests): een capture-sessie legt het samengestelde statement
+Offline (likara-tests): een capture-sessie legt het samengestelde statement
 vast; we asserten op de gegenereerde `ORDER BY` (incl. NULLS LAST) en de seek,
 plus de regressie dat het default-pad (geen sort/order) `created_at` oplopend
 behoudt. Alle vijf lijsten gebruiken uniform het v2n NULLS-LAST-pad (CD016).

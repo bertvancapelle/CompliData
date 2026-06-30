@@ -141,7 +141,7 @@ const routes = [
         props: true,
       },
       // ADR-022 W1 — checklist-vragenset is tenant-eigendom: tenant-facing route
-      // (cd_app, tenant-shell), verhuisd uit /beheer.
+      // (lk_app, tenant-shell), verhuisd uit /beheer.
       { path: 'checklistvragen', name: 'checklistvragen', component: ChecklistConfigBeheer },
       // ADR-023 Fase F (F-1) — migratielaag-overzicht (read-only). Statische subpaden
       // vóór de dynamische /:id; gegate op de tenant-rolset via meta.roles.

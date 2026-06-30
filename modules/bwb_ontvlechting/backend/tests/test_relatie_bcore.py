@@ -131,14 +131,14 @@ def test_rbac_matrix_relatie(monkeypatch, rol, actie, method, pad, body, ok_code
 
 # ── Live: CRUD + integriteit + validatie ─────────────────────────────────────────
 
-_CD_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
+_LK_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
 
 
 def _relatie_tabel_bestaat() -> bool:
     from sqlalchemy.ext.asyncio import create_async_engine
 
     async def _check():
-        eng = create_async_engine(_CD_APP_URL)
+        eng = create_async_engine(_LK_APP_URL)
         try:
             async with eng.connect() as c:
                 return (await c.execute(text("SELECT to_regclass('relatie')"))).scalar() is not None
@@ -175,7 +175,7 @@ def test_relatie_crud_en_integriteit_live():
         return c.id
 
     async def _run():
-        eng = create_async_engine(_CD_APP_URL)
+        eng = create_async_engine(_LK_APP_URL)
         smf = async_sessionmaker(eng, class_=AsyncSession, expire_on_commit=False)
         tid = uuid.UUID(TENANT_A)
         try:
@@ -309,7 +309,7 @@ def test_relatie_paar_filter_symmetrie_live():
         return elem.id
 
     async def _run():
-        eng = create_async_engine(_CD_APP_URL)
+        eng = create_async_engine(_LK_APP_URL)
         smf = async_sessionmaker(eng, class_=AsyncSession, expire_on_commit=False)
         tid = uuid.UUID(TENANT_A)
         try:
@@ -404,7 +404,7 @@ def test_lijst_naam_sort_v2n_live():
         return elem.id
 
     async def _run():
-        eng = create_async_engine(_CD_APP_URL)
+        eng = create_async_engine(_LK_APP_URL)
         smf = async_sessionmaker(eng, class_=AsyncSession, expire_on_commit=False)
         tid = uuid.UUID(TENANT_A)
         try:

@@ -83,8 +83,8 @@ _ALTIJD_DERIVE: frozenset[str] = frozenset({"component_profiel"})
 # splitst op herkomst — een blokkade-mutatie samen met een score-driver in dezelfde
 # transactie is `derive` (auto-open/heropenen/opgelost, ADR-016); een zelfstandige
 # handmatige blokkade-wijziging (open↔in_behandeling) zónder score-driver is `update`.
-_SCORE_DRIVER_FLAG = "_cd_audit_score_driver"
-_PENDING_KEY = "_cd_audit_pending"
+_SCORE_DRIVER_FLAG = "_lk_audit_score_driver"
+_PENDING_KEY = "_lk_audit_pending"
 
 _ACTOR_ONBEKEND = "system:onbekend"
 
@@ -225,7 +225,7 @@ def _basis_actie(obj, soort: str) -> AuditActie:
 
 
 @event.listens_for(Session, "before_flush")
-def _cd_audit_before_flush(session, flush_context, instances):
+def _lk_audit_before_flush(session, flush_context, instances):
     """Vang de mutaties + bouw de diffs zolang de attribuut-history nog leeft.
 
     Stash een lijst pending-entries op `session.info`; `after_flush` finaliseert
@@ -283,7 +283,7 @@ def _cd_audit_before_flush(session, flush_context, instances):
 
 
 @event.listens_for(Session, "after_flush")
-def _cd_audit_after_flush(session, flush_context):
+def _lk_audit_after_flush(session, flush_context):
     """Schrijf de in `before_flush` verzamelde auditrecords weg via core-INSERT
     (geen ORM-flush ⇒ geen recursie). Hash-keten per doel-tabel."""
     pending = session.info.pop(_PENDING_KEY, None)
@@ -347,7 +347,7 @@ async def registreer_gebruikersactie(session, *, koppel_id, wijziging) -> None:
 
 
 @event.listens_for(Session, "after_commit")
-def _cd_audit_after_commit(session):
+def _lk_audit_after_commit(session):
     """Transactie-einde: reset de score-driver-vlag (v3) en eventuele restpending,
     zodat een volgende transactie op dezelfde (pool-)sessie schoon begint."""
     session.info.pop(_SCORE_DRIVER_FLAG, None)
@@ -355,7 +355,7 @@ def _cd_audit_after_commit(session):
 
 
 @event.listens_for(Session, "after_rollback")
-def _cd_audit_after_rollback(session):
+def _lk_audit_after_rollback(session):
     session.info.pop(_SCORE_DRIVER_FLAG, None)
     session.info.pop(_PENDING_KEY, None)
 

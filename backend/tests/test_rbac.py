@@ -143,8 +143,8 @@ def test_extract_onbekende_rollen_genegeerd():
 
 
 def test_extract_met_role_prefix(monkeypatch):
-    monkeypatch.setattr(settings, "keycloak_role_prefix", "cd-")
-    payload = {"realm_access": {"roles": ["cd-beheerder", "beheerder", "cd-onbekend"]}}
+    monkeypatch.setattr(settings, "keycloak_role_prefix", "lk-")
+    payload = {"realm_access": {"roles": ["lk-beheerder", "beheerder", "lk-onbekend"]}}
     # Alleen geprefixte, bekende rol wordt geaccepteerd en ontdaan van prefix
     assert extract_rollen(payload) == ["beheerder"]
 

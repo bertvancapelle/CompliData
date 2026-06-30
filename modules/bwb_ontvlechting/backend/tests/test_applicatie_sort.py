@@ -1,6 +1,6 @@
 """Unit-tests — Applicatie server-side sortering (ADR-017).
 
-Offline (complidata-tests): een capture-sessie legt het samengestelde SQLAlchemy-
+Offline (likara-tests): een capture-sessie legt het samengestelde SQLAlchemy-
 statement vast; we asserten op de gegenereerde `ORDER BY`/seek (richting) zonder
 DB. Inclusief de regressie dat het default-pad (geen sort/order) exact de
 pre-ADR-017-ordening en -seek oplevert.

@@ -13,7 +13,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
-// Tokens die de knop- + tab-interactiestandaard dragen (zie complidata-frontend).
+// Tokens die de knop- + tab-interactiestandaard dragen (zie likara-frontend).
 const VEREISTE_TOKENS = [
   '--cd-color-primary',
   '--cd-color-primary-50',

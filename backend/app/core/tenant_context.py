@@ -15,20 +15,20 @@ import uuid
 
 # Geen default-waarde "" — afwezigheid = None ⇒ de hook kan fail-fast onderscheiden.
 _tenant_id: contextvars.ContextVar[str | None] = contextvars.ContextVar(
-    "cd_tenant_id", default=None
+    "lk_tenant_id", default=None
 )
 
 # ADR-006 — actor-identiteit + correlatie-id van de huidige handeling (request/seed/
 # platform). De audit-capture-hook (app.core.audit) leest deze per flush. Afwezig =
 # None ⇒ de hook valt terug op `system:onbekend` resp. een verse correlatie-id.
 _actor_sub: contextvars.ContextVar[str | None] = contextvars.ContextVar(
-    "cd_actor_sub", default=None
+    "lk_actor_sub", default=None
 )
 _actor_email: contextvars.ContextVar[str | None] = contextvars.ContextVar(
-    "cd_actor_email", default=None
+    "lk_actor_email", default=None
 )
 _correlatie_id: contextvars.ContextVar[str | None] = contextvars.ContextVar(
-    "cd_correlatie_id", default=None
+    "lk_correlatie_id", default=None
 )
 
 

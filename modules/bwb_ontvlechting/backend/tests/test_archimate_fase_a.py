@@ -109,14 +109,14 @@ def test_ok3_resterende_type_mappings():
 
 # ── Live: element-RLS-isolatie ───────────────────────────────────────────────────
 
-_CD_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
+_LK_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
 
 
 def _element_tabel_bestaat() -> bool:
     from sqlalchemy.ext.asyncio import create_async_engine
 
     async def _check():
-        eng = create_async_engine(_CD_APP_URL)
+        eng = create_async_engine(_LK_APP_URL)
         try:
             async with eng.connect() as c:
                 res = (await c.execute(text("SELECT to_regclass('element')"))).scalar()
@@ -148,7 +148,7 @@ def test_element_rls_isolatie():
     naam_id = uuid.uuid4()
 
     async def _run():
-        eng = create_async_engine(_CD_APP_URL)
+        eng = create_async_engine(_LK_APP_URL)
         smf = async_sessionmaker(eng, class_=AsyncSession, expire_on_commit=False)
         try:
             tok = tc.zet_tenant_context(_TENANT_A)

@@ -1,6 +1,6 @@
 """Unit-tests — ADR-020 datamodel (CD040).
 
-Offline metadata-asserts conform de offline-grens (complidata-tests): constraints,
+Offline metadata-asserts conform de offline-grens (likara-tests): constraints,
 FK-ondelete, RLS-`tenant_id`-kolom en enums op modelniveau. Het live RLS-/grants-/
 round-trip-gedrag wordt structureel in de migratie geborgd (zie
 `test_contractregister_migratie`) + eenmalig empirisch tegen de draaiende stack

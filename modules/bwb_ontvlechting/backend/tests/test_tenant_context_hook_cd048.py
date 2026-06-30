@@ -20,7 +20,7 @@ from app.core import tenant_context as tc
 
 _TENANT_A = "11111111-1111-1111-1111-111111111111"
 _TENANT_B = "22222222-2222-2222-2222-222222222222"
-_CD_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
+_LK_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
 
 
 # ── Unit: hook-logica + ContextVar-helpers ──────────────────────────────────────
@@ -73,7 +73,7 @@ def test_hook_zet_set_config_transactie_lokaal_met_tid():
 
 def _db_bereikbaar() -> bool:
     async def _check():
-        eng = create_async_engine(_CD_APP_URL)
+        eng = create_async_engine(_LK_APP_URL)
         try:
             async with eng.connect() as c:
                 await c.execute(text("SELECT 1"))
@@ -91,7 +91,7 @@ integratie = pytest.mark.skipif(not _DB, reason="lk_app-DB niet bereikbaar (offl
 
 
 def _smf(**engine_kwargs):
-    eng = create_async_engine(_CD_APP_URL, **engine_kwargs)
+    eng = create_async_engine(_LK_APP_URL, **engine_kwargs)
     return eng, async_sessionmaker(eng, class_=AsyncSession, expire_on_commit=False)
 
 

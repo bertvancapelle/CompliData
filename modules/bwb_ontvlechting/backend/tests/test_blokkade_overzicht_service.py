@@ -1,6 +1,6 @@
 """Unit-tests — blokkade_service.lijst_overzicht (CD016, ADR-017).
 
-Offline (complidata-tests): een capture-sessie legt het samengestelde statement
+Offline (likara-tests): een capture-sessie legt het samengestelde statement
 vast; we asserten op join, statusfilter, sorteer-ORDER BY (incl. NULLS LAST) en de
 cursor↔sort/order-mismatch. NULL-ordening is hier structureel (query-vorm), niet
 empirisch — empirische bevestiging staat als OPVOLGPUNT (#23).

@@ -191,8 +191,8 @@ def test_f2_projectie_volledig_getypeerd_componenttype():
 
 # ── Live tests (skipped als de dev-DB niet bereikbaar is) ────────────────────────
 
-_CD_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
-_CD_PLATFORM_URL = "postgresql+asyncpg://lk_platform:changeme_dev@localhost:5432/likara"
+_LK_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
+_LK_PLATFORM_URL = "postgresql+asyncpg://lk_platform:changeme_dev@localhost:5432/likara"
 
 
 def _db_bereikbaar(url: str, probe: str) -> bool:
@@ -212,11 +212,11 @@ def _db_bereikbaar(url: str, probe: str) -> bool:
 
 
 live_app = pytest.mark.skipif(
-    not _db_bereikbaar(_CD_APP_URL, "SELECT to_regclass('componentconfig_optie')"),
+    not _db_bereikbaar(_LK_APP_URL, "SELECT to_regclass('componentconfig_optie')"),
     reason="componentconfig_optie niet bereikbaar als lk_app (stack/migratie 0025 niet toegepast)",
 )
 live_platform = pytest.mark.skipif(
-    not _db_bereikbaar(_CD_PLATFORM_URL, "SELECT to_regclass('componentconfig_optie')"),
+    not _db_bereikbaar(_LK_PLATFORM_URL, "SELECT to_regclass('componentconfig_optie')"),
     reason="componentconfig_optie niet bereikbaar als lk_platform",
 )
 
@@ -228,7 +228,7 @@ def test_live_geen_actief_componenttype_zonder_typering():
     from sqlalchemy.ext.asyncio import create_async_engine
 
     async def _run():
-        eng = create_async_engine(_CD_APP_URL)
+        eng = create_async_engine(_LK_APP_URL)
         try:
             async with eng.connect() as c:
                 n = (await c.execute(text(
@@ -250,7 +250,7 @@ def test_live_db_check_weigert_ongetypeerd_componenttype():
     from sqlalchemy.ext.asyncio import create_async_engine
 
     async def _run():
-        eng = create_async_engine(_CD_PLATFORM_URL)
+        eng = create_async_engine(_LK_PLATFORM_URL)
         try:
             async with eng.begin() as c:
                 await c.execute(text(
@@ -273,7 +273,7 @@ def test_live_geen_trigger_op_componentconfig_optie():
     from sqlalchemy.ext.asyncio import create_async_engine
 
     async def _run():
-        eng = create_async_engine(_CD_APP_URL)
+        eng = create_async_engine(_LK_APP_URL)
         try:
             async with eng.connect() as c:
                 return (await c.execute(text(

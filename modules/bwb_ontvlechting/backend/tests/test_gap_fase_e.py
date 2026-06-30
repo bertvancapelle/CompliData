@@ -25,7 +25,7 @@ from app.core.tenant_context import (
 
 _TID = "11111111-1111-1111-1111-111111111111"
 _TID_B = "22222222-2222-2222-2222-222222222222"
-_CD_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
+_LK_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
 
 
 # ── Offline: model + schema ──────────────────────────────────────────────────────
@@ -128,7 +128,7 @@ def _db_bereikbaar() -> bool:
     from sqlalchemy.ext.asyncio import create_async_engine
 
     async def _check():
-        eng = create_async_engine(_CD_APP_URL)
+        eng = create_async_engine(_LK_APP_URL)
         try:
             async with eng.connect() as c:
                 await c.execute(text("SELECT 1"))
@@ -147,7 +147,7 @@ integratie = pytest.mark.skipif(not _db_bereikbaar(), reason="lk_app-DB niet ber
 async def _run_rls(tenant, actor, fn):
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-    eng = create_async_engine(_CD_APP_URL)
+    eng = create_async_engine(_LK_APP_URL)
     smf = async_sessionmaker(eng, class_=AsyncSession, expire_on_commit=False)
     ttok = zet_tenant_context(tenant)
     atok = zet_audit_context(actor, f"{actor}@test")

@@ -22,15 +22,15 @@ from app.core import tenant_context as tc
 from app.core.audit import verifieer_keten
 from app.core.database import _markeer_rls
 
-_CD_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
-_CD_PLATFORM_URL = "postgresql+asyncpg://lk_platform:changeme_dev@localhost:5432/likara"
+_LK_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
+_LK_PLATFORM_URL = "postgresql+asyncpg://lk_platform:changeme_dev@localhost:5432/likara"
 DEV_TENANT = "11111111-1111-1111-1111-111111111111"
 TENANT_B = "22222222-2222-2222-2222-222222222222"
 
 
 def _audit_log_bestaat() -> bool:
     async def _check():
-        eng = create_async_engine(_CD_APP_URL)
+        eng = create_async_engine(_LK_APP_URL)
         try:
             async with eng.connect() as c:
                 # to_regclass = catalogus-lookup (geen rij-toegang) → omzeilt FORCE RLS;
@@ -56,7 +56,7 @@ live = pytest.mark.skipif(
 async def _worker(tenant, actor="system:dev_seed"):
     """Tenant-RLS-sessie op de echte lk_app-DB + tenant/audit-context (zoals
     get_worker_session, maar op een eigen engine)."""
-    eng = create_async_engine(_CD_APP_URL)
+    eng = create_async_engine(_LK_APP_URL)
     smf = async_sessionmaker(eng, class_=AsyncSession, expire_on_commit=False)
     t_tok = tc.zet_tenant_context(tenant)
     a_tok = tc.zet_audit_context(actor)
@@ -78,7 +78,7 @@ async def _worker(tenant, actor="system:dev_seed"):
 async def _platform(actor="system:platform_init"):
     """Platform-sessie (lk_platform, GEEN RLS-marker) + audit-context → de hook
     routeert naar platform_audit_log."""
-    eng = create_async_engine(_CD_PLATFORM_URL)
+    eng = create_async_engine(_LK_PLATFORM_URL)
     smf = async_sessionmaker(eng, class_=AsyncSession, expire_on_commit=False)
     a_tok = tc.zet_audit_context(actor)
     try:

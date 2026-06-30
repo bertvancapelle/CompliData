@@ -24,7 +24,7 @@ from app.core.tenant_context import (
 )
 
 _TID = "11111111-1111-1111-1111-111111111111"
-_CD_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
+_LK_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
 
 
 def _result(val):
@@ -177,7 +177,7 @@ def _db_bereikbaar() -> bool:
     async def _probe():
         from sqlalchemy.ext.asyncio import create_async_engine
 
-        eng = create_async_engine(_CD_APP_URL)
+        eng = create_async_engine(_LK_APP_URL)
         try:
             async with eng.connect():
                 return True
@@ -198,7 +198,7 @@ integratie = pytest.mark.skipif(not _db_bereikbaar(), reason="lk_app-DB niet ber
 async def _run_rls(fn, tid=_TID):
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-    eng = create_async_engine(_CD_APP_URL)
+    eng = create_async_engine(_LK_APP_URL)
     smf = async_sessionmaker(eng, class_=AsyncSession, expire_on_commit=False)
     tok = zet_tenant_context(tid)
     audit_tok = zet_audit_context(actor_sub="test:adr029", actor_email="adr029@test", correlatie_id=None)

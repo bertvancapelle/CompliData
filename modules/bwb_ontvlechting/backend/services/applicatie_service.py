@@ -2,7 +2,7 @@
 
 Bevat alle business-logica; de route-handlers blijven dun. Elke query draait
 binnen de tenant-sessie (RLS-context via `get_tenant_session`) ÉN filtert
-expliciet op `tenant_id` — dubbele tenant-bescherming (complidata-security).
+expliciet op `tenant_id` — dubbele tenant-bescherming (likara-security).
 
 OP-6 (tenant-scoped, besluit Bert): record-resolutie strikt binnen de tenant.
 Een id buiten de tenant is niet vindbaar (RLS + expliciete filter) ⇒ `NietGevonden`

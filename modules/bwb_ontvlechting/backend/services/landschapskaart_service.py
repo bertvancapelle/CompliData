@@ -9,7 +9,7 @@ Puur read-only, afgeleid — geen schema/migratie. **Engine onaangeroerd**: dit 
 GEEN `lifecycle_service`/`herbereken_lifecycle`/`bepaal_lifecycle`/`ComponentProfiel`/`Blokkade`/
 `Checklistscore` en schrijft niets (geen `session.add`/`commit`/`flush`/`delete`). `lifecycle_status`
 wordt read-only gelezen via een lichtgewicht tabel-constructie op `component_profiel` (LEFT JOIN),
-bewust zónder de ORM-klasse te importeren (zie het engine-invariant in complidata-domeinmodel §6).
+bewust zónder de ORM-klasse te importeren (zie het engine-invariant in likara-domeinmodel §6).
 """
 import uuid
 

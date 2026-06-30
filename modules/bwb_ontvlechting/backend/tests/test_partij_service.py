@@ -211,7 +211,7 @@ def test_engine_niet_geimporteerd_in_partij_paden():
 
 # ── Live (na DB-reset) ───────────────────────────────────────────────────────────
 
-_CD_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
+_LK_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
 _DEV_TENANT = "11111111-1111-1111-1111-111111111111"
 
 
@@ -219,7 +219,7 @@ def _partij_tabel_bestaat() -> bool:
     from sqlalchemy.ext.asyncio import create_async_engine
 
     async def _check():
-        eng = create_async_engine(_CD_APP_URL)
+        eng = create_async_engine(_LK_APP_URL)
         try:
             async with eng.connect() as c:
                 return (await c.execute(text("SELECT to_regclass('partij')"))).scalar() is not None
@@ -243,7 +243,7 @@ def test_live_geen_trigger_op_partij():
     from sqlalchemy.ext.asyncio import create_async_engine
 
     async def _run():
-        eng = create_async_engine(_CD_APP_URL)
+        eng = create_async_engine(_LK_APP_URL)
         try:
             async with eng.connect() as c:
                 return (await c.execute(text(
@@ -261,7 +261,7 @@ def test_live_geen_wees_element_partij():
     from sqlalchemy.ext.asyncio import create_async_engine
 
     async def _run():
-        eng = create_async_engine(_CD_APP_URL)
+        eng = create_async_engine(_LK_APP_URL)
         try:
             async with eng.connect() as c:
                 # `element`/`partij` zijn FORCE RLS → tenant-context zetten vóór de telling.

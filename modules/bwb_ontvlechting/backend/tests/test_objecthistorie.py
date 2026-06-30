@@ -160,12 +160,12 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.core import tenant_context as tc  # noqa: E402
 
-_CD_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
+_LK_APP_URL = "postgresql+asyncpg://lk_app:changeme_dev@localhost:5432/likara"
 
 
 def _db_bereikbaar() -> bool:
     async def _probe():
-        eng = create_async_engine(_CD_APP_URL)
+        eng = create_async_engine(_LK_APP_URL)
         try:
             async with eng.connect():
                 return True
@@ -197,7 +197,7 @@ def test_objecthistorie_component_live_met_naam():
     merk = uuid.uuid4().hex[:8]
 
     async def _flow():
-        eng = create_async_engine(_CD_APP_URL)
+        eng = create_async_engine(_LK_APP_URL)
         smf = async_sessionmaker(eng, class_=AsyncSession, expire_on_commit=False)
         t_tok = tc.zet_tenant_context(TENANT_A)
         ids = []
