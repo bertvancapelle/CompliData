@@ -6,7 +6,7 @@ Eén nieuwe tenant-scoped tabel (RLS + FORCE): `contract_band_dekking`. Eén rij
 component zijn element-subtypes) met ON DELETE CASCADE → de band-dekking verdwijnt vanzelf als
 het contract óf het component wordt verwijderd. Additief; náást de contract-brede `contract_dekking`.
 
-Revision ID: 0043_adr030_contract_band_dekking
+Revision ID: 0043_adr030_contract_band
 Revises: 0042_adr033_opgeslagen_view
 """
 from typing import Sequence, Union
@@ -15,7 +15,7 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql
 
-revision: str = "0043_adr030_contract_band_dekking"
+revision: str = "0043_adr030_contract_band"
 down_revision: Union[str, Sequence[str], None] = "0042_adr033_opgeslagen_view"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
