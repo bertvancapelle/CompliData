@@ -121,7 +121,7 @@ Authorization Code + PKCE, **volledig server-side** (`api/v1/auth.py`):
   Keycloak `aud: null` in het access-token (alleen `azp`), waardoor
   `decode_token` (`audience=keycloak_client_id`) faalt met
   `InvalidAudienceError` → `/auth/me` geeft 401 `NIET_GEAUTHENTICEERD`. De realm MOET
-  een audience-mapper hebben die `complidata-api` aan het access-token toevoegt.
+  een audience-mapper hebben die `likara-api` aan het access-token toevoegt.
 
 ## RBAC-handhaving (fail-secure)
 

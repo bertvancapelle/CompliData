@@ -14,7 +14,7 @@ from app.core.config import settings
 
 async def get_connection(tenant_slug: str):
     """Connect to the tenant-specific vhost."""
-    vhost = f"cd-{tenant_slug}"
+    vhost = f"lk-{tenant_slug}"
     url = settings.rabbitmq_url.rstrip("/") + f"/{vhost}"
     return await aio_pika.connect_robust(url)
 

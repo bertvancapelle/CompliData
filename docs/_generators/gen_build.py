@@ -30,7 +30,7 @@ OUTPUT_DIR = REPO_ROOT / "docs" / "_output"
 # De DB-backup loopt structureel mee als laatste afsluitstap, zodat de
 # iCloud-kopie nooit een vergeetbare handmatige stap is (CD013-A).
 PG_CONTAINER = "lk-postgres"
-BACKUPS_DIR = Path.home() / "complidata" / "backups"
+BACKUPS_DIR = Path.home() / "likara" / "backups"
 # Configureerbaar pad; default = lokaal gemounte iCloud-Drive-map.
 # (~/Library/Mobile Documents/com~apple~CloudDocs/LIKARA-backups/)
 ICLOUD_BACKUP_DIR = Path(
@@ -229,7 +229,7 @@ def maak_db_dump():
 def kopieer_naar_icloud(dump_path, icloud_dir=ICLOUD_BACKUP_DIR):
     """Kopieer UITSLUITEND de `.sql`-dump naar de iCloud-map.
 
-    Secrets (`~/complidata/secrets/`, `.env`) worden NOOIT meegenomen — er wordt
+    Secrets (`~/likara/secrets/`, `.env`) worden NOOIT meegenomen — er wordt
     één specifiek `.sql`-bestand gekopieerd, geen wildcard/map. Faalt ZACHT: een
     ontbrekende/niet-gemounte iCloud-map waarschuwt en breekt de build niet (de
     lokale dump is dan al veilig). Er wordt geen niet-bestaand iCloud-pad geforceerd.

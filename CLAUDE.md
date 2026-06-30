@@ -218,7 +218,7 @@ cd backend && python3 -m app.platform_init   # referentiedata: 89 checklistvrage
 bash smoke_test.sh
 
 # PostgreSQL backup
-docker exec lk-postgres pg_dump -U lk_admin likara > ~/complidata/backups/complidata_$(date +%Y%m%d_%H%M).sql
+docker exec lk-postgres pg_dump -U lk_admin likara > ~/likara/backups/likara_$(date +%Y%m%d_%H%M).sql
 ```
 
 ---
@@ -367,7 +367,7 @@ REDIS_PASSWORD=changeme_dev
 MINIO_ROOT_PASSWORD=changeme_dev
 ```
 
-Bewaar `.env` backup op: `~/complidata/secrets/.env`
+Bewaar `.env` backup op: `~/likara/secrets/.env`
 
 ---
 
@@ -459,7 +459,7 @@ Pas dan: klaar.
 5. gen_build.py — python3 docs/_generators/gen_build.py "{test_status}" "{kritieken}"
    → verhoogt bouwnummer, genereert alle MD-bestanden, maakt ZIP, en draait als
      LAATSTE stap automatisch de backup: lokale PostgreSQL-dump
-     (~/complidata/backups/complidata_*.sql) + iCloud-kopie van UITSLUITEND die
+     (~/likara/backups/likara_*.sql) + iCloud-kopie van UITSLUITEND die
      .sql naar ICLOUD_BACKUP_DIR (default: ~/Library/Mobile Documents/
      com~apple~CloudDocs/LIKARA-backups/). Secrets worden NOOIT gekopieerd;
      ontbrekende/niet-gemounte iCloud-map → waarschuwing, build gaat door. [CD013-A]
@@ -467,7 +467,7 @@ Pas dan: klaar.
 7. (Backup loopt nu automatisch in stap 5 — geen losse handmatige pg_dump/iCloud-
    stap meer. Handmatig draaien kan nog via:
    docker exec lk-postgres pg_dump -U lk_admin likara \
-     > ~/complidata/backups/complidata_$(date +%Y%m%d_%H%M).sql )
+     > ~/likara/backups/likara_$(date +%Y%m%d_%H%M).sql )
 8. claude.ai memory bijwerken — bouwnummer, teststatus, top-5 prioriteiten
 
 ### Sessie starten

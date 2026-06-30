@@ -1,12 +1,12 @@
 {
   "users": [
-    {"name": "cd_rabbit", "password_hash": "changeme_dev", "hashing_algorithm": "rabbit_password_hashing_sha256", "tags": ["administrator"]}
+    {"name": "lk_rabbit", "password_hash": "changeme_dev", "hashing_algorithm": "rabbit_password_hashing_sha256", "tags": ["administrator"]}
   ],
   "vhosts": [
     {"name": "/"}
   ],
   "permissions": [
-    {"user": "cd_rabbit", "vhost": "/", "configure": ".*", "write": ".*", "read": ".*"}
+    {"user": "lk_rabbit", "vhost": "/", "configure": ".*", "write": ".*", "read": ".*"}
   ],
   "exchanges": [],
   "queues": [],

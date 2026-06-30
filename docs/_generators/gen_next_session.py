@@ -49,7 +49,7 @@ _[Vul in tijdens sessie-afsluiting]_
 
 ## Geleerde patronen deze sessie
 
-_[Vul in tijdens sessie-afsluiting — worden verwerkt in complidata-skills]_
+_[Vul in tijdens sessie-afsluiting — worden verwerkt in likara-skills]_
 """
 
 def main():

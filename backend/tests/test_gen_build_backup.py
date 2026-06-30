@@ -15,7 +15,7 @@ def test_kopieert_alleen_sql_niet_secrets(tmp_path):
     dump.write_text("DUMP")
     (backups / ".env").write_text("POSTGRES_PASSWORD=geheim")  # mag NOOIT mee
 
-    icloud = tmp_path / "icloud" / "CompliData-backups"  # parent (icloud) bestaat
+    icloud = tmp_path / "icloud" / "LIKARA-backups"  # parent (icloud) bestaat
     icloud.parent.mkdir()
 
     assert gen_build.kopieer_naar_icloud(dump, icloud) is True
@@ -33,7 +33,7 @@ def test_ontbrekende_icloud_map_waarschuwt_zonder_fout(tmp_path):
 
 
 def test_weigert_niet_sql_bestand(tmp_path):
-    nep = tmp_path / "complidata.env"  # geen .sql
+    nep = tmp_path / "likara.env"  # geen .sql
     nep.write_text("x")
     icloud = tmp_path / "ic"
     icloud.mkdir()

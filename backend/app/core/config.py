@@ -65,7 +65,7 @@ class Settings(BaseSettings):
     # MinIO / Blob store (bucket-per-tenant)
     minio_endpoint_url: str = "http://localhost:9000"
     minio_external_url: str = "http://localhost:9000"  # Browser-facing
-    minio_root_user: str = "complidata_admin"
+    minio_root_user: str = "likara_admin"
     minio_root_password: str = "changeme_dev_only"
     upload_max_bytes: int = 10485760
 
