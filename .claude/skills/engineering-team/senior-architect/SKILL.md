@@ -344,78 +344,47 @@ python scripts/project_architect.py . --output json
 
 ---
 
-## CompliMan ADR-conventie (V643)
+## ADR-conventie (LIKARA)
 
-Project-specifiek voor `/Users/bertvancapelle/CompliMan/CompliManDrive_MacOS/`.
+> Vervangt de oude CompliMan-tijdperk ADR-conventie (`C7-Architectuur/N2-Procedures`,
+> YAML-frontmatter, meta-register). Die geldt **niet** in LIKARA. Bron van waarheid:
+> `docs/adr/README.md`.
 
 ### Locatie
+Alle ADR's staan in `docs/adr/`. Eén bestand per beslissing.
 
-ADRs staan in `docs/C7-Architectuur/N2-Procedures/` (NIET `N3-Besluiten`).
-Beleids-ADRs staan in `docs/C7-Architectuur/N1-Beleid/` (slechts 2 stuks).
+### Bestandsnaam
+`ADR-NNN_kebab-case-titel.md` — oplopend genummerd, géén versie-/taal-suffix.
+Nummers worden nooit hergebruikt of verwijderd.
 
-### Bestandsnaam-patroon
+### Metadata (geen YAML-frontmatter)
+Eenvoudig tabelblok bovenaan het bestand:
 
-`ADR-NNN_kebab-case-titel_vVERSIE_nl.md`
-Voorbeeld: `ADR-145_YAML-norm-formaat_v0.1_nl.md`
+| | |
+|---|---|
+| **Status** | Voorgesteld |
+| **Datum** | YYYY-MM-DD |
+| **Beslissers** | Naam (organisatie) |
+| **Gerelateerd** | ADR-NNN (onderwerp), … |
 
-### Frontmatter — werkelijke conventie
+### Vaste secties
+Status/metadata → **Context** → **Besluit** → **Gevolgen** → **Alternatieven overwogen**.
 
-```yaml
----
-documentnummer:     "ADR-NNN"
-type:               "P"                       # P = Procedure, B = Beleid
-titel:              "Titel van het besluit"
-titel_kort:         "ADR korte naam"
-versie:             "0.1"
-status:             "Voorgesteld"             # Voorgesteld | Definitief | Vervallen
-status_toelichting: "Initieel voorstel — V{N}. Korte motivatie..."
-taal:               "nl"
-vertrouwelijkheid:  "Intern"
-cluster:            "C7-Architectuur"
-niveau:             "N2-Procedures"
-eigenaar_rol:       "R-EAR"
-raci:
-  responsible:      "R-EAR"
-  accountable:      "R-DIR"
-  consulted:
-    - "R-CIS"
-    - "R-DPO"
-  informed:
-    - "R-DOC"
-aanmaakdatum:       "YYYY-MM-DD"
-review_frequentie:  "Bij wijziging van X"
-review_datum:       "YYYY-MM-DD"
-review_door_rol:    "R-EAR"
-review_door_naam:   "[[INVULLEN]]"
-tags:               ["tag1", "tag2"]
-gerelateerde_adrs:  ["ADR-NNN", "ADR-NNN"]
----
-```
+### Status-levenscyclus
+`Voorgesteld` → `Aanvaard` → (`Vervangen door ADR-XXX` | `Vervallen`).
+Vervallen of vervangen beslissingen blijven staan, met statusverwijzing naar de opvolger.
 
-**NIET** de simpele `id/titel/status/versie/auteur` frontmatter — gebruik
-ALLE bovenstaande velden voor consistentie met de 67 bestaande ADRs.
+### Register
+Handmatige tabel in `docs/adr/README.md` (kolommen: ADR | Titel | Status).
+Er is géén `gen_meta_reg.py`/`META-REG-*` — die bestaan niet in LIKARA.
 
-### Registratie
-
-ADRs worden automatisch opgepikt door `gen_meta_reg.py` vanuit
-`META-REG-001_documents.json` (scan van alle .md-bestanden). Er is GEEN
-apart `META-REG-ADR.json`. Handmatige ADR-register-updates zijn niet
-nodig — `gen_build.py` na aanmaken volstaat.
-
-### ADR-nummer kiezen
+### Volgend ADR-nummer
+Neem het hoogste bestaande nummer + 1 (addendum-bestanden tellen niet als nieuw nummer):
 
 ```bash
-find docs -name "ADR-*.md" -not -path "*/stage_*" -not -path "*/build_*" \
-  | python3 -c "
-import sys, re
-nrs = set(int(m.group(1)) for line in sys.stdin
-          if (m := re.search(r'/ADR-(\d+)_', line)))
-print('Volgende ADR:', max(nrs) + 1)
-"
+ls docs/adr/ADR-*.md | sed -E 's@.*/ADR-0*([0-9]+)_.*@\1@' | grep -E '^[0-9]+$' \
+  | sort -n | tail -1
 ```
-
-Sequentieel volgnummer; gaten (3, 54, 59, 61, 69-142) zijn historisch en
-worden niet opgevuld.
 
 ---
 
