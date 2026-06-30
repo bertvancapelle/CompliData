@@ -14,14 +14,13 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 OUTPUT_DIR = REPO_ROOT / "docs" / "_output"
 
-# Curated skills die altijd in de ZIP gaan
-CURATED_SKILLS = [
-    ".claude/skills/likara/likara-backend/SKILL.md",
-    ".claude/skills/likara/likara-db/SKILL.md",
-    ".claude/skills/likara/likara-frontend/SKILL.md",
-    ".claude/skills/likara/likara-security/SKILL.md",
-    ".claude/skills/likara/likara-tests/SKILL.md",
-    ".claude/skills/likara/likara-resilience/SKILL.md",
+# Gedeelde, afgeleide bron voor de likara-skillset (glob op disk) — werkt zowel
+# bij directe scriptuitvoer (sys.path[0] = deze map) als bij importlib-load.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from skills_bron import likara_skill_paden
+
+# Niet-likara curated skills (engineering + security) — vaste, gecureerde set.
+CURATED_OVERIG = [
     ".claude/skills/engineering-team/senior-architect/SKILL.md",
     ".claude/skills/engineering-team/senior-backend/SKILL.md",
     ".claude/skills/engineering-team/senior-frontend/SKILL.md",
@@ -36,6 +35,10 @@ CURATED_SKILLS = [
     ".claude/skills/security/security-testing/SKILL.md",
     ".claude/skills/security/input-validation/SKILL.md",
 ]
+
+# Curated skills die altijd in de ZIP gaan: alle likara-skills (afgeleid uit de
+# repo, geen handlijst) + de vaste niet-likara set hierboven.
+CURATED_SKILLS = likara_skill_paden() + CURATED_OVERIG
 
 # Uitgesloten patronen
 EXCLUDE_DIRS = {

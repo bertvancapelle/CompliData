@@ -17,6 +17,11 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 GENERATORS_DIR = REPO_ROOT / "docs" / "_generators"
+
+# Gedeelde, afgeleide bron voor de likara-skillset — dezelfde helper als
+# gen_sessiestart.py, zodat bundeling en validatie nooit divergeren.
+sys.path.insert(0, str(GENERATORS_DIR))
+from skills_bron import likara_skill_paden
 COUNTER_FILE = GENERATORS_DIR / "build_counter.json"
 CLAUDE_MD = REPO_ROOT / "CLAUDE.md"
 NEXT_SESSION = REPO_ROOT / "NEXT_SESSION.md"
@@ -67,14 +72,10 @@ REQUIRED_FILES = [
     "docs/_generators/sluit_acties.py",
 ]
 
-REQUIRED_SKILLS = [
-    ".claude/skills/likara/likara-backend/SKILL.md",
-    ".claude/skills/likara/likara-db/SKILL.md",
-    ".claude/skills/likara/likara-frontend/SKILL.md",
-    ".claude/skills/likara/likara-security/SKILL.md",
-    ".claude/skills/likara/likara-tests/SKILL.md",
-    ".claude/skills/likara/likara-resilience/SKILL.md",
-]
+# Afgeleid uit de repo (skills_bron) i.p.v. een handlijst: elke likara-skill die
+# op disk staat MOET aanwezig + niet-leeg zijn, anders blokkeert de integriteits-
+# check de build. Zo glipt een ontbrekende borgende skill nooit stil door.
+REQUIRED_SKILLS = likara_skill_paden()
 
 REQUIRED_PATTERNS = [
     ("docs/adr", "ADR-*.md", 1, "Minimaal 1 ADR vereist"),
