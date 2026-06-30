@@ -57,6 +57,7 @@ REQUIRED_DIRS = [
 REQUIRED_FILES = [
     "CLAUDE.md",
     "NEXT_SESSION.md",
+    "docs/PROJECTGEHEUGEN.md",
     "SESSIE_BRIEFING.md",
     "docs/_generators/build_counter.json",
     "docs/_generators/gen_build.py",

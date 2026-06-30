@@ -12,7 +12,7 @@
 |------|--------|
 | Build | V026 |
 | Datum | June 2026 |
-| Commit | f7ecd7c |
+| Commit | 74966b7 |
 | Tests | backend 931/2/0, frontend 745/745 |
 | TST-rapport | TST-V026-Validatierapport.md |
 | Kritieke bevindingen | 0 |
@@ -22,11 +22,11 @@
 ## Recente commits
 
 ```
+74966b7 chore(build): V026 sessie-afsluiting LI051 — code-rebrand cd_/complidata → lk/likara compleet
 f7ecd7c refactor(schema): LI050 — audit-triggerfunctie cd_audit_append_only → lk_audit_append_only (S7)
 d67e968 refactor(infra): cd_/complidata -> lk/likara — rabbit-user, vhost-prefix, MinIO-user, paden (S6, LI048)
 28e421c fix(migratie): revisie-id 0043 <=32 tekens — verse provisioning brak op alembic_version varchar(32) (LI049)
 4e0f6a0 refactor(misc): LI047 — S5 localStorage-key + backup-basisnaam cd/complidata → lk/likara
-e9e4835 refactor(config): LI046 — S4 env-flags COMPLIDATA_* → LIKARA_* (test-mode/fixture-set)
 ```
 
 ---

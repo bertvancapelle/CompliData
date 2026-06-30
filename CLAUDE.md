@@ -455,20 +455,24 @@ Pas dan: klaar.
 2. TST — volledige validatiecyclus conform CONTRIBUTING.md sectie 6
    → rapport opslaan als docs/TST-{build_label}-Validatierapport.md
 3. Skill-review — relevante likara-skills bijwerken
-4. NEXT_SESSION.md invullen — top-5 prioriteiten + openstaande punten
-5. gen_build.py — python3 docs/_generators/gen_build.py "{test_status}" "{kritieken}"
-   → verhoogt bouwnummer, genereert alle MD-bestanden, maakt ZIP, en draait als
-     LAATSTE stap automatisch de backup: lokale PostgreSQL-dump
-     (~/likara/backups/likara_*.sql) + iCloud-kopie van UITSLUITEND die
+4. NEXT_SESSION.md + OPVOLGPUNTEN.md bijwerken — top-5 prioriteiten + openstaande punten
+5. Projectgeheugen bijwerken — werk `docs/PROJECTGEHEUGEN.md` bij met bouwnummer,
+   teststatus, top-5 prioriteiten en openstaande punten. Doe dit **vóór** gen_build.py
+   (stap 6), zodat het automatisch in de sessie-ZIP wordt gebundeld (`gen_sessiestart.py`
+   globt `docs/*.md`; `gen_build.py` eist het bestand via REQUIRED_FILES).
+6. gen_build.py — python3 docs/_generators/gen_build.py "{test_status}" "{kritieken}"
+   → verhoogt bouwnummer, genereert alle MD-bestanden, maakt ZIP (incl.
+     docs/PROJECTGEHEUGEN.md), en draait als LAATSTE stap automatisch de backup: lokale
+     PostgreSQL-dump (~/likara/backups/likara_*.sql) + iCloud-kopie van UITSLUITEND die
      .sql naar ICLOUD_BACKUP_DIR (default: ~/Library/Mobile Documents/
      com~apple~CloudDocs/LIKARA-backups/). Secrets worden NOOIT gekopieerd;
      ontbrekende/niet-gemounte iCloud-map → waarschuwing, build gaat door. [CD013-A]
-6. git commit + git push
-7. (Backup loopt nu automatisch in stap 5 — geen losse handmatige pg_dump/iCloud-
+7. git commit + git push
+8. (Backup loopt automatisch in stap 6 — geen losse handmatige pg_dump/iCloud-
    stap meer. Handmatig draaien kan nog via:
    docker exec lk-postgres pg_dump -U lk_admin likara \
      > ~/likara/backups/likara_$(date +%Y%m%d_%H%M).sql )
-8. claude.ai memory bijwerken — bouwnummer, teststatus, top-5 prioriteiten
+9. claude.ai-memory spiegelen aan docs/PROJECTGEHEUGEN.md — bouwnummer, teststatus, top-5.
 
 ### Sessie starten
 1. Bert uploadt sessie-ZIP in claude.ai
@@ -491,7 +495,7 @@ Pas dan: klaar.
 |------|--------|
 | Build | V026 |
 | Datum | June 2026 |
-| Commit | f7ecd7c |
+| Commit | 74966b7 |
 | Tests | backend 931/2/0, frontend 745/745 |
 | TST-rapport | TST-V026-Validatierapport.md |
 | Kritieke bevindingen | 0 |
