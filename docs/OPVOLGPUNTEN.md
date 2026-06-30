@@ -7,6 +7,38 @@ Bron: sessie 2–3 (P1–P5, OP-9 t/m OP-12). Status per punt expliciet vermeld.
 
 ## OPEN
 
+### Stand V026 (sessie-afsluiting LI051, 2026-06-30)
+
+Build **V025 → V026**. Deze sessie ging volledig over de **code-rebrand
+`cd_`/`complidata`/`CompliData`/`CompliMan` → `lk`/`likara`/`LIKARA`** (LI038–LI050).
+De oorspronkelijke V025-prioriteiten zijn NIET opgepakt en blijven de top-5 (zie
+NEXT_SESSION).
+
+**Geland in LI038–LI050:**
+- LI038–040: skills/docs (senior-architect ADR-conventie + V691-legacy-banner, db-naam, naamhistorie)
+- LI042: bugfix `sluit_acties.py` (scande niet-bestaande `skills/complidata`)
+- S1+S8 (fd82626): cosmetische code-namen + role-prefix
+- S2 (27066a1): CSS-tokens `--cd-` → `--lk-` (frontend-breed incl. module-frontend)
+- S3 (84e2ce7): cookies `lk_session`/`lk_refresh`
+- S4 (e9e4835): env-flags `LIKARA_TEST_MODE`/`LIKARA_FIXTURE_SET`
+- S5 (4e0f6a0): localStorage `lk-sidebar-ingeklapt` + backup-basisnaam `likara_*.sql`
+- LI049 (28e421c): migratie-revisie-id ≤32 (deploy-blocker) + handhavingstest
+- S6 (d67e968): infra `lk_rabbit`, vhost `lk-{slug}`, MinIO `likara_admin`, paden `~/likara/`
+- S7 (f7ecd7c): DB-triggerfunctie `lk_audit_append_only` (forward-migratie 0044, append-only LIVE geborgd)
+
+**Resterend uit de rebrand (geen code meer):**
+- **DC013** — GitHub-repo/remote `bertvancapelle/CompliData` → LIKARA + remote-URL;
+  lokale map `~/complidata/` opruimen (stack draait al op `~/likara/`). Berts GitHub-actie.
+- **Deploy-side (andere omgevingen)** — `.env`/secrets bijwerken: `RABBITMQ_URL`→`lk_rabbit`,
+  `MINIO_ROOT_USER`→`likara_admin`, cookie-namen `lk_session`/`lk_refresh`,
+  env `LIKARA_TEST_MODE`/`LIKARA_FIXTURE_SET`; re-provision vereist.
+- **Procesgat secrets-backup** — `~/complidata/secrets/.env` heeft nooit bestaan;
+  CLAUDE.md documenteert nu `~/likara/secrets/` als backuplocatie die feitelijk niet
+  gevuld werd → verzoenen.
+- **env-test-robuustheid** — zie OP-30 (`test_callback_succes_zet_lk_session_cookie`
+  laat `cookie_secure` van de omgeving afhangen; expliciet zetten).
+- **Optioneel** — vangrail-greps uitbreiden met live `cd_`/`complidata` (scoped, excl. historie).
+
 ### Stand V025 (sessie-afsluiting LI024, 2026-06-29)
 
 Build **V024 → V025**. LI024 = volledige prioriteitenlijst afgewerkt +
@@ -651,36 +683,26 @@ Zie docs/adr/ADR-028_componentclassificatie_voorstel.md.
 
 ---
 
-### LIKARA — naamswijziging codebase (geparkeerd, DC013)
+### LIKARA — naamswijziging codebase — AFGEROND (LI038–LI050, sessie LI051)
 
-Besloten productnaam: LIKARA (Kaart ICT Landschap Afhankelijkheden
-Relaties Analyse). Vervangt LIKARA/CompliMan overal in de
-codebase: bestandsnamen, variabelen, README, CLAUDE.md,
-seed-namen, Keycloak-realm, Docker-images. Uitvoeren als
-gecontroleerde zoek-vervang-slice in een aparte sessie.
+Code-rebrand compleet: skills, docs, generators én alle gedragsbepalende identifiers
+(`cd_`/`complidata` → `lk`/`likara`). Zie de V026-stand bovenaan voor de slice-uitsplitsing.
+Live geverifieerd via verse provisioning + smoke + RLS-isolatie; backend 931/2/0, frontend 745/745.
+**Resteert uitsluitend DC013** (GitHub-repo/remote-naam + lokale `~/complidata/`-map) — Berts
+GitHub-actie, zie V026-stand.
 
 ---
 
-### Laag-2 identifier-rename: complidata/cd_ → likara (aparte, gecoördineerde slag)
+### Laag-2 identifier-rename: complidata/cd_ → likara — AFGEROND (LI041–LI050)
 
-Na de skill-laag-rename (LI022, commit 8b8a8b2) resteren de gedragsbepalende
-identifiers. Eén coherente slag, géén documentatie-only:
-
-- **Keycloak audience-mapper clientId** `complidata-api` (o.a. `likara-security` skill);
-  raakt Keycloak-realmconfig + token-audience — coördineren met de identity-laag.
-- **`COMPLIDATA_TEST_MODE`** env-var → `LIKARA_TEST_MODE` (code leest 'm; feature-flag,
-  geen DB-identifier).
-- **`cd_`-familie**: cookies `cd_session`/`cd_refresh`, rol `cd_admin`, en de
-  `cd_`-tabelprefix. De cookies/rol zijn code+config; de **tabelprefix raakt schema +
-  migraties** → dan is het een gate mét migratie, geen losse rename.
-- **Lokale `~/complidata/`-paden** (backups/secrets/dump-bestandsnaam in CLAUDE.md):
-  puur Bert's filesystem, cosmetisch; alleen meenemen als Bert de mappen op zijn Mac
-  ook hernoemt.
-
-Volgorde t.z.t.: eerst feitenrapport (waar leeft elke identifier, welke zijn
-schema-rakend), dan beslissen of de tabelprefix mee gaat (gate+migratie) of dat we
-alleen de niet-schema-identifiers doen. Vangrail-greps (`compliman|cm_|Eraneos`) en
-historie blijven ongemoeid.
+Feitenrapport (LI041) + uitvoering in slices S1–S8 + de DB-triggerfunctie (S7, gate+migratie 0044):
+- cookies `lk_session`/`lk_refresh` (S3); env `LIKARA_TEST_MODE`/`LIKARA_FIXTURE_SET` (S4);
+  CSS-tokens `--lk-` (S2); infra `lk_rabbit`/vhost `lk-{slug}`/MinIO `likara_admin`/paden `~/likara/` (S6);
+  audit-triggerfunctie `lk_audit_append_only` (S7).
+- **`cd_`-tabelprefix bestond niet** (geverifieerd LI041) → geen tabel-migratie nodig; de enige
+  schema-rakende rename was de audit-triggerfunctie (S7).
+- DB-rol `cd_admin` **bewust niet hernoemd** (geen runtime-gebruik; alleen var-naam in fixtures, opgeschoond in S1).
+- Vangrail-greps (`compliman|cm_|Eraneos`) en historie (migratie 0010, changelog) ongemoeid gebleven.
 
 ---
 

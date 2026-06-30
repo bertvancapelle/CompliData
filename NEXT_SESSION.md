@@ -1,4 +1,8 @@
-# LIKARA — Next Session (LI025)
+# LIKARA — Next Session (LI052)
+
+> **Sessie LI051 (V026):** volledige code-rebrand `cd_`/`complidata` → `lk`/`likara`
+> afgerond (LI038–LI050). De onderstaande top-5 is in V025 vastgesteld en deze sessie
+> NIET opgepakt — blijft de prioriteit. Resterende rebrand-punten staan onderaan.
 
 ## Top-5 prioriteiten
 
@@ -45,3 +49,12 @@
 
 ### Strategisch (parked)
 - Export/import/rapportage — scope en fasering apart te bepalen
+
+### Resterend uit de rebrand (LI038–LI050, geen code meer)
+- **DC013** — GitHub-repo/remote `bertvancapelle/CompliData` → LIKARA + remote-URL;
+  lokale map `~/complidata/` opruimen (stack draait op `~/likara/`). Berts GitHub-actie.
+- **Deploy-side** — andere omgevingen: `.env`/secrets bijwerken (`RABBITMQ_URL`→`lk_rabbit`,
+  `MINIO_ROOT_USER`→`likara_admin`, cookie-/env-namen) + re-provision.
+- **env-test-robuustheid** (OP-30) — `test_callback_succes_zet_lk_session_cookie` laat
+  `cookie_secure` van de omgeving afhangen; expliciet zetten.
+- **Procesgat secrets-backup** — `~/likara/secrets/` gedocumenteerd maar feitelijk nooit gevuld → verzoenen.

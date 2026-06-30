@@ -489,11 +489,11 @@ Pas dan: klaar.
 
 | Veld | Waarde |
 |------|--------|
-| Build | V025 |
+| Build | V026 |
 | Datum | June 2026 |
-| Commit | 144ecd9 |
-| Tests | backend 928 / frontend 745 groen (2 skipped) |
-| TST-rapport | TST-V025-Validatierapport.md |
+| Commit | f7ecd7c |
+| Tests | backend 931/2/0, frontend 745/745 |
+| TST-rapport | TST-V026-Validatierapport.md |
 | Kritieke bevindingen | 0 |
 
 <!-- BOUWSTATUS_END -->
