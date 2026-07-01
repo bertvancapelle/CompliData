@@ -29,6 +29,7 @@ from models.models import (
     Component,
     ComponentConfigDimensie,
     ComponentProfiel,
+    LifecycleStatus,
 )
 from schemas.checklistconfig import (
     AntwoordTypeUpdate,
@@ -167,6 +168,36 @@ async def herbereken_type(session: AsyncSession, tenant_id, componenttype: str) 
     for component_id in ids:
         await lifecycle_service.herbereken_lifecycle(session, tid, component_id)
     return len(ids)
+
+
+async def backfill_profielen(session: AsyncSession, tenant_id, componenttype: str) -> int:
+    """LI058 — activeer scoring voor BESTAANDE componenten van `componenttype`: geef elk component
+    dat nog géén `ComponentProfiel` heeft er een (lifecycle `concept`) en herbereken het hele type.
+    In-tenant (RLS), idempotent (alleen ontbrekende profielen). Returnt het aantal nieuwe profielen.
+
+    Gebruikt bij de overgang `checklist_dragend` False→True: nieuw aangemaakte componenten krijgen hun
+    profiel al bij create; deze backfill dekt de reeds bestaande. Score blijft de enige lifecycle-driver:
+    de herberekening leidt de status puur af uit score + open blokkades."""
+    tid = _tenant_uuid(tenant_id)
+    ontbrekend = list(
+        (
+            await session.execute(
+                select(Component.id)
+                .outerjoin(ComponentProfiel, ComponentProfiel.id == Component.id)
+                .where(Component.componenttype == componenttype, ComponentProfiel.id.is_(None))
+            )
+        )
+        .scalars()
+        .all()
+    )
+    for component_id in ontbrekend:
+        session.add(
+            ComponentProfiel(id=component_id, tenant_id=tid, lifecycle_status=LifecycleStatus.concept)
+        )
+    if ontbrekend:
+        await session.flush()
+    await herbereken_type(session, tid, componenttype)
+    return len(ontbrekend)
 
 
 async def impact_telling(session: AsyncSession, componenttype: str) -> int:

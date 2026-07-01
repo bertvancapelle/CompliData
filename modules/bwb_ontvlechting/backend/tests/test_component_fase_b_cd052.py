@@ -198,7 +198,7 @@ def test_lijst_levert_besturingsvelden_en_statusfilter():
         items, _ = await svc.lijst(s, _TID, limit=100)
         per_naam = {i["naam"]: i for i in items}
         app = per_naam["Zaaksysteem"]          # applicatie-subtype (besturingsvelden gevuld)
-        infra = per_naam["Shared DB-server"]   # kale technology-component (geen subtype/lifecycle)
+        infra = per_naam["Shared fileshare"]   # LI058 — nog niet-beoordeeld type (geen profiel/lifecycle)
         gefilterd, _ = await svc.lijst(s, _TID, limit=100, status=["concept", "in_inventarisatie", "geblokkeerd", "migratieklaar"])
         return app, infra, gefilterd
 

@@ -1511,6 +1511,14 @@ async def main() -> None:
         t = await _seed_bvowb_scenario(session, DEV_TENANT)
         print("  " + " · ".join(f"{k}={v}" for k, v in t.items()))
 
+        # LI058 — de infra-seed (`_infra`) maakt database-componenten via directe ORM (geen
+        # profiel). Geef beoordeelde niet-app-typen hun profiel + herberekening via de backfill
+        # (zelfde mechaniek als de platform-toggle) zodat ze end-to-end scoren.
+        from services import checklistconfig_service as _ccs
+        n_bf = await _ccs.backfill_profielen(session, DEV_TENANT, "database")
+        await session.commit()
+        print(f"  + database-scoring-backfill: {n_bf} profiel(en)")
+
         print("Dev-gebruikers (gebruiker_persoon-koppelingen):")
         g = await _seed_dev_gebruikers(session, DEV_TENANT)
         print(f"  {g}")

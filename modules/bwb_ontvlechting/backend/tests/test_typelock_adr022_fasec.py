@@ -125,11 +125,13 @@ def test_vrije_wissel_op_leeg():
     async def _flow(s):
         ids = []
         try:
+            # LI058 — kale (niet-beoordeelde) typen: fileshare/saas_dienst dragen géén profiel; database
+            # is nu beoordeeld en valt buiten dit "geen-profiel"-scenario.
             # kaal → kaal (geen profiel betrokken).
-            kaal = await _maak(s, f"TLW-kaal-{sfx}", "database")
+            kaal = await _maak(s, f"TLW-kaal-{sfx}", "fileshare")
             ids.append(kaal["id"])
-            r1 = await svc.werk_bij(s, _TID, kaal["id"], ComponentUpdate(componenttype="fileshare"))
-            assert r1["componenttype"] == "fileshare"
+            r1 = await svc.werk_bij(s, _TID, kaal["id"], ComponentUpdate(componenttype="saas_dienst"))
+            assert r1["componenttype"] == "saas_dienst"
             assert r1["heeft_applicatie_subtype"] is False
 
             # kaal → applicatie (promotie: subtype + profiel ontstaan).
@@ -139,9 +141,9 @@ def test_vrije_wissel_op_leeg():
             # profiel bestaat nu (lifecycle concept → nog vrij wijzigbaar).
             assert r2["type_wijzigbaar"] is True
 
-            # applicatie (leeg) → database (subtype + profiel weg; geen overdracht).
-            r3 = await svc.werk_bij(s, _TID, kaal["id"], ComponentUpdate(componenttype="database"))
-            assert r3["componenttype"] == "database"
+            # applicatie (leeg) → fileshare (subtype + profiel weg; niet-beoordeeld → geen nieuw profiel).
+            r3 = await svc.werk_bij(s, _TID, kaal["id"], ComponentUpdate(componenttype="fileshare"))
+            assert r3["componenttype"] == "fileshare"
             assert r3["heeft_applicatie_subtype"] is False
             geen_profiel = (
                 await s.execute(text("select count(*) from component_profiel where id=:i"), {"i": kaal["id"]})

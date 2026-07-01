@@ -149,7 +149,7 @@ def test_contract_componenten_bevat_ook_kale_component():
             lev_id = lev.id
             app = await applicatie_service.maak_aan(s, _TID, _app_create(f"WT-S2a-App-{sfx}"))
             app_id = app.id
-            kaal = await component_service_maak(s, ComponentCreate(naam=f"WT-S2a-DB-{sfx}", componenttype="database"))
+            kaal = await component_service_maak(s, ComponentCreate(naam=f"WT-S2a-DB-{sfx}", componenttype="fileshare"))
             kaal_id = kaal["id"]
             con = await contract_service.maak_aan(s, _TID, ContractCreate(
                 leverancier_id=lev_id, contracttype="los_contract", contractnaam=f"WT-S2a-Con-{sfx}",

@@ -16,12 +16,12 @@ from models.models import ComponentConfigDimensie, ComponentConfigOptie
 
 # (sleutel, label, archimate_element, laag, aspect, checklist_dragend)
 # ADR-022 Fase E / ADR-023 Fase F (F-6): `checklist_dragend` wordt hier EXPLICIET gezet
-# (single source = de seed), niet langer de kolom-default laten winnen. Alleen het
-# systeemtype `applicatie` is checklist-dragend; alle overige typen niet. De seed
-# (expand) en de reconcile-migratie 0023 (contract) zetten dezelfde stand → geen drift.
+# (single source = de seed), niet langer de kolom-default laten winnen. LI058 — beoordeelde
+# typen: `applicatie` (systeem-sleutel) + `database`; overige typen niet. De seed (expand) en de
+# reconcile-migraties (0023 + 0046) zetten dezelfde stand → geen drift.
 _COMPONENTTYPE: list[tuple[str, str, str, str, str, bool]] = [
     ("applicatie", "Applicatie", "application_component", "application", "active", True),
-    ("database", "Database", "system_software", "technology", "active", False),
+    ("database", "Database", "system_software", "technology", "active", True),  # LI058 — beoordeeld type
     ("applicatieserver", "Applicatieserver", "node", "technology", "active", False),
     ("client_software", "Client-software", "system_software", "technology", "active", False),
     ("saas_dienst", "SaaS-dienst", "application_component", "application", "active", False),

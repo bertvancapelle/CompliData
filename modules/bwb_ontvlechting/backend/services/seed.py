@@ -99,6 +99,19 @@ CHECKLIST_VRAGEN = [
     {"code": "12.6", "categorie_nr": 12, "categorie_naam": "Risico en prioritering", "vraag": "Wat is de aanbevolen vervolgactie (inventariseren / escaleren / migreren / parkeren)?", "prioriteit": "hoog"},
 ]
 
+# LI058 (Slice 2) — voorlopige STARTSET checklistvragen voor componenttype `database`, zodat het type
+# niet leeg is en end-to-end aantoonbaar scoort. Score-gebaseerd (ja/deels/nee/nvt), net als de
+# applicatie-vragen (antwoordtype `geen` via server_default; extra ADR-019-opties kunnen later per vraag
+# in de beheer-UI). Stabiele codes (set-once), actief=True. Te verfijnen door de tenant in het scherm.
+CHECKLIST_VRAGEN_DATABASE = [
+    {"code": "1.1", "categorie_nr": 1, "categorie_naam": "Database-migratiegereedheid (startset)", "vraag": "Is de data-eigenaar van deze database bekend en vastgelegd?", "prioriteit": "hoog"},
+    {"code": "1.2", "categorie_nr": 1, "categorie_naam": "Database-migratiegereedheid (startset)", "vraag": "Is de data overdraagbaar/exporteerbaar in een herbruikbaar formaat?", "prioriteit": "hoog"},
+    {"code": "1.3", "categorie_nr": 1, "categorie_naam": "Database-migratiegereedheid (startset)", "vraag": "Zijn de koppelingen en afhankelijkheden van deze database in kaart gebracht?", "prioriteit": "hoog"},
+    {"code": "1.4", "categorie_nr": 1, "categorie_naam": "Database-migratiegereedheid (startset)", "vraag": "Is er een actuele back-up- en herstelprocedure?", "prioriteit": "hoog"},
+    {"code": "1.5", "categorie_nr": 1, "categorie_naam": "Database-migratiegereedheid (startset)", "vraag": "Is de dataclassificatie (gevoeligheid/AVG) van deze database bepaald?", "prioriteit": "midden"},
+    {"code": "1.6", "categorie_nr": 1, "categorie_naam": "Database-migratiegereedheid (startset)", "vraag": "Is de database exclusief voor één organisatie of gedeeld (ontvlechtingsrelevant)?", "prioriteit": "hoog"},
+]
+
 
 async def seed_checklist_vragen(session, tenant_id) -> int:
     """Voegt de baseline van 89 checklist-vragen idempotent toe **voor één tenant**.
@@ -120,9 +133,21 @@ async def seed_checklist_vragen(session, tenant_id) -> int:
         }
         for v in CHECKLIST_VRAGEN
     ]
-    stmt = pg_insert(ChecklistVraag).values(rows).on_conflict_do_nothing(
+    # LI058 — database-startset (componenttype `database`), zelfde patroon (betekenis=None; antwoordtype
+    # via server_default `geen`). Aparte conflict-scope: (tenant, componenttype, code) is per type uniek.
+    db_rows = [
+        {
+            **v,
+            "tenant_id": tenant_id,
+            "componenttype": "database",
+            "prioriteit": ChecklistPrioriteit(v["prioriteit"]),
+            "betekenis": None,
+        }
+        for v in CHECKLIST_VRAGEN_DATABASE
+    ]
+    stmt = pg_insert(ChecklistVraag).values(rows + db_rows).on_conflict_do_nothing(
         index_elements=["tenant_id", "componenttype", "code"]
     )
     await session.execute(stmt)
     await session.commit()
-    return len(CHECKLIST_VRAGEN)
+    return len(CHECKLIST_VRAGEN) + len(CHECKLIST_VRAGEN_DATABASE)

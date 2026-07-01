@@ -92,13 +92,40 @@ async def voeg_toe(session: AsyncSession, data: ComponentConfigOptieCreate) -> C
     return obj
 
 
+async def _activeer_type_backfill(platform_session: AsyncSession, componenttype: str) -> None:
+    """LI058 — na `checklist_dragend` False→True voor een componenttype: geef bestaande componenten
+    van dat type in ÉLKE tenant hun ontbrekende `ComponentProfiel` + herbereken. De platform-sessie
+    (lk_platform) heeft géén tenant-/RLS-toegang tot `component`/`component_profiel`, dus per tenant
+    een RLS-scoped worker-sessie. Idempotent (alleen ontbrekende profielen) → veilig ondanks dat de
+    flag-flip en de backfill niet in één transactie zitten (aparte engines); her-toggle vult aan.
+    Score blijft de enige lifecycle-driver — de backfill leidt de status af, muteert niets anders."""
+    from app.core.database import get_worker_session
+    from app.models.platform import Tenant
+    from services import checklistconfig_service
+
+    tenant_ids = list((await platform_session.execute(select(Tenant.id))).scalars().all())
+    for tid in tenant_ids:
+        async with get_worker_session(tid) as s:
+            await checklistconfig_service.backfill_profielen(s, tid, componenttype)
+            await s.commit()
+
+
 async def wijzig(
     session: AsyncSession, optie_id: int, data: ComponentConfigOptieUpdate
 ) -> ComponentConfigOptie:
-    """Wijzig label / volgorde / actief. Soft-deactivate/reactivate toegestaan, BEHALVE
-    deactiveren van de systeem-sleutel `componenttype.applicatie` (422
-    `SYSTEEM_SLEUTEL_BESCHERMD`). Onbekend id ⇒ 404."""
+    """Wijzig label / volgorde / actief / checklist_dragend. Soft-deactivate/reactivate toegestaan,
+    BEHALVE deactiveren van de systeem-sleutel `componenttype.applicatie` (422
+    `SYSTEEM_SLEUTEL_BESCHERMD`). Onbekend id ⇒ 404.
+
+    LI058 — bij `checklist_dragend` False→True voor een componenttype worden de bestaande componenten
+    van dat type (alle tenants) van een profiel voorzien + herberekend (backfill). True→False laat
+    bestaande profielen/scores INERT staan (nooit scoringsdata vernietigen op een config-flip;
+    reversibel via her-toggle). Nieuw aangemaakte componenten van een niet-dragend type krijgen sowieso
+    geen profiel (component_service)."""
     obj = await _haal(session, optie_id)
+    # LI058 — transitie-detectie na de mutatie. `getattr`-default zodat unit-test-fakes zonder
+    # `checklist_dragend`-attribuut (SimpleNamespace) niet breken; echte rijen dragen de vlag altijd.
+    _oud_dragend = getattr(obj, "checklist_dragend", False)
     velden = data.model_dump(exclude_unset=True)
     if (
         velden.get("actief") is False
@@ -126,4 +153,11 @@ async def wijzig(
         setattr(obj, veld, waarde)
     await session.commit()
     await session.refresh(obj)
+    # LI058 — activatie-backfill bij False→True voor een componenttype (ná de commit van de flag).
+    if (
+        obj.dimensie == _SYSTEEM_DIMENSIE
+        and not _oud_dragend
+        and getattr(obj, "checklist_dragend", False)
+    ):
+        await _activeer_type_backfill(session, obj.optie_sleutel)
     return obj

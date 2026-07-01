@@ -61,7 +61,7 @@ def test_seed_geeft_89_terug():
 
     session = AsyncMock()
     aantal = asyncio.run(seed_checklist_vragen(session, uuid.uuid4()))
-    assert aantal == 89
+    assert aantal == 95  # LI058 — 89 applicatie + 6 database
     session.execute.assert_awaited_once()
     session.commit.assert_awaited_once()
 
@@ -77,7 +77,7 @@ def test_seed_idempotent():
     session = AsyncMock()
     eerste = asyncio.run(seed_checklist_vragen(session, tid))
     tweede = asyncio.run(seed_checklist_vragen(session, tid))
-    assert eerste == tweede == 89
+    assert eerste == tweede == 95  # LI058 — 89 applicatie + 6 database
 
 
 def test_platform_init_zaait_platform_catalogi_via_platform_session(monkeypatch):

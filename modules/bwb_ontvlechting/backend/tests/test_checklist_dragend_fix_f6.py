@@ -38,10 +38,13 @@ def test_seed_zet_checklist_dragend_expliciet():
     rijen = bouw_componentconfig()
     typen = {r["optie_sleutel"]: r["checklist_dragend"]
              for r in rijen if r["dimensie"].value == "componenttype"}
-    # Beoogde eindstand: applicatie = true, alle overige (incl. applicatieserver) = false.
+    # Beoogde eindstand (LI058): applicatie + database = true; overige (incl. applicatieserver) = false.
+    _beoordeeld = {"applicatie", "database"}
     assert typen["applicatie"] is True
+    assert typen["database"] is True
     assert typen["applicatieserver"] is False
-    assert all(v is False for k, v in typen.items() if k != "applicatie")
+    assert all(v is True for k, v in typen.items() if k in _beoordeeld)
+    assert all(v is False for k, v in typen.items() if k not in _beoordeeld)
     # Niet-componenttype-dimensies dragen de vlag false (kolom is alleen zinvol voor types).
     overig = [r["checklist_dragend"] for r in rijen if r["dimensie"].value != "componenttype"]
     assert overig and all(v is False for v in overig)
@@ -121,7 +124,7 @@ def test_vlag_stand_kernfix_live():
     stand = asyncio.run(_run_rls(_TID, "test:bert", _vlag_stand))
     assert stand.get("applicatie") is True, stand
     assert stand.get("applicatieserver") is False, stand
-    assert stand.get("database") is False, stand
+    assert stand.get("database") is True, stand  # LI058 — database is nu beoordeeld
 
 
 @integratie
@@ -134,7 +137,7 @@ def test_dev_reseed_duurzaamheid_live():
     if stand.get("client_software") is not True:
         pytest.skip("dev-seed-demo (client_software) niet geladen op deze DB")
     assert stand.get("applicatieserver") is False, stand
-    assert stand.get("database") is False, stand
+    assert stand.get("database") is True, stand  # LI058 — database is nu beoordeeld
     assert stand.get("applicatie") is True, stand
 
 

@@ -111,9 +111,9 @@ def test_impact_transitief_en_cyclus_termineren():
     sfx = uuid.uuid4().hex[:8]
 
     async def _flow(s):
-        a = await svc.maak_aan(s, _TID, ComponentCreate(naam=f"CD056-A-{sfx}", componenttype="database"))
-        b = await svc.maak_aan(s, _TID, ComponentCreate(naam=f"CD056-B-{sfx}", componenttype="database"))
-        c = await svc.maak_aan(s, _TID, ComponentCreate(naam=f"CD056-C-{sfx}", componenttype="database"))
+        a = await svc.maak_aan(s, _TID, ComponentCreate(naam=f"CD056-A-{sfx}", componenttype="fileshare"))
+        b = await svc.maak_aan(s, _TID, ComponentCreate(naam=f"CD056-B-{sfx}", componenttype="fileshare"))
+        c = await svc.maak_aan(s, _TID, ComponentCreate(naam=f"CD056-C-{sfx}", componenttype="fileshare"))
         ids = [a["id"], b["id"], c["id"]]
         try:
             # A draait op B → assignment(B→A); B draait op A → assignment(A→B) (cyclus);
@@ -159,9 +159,9 @@ def test_impact_flow_bidirectioneel_en_transitief():
     sfx = uuid.uuid4().hex[:8]
 
     async def _flow(s):
-        a = await svc.maak_aan(s, _TID, ComponentCreate(naam=f"LI019-A-{sfx}", componenttype="database"))
-        b = await svc.maak_aan(s, _TID, ComponentCreate(naam=f"LI019-B-{sfx}", componenttype="database"))
-        c = await svc.maak_aan(s, _TID, ComponentCreate(naam=f"LI019-C-{sfx}", componenttype="database"))
+        a = await svc.maak_aan(s, _TID, ComponentCreate(naam=f"LI019-A-{sfx}", componenttype="fileshare"))
+        b = await svc.maak_aan(s, _TID, ComponentCreate(naam=f"LI019-B-{sfx}", componenttype="fileshare"))
+        c = await svc.maak_aan(s, _TID, ComponentCreate(naam=f"LI019-C-{sfx}", componenttype="fileshare"))
         ids = [a["id"], b["id"], c["id"]]
         try:
             await relatie_service.maak_aan(s, _TID, RelatieCreate(bron_id=a["id"], doel_id=b["id"], relatietype="flow", naam=f"A-B-{sfx}"))
@@ -198,8 +198,8 @@ def test_impact_flow_cyclus_termineren():
     sfx = uuid.uuid4().hex[:8]
 
     async def _flow(s):
-        a = await svc.maak_aan(s, _TID, ComponentCreate(naam=f"LI019cyc-A-{sfx}", componenttype="database"))
-        b = await svc.maak_aan(s, _TID, ComponentCreate(naam=f"LI019cyc-B-{sfx}", componenttype="database"))
+        a = await svc.maak_aan(s, _TID, ComponentCreate(naam=f"LI019cyc-A-{sfx}", componenttype="fileshare"))
+        b = await svc.maak_aan(s, _TID, ComponentCreate(naam=f"LI019cyc-B-{sfx}", componenttype="fileshare"))
         ids = [a["id"], b["id"]]
         try:
             await relatie_service.maak_aan(s, _TID, RelatieCreate(bron_id=a["id"], doel_id=b["id"], relatietype="flow", naam=f"AB-{sfx}"))
