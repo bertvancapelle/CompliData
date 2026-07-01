@@ -153,6 +153,10 @@ def test_login_next_relatief_pad_behouden(client, fake_redis):
 
 
 def test_callback_succes_zet_lk_session_cookie(client, fake_redis, monkeypatch):
+    # OP-30 — de assertie op het Secure-cookieattribuut hangt af van `cookie_secure`; die staat in
+    # dev-.env op false. Zet 'm expliciet op True zodat de test de PRODUCTIE-cookieborging toetst,
+    # env-onafhankelijk (geen productiecode/config gewijzigd).
+    monkeypatch.setattr(settings, "cookie_secure", True)
     state, nonce = _doe_login(client)
     gezien = {}
 
