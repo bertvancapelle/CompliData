@@ -273,6 +273,11 @@ async def maak_applicatie_subtype(
         hostingmodel=hostingmodel,
         eigenaar_organisatie_id=eigenaar_organisatie_id,
         beschrijving=beschrijving,
+        # LI057 (Slice 1) — bron van waarheid op het basis-component; de subtabel spiegelt (dual-write)
+        # tot de contract-slice de subtabel-kolommen dropt.
+        migratiepad=migratiepad,
+        complexiteit=complexiteit,
+        prioriteit=prioriteit,
     )
     session.add(comp)
     await session.flush()  # comp.id beschikbaar voor de shared-PK
@@ -337,8 +342,13 @@ async def werk_bij(
         from services import partij_service
         await partij_service.valideer_organisatie(session, tid, velden["eigenaar_organisatie_id"])
     for veld, waarde in velden.items():
-        doel = obj.component if veld in _COMPONENTVELDEN else obj
-        setattr(doel, veld, waarde)
+        if veld in _COMPONENTVELDEN:
+            setattr(obj.component, veld, waarde)
+        else:
+            # LI057 (Slice 1) — transitie-attribuut (migratiepad/complexiteit/prioriteit): dual-write.
+            # Bron van waarheid = het basis-component; de subtabel spiegelt tot de contract-slice.
+            setattr(obj.component, veld, waarde)
+            setattr(obj, veld, waarde)
     await session.commit()
     await session.refresh(obj)
     return await _met_org_naam(session, tid, obj)

@@ -135,7 +135,7 @@ export const MIGRATIEPAD = {
   herbouw: 'Herbouw',
   vervangen: 'Vervangen',
   uitfaseren: 'Uitfaseren',
-  tijdelijk_gedeeld: 'Tijdelijk gedeeld',
+  gedeeld: 'Gedeeld',
   onbekend: 'Onbekend',
 }
 

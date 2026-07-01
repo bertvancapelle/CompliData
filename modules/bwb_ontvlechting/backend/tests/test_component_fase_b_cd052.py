@@ -206,7 +206,11 @@ def test_lijst_levert_besturingsvelden_en_statusfilter():
     assert app["heeft_applicatie_subtype"] is True
     assert app["lifecycle_status"] is not None and app["complexiteit"] is not None
     assert infra["heeft_applicatie_subtype"] is False
-    assert infra["lifecycle_status"] is None and infra["complexiteit"] is None
+    # LI057 (Slice 1): complexiteit/prioriteit/migratiepad zijn nu component-breed → kale infra
+    # draagt de defaults (niet langer None). lifecycle_status blijft None (geen profiel: niet
+    # checklist-dragend).
+    assert infra["lifecycle_status"] is None
+    assert infra["complexiteit"] == "midden"  # NiveauEnum is een str-enum → stringvergelijk
     # ADR-022 Fase E: het status-filter matcht elk checklist-dragend component (heeft een
     # profiel ⇒ lifecycle), niet langer uitsluitend applicatie-subtypen. Invariant: alle
     # gefilterde rijen hebben een lifecycle_status (kale infra zonder profiel valt eruit).

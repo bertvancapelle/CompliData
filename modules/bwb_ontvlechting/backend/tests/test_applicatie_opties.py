@@ -23,7 +23,7 @@ def test_enum_opties_geeft_exact_de_enum_waarden():
     assert o["prioriteit"] == [e.value for e in NiveauEnum]
     # spotchecks
     assert "saas" in o["hostingmodel"]
-    assert "tijdelijk_gedeeld" in o["migratiepad"]
+    assert "gedeeld" in o["migratiepad"]
     assert o["complexiteit"] == ["laag", "midden", "hoog"]
 
 

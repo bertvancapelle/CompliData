@@ -8,7 +8,7 @@ componentcatalogus gevalideerd.
 import uuid
 from datetime import datetime
 
-from sqlalchemy import and_, case, delete, func, or_, select
+from sqlalchemy import and_, case, delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, lazyload
 
@@ -70,8 +70,9 @@ _SORTEERBARE_KOLOMMEN = {
     # (per-call alias in `lijst`); de dict-waarde hier is een placeholder voor de allowlist-test.
     "eigenaar": Component.eigenaar_organisatie_id,
     "hostingmodel": Component.hostingmodel,
-    "complexiteit": Applicatie.complexiteit,
-    "prioriteit": Applicatie.prioriteit,
+    # LI057 (Slice 1) — nu op het basis-component (was applicatie-subtabel).
+    "complexiteit": Component.complexiteit,
+    "prioriteit": Component.prioriteit,
     # ADR-022 Fase A: lifecycle_status leeft op het generieke profiel (shared-PK).
     "lifecycle_status": ComponentProfiel.lifecycle_status,
 }
@@ -84,14 +85,6 @@ _WAARDE_PARSERS = {
     "complexiteit": NiveauEnum,
     "prioriteit": NiveauEnum,
     "lifecycle_status": LifecycleStatus,
-}
-
-# Convergente aanmaak (CD054b W1): een component met type `applicatie` maakt atomair
-# het subtype met deze defaults; eigenaar leeg toegestaan ("" — bewerkbaar op het detail).
-_SUBTYPE_DEFAULTS = {
-    "migratiepad": Migratiepad.onbekend,
-    "complexiteit": NiveauEnum.midden,
-    "prioriteit": NiveauEnum.midden,
 }
 
 
@@ -235,6 +228,10 @@ async def _lees(session: AsyncSession, tid: uuid.UUID, obj: Component) -> dict:
             else None
         ),
         "beschrijving": obj.beschrijving,
+        # LI057 (Slice 1) — component-brede transitie-attributen (op élk component).
+        "migratiepad": obj.migratiepad,
+        "complexiteit": obj.complexiteit,
+        "prioriteit": obj.prioriteit,
         "heeft_applicatie_subtype": await _heeft_subtype(session, tid, obj.id),
         # ADR-022 Fase E: of dit componenttype checklist-dragend is (UI toont dan de
         # checklist-sectie + start-knop ook voor niet-`applicatie`-componenten).
@@ -281,7 +278,7 @@ def _sorteer_waarde(comp: Component, app: Applicatie | None, lifecycle, eig_naam
     if sort == "lifecycle_status":
         return lifecycle
     if sort in ("complexiteit", "prioriteit"):
-        return getattr(app, sort) if app is not None else None
+        return getattr(comp, sort)  # LI057 — nu op het basis-component (altijd aanwezig)
     if sort == "eigenaar":
         return eig_naam  # UX-B6-b: sorteren op de naam van de gekoppelde organisatie-partij
     return getattr(comp, sort)  # naam / componenttype / hostingmodel / created_at
@@ -404,8 +401,10 @@ async def lijst(
             "heeft_applicatie_subtype": a is not None,
             "eigenaar_organisatie_id": c.eigenaar_organisatie_id,
             "eigenaar_organisatie_naam": eig_naam,
-            "complexiteit": a.complexiteit if a is not None else None,
-            "prioriteit": a.prioriteit if a is not None else None,
+            # LI057 (Slice 1) — nu op het basis-component (was applicatie-LEFT-JOIN → null voor infra).
+            "migratiepad": c.migratiepad,
+            "complexiteit": c.complexiteit,
+            "prioriteit": c.prioriteit,
             "lifecycle_status": lc,
         }
         for (c, a, lc, eig_naam) in items
@@ -437,7 +436,8 @@ async def maak_aan(session: AsyncSession, tenant_id, data: ComponentCreate) -> d
             session, tid,
             naam=data.naam, beschrijving=data.beschrijving, hostingmodel=data.hostingmodel,
             eigenaar_organisatie_id=data.eigenaar_organisatie_id,
-            **_SUBTYPE_DEFAULTS,
+            # LI057 (Slice 1) — component-brede velden (defaults uit ComponentCreate) honoreren.
+            migratiepad=data.migratiepad, complexiteit=data.complexiteit, prioriteit=data.prioriteit,
         )
         return await _lees(session, tid, obj.component)
     await catalog.valideer_sleutel(session, ComponentConfigDimensie.componenttype, data.componenttype)
@@ -450,6 +450,8 @@ async def maak_aan(session: AsyncSession, tenant_id, data: ComponentCreate) -> d
         hostingmodel=data.hostingmodel,
         eigenaar_organisatie_id=data.eigenaar_organisatie_id,
         beschrijving=data.beschrijving,
+        # LI057 (Slice 1) — component-brede transitie-attributen (defaults uit ComponentCreate).
+        migratiepad=data.migratiepad, complexiteit=data.complexiteit, prioriteit=data.prioriteit,
     )
     session.add(obj)
     await session.flush()  # obj.id beschikbaar voor een eventueel profiel
@@ -491,8 +493,12 @@ async def _wissel_type(session: AsyncSession, tid: uuid.UUID, obj: Component, ni
     obj.componenttype = nieuw
 
     if nieuw == _APPLICATIE_TYPE:
-        # Promotie naar `applicatie`: subtype-rij (type-eigen velden) + generiek profiel.
-        session.add(Applicatie(id=obj.id, tenant_id=tid, **_SUBTYPE_DEFAULTS))
+        # Promotie naar `applicatie`: subtype-rij (spiegelt de component-brede transitie-attributen,
+        # LI057) + generiek profiel. De component draagt migratiepad/complexiteit/prioriteit al.
+        session.add(Applicatie(
+            id=obj.id, tenant_id=tid,
+            migratiepad=obj.migratiepad, complexiteit=obj.complexiteit, prioriteit=obj.prioriteit,
+        ))
         session.add(
             ComponentProfiel(id=obj.id, tenant_id=tid, lifecycle_status=LifecycleStatus.concept)
         )
@@ -518,6 +524,13 @@ async def werk_bij(session: AsyncSession, tenant_id, component_id, data: Compone
         await partij_service.valideer_organisatie(session, tid, velden["eigenaar_organisatie_id"])
     for veld, waarde in velden.items():
         setattr(obj, veld, waarde)
+    # LI057 (Slice 1) — spiegel de transitie-attributen naar een eventuele applicatie-subtabel
+    # (dual-write; de subtabel wordt in de contract-slice gedropt). 0 rijen bij een niet-applicatie.
+    _spiegel = {k: velden[k] for k in ("migratiepad", "complexiteit", "prioriteit") if k in velden}
+    if _spiegel:
+        await session.execute(
+            update(Applicatie).where(Applicatie.id == obj.id, Applicatie.tenant_id == tid).values(**_spiegel)
+        )
     await session.commit()
     await session.refresh(obj)
     return await _lees(session, tid, obj)

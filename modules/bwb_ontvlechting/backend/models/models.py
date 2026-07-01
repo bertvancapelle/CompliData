@@ -60,7 +60,7 @@ class Migratiepad(str, Enum):
     herbouw = "herbouw"
     vervangen = "vervangen"
     uitfaseren = "uitfaseren"
-    tijdelijk_gedeeld = "tijdelijk_gedeeld"
+    gedeeld = "gedeeld"  # LI057 — hernoemd van `tijdelijk_gedeeld` (Slice 1); DB: ALTER TYPE RENAME VALUE
     onbekend = "onbekend"
 
 
@@ -335,6 +335,19 @@ class Component(Base, TenantMixin, TimestampMixin):
     # ADR-024 UX-B6-b — optionele verwijzing naar de eigenaar-organisatie (partij, aard=organisatie).
     eigenaar_organisatie_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     beschrijving: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # LI057 (Slice 1) — component-brede transitie-attributen: verhuisd van de applicatie-subtabel naar
+    # het basis-component (élk componenttype), NOT NULL met defaults. De engine leest deze NIET
+    # (lifecycle-driver blijft de score). De `applicatie`-subtabel houdt (voorlopig) spiegel-kolommen
+    # tot de contract-slice; de service dual-writet zodat ze niet driften.
+    migratiepad: Mapped[Migratiepad] = mapped_column(
+        migratiepad_enum, nullable=False, server_default=text("'onbekend'")
+    )
+    complexiteit: Mapped[NiveauEnum] = mapped_column(
+        niveau_enum, nullable=False, server_default=text("'midden'")
+    )
+    prioriteit: Mapped[NiveauEnum] = mapped_column(
+        niveau_enum, nullable=False, server_default=text("'midden'")
+    )
 
 
 class Applicatie(Base, TenantMixin, TimestampMixin):

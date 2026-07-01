@@ -27,7 +27,7 @@ def test_enum_waarden():
     ]
     assert [e.value for e in m.NiveauEnum] == ["laag", "midden", "hoog"]
     assert [e.value for e in m.Migratiepad] == [
-        "lift_and_shift", "herbouw", "vervangen", "uitfaseren", "tijdelijk_gedeeld", "onbekend"
+        "lift_and_shift", "herbouw", "vervangen", "uitfaseren", "gedeeld", "onbekend"
     ]
     assert [e.value for e in m.DatatypeCategorie] == [
         "gestructureerd_db", "documenten", "email", "spatial", "binair", "combinatie"

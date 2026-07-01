@@ -11,7 +11,7 @@ from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
-from models.models import HostingModel, LifecycleStatus, NiveauEnum
+from models.models import HostingModel, LifecycleStatus, Migratiepad, NiveauEnum
 from schemas.applicatie import _verplichte_tekst
 
 
@@ -39,6 +39,10 @@ class ComponentCreate(BaseModel):
     # ADR-024 UX-B6-b — optionele verwijzing naar de eigenaar-organisatie (partij, aard=organisatie).
     eigenaar_organisatie_id: uuid.UUID | None = None
     beschrijving: str | None = None
+    # LI057 (Slice 1) — component-brede transitie-attributen, met defaults (verplicht in de DB).
+    migratiepad: Migratiepad = Migratiepad.onbekend
+    complexiteit: NiveauEnum = NiveauEnum.midden
+    prioriteit: NiveauEnum = NiveauEnum.midden
 
     @field_validator("naam")
     @classmethod
@@ -59,6 +63,10 @@ class ComponentUpdate(BaseModel):
     hostingmodel: HostingModel | None = None
     eigenaar_organisatie_id: uuid.UUID | None = None
     beschrijving: str | None = None
+    # LI057 (Slice 1) — component-brede transitie-attributen (PATCH: optioneel, niet expliciet null).
+    migratiepad: Migratiepad | None = None
+    complexiteit: NiveauEnum | None = None
+    prioriteit: NiveauEnum | None = None
 
     @field_validator("naam")
     @classmethod
@@ -81,6 +89,10 @@ class ComponentRead(BaseModel):
     eigenaar_organisatie_id: uuid.UUID | None = None
     eigenaar_organisatie_naam: str | None = None
     beschrijving: str | None
+    # LI057 (Slice 1) — component-brede transitie-attributen (nu op élk component, NOT NULL).
+    migratiepad: Migratiepad
+    complexiteit: NiveauEnum
+    prioriteit: NiveauEnum
     heeft_applicatie_subtype: bool
     # ADR-023 Fase C: ArchiMate-typing uit de catalogus (read-only projectie) — laag-label
     # op het detail; null als het type geen mapping draagt.
@@ -122,8 +134,10 @@ class ComponentLijstItem(BaseModel):
     # ADR-024 UX-B6-b — eigenaar-organisatie als verwijzing + geresolveerde naam (lijst).
     eigenaar_organisatie_id: uuid.UUID | None = None
     eigenaar_organisatie_naam: str | None = None
-    complexiteit: NiveauEnum | None = None
-    prioriteit: NiveauEnum | None = None
+    # LI057 (Slice 1) — nu op élk component (was nullable via applicatie-LEFT-JOIN).
+    migratiepad: Migratiepad
+    complexiteit: NiveauEnum
+    prioriteit: NiveauEnum
     lifecycle_status: LifecycleStatus | None = None
 
 
